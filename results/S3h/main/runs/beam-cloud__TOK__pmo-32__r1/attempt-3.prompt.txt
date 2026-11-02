@@ -1,0 +1,82 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Farming Bot
+
+Players want to create custom farming bots, that help them gather resources.
+First you have to find out which resources you want.
+Up to 10 resources in parallel can be collected, some resources are more urgently needed than others.
+Some resources are required to create tools that are needed to gather other resources (create a custom logic of the dependencies in your game).
+After all preferences are collected, your bot starts farming.
+Sometimes,  random natural disasters strike and set your bot back.
+Whenever some milestones are reached, you are notified.
+During farming it is possible to update the list of to be farmed materials (at all times).
+After the bot is finished, you should be able to brag to selected friends and/or send them materials.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Farming Bot"
+
+pool organisation "Farming Bot Organisation"
+  lane player "Player"
+    start start "Start"
+    task create_bot "Create custom farming bot"
+    task find_resources "Find out which resources you want"
+    task brag "Brag to selected friends"
+    task send_materials "Send materials to friends"
+    end process_finished "Process finished"
+  lane bot "Farming Bot"
+    and collect_parallel "Collect up to 10 resources in parallel"
+    task collect_resource "Collect resource"
+    and resources_collected "Resources collected"
+    task create_tools "Create tools needed to gather resources"
+    sub farm "Farming"
+      start farming_started "Farming started"
+      task farm_resources "Farm resources"
+      end farming_finished "Farming finished"
+      eventsub update_list "Update list during farming"
+        start update_requested "Update requested" message="updateList"
+        task update_list_task "Update list of to be farmed materials"
+        end list_updated "List updated"
+      eventsub milestone "Milestone reached"
+        start milestone_reached "Milestone reached" signal="milestone"
+        task notify_milestone "Notify milestone reached"
+        end milestone_notified "Milestone notified"
+      boundary disaster on=farm_resources message="naturalDisaster"
+      task recover_bot "Recover from natural disaster"
+    or share_results "Share farming results?"
+    or sharing_completed "Sharing completed"
+
+flow start -> create_bot -> find_resources -> collect_parallel
+flow collect_parallel -> collect_resource -> resources_collected -> create_tools -> farm
+flow farming_started -> farm_resources -> farming_finished
+flow update_requested -> update_list_task -> list_updated
+flow milestone_reached -> notify_milestone -> milestone_notified
+flow disaster -> recover_bot -> farm_resources
+flow farm -> sharing_completed
+flow farm -> share_results
+flow share_results -> brag
+flow share_results -> send_materials
+flow brag -> sharing_completed
+flow send_materials -> sharing_completed
+flow sharing_completed -> process_finished
+```
+
+The tok checker reports these problems in it:
+
+- line 12: warning W020: gateway with one incoming and one outgoing flow is unnecessary (collect_parallel)
+- line 14: warning W020: gateway with one incoming and one outgoing flow is unnecessary (resources_collected)
+- line 30: warning W050: OR split without a default flow (share_results)
+- line 41: warning W021: branch of an XOR/OR split without label, condition or default status (f-share_results-brag)
+- line 42: warning W021: branch of an XOR/OR split without label, condition or default status (f-share_results-send_materials)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

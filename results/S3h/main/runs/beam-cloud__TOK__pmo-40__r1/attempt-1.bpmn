@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:signal id="Signal_Machine_restarted" name="Machine restarted" />
+  <bpmn:signal id="Signal_Machine_disconnected" name="Machine disconnected" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organization" name="Organization" processRef="organization-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organization-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="organization-lanes">
+      <bpmn:lane id="process" name="Process">
+        <bpmn:flowNodeRef>started</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calculate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>below</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop_parallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop_machine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disconnected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="started" name="OEE Monitoring Started" />
+    <bpmn:task id="collect" name="Collect relevant information from the machine" />
+    <bpmn:task id="calculate" name="Calculate the Overall Equipment Efficiency (OEE)" />
+    <bpmn:exclusiveGateway id="below" name="OEE below threshold?" default="f-below-collect" />
+    <bpmn:parallelGateway id="stop_parallel" name="Stop machine and send email" />
+    <bpmn:task id="stop_machine" name="Stop the machine" />
+    <bpmn:task id="send_email" name="Send an email to an engineer" />
+    <bpmn:parallelGateway id="stop_join" name="Machine stopped and email sent" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted">
+      <bpmn:signalEventDefinition id="restarted-def" signalRef="Signal_Machine_restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:subProcess id="disconnected" name="Machine disconnected" triggeredByEvent="true">
+      <bpmn:startEvent id="disconnected_start" name="Machine disconnected">
+        <bpmn:signalEventDefinition id="disconnected_start-def" signalRef="Signal_Machine_disconnected" />
+      </bpmn:startEvent>
+      <bpmn:endEvent id="terminated" name="Stop process">
+        <bpmn:terminateEventDefinition id="terminated-def" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="f-disconnected_start-terminated" sourceRef="disconnected_start" targetRef="terminated" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="f-started-collect" sourceRef="started" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calculate" sourceRef="collect" targetRef="calculate" />
+    <bpmn:sequenceFlow id="f-calculate-below" sourceRef="calculate" targetRef="below" />
+    <bpmn:sequenceFlow id="f-below-stop_parallel" name="yes" sourceRef="below" targetRef="stop_parallel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oee &lt; threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-below-collect" name="no" sourceRef="below" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-stop_parallel-stop_machine" sourceRef="stop_parallel" targetRef="stop_machine" />
+    <bpmn:sequenceFlow id="f-stop_parallel-send_email" sourceRef="stop_parallel" targetRef="send_email" />
+    <bpmn:sequenceFlow id="f-stop_machine-stop_join" sourceRef="stop_machine" targetRef="stop_join" />
+    <bpmn:sequenceFlow id="f-send_email-stop_join" sourceRef="send_email" targetRef="stop_join" />
+    <bpmn:sequenceFlow id="f-stop_join-restarted" sourceRef="stop_join" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f-restarted-collect" sourceRef="restarted" targetRef="collect" />
+  </bpmn:process>
+</bpmn:definitions>

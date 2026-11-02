@@ -1,0 +1,51 @@
+tok 0.1 id=Definitions_1 process=Process_1 namespace=http://www.omg.org/spec/BPMN/20100524/MODEL
+
+user UserTask_1 "Mechanic check a car and enter problems" duration="exp(10m)"
+user UserTask_2 "Pay per App" duration="exp(10m)"
+user UserTask_3 "Save repair infos" duration="exp(10m)"
+user UserTask_4 "Make appointment for next service" duration="exp(10m)"
+user UserTask_5 "Make new appointment" duration="exp(10m)"
+service ServiceTask_1 "Check if car is still registered?" duration="exp(10m)"
+service ServiceTask_2 "User fined" duration="exp(10m)"
+service ServiceTask_3 "Receive updates while waiting" duration="exp(10m)"
+service ServiceTask_4 "Send 'Pickerl'" duration="exp(10m)"
+service ServiceTask_5 "Check appointment for service" duration="exp(10m)"
+send SendTask_1 "Send reminder notification to user" duration="exp(10m)"
+receive ReceiveTask_1 "Received a notificiation" duration="exp(10m)"
+manual ManualTask_1 "Bring Documents for Registration" duration="exp(10m)"
+xor ExclusiveGateway_1 "Registered?"
+xor ExclusiveGateway_2 "Gone to service?"
+xor ExclusiveGateway_3 "> 30 days?"
+xor ExclusiveGateway_4 "Repair done?"
+and ParallelGateway_1
+and ParallelGateway_2
+start StartEvent_1
+end EndEvent_1
+
+flow StartEvent_1 -> ManualTask_1 id=SequenceFlow_1
+flow ManualTask_1 -> ServiceTask_1 id=SequenceFlow_2
+flow ServiceTask_1 -> ExclusiveGateway_1 id=SequenceFlow_3
+flow ExclusiveGateway_1 -> ManualTask_1 "no" id=SequenceFlow_4 p=0.500
+flow SendTask_1 -> ReceiveTask_1 id=SequenceFlow_5
+flow ExclusiveGateway_2 -> UserTask_1 "yes" id=SequenceFlow_6 p=0.500
+flow ExclusiveGateway_3 -> ServiceTask_2 "yes" id=SequenceFlow_7 p=0.500
+flow UserTask_1 -> ServiceTask_3 id=SequenceFlow_8
+flow ServiceTask_3 -> ExclusiveGateway_4 id=SequenceFlow_9
+flow ExclusiveGateway_4 -> UserTask_2 "yes" id=SequenceFlow_10 p=0.500
+flow UserTask_2 -> ParallelGateway_1 id=SequenceFlow_11
+flow ParallelGateway_1 -> UserTask_3 id=SequenceFlow_12
+flow ParallelGateway_1 -> ServiceTask_4 id=SequenceFlow_13
+flow UserTask_3 -> ParallelGateway_2 id=SequenceFlow_14
+flow ServiceTask_4 -> ParallelGateway_2 id=SequenceFlow_15
+flow ParallelGateway_2 -> UserTask_4 id=SequenceFlow_16
+flow ExclusiveGateway_2 -> ExclusiveGateway_3 "no" id=SequenceFlow_17 p=0.500
+flow ExclusiveGateway_4 -> ServiceTask_3 "no" id=SequenceFlow_18 p=0.500
+flow UserTask_4 -> EndEvent_1 id=SequenceFlow_19
+flow ReceiveTask_1 -> ExclusiveGateway_2 id=SequenceFlow_20
+flow ServiceTask_5 -> SendTask_1 id=SequenceFlow_21
+flow ExclusiveGateway_1 -> ServiceTask_5 "yes" id=SequenceFlow_22 p=0.500
+flow ServiceTask_2 -> UserTask_5 id=SequenceFlow_23
+flow UserTask_5 -> ServiceTask_5 id=SequenceFlow_24
+flow ExclusiveGateway_3 -> SendTask_1 "no" id=SequenceFlow_25 p=0.500
+
+simulate cases=500 seed=20261031 arrival="exp(1h)"

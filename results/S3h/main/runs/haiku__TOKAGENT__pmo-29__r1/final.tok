@@ -1,0 +1,50 @@
+tok 1.0 "Work and Live in Austria"
+
+pool austria "Work and Live in Austria"
+  lane applicant "Applicant"
+    start start "Plan to work and live in Austria"
+    task check-requirements "Check requirements for working and living in Austria"
+    xor visa-type "Which visa type?"
+    task apply-d "Apply at the competent Austrian representation (place of residence)"
+    task apply-schengen "Apply at the representation of the main travel destination"
+    xor visa-merge
+    and split-prep
+    task accommodation "Organise accommodation (negotiation)"
+    task bank-account "Organise bank account (negotiation)"
+    task prepare-docs "Prepare visa application documents"
+    and join-prep
+    task submit-application "Submit visa application form with documents"
+    task provide-docs "Provide additional documents"
+    task take-up "Take up work and residence in Austria"
+    catch renewal-due "Visa renewal due (every x months, x not stated)" timer=P12M
+    xor continue "Continue to work and live in Austria?"
+    end stay-ended "Stay ended"
+  lane rep "Representation office (BMEIA)"
+    task review-application "Review visa application"
+    xor complete "Application complete?"
+    task request-docs "Request additional documents"
+    xor grounds "Grounds for refusal (residence prohibition, Schengen alert)?"
+    task refuse-visa "Refuse visa"
+    task issue-visa "Issue visa"
+    end refused "Visa refused"
+
+flow start -> check-requirements -> visa-type
+flow visa-type -> apply-d "Type D (Rot-Weiss-Rot Card)" when=""
+flow visa-type -> apply-schengen "Schengen visa" default
+flow apply-d -> visa-merge
+flow apply-schengen -> visa-merge -> split-prep
+flow split-prep -> accommodation
+flow split-prep -> bank-account
+flow split-prep -> prepare-docs
+flow accommodation -> join-prep
+flow bank-account -> join-prep
+flow prepare-docs -> join-prep -> submit-application -> review-application -> complete
+flow complete -> request-docs "No" when=""
+flow complete -> grounds "Yes" default
+flow request-docs -> provide-docs -> review-application
+flow grounds -> refuse-visa "Yes" when=""
+flow grounds -> issue-visa "No" default
+flow refuse-visa -> refused
+flow issue-visa -> take-up -> renewal-due -> continue
+flow continue -> check-requirements "Yes" when=""
+flow continue -> stay-ended "No" default

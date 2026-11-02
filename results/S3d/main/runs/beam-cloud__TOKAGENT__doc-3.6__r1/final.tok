@@ -1,0 +1,35 @@
+tok 1.0 "Claims Notification"
+
+pool org "Organization"
+  lane handler "Claims handler"
+    start s "Claim received" message="Claim received"
+    task check_insured "Check whether claimant is insured"
+    xor g_insured "Claimant insured?"
+    task inform_reject "Inform claimant that claim must be rejected"
+    end e_rejected "Claim rejected"
+    task evaluate_severity "Evaluate severity of claim"
+    xor g_severity "Claim simple or complex?"
+    task send_simple "Send simple claim forms"
+    task send_complex "Send complex claim forms"
+    xor g_forms "Forms sent"
+    receive receive_forms "Receive returned forms" message="Forms returned"
+    task check_complete "Check forms for completeness"
+    xor g_complete "Forms complete?"
+    task register_claim "Register claim in Claims Management system"
+    end e_done "Claims Notification ended"
+    task inform_update "Inform claimant to update forms"
+    receive receive_updated "Receive updated forms" message="Updated forms returned"
+
+flow s -> check_insured -> g_insured
+flow g_insured -> inform_reject "no" when="insured = false"
+flow g_insured -> evaluate_severity "yes" default
+flow evaluate_severity -> g_severity
+flow g_severity -> send_simple "Simple" when="severity = \"simple\""
+flow g_severity -> send_complex "Complex" default
+flow send_simple -> g_forms
+flow send_complex -> g_forms -> receive_forms -> check_complete -> g_complete
+flow g_complete -> register_claim "Complete" when="complete = true"
+flow g_complete -> inform_update "Incomplete" default
+flow register_claim -> e_done
+flow inform_update -> receive_updated -> check_complete
+flow inform_reject -> e_rejected

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="participant" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_employee" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review_comments</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>receive_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_purchase" name="Purchase Department">
+        <bpmn:flowNodeRef>quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>vendor_valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose_different_vendor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_system" name="System">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generate_send_po</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_notification</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Office supply request submitted" />
+    <bpmn:task id="submit" name="Submit office supply request" />
+    <bpmn:task id="register" name="Register requirement" />
+    <bpmn:task id="receive_request" name="Receive request" />
+    <bpmn:exclusiveGateway id="decision" name="Approve, ask for change or reject?" />
+    <bpmn:task id="review_comments" name="Review comments for change request" />
+    <bpmn:subProcess id="quotations" name="Make quotations">
+      <bpmn:startEvent id="quotations_start" name="Start quotations" />
+      <bpmn:task id="quotations_task" name="Make quotations" />
+      <bpmn:endEvent id="quotations_end" name="End quotations" />
+      <bpmn:sequenceFlow id="qf1" sourceRef="quotations_start" targetRef="quotations_task" />
+      <bpmn:sequenceFlow id="qf2" sourceRef="quotations_task" targetRef="quotations_end" />
+    </bpmn:subProcess>
+    <bpmn:task id="select_vendor" name="Select a vendor" />
+    <bpmn:exclusiveGateway id="vendor_valid" name="Vendor valid?" />
+    <bpmn:task id="choose_different_vendor" name="Choose a different vendor" />
+    <bpmn:task id="generate_send_po" name="Generate and send purchase order" />
+    <bpmn:parallelGateway id="parallel_split" />
+    <bpmn:task id="receive_product" name="Receive product delivery" />
+    <bpmn:task id="receive_invoice" name="Receive invoice" />
+    <bpmn:parallelGateway id="parallel_join" />
+    <bpmn:task id="send_notification" name="Send notification" />
+    <bpmn:endEvent id="end" name="Process ended" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="submit" />
+    <bpmn:sequenceFlow id="f2" sourceRef="submit" targetRef="register" />
+    <bpmn:sequenceFlow id="f3" sourceRef="register" targetRef="receive_request" />
+    <bpmn:sequenceFlow id="f4" sourceRef="receive_request" targetRef="decision" />
+    <bpmn:sequenceFlow id="f5" name="approved" sourceRef="decision" targetRef="quotations" />
+    <bpmn:sequenceFlow id="f6" name="ask for change" sourceRef="decision" targetRef="review_comments" />
+    <bpmn:sequenceFlow id="f7" name="rejected" sourceRef="decision" targetRef="send_notification" />
+    <bpmn:sequenceFlow id="f8" sourceRef="review_comments" targetRef="send_notification" />
+    <bpmn:sequenceFlow id="f9" sourceRef="quotations" targetRef="select_vendor" />
+    <bpmn:sequenceFlow id="f10" sourceRef="select_vendor" targetRef="vendor_valid" />
+    <bpmn:sequenceFlow id="f11" name="valid" sourceRef="vendor_valid" targetRef="generate_send_po" />
+    <bpmn:sequenceFlow id="f12" name="not valid" sourceRef="vendor_valid" targetRef="choose_different_vendor" />
+    <bpmn:sequenceFlow id="f13" sourceRef="choose_different_vendor" targetRef="vendor_valid" />
+    <bpmn:sequenceFlow id="f14" sourceRef="generate_send_po" targetRef="parallel_split" />
+    <bpmn:sequenceFlow id="f15" sourceRef="parallel_split" targetRef="receive_product" />
+    <bpmn:sequenceFlow id="f16" sourceRef="parallel_split" targetRef="receive_invoice" />
+    <bpmn:sequenceFlow id="f17" sourceRef="receive_product" targetRef="parallel_join" />
+    <bpmn:sequenceFlow id="f18" sourceRef="receive_invoice" targetRef="parallel_join" />
+    <bpmn:sequenceFlow id="f19" sourceRef="parallel_join" targetRef="send_notification" />
+    <bpmn:sequenceFlow id="f20" sourceRef="send_notification" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

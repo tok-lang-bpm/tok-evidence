@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Update_materials_list" name="Update materials list" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="farmco" name="Farming Bot" processRef="farmco-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="farmco-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="farmco-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>wants</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prefs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>urgency</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orsplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orjoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming bot">
+        <bpmn:flowNodeRef>startfarm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>farmfork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>farm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disaster</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>setback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>farmdone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updates</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="wants" name="Player wants a custom farming bot" />
+    <bpmn:task id="choose" name="Choose the resources you want" />
+    <bpmn:parallelGateway id="prefs" />
+    <bpmn:task id="urgency" name="Set how urgently each resource is needed" />
+    <bpmn:task id="deps" name="Define the tool dependencies between resources" />
+    <bpmn:parallelGateway id="collected" />
+    <bpmn:inclusiveGateway id="orsplit" default="f-orsplit-send" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="send" name="Send materials to selected friends" />
+    <bpmn:inclusiveGateway id="orjoin" />
+    <bpmn:endEvent id="done" name="Bot finished" />
+    <bpmn:task id="startfarm" name="Start farming" />
+    <bpmn:parallelGateway id="farmfork" />
+    <bpmn:task id="farm" name="Farm the resources" />
+    <bpmn:exclusiveGateway id="disaster" name="Natural disaster strikes?" />
+    <bpmn:task id="setback" name="Set the bot back" />
+    <bpmn:task id="notify" name="Notify the player when milestones are reached" />
+    <bpmn:parallelGateway id="farmdone" />
+    <bpmn:subProcess id="updates" name="Update the list of materials to farm" triggeredByEvent="true">
+      <bpmn:startEvent id="updreq" name="Update requested">
+        <bpmn:messageEventDefinition id="updreq-def" messageRef="Message_Update_materials_list" />
+      </bpmn:startEvent>
+      <bpmn:task id="upd" name="Update the list of materials to farm" />
+      <bpmn:endEvent id="updated" name="List updated" />
+      <bpmn:sequenceFlow id="f-updreq-upd" sourceRef="updreq" targetRef="upd" />
+      <bpmn:sequenceFlow id="f-upd-updated" sourceRef="upd" targetRef="updated" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="f-wants-choose" sourceRef="wants" targetRef="choose" />
+    <bpmn:sequenceFlow id="f-choose-prefs" sourceRef="choose" targetRef="prefs" />
+    <bpmn:sequenceFlow id="f-prefs-urgency" sourceRef="prefs" targetRef="urgency" />
+    <bpmn:sequenceFlow id="f-urgency-collected" sourceRef="urgency" targetRef="collected" />
+    <bpmn:sequenceFlow id="f-prefs-deps" sourceRef="prefs" targetRef="deps" />
+    <bpmn:sequenceFlow id="f-deps-collected" sourceRef="deps" targetRef="collected" />
+    <bpmn:sequenceFlow id="f-collected-startfarm" sourceRef="collected" targetRef="startfarm" />
+    <bpmn:sequenceFlow id="f-startfarm-farmfork" sourceRef="startfarm" targetRef="farmfork" />
+    <bpmn:sequenceFlow id="f-farmfork-farm" sourceRef="farmfork" targetRef="farm" />
+    <bpmn:sequenceFlow id="f-farm-disaster" sourceRef="farm" targetRef="disaster" />
+    <bpmn:sequenceFlow id="f-farmfork-notify" sourceRef="farmfork" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-farmdone" sourceRef="notify" targetRef="farmdone" />
+    <bpmn:sequenceFlow id="f-disaster-setback" name="yes" sourceRef="disaster" targetRef="setback" />
+    <bpmn:sequenceFlow id="f-setback-farm" sourceRef="setback" targetRef="farm" />
+    <bpmn:sequenceFlow id="f-disaster-farmdone" name="no" sourceRef="disaster" targetRef="farmdone" />
+    <bpmn:sequenceFlow id="f-farmdone-orsplit" sourceRef="farmdone" targetRef="orsplit" />
+    <bpmn:sequenceFlow id="f-orsplit-brag" name="Brag to friends" sourceRef="orsplit" targetRef="brag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">brag_wanted = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-orsplit-send" name="Send materials to friends" sourceRef="orsplit" targetRef="send" />
+    <bpmn:sequenceFlow id="f-brag-orjoin" sourceRef="brag" targetRef="orjoin" />
+    <bpmn:sequenceFlow id="f-send-orjoin" sourceRef="send" targetRef="orjoin" />
+    <bpmn:sequenceFlow id="f-orjoin-done" sourceRef="orjoin" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

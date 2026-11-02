@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organization" processRef="process1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="claimsOfficer" name="Claims Officer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkInsurance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informRejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evaluateSeverity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informUpdate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveUpdatedForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="claimsSystem" name="Claims Management System">
+        <bpmn:flowNodeRef>registerClaim</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Claim received" />
+    <bpmn:task id="checkInsurance" name="Check claimant insurance" />
+    <bpmn:exclusiveGateway id="insuredGateway" name="Insured?" />
+    <bpmn:task id="informRejection" name="Inform claimant of rejection" />
+    <bpmn:endEvent id="endReject" name="Process terminated (rejected)" />
+    <bpmn:task id="evaluateSeverity" name="Evaluate claim severity" />
+    <bpmn:task id="sendForms" name="Send relevant forms to claimant" />
+    <bpmn:task id="receiveForms" name="Receive returned forms" />
+    <bpmn:task id="checkForms" name="Check forms completeness" />
+    <bpmn:exclusiveGateway id="formsCompleteGateway" name="Forms complete?" />
+    <bpmn:serviceTask id="registerClaim" name="Register claim in Claims Management system" />
+    <bpmn:endEvent id="endSuccess" name="Claims Notification process completed" />
+    <bpmn:task id="informUpdate" name="Inform claimant to update forms" />
+    <bpmn:task id="receiveUpdatedForms" name="Receive updated forms" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="checkInsurance" />
+    <bpmn:sequenceFlow id="f2" sourceRef="checkInsurance" targetRef="insuredGateway" />
+    <bpmn:sequenceFlow id="f3" name="no" sourceRef="insuredGateway" targetRef="informRejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">insured == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f4" sourceRef="informRejection" targetRef="endReject" />
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="insuredGateway" targetRef="evaluateSeverity">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">insured == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" sourceRef="evaluateSeverity" targetRef="sendForms" />
+    <bpmn:sequenceFlow id="f7" sourceRef="sendForms" targetRef="receiveForms" />
+    <bpmn:sequenceFlow id="f8" sourceRef="receiveForms" targetRef="checkForms" />
+    <bpmn:sequenceFlow id="f9" name="yes" sourceRef="formsCompleteGateway" targetRef="registerClaim">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">complete == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f10" sourceRef="registerClaim" targetRef="endSuccess" />
+    <bpmn:sequenceFlow id="f11" name="no" sourceRef="formsCompleteGateway" targetRef="informUpdate">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">complete == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f12" sourceRef="informUpdate" targetRef="receiveUpdatedForms" />
+    <bpmn:sequenceFlow id="f13" sourceRef="receiveUpdatedForms" targetRef="checkForms" />
+  </bpmn:process>
+</bpmn:definitions>

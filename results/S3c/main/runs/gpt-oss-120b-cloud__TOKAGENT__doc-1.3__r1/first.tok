@@ -1,0 +1,36 @@
+tok 1.0
+
+pool evanstonian "The Evanstonian" {
+  lane manager "Room-service manager"
+  lane kitchen "Kitchen"
+  lane sommelier "Sommelier"
+  lane waiter "Waiter"
+}
+
+// Manager tasks
+start -> take_down_order "Take down order"
+flow take_down_order -> submit_order_to_kitchen "Submit order ticket to kitchen"
+flow submit_order_to_kitchen -> give_order_to_sommelier "Give order to sommelier"
+flow give_order_to_sommelier -> assign_order_to_waiter "Assign order to waiter"
+
+// Parallel split after manager assigns
+xor split_parallel {
+  flow assign_order_to_waiter -> prepare_food "Prepare food"
+  flow assign_order_to_waiter -> fetch_wine "Fetch wine and prepare alcoholic beverages" when="includes_alcoholic = true"
+  flow assign_order_to_waiter -> ready_cart_and_drinks "Ready cart and prepare nonalcoholic drinks"
+}
+
+prepare_food -> end_food "Food ready"
+fetch_wine -> end_wine "Wine ready"
+ready_cart_and_drinks -> end_cart "Cart ready"
+
+and join_ready {
+  flow end_food -> join_ready
+  flow end_wine -> join_ready
+  flow end_cart -> join_ready
+}
+
+flow join_ready -> deliver_order "Deliver order to guest room"
+flow deliver_order -> debit_account "Debit guest account"
+
+end debit_account

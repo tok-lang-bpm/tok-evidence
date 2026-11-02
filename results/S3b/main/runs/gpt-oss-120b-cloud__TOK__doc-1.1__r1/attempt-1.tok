@@ -1,0 +1,56 @@
+tok 1.0 "Custom Bicycle Manufacturing"
+
+pool org "Custom Bicycle Company"
+  lane sales "Sales Department"
+    start start "Receive order"
+    xor decision "Order accepted?"
+    task reject "Reject order"
+    end rejected "Order rejected"
+    task accept "Accept order"
+    task inform_storehouse "Inform storehouse"
+    task inform_engineering "Inform engineering"
+    and split
+    task ship "Ship bicycle"
+    end completed "Process completed"
+
+  lane storehouse "Storehouse"
+    task process_part_list "Process part list"
+    task check_quantity "Check required quantity"
+    xor part_available "Part available?"
+    task reserve "Reserve part"
+    task back_order "Back-order part"
+    task part_done "Part processing completed"
+    and join
+
+  lane engineering "Engineering Department"
+    task prepare_assembly "Prepare assembling"
+    task assemble "Assemble bicycle"
+
+# Sequence flows
+flow start -> decision
+flow decision -> reject "Reject"
+flow decision -> accept "Accept"
+flow reject -> rejected
+flow accept -> inform_storehouse
+flow inform_storehouse -> inform_engineering
+flow inform_engineering -> split
+flow split -> process_part_list
+flow split -> prepare_assembly
+
+# Storehouse processing
+flow process_part_list -> check_quantity
+flow check_quantity -> part_available
+flow part_available -> reserve "yes"
+flow part_available -> back_order "no"
+flow reserve -> check_quantity
+flow back_order -> check_quantity
+flow check_quantity -> part_done default
+flow part_done -> join
+
+# Engineering preparation
+flow prepare_assembly -> join
+
+# After both storehouse and engineering ready
+flow join -> assemble
+flow assemble -> ship
+flow ship -> completed

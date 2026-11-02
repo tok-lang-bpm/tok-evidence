@@ -1,0 +1,53 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="loan-approval-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="loan-approval-process" isExecutable="false">
+    <bpmn:laneSet id="loan-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>request-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback-received</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Loan System">
+        <bpmn:flowNodeRef>invoke-risk-assessment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assess-decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve-loan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny-loan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-to-approver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review-merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="request-received" name="Loan request received" />
+    <bpmn:serviceTask id="invoke-risk-assessment" name="Invoke the risk assessment Web service" />
+    <bpmn:exclusiveGateway id="assess-decision" name="Route the request" default="flow-send-to-approver" />
+    <bpmn:task id="approve-loan" name="Approve the loan" />
+    <bpmn:task id="deny-loan" name="Deny the loan" />
+    <bpmn:serviceTask id="send-to-approver" name="Send the request to the approver Web service" />
+    <bpmn:exclusiveGateway id="review-merge" name="Merge outcomes" />
+    <bpmn:task id="receive-feedback" name="Receive feedback from the assessor or approver" />
+    <bpmn:endEvent id="feedback-received" name="Feedback received" />
+    <bpmn:sequenceFlow id="flow-start" sourceRef="request-received" targetRef="invoke-risk-assessment" />
+    <bpmn:sequenceFlow id="flow-assessed" sourceRef="invoke-risk-assessment" targetRef="assess-decision" />
+    <bpmn:sequenceFlow id="flow-approve" name="small loan and low risk" sourceRef="assess-decision" targetRef="approve-loan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">loanAmount &lt; 10000 and riskLevel = 'low'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-deny" name="high risk" sourceRef="assess-decision" targetRef="deny-loan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">riskLevel = 'high'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-send-to-approver" name="further review or amount of 10,000 or more" sourceRef="assess-decision" targetRef="send-to-approver">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">needsReview = true or loanAmount &gt;= 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-approved" sourceRef="approve-loan" targetRef="review-merge" />
+    <bpmn:sequenceFlow id="flow-denied" sourceRef="deny-loan" targetRef="review-merge" />
+    <bpmn:sequenceFlow id="flow-approver-done" sourceRef="send-to-approver" targetRef="review-merge" />
+    <bpmn:sequenceFlow id="flow-feedback" sourceRef="review-merge" targetRef="receive-feedback" />
+    <bpmn:sequenceFlow id="flow-end" sourceRef="receive-feedback" targetRef="feedback-received" />
+  </bpmn:process>
+</bpmn:definitions>
+```

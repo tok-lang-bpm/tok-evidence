@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:signal id="Signal_natural_disaster" name="natural disaster" />
+  <bpmn:signal id="Signal_milestone_reached" name="milestone reached" />
+  <bpmn:signal id="Signal_update_list_requested" name="update list requested" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="farm" name="Farming Bot" processRef="farm-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="farm-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="farm-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>listed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notified</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Bot">
+        <bpmn:flowNodeRef>startfarming</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>farming</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disaster</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>milestone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateevent</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Player wants to create a custom farming bot" />
+    <bpmn:task id="find" name="Find out which resources you want" />
+    <bpmn:task id="update" name="Update the list of to be farmed materials" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="send" name="Send them materials" />
+    <bpmn:inclusiveGateway id="choice" name="Brag and/or send materials?" default="f-choice-joined" />
+    <bpmn:inclusiveGateway id="joined" name="Bragging and sending done" />
+    <bpmn:endEvent id="done" name="Finished" />
+    <bpmn:endEvent id="listed" name="List updated" />
+    <bpmn:endEvent id="notified" name="Milestone notified" />
+    <bpmn:task id="startfarming" name="Start farming" />
+    <bpmn:task id="recover" name="Recover from natural disaster" />
+    <bpmn:task id="notify" name="Notify that a milestone is reached" />
+    <bpmn:subProcess id="farming" name="Farm resources">
+      <bpmn:startEvent id="fs" name="Farming started" />
+      <bpmn:task id="gather" name="Gather resources">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+      </bpmn:task>
+      <bpmn:endEvent id="fe" name="Farming finished" />
+      <bpmn:sequenceFlow id="f-fs-gather" sourceRef="fs" targetRef="gather" />
+      <bpmn:sequenceFlow id="f-gather-fe" sourceRef="gather" targetRef="fe" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="disaster" attachedToRef="farming">
+      <bpmn:signalEventDefinition id="disaster-def" signalRef="Signal_natural_disaster" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="milestone" attachedToRef="farming" cancelActivity="false">
+      <bpmn:signalEventDefinition id="milestone-def" signalRef="Signal_milestone_reached" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="updateevent" attachedToRef="farming" cancelActivity="false">
+      <bpmn:signalEventDefinition id="updateevent-def" signalRef="Signal_update_list_requested" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-start-find" sourceRef="start" targetRef="find" />
+    <bpmn:sequenceFlow id="f-find-startfarming" sourceRef="find" targetRef="startfarming" />
+    <bpmn:sequenceFlow id="f-startfarming-farming" sourceRef="startfarming" targetRef="farming" />
+    <bpmn:sequenceFlow id="f-farming-choice" sourceRef="farming" targetRef="choice" />
+    <bpmn:sequenceFlow id="f-choice-brag" name="Brag" sourceRef="choice" targetRef="brag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">brag</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-choice-send" name="Send materials" sourceRef="choice" targetRef="send">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">send</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-choice-joined" sourceRef="choice" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-brag-joined" sourceRef="brag" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-send-joined" sourceRef="send" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-joined-done" sourceRef="joined" targetRef="done" />
+    <bpmn:sequenceFlow id="f-disaster-recover" sourceRef="disaster" targetRef="recover" />
+    <bpmn:sequenceFlow id="f-recover-farming" sourceRef="recover" targetRef="farming" />
+    <bpmn:sequenceFlow id="f-milestone-notify" sourceRef="milestone" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-notified" sourceRef="notify" targetRef="notified" />
+    <bpmn:sequenceFlow id="f-updateevent-update" sourceRef="updateevent" targetRef="update" />
+    <bpmn:sequenceFlow id="f-update-listed" sourceRef="update" targetRef="listed" />
+  </bpmn:process>
+</bpmn:definitions>

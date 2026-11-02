@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="subscription-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="subscription-process" isExecutable="false">
+    <bpmn:laneSet id="lane-set">
+      <bpmn:lane id="customer-lane" name="Customer">
+        <bpmn:flowNodeRef>start-signup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-info</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notification-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-updates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-enhancements</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-renewals</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notification-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel-decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit-cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>subscription-continues</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system-lane" name="System">
+        <bpmn:flowNodeRef>generate-account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign-access</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>trigger-billing</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="support-lane" name="Support team">
+        <bpmn:flowNodeRef>process-cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terms-decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>apply-refund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>apply-charge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terms-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conclusion-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deactivate-subscription</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>settle-balance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conclusion-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>subscription-ended</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start-signup" name="Customer signs up for subscription service" />
+    <bpmn:task id="enter-info" name="Enter personal and payment information" />
+    <bpmn:task id="generate-account" name="Generate account" />
+    <bpmn:task id="assign-access" name="Assign access" />
+    <bpmn:task id="trigger-billing" name="Trigger automated billing cycles" />
+    <bpmn:inclusiveGateway id="notification-split" />
+    <bpmn:task id="receive-updates" name="Receive regular updates" />
+    <bpmn:task id="receive-enhancements" name="Receive product enhancements" />
+    <bpmn:task id="receive-renewals" name="Receive renewal notifications" />
+    <bpmn:inclusiveGateway id="notification-join" />
+    <bpmn:exclusiveGateway id="cancel-decision" name="Customer decides to cancel?" default="flow-no-cancel" />
+    <bpmn:task id="submit-cancellation" name="Submit cancellation request" />
+    <bpmn:task id="process-cancellation" name="Process cancellation request" />
+    <bpmn:exclusiveGateway id="terms-decision" name="Refund or charge?" default="flow-charge" />
+    <bpmn:task id="apply-refund" name="Apply refund" />
+    <bpmn:task id="apply-charge" name="Apply charge" />
+    <bpmn:exclusiveGateway id="terms-join" />
+    <bpmn:parallelGateway id="conclusion-split" />
+    <bpmn:task id="deactivate-subscription" name="Deactivate subscription" />
+    <bpmn:task id="settle-balance" name="Settle final account balance" />
+    <bpmn:parallelGateway id="conclusion-join" />
+    <bpmn:endEvent id="subscription-continues" name="Subscription continues" />
+    <bpmn:endEvent id="subscription-ended" name="Subscription deactivated and balance settled" />
+
+    <bpmn:sequenceFlow id="flow-start" sourceRef="start-signup" targetRef="enter-info" />
+    <bpmn:sequenceFlow id="flow-enter" sourceRef="enter-info" targetRef="generate-account" />
+    <bpmn:sequenceFlow id="flow-generate" sourceRef="generate-account" targetRef="assign-access" />
+    <bpmn:sequenceFlow id="flow-assign" sourceRef="assign-access" targetRef="trigger-billing" />
+    <bpmn:sequenceFlow id="flow-trigger" sourceRef="trigger-billing" targetRef="notification-split" />
+    <bpmn:sequenceFlow id="flow-notify-updates" sourceRef="notification-split" targetRef="receive-updates" />
+    <bpmn:sequenceFlow id="flow-notify-enhancements" sourceRef="notification-split" targetRef="receive-enhancements" />
+    <bpmn:sequenceFlow id="flow-notify-renewals" sourceRef="notification-split" targetRef="receive-renewals" />
+    <bpmn:sequenceFlow id="flow-updates-join" sourceRef="receive-updates" targetRef="notification-join" />
+    <bpmn:sequenceFlow id="flow-enhancements-join" sourceRef="receive-enhancements" targetRef="notification-join" />
+    <bpmn:sequenceFlow id="flow-renewals-join" sourceRef="receive-renewals" targetRef="notification-join" />
+    <bpmn:sequenceFlow id="flow-to-cancel" sourceRef="notification-join" targetRef="cancel-decision" />
+    <bpmn:sequenceFlow id="flow-cancel-yes" name="yes" sourceRef="cancel-decision" targetRef="submit-cancellation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">cancel == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-no-cancel" name="no" sourceRef="cancel-decision" targetRef="subscription-continues" />
+    <bpmn:sequenceFlow id="flow-submit" sourceRef="submit-cancellation" targetRef="process-cancellation" />
+    <bpmn:sequenceFlow id="flow-process" sourceRef="process-cancellation" targetRef="terms-decision" />
+    <bpmn:sequenceFlow id="flow-refund" name="refund" sourceRef="terms-decision" targetRef="apply-refund">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">refundApplicable == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-charge" name="charge" sourceRef="terms-decision" targetRef="apply-charge" />
+    <bpmn:sequenceFlow id="flow-refund-join" sourceRef="apply-refund" targetRef="terms-join" />
+    <bpmn:sequenceFlow id="flow-charge-join" sourceRef="apply-charge" targetRef="terms-join" />
+    <bpmn:sequenceFlow id="flow-terms" sourceRef="terms-join" targetRef="conclusion-split" />
+    <bpmn:sequenceFlow id="flow-deactivate" sourceRef="conclusion-split" targetRef="deactivate-subscription" />
+    <bpmn:sequenceFlow id="flow-settle" sourceRef="conclusion-split" targetRef="settle-balance" />
+    <bpmn:sequenceFlow id="flow-deactivate-join" sourceRef="deactivate-subscription" targetRef="conclusion-join" />
+    <bpmn:sequenceFlow id="flow-settle-join" sourceRef="settle-balance" targetRef="conclusion-join" />
+    <bpmn:sequenceFlow id="flow-end" sourceRef="conclusion-join" targetRef="subscription-ended" />
+  </bpmn:process>
+</bpmn:definitions>

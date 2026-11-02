@@ -1,0 +1,45 @@
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online shop"
+  lane customer "Customer"
+    start c-start "Start"
+    task log-in "Log in"
+    xor merge-products
+    task select-product "Select product"
+    task add-to-cart "Add product to shopping cart"
+    task save-product "Save product"
+    xor all-selected "All products selected?"
+    task enter-payment "Enter payment data"
+    catch payment-confirmed "Payment confirmed" message="Payment confirmation"
+    task enter-shipping "Enter shipping address"
+    xor billing-differs "Billing address differs from shipping address?"
+    task enter-billing "Enter billing address"
+    xor merge-billing
+    and join-prep
+  lane system "Shopping system"
+    task check-credentials "Check credentials"
+    task confirm-login "Confirm login"
+    xor login-ok "Login successful?"
+    end stop-shop "Shopping experience stopped"
+    task finish-order "Finish order"
+    and split-prep
+    task complete-order "Complete order"
+    end c-end "Order finished"
+
+pool bank "Bank"
+
+flow c-start -> log-in -> check-credentials -> confirm-login -> login-ok
+flow login-ok -> merge-products "yes" when="login-ok = true"
+flow login-ok -> stop-shop "no" default
+flow merge-products -> select-product -> add-to-cart -> save-product -> all-selected
+flow all-selected -> merge-products "no" when="all-selected = false"
+flow all-selected -> finish-order "yes" when="all-selected = true"
+flow finish-order -> split-prep
+flow split-prep -> enter-payment -> payment-confirmed -> join-prep
+flow split-prep -> enter-shipping -> billing-differs
+flow billing-differs -> enter-billing "yes" when="billing-differs = true"
+flow billing-differs -> merge-billing "no" default
+flow enter-billing -> merge-billing -> join-prep
+flow join-prep -> complete-order -> c-end
+
+message bank -> payment-confirmed "Payment confirmation"

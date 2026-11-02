@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mail processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mail processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mail_processing_unit" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distribute</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mail_clerk" name="Mail Clerk">
+        <bpmn:flowNodeRef>sort_unopened</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="registry" name="Registry">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>open</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sort_groups</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="assistant" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>quality_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compliant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compile_requisition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_back</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_matter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide_matter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>concurrent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>put_envelope</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post_party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>concurrent_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returned</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cashier" name="Cashier">
+        <bpmn:flowNodeRef>take_fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print_file</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Mail processing starts" />
+    <bpmn:task id="collect" name="Collect mail" />
+    <bpmn:task id="distribute" name="Distribute mail" />
+    <bpmn:task id="sort_unopened" name="Sort unopened mail" />
+    <bpmn:task id="receive" name="Receive mail" />
+    <bpmn:task id="open" name="Open mail" />
+    <bpmn:task id="sort_groups" name="Sort into groups" />
+    <bpmn:task id="register" name="Register mail" />
+    <bpmn:task id="quality_check" name="Perform quality check" />
+    <bpmn:exclusiveGateway id="compliant" name="Mail compliant?" default="f-compliant-compile_requisition" />
+    <bpmn:task id="compile_requisition" name="Compile list of requisition" />
+    <bpmn:task id="send_back" name="Send back to party" />
+    <bpmn:task id="capture_matter" name="Capture matter details" />
+    <bpmn:task id="provide_matter" name="Provide matter details to Cashier" />
+    <bpmn:parallelGateway id="concurrent" name="Perform concurrent tasks" />
+    <bpmn:task id="put_envelope" name="Put receipt and copied documents into envelope" />
+    <bpmn:task id="post_party" name="Post to party" />
+    <bpmn:parallelGateway id="concurrent_done" name="Concurrent tasks completed" />
+    <bpmn:endEvent id="completed" name="Mail processing completed" />
+    <bpmn:endEvent id="returned" name="Mail returned to party" />
+    <bpmn:task id="take_fees" name="Take applicable fees" />
+    <bpmn:task id="capture_party" name="Capture party details" />
+    <bpmn:task id="print_file" name="Print physical court file" />
+    <bpmn:sequenceFlow id="f-start-collect" sourceRef="start" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-sort_unopened" sourceRef="collect" targetRef="sort_unopened" />
+    <bpmn:sequenceFlow id="f-sort_unopened-distribute" sourceRef="sort_unopened" targetRef="distribute" />
+    <bpmn:sequenceFlow id="f-distribute-receive" sourceRef="distribute" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-open" sourceRef="receive" targetRef="open" />
+    <bpmn:sequenceFlow id="f-open-sort_groups" sourceRef="open" targetRef="sort_groups" />
+    <bpmn:sequenceFlow id="f-sort_groups-register" sourceRef="sort_groups" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-quality_check" sourceRef="register" targetRef="quality_check" />
+    <bpmn:sequenceFlow id="f-quality_check-compliant" sourceRef="quality_check" targetRef="compliant" />
+    <bpmn:sequenceFlow id="f-compliant-capture_matter" name="Yes" sourceRef="compliant" targetRef="capture_matter">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">compliant</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-compliant-compile_requisition" name="No" sourceRef="compliant" targetRef="compile_requisition" />
+    <bpmn:sequenceFlow id="f-capture_matter-provide_matter" sourceRef="capture_matter" targetRef="provide_matter" />
+    <bpmn:sequenceFlow id="f-provide_matter-take_fees" sourceRef="provide_matter" targetRef="take_fees" />
+    <bpmn:sequenceFlow id="f-take_fees-concurrent" sourceRef="take_fees" targetRef="concurrent" />
+    <bpmn:sequenceFlow id="f-concurrent-put_envelope" sourceRef="concurrent" targetRef="put_envelope" />
+    <bpmn:sequenceFlow id="f-concurrent-capture_party" sourceRef="concurrent" targetRef="capture_party" />
+    <bpmn:sequenceFlow id="f-put_envelope-post_party" sourceRef="put_envelope" targetRef="post_party" />
+    <bpmn:sequenceFlow id="f-post_party-concurrent_done" sourceRef="post_party" targetRef="concurrent_done" />
+    <bpmn:sequenceFlow id="f-capture_party-print_file" sourceRef="capture_party" targetRef="print_file" />
+    <bpmn:sequenceFlow id="f-print_file-concurrent_done" sourceRef="print_file" targetRef="concurrent_done" />
+    <bpmn:sequenceFlow id="f-concurrent_done-completed" sourceRef="concurrent_done" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-compile_requisition-send_back" sourceRef="compile_requisition" targetRef="send_back" />
+    <bpmn:sequenceFlow id="f-send_back-returned" sourceRef="send_back" targetRef="returned" />
+  </bpmn:process>
+</bpmn:definitions>

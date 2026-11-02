@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgCarArrives" name="Car arrives at the service facility" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Police car service reminder" processRef="CAR_SERVICE" />
+  </bpmn:collaboration>
+  <bpmn:process id="CAR_SERVICE" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="OWNER" name="Car owner">
+        <bpmn:flowNodeRef>payRepair</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="POLICE_APP" name="Police app system">
+        <bpmn:flowNodeRef>serviceDue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkRegistration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registeredQ</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyOwner</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>goesToServiceQ</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait30Days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fineOwner</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ownerFined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendStatusUpdate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reminderStopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="MECHANIC" name="Mechanic at car service facility">
+        <bpmn:flowNodeRef>carArrives</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>repairCar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>repairDoneQ</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitAfterRepair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinAfterRepair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterNextService</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>serviceCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="serviceDue" name="Successful service completed" />
+    <bpmn:task id="checkRegistration" name="Check whether the car is still registered" />
+    <bpmn:exclusiveGateway id="registeredQ" name="Car still registered?" />
+    <bpmn:task id="notifyOwner" name="Notify the owner of the service" />
+    <bpmn:eventBasedGateway id="goesToServiceQ" name="Owner goes to the service?" />
+    <bpmn:intermediateCatchEvent id="carArrives" name="Car arrives at the service facility">
+      <bpmn:messageEventDefinition messageRef="msgCarArrives" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="wait30Days" name="30 days after notification">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="fineOwner" name="Fine the owner" />
+    <bpmn:endEvent id="ownerFined" name="Owner fined" />
+    <bpmn:endEvent id="reminderStopped" name="Service reminder stopped" />
+    <bpmn:task id="enterProblems" name="Enter the problems of the car" />
+    <bpmn:exclusiveGateway id="waitMerge" />
+    <bpmn:task id="repairCar" name="Repair the car" />
+    <bpmn:exclusiveGateway id="repairDoneQ" name="Repair done?" />
+    <bpmn:task id="sendStatusUpdate" name="Send status update by email" />
+    <bpmn:parallelGateway id="splitAfterRepair" />
+    <bpmn:task id="payRepair" name="Pay the repair through the app" />
+    <bpmn:task id="enterSuccess" name="Enter the successful repair and the Pickerl" />
+    <bpmn:parallelGateway id="joinAfterRepair" />
+    <bpmn:task id="enterNextService" name="Enter the time of the next service" />
+    <bpmn:endEvent id="serviceCompleted" name="Service completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="serviceDue" targetRef="checkRegistration" />
+    <bpmn:sequenceFlow id="f2" sourceRef="checkRegistration" targetRef="registeredQ" />
+    <bpmn:sequenceFlow id="f3" name="yes" sourceRef="registeredQ" targetRef="notifyOwner" />
+    <bpmn:sequenceFlow id="f4" name="no" sourceRef="registeredQ" targetRef="reminderStopped" />
+    <bpmn:sequenceFlow id="f5" sourceRef="notifyOwner" targetRef="goesToServiceQ" />
+    <bpmn:sequenceFlow id="f6" sourceRef="goesToServiceQ" targetRef="carArrives" />
+    <bpmn:sequenceFlow id="f7" sourceRef="goesToServiceQ" targetRef="wait30Days" />
+    <bpmn:sequenceFlow id="f8" sourceRef="wait30Days" targetRef="fineOwner" />
+    <bpmn:sequenceFlow id="f9" sourceRef="fineOwner" targetRef="ownerFined" />
+    <bpmn:sequenceFlow id="f10" sourceRef="carArrives" targetRef="enterProblems" />
+    <bpmn:sequenceFlow id="f11" sourceRef="enterProblems" targetRef="waitMerge" />
+    <bpmn:sequenceFlow id="f12" sourceRef="waitMerge" targetRef="repairCar" />
+    <bpmn:sequenceFlow id="f13" sourceRef="repairCar" targetRef="repairDoneQ" />
+    <bpmn:sequenceFlow id="f14" name="no" sourceRef="repairDoneQ" targetRef="sendStatusUpdate" />
+    <bpmn:sequenceFlow id="f15" sourceRef="sendStatusUpdate" targetRef="waitMerge" />
+    <bpmn:sequenceFlow id="f16" name="yes" sourceRef="repairDoneQ" targetRef="splitAfterRepair" />
+    <bpmn:sequenceFlow id="f17" sourceRef="splitAfterRepair" targetRef="payRepair" />
+    <bpmn:sequenceFlow id="f18" sourceRef="splitAfterRepair" targetRef="enterSuccess" />
+    <bpmn:sequenceFlow id="f19" sourceRef="payRepair" targetRef="joinAfterRepair" />
+    <bpmn:sequenceFlow id="f20" sourceRef="enterSuccess" targetRef="joinAfterRepair" />
+    <bpmn:sequenceFlow id="f21" sourceRef="joinAfterRepair" targetRef="enterNextService" />
+    <bpmn:sequenceFlow id="f22" sourceRef="enterNextService" targetRef="serviceCompleted" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,97 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process is initiated by a switch-over request. In doing so, the customer transmits his data to the customer service department of the company. Customer service is a shared service center between the departments Sales and Distribution. The customer data is received by customer service and based on this data a customer data object is entered into the CRM system. After customer data has been entered it should then be compared with the internal customer data base and checked for completeness and plausibility. In case of any errors these should be corrected on the basis of a simple error list. The comparison of data is done to prevent individual customer data being stored multiple times. In case the customer does not exist in the customer data base, a new customer object is being created which will remain the data object of interest during the rest of the process flow. This object consists of data elements such as the customer's name and address and the assigned power gauge. The generated customer object is then used, in combination with other customer data to prepare the contract documents for the power supplier switch (including data such as bank connection, information on the selected rate, requested date of switch-over). In the following an automated check of the contract documents is carried out within the CIS (customer information system) in order to confirm their successful generation. In case of a negative response, i.e. the contract documents are not (or incorrectly) generated, the causing issues are being analyzed and resolved. Subsequently the contract documents are generated once again. In case of a positive response a confirmation document is sent out to the customer stating that the switch-over to the new supplier can be executed. A request to the grid operator is automatically sent out by the CIS. It puts the question whether the customer may be supplied by the selected supplier in the future. The switch-over request is checked by the grid operator for supplier concurrence, and the grid operator transmits a response comment. In the case of supplier concurrence the grid operator would inform all involved suppliers and demand the resolution of the conflict. The grid operator communicates with the old supplier and carries out the termination of the sales agreement between the customer and the old supplier (i.e. the customer service (of the new supplier) does not have to interact with the old supplier regarding termination). If there are not any objections by the grid operator (i.e. no supplier concurrence), customer service creates a CIS contract. The customer then has the chance to check the contract details and based on this check may decide to either withdraw from the switch contract or confirm it. Depending on the customer's acceptance / rejection the process flow at customer service either ends (in case of withdrawal) or continues (in case of a confirmation). An additional constraint is that the customer can only withdraw from the offered contract within 7 days after the 7th day the contract will be regarded as accepted and the process continues. The confirmation message by the customer is therefore not absolutely necessary (as it will count as accepted after 7 days in any way) but it can speed up the switch process. On the switch-date, but no later than 10 days after power supply has begun, the grid operator transmits the power meter data to the customer service and the old supplier via messages containing a services consumption report. At the same time, the grid operator computes the final billing based on the meter data and sends it to the old supplier. Likewise the old supplier creates and sends the final billing to the customer. For the customer as well as the grid operator the process ends then. After receiving the meter data customer service imports the meter data to systems that require the information. The process of winning a new customer ends here.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Switch‑over Process"
+
+pool org "Organization"
+  lane customer "Customer"
+    start s1 "Switch‑over request"
+    task t_send "Transmit data to Customer Service"
+    task t_check_contract "Check contract details"
+    xor xor_withdraw "Withdraw contract?"
+    end end_withdraw "Process ends (withdrawal)"
+    end end_success "Process ends (successful)"
+
+  lane customer_service "Customer Service"
+    task cs_enter "Enter customer data into CRM"
+    task cs_compare "Compare data with internal database and check completeness"
+    xor cs_err "Data errors?"
+    task cs_correct "Correct errors based on error list"
+    xor cs_exists "Customer exists in database?"
+    task cs_create "Create new customer object"
+    task cs_prepare "Prepare contract documents"
+    task cs_send_conf "Send confirmation document to customer"
+    task cs_send_req "Send switch request to Grid Operator"
+    and split_contract "Split after positive contract check"
+    and join_after_supplier "Join after supplier handling"
+    task cs_create_cis "Create CIS contract"
+    task cs_import "Import meter data to systems"
+
+  lane cis "CIS System"
+    task cis_check "Automated check of contract documents in CIS"
+    xor cis_ok "Contract documents correct?"
+    task cis_resolve "Analyze and resolve issues"
+
+  lane grid_operator "Grid Operator"
+    task go_check "Check supplier concurrence"
+    xor go_conc "Supplier concurrence?"
+    task go_inform "Inform suppliers and resolve conflict"
+    and split_meter "Split meter‑data & billing"
+    and join_final "Join final reports"
+    task go_meter "Transmit meter data to Customer Service and Old Supplier"
+    task go_bill "Send final billing to Old Supplier"
+
+  lane old_supplier "Old Supplier"
+    task os_bill "Send final billing to Customer"
+
+  # flows
+  flow s1 -> t_send -> cs_enter -> cs_compare -> cs_err
+  flow cs_err -> cs_correct -> cs_compare               # error correction loop
+  flow cs_err -> cs_exists
+  flow cs_exists -> cs_create -> cs_prepare               # customer not existing
+  flow cs_exists -> cs_prepare                            # customer exists
+  flow cs_prepare -> cis_check
+  flow cis_check -> cis_ok
+  flow cis_ok -> split_contract
+  flow cis_ok -> cis_resolve -> cis_check                # negative branch loop
+  flow split_contract -> cs_send_conf -> join_after_supplier
+  flow split_contract -> cs_send_req -> go_check
+  flow go_check -> go_conc
+  flow go_conc -> go_inform -> join_after_supplier      # supplier concurrence
+  flow go_conc -> cs_create_cis -> t_check_contract       # no concurrence
+  flow join_after_supplier -> t_check_contract
+  flow t_check_contract -> xor_withdraw
+  flow xor_withdraw -> end_withdraw                       # withdrawal path
+  flow xor_withdraw -> split_meter
+  flow split_meter -> go_meter -> cs_import -> join_final
+  flow split_meter -> go_bill -> os_bill -> join_final
+  flow join_final -> end_success
+```
+
+The tok checker reports these problems in it:
+
+- line 46: warning W021: branch of an XOR/OR split without label, condition or default status (f-cs_err-cs_correct)
+- line 47: warning W021: branch of an XOR/OR split without label, condition or default status (f-cs_err-cs_exists)
+- line 48: warning W021: branch of an XOR/OR split without label, condition or default status (f-cs_exists-cs_create)
+- line 49: warning W021: branch of an XOR/OR split without label, condition or default status (f-cs_exists-cs_prepare)
+- line 52: warning W021: branch of an XOR/OR split without label, condition or default status (f-cis_ok-split_contract)
+- line 53: warning W021: branch of an XOR/OR split without label, condition or default status (f-cis_ok-cis_resolve)
+- line 57: warning W021: branch of an XOR/OR split without label, condition or default status (f-go_conc-go_inform)
+- line 58: warning W021: branch of an XOR/OR split without label, condition or default status (f-go_conc-cs_create_cis)
+- line 61: warning W021: branch of an XOR/OR split without label, condition or default status (f-xor_withdraw-end_withdraw)
+- line 62: warning W021: branch of an XOR/OR split without label, condition or default status (f-xor_withdraw-split_meter)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

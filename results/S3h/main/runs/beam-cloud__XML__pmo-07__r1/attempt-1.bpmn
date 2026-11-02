@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Travel Organisation" processRef="travel-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="travel-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>search</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reminderSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveReminders</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reminderMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>postSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>postTask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="booking-system" name="Booking System">
+        <bpmn:flowNodeRef>generate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>channelSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendSms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>channelMerge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="travel-company" name="Travel Company">
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Customer searches for ticket" />
+    <bpmn:task id="search" name="Search for a flight, train, or bus ticket" />
+    <bpmn:task id="select" name="Select the preferred route, date, and time" />
+    <bpmn:task id="provide" name="Provide personal information and payment details" />
+    <bpmn:task id="generate" name="Generate a ticket" />
+    <bpmn:exclusiveGateway id="channelSplit" name="Ticket sent via email or SMS?" default="toEmail" />
+    <bpmn:task id="sendEmail" name="Send the ticket via email" />
+    <bpmn:task id="sendSms" name="Send the ticket via SMS" />
+    <bpmn:exclusiveGateway id="channelMerge" />
+    <bpmn:task id="update" name="Update the seat inventory" />
+    <bpmn:exclusiveGateway id="reminderSplit" name="Reminders required?" default="skipReminders" />
+    <bpmn:task id="receiveReminders" name="Receive reminders and instructions for check-in or boarding" />
+    <bpmn:exclusiveGateway id="reminderMerge" />
+    <bpmn:task id="complete" name="Complete the journey" />
+    <bpmn:exclusiveGateway id="postSplit" name="Post-travel feedback or services?" default="toEnd" />
+    <bpmn:task id="postTask" name="Receive post-travel feedback or services" />
+    <bpmn:endEvent id="end" name="Journey completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="search" />
+    <bpmn:sequenceFlow id="f2" sourceRef="search" targetRef="select" />
+    <bpmn:sequenceFlow id="f3" sourceRef="select" targetRef="provide" />
+    <bpmn:sequenceFlow id="f4" sourceRef="provide" targetRef="generate" />
+    <bpmn:sequenceFlow id="f5" sourceRef="generate" targetRef="channelSplit" />
+    <bpmn:sequenceFlow id="toEmail" name="email" sourceRef="channelSplit" targetRef="sendEmail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">channel = 'email'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toSms" name="SMS" sourceRef="channelSplit" targetRef="sendSms">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">channel = 'SMS'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" sourceRef="sendEmail" targetRef="channelMerge" />
+    <bpmn:sequenceFlow id="f7" sourceRef="sendSms" targetRef="channelMerge" />
+    <bpmn:sequenceFlow id="f8" sourceRef="channelMerge" targetRef="update" />
+    <bpmn:sequenceFlow id="f9" sourceRef="update" targetRef="reminderSplit" />
+    <bpmn:sequenceFlow id="toReminders" name="yes" sourceRef="reminderSplit" targetRef="receiveReminders">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reminders = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="skipReminders" name="no" sourceRef="reminderSplit" targetRef="reminderMerge" />
+    <bpmn:sequenceFlow id="f10" sourceRef="receiveReminders" targetRef="reminderMerge" />
+    <bpmn:sequenceFlow id="f11" sourceRef="reminderMerge" targetRef="complete" />
+    <bpmn:sequenceFlow id="f12" sourceRef="complete" targetRef="postSplit" />
+    <bpmn:sequenceFlow id="toPost" name="yes" sourceRef="postSplit" targetRef="postTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">postTravel = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toEnd" name="no" sourceRef="postSplit" targetRef="end" />
+    <bpmn:sequenceFlow id="f13" sourceRef="postTask" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

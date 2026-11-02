@@ -1,0 +1,51 @@
+tok 1.0 "Office Supply Request"
+
+pool org "Organisation"
+  lane employee "Employee"
+    start s "Office supply requirement"
+    task submit "Submit office supply request"
+    task review-comments "Review the comments for the change request"
+    end e-changed "Change requested"
+  lane supervisor "Immediate supervisor"
+    task receive "Receive the request"
+    xor decide "Approve, request a change or reject?"
+    task return-change "Return the request with comments"
+  lane purchase "Purchase department"
+    sub quotations "Make quotations"
+      start q-start "Quotations needed"
+      task request-quotes "Request quotations from vendors"
+      task collect-quotes "Collect the quotations"
+      end q-end "Quotations made"
+    task select-vendor "Select a vendor"
+    xor vendor-valid "Vendor valid in the system?"
+    task other-vendor "Choose a different vendor"
+    task confirm-vendor "Confirm the selected vendor"
+    task receive-product "Receive the delivered product"
+    task receive-invoice "Receive the invoice"
+    and split-fulfil "Split"
+    and join-fulfil "Join"
+  lane system "System"
+    task register "Register the requirement"
+    task notify-reject "Send rejection notification"
+    task notify-change "Send change request notification"
+    task generate-po "Generate the purchase order"
+    task send-po "Send the purchase order"
+    task notify-result "Send result notification"
+    end e-rejected "Request rejected"
+    end e-result "Request completed"
+
+flow s -> submit -> register -> receive -> decide
+flow decide -> notify-reject "rejected"
+flow decide -> return-change "change required"
+flow decide -> quotations "approved"
+flow notify-reject -> e-rejected
+flow return-change -> notify-change -> review-comments -> e-changed
+flow quotations -> select-vendor -> vendor-valid
+flow vendor-valid -> other-vendor "no"
+flow other-vendor -> select-vendor
+flow vendor-valid -> confirm-vendor "yes"
+flow confirm-vendor -> generate-po -> send-po -> split-fulfil
+flow split-fulfil -> receive-product -> join-fulfil
+flow split-fulfil -> receive-invoice -> join-fulfil
+flow join-fulfil -> notify-result -> e-result
+flow q-start -> request-quotes -> collect-quotes -> q-end

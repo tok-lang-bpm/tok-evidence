@@ -1,0 +1,47 @@
+tok 1.0 "Travel ticket booking and journey"
+
+pool org "Travel organisation"
+  lane customer "Customer"
+    start s "Start"
+    task search "Search for a flight, train, or bus ticket"
+    task select "Select preferred route, date, and time"
+    task provide "Provide personal information and payment details"
+    task remind "Receive reminders and instructions"
+    task complete "Complete the journey"
+    task feedback "Provide post-travel feedback"
+    xor rem "Receive reminders?"
+    xor remjoin "Reminders done?"
+    xor fb "Post-travel feedback or services?"
+    xor fbjoin "Feedback done?"
+    end e "Journey completed"
+  lane booking "Booking system"
+    task generate "Generate ticket"
+    task email "Send ticket via email"
+    task sms "Send ticket via SMS"
+    xor chan "Send via email or SMS?"
+    xor chanjoin "Ticket sent?"
+    and andsplit "Send and update"
+    and andjoin "Sent and updated"
+  lane company "Travel company"
+    task update "Update seat inventory"
+
+flow s -> search -> select -> provide -> generate
+flow generate -> andsplit
+flow andsplit -> chan
+flow andsplit -> update
+flow chan -> email "via email"
+flow chan -> sms "via SMS" default
+flow email -> chanjoin
+flow sms -> chanjoin
+flow update -> andjoin
+flow chanjoin -> andjoin
+flow andjoin -> rem
+flow rem -> remind "yes"
+flow rem -> remjoin "no" default
+flow remind -> remjoin
+flow remjoin -> complete
+flow complete -> fb
+flow fb -> feedback "yes"
+flow fb -> fbjoin "no" default
+flow feedback -> fbjoin
+flow fbjoin -> e

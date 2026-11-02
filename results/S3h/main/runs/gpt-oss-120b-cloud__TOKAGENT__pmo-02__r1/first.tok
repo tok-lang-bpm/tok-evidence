@@ -1,0 +1,54 @@
+tok 1.0
+pool org "Organization" {
+  lane department "Department"
+  lane hr "HR"
+  lane candidate "Candidate"
+}
+
+start start1 lane=department
+
+task identify-need "Identify need for new hire" lane=department
+task create-job-desc "Create job description" lane=hr
+task post-job "Post job on job boards" lane=hr
+task collect-screen-resumes "Collect and screen resumes" lane=hr
+task phone-interview "Conduct initial phone interviews" lane=hr
+xor interview-type "Interview type decision"
+task inperson-interview "Conduct in‑person interview" lane=hr
+task virtual-interview "Conduct virtual interview" lane=hr
+xor interview-join "Join interview paths"
+task choose-candidate "Choose candidate" lane=hr
+task extend-offer "Extend offer to candidate" lane=hr
+xor negotiation-decision "Salary negotiation needed?"
+task negotiate-salary "Negotiate salary" lane=hr
+task accept-offer "Accept offer" lane=candidate
+and onboarding-split "Onboarding parallel split"
+task paperwork "Complete paperwork" lane=hr
+task orientation "Provide orientation" lane=hr
+task training "Conduct training" lane=hr
+and onboarding-join "Onboarding join"
+end end1
+
+flow start1 -> identify-need
+flow identify-need -> create-job-desc
+flow create-job-desc -> post-job
+flow post-job -> collect-screen-resumes
+flow collect-screen-resumes -> phone-interview
+flow phone-interview -> interview-type
+flow interview-type -> inperson-interview when="preference = \"inperson\""
+flow interview-type -> virtual-interview when="preference = \"virtual\""
+flow inperson-interview -> interview-join
+flow virtual-interview -> interview-join
+flow interview-join -> choose-candidate
+flow choose-candidate -> extend-offer
+flow extend-offer -> negotiation-decision
+flow negotiation-decision -> negotiate-salary when="negotiationNeeded = true"
+flow negotiation-decision -> accept-offer default
+flow negotiate-salary -> accept-offer
+flow accept-offer -> onboarding-split
+flow onboarding-split -> paperwork
+flow onboarding-split -> orientation
+flow onboarding-split -> training
+flow paperwork -> onboarding-join
+flow orientation -> onboarding-join
+flow training -> onboarding-join
+flow onboarding-join -> end1

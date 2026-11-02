@@ -1,0 +1,71 @@
+tok 1.0
+
+pool org "Organisation" {
+  lane MPON "MPON"
+  lane MPOO "MPOO"
+  lane GO "GO"
+  lane MSP "MSP"
+}
+
+start start0 MPON "Start"
+
+task notify-intent MPON "notify MPOO about equipment change intentions"
+
+xor selfDismountChoice MPON
+
+task announce-self MPOO "announce self dismounting to MPON"
+
+task notify-no-self MPOO "notify MPON about no self-dismounting of the MPOO"
+
+xor selfDismountJoin MPON
+
+xor finalReadingChoice MPON
+
+task final-reading-MPON MPON "perform final reading"
+
+task final-reading-MPOO MPOO "perform final reading"
+
+xor finalReadingJoin MPON
+
+xor dismountChoice MPON
+
+task dismount-old-MPON MPON "dismount old equipment"
+
+task dismount-old-MPOO MPOO "dismount old equipment"
+
+xor dismountJoin MPON
+
+task mount-new MPON "mount new device"
+
+task read-meter MPON "read meter count from installed meter"
+
+task send-values MPON "send values of the final reading to GO"
+
+task tell-go MPON "tell GO about device changes, master data and meter count at installation"
+
+task notify-msp GO "notify MSP about device changes, master data, meter count at dismounting and meter count at installation"
+
+end end0 MPON "End"
+
+flow start0 -> notify-intent
+flow notify-intent -> selfDismountChoice
+flow selfDismountChoice -> announce-self "self dismounting" when="true"
+flow selfDismountChoice -> notify-no-self "no self dismounting" when="false"
+flow announce-self -> selfDismountJoin
+flow notify-no-self -> selfDismountJoin
+flow selfDismountJoin -> finalReadingChoice
+flow finalReadingChoice -> final-reading-MPON "MPON" when="true"
+flow finalReadingChoice -> final-reading-MPOO "MPOO" when="false"
+flow final-reading-MPON -> finalReadingJoin
+flow final-reading-MPOO -> finalReadingJoin
+flow finalReadingJoin -> dismountChoice
+flow dismountChoice -> dismount-old-MPON "MPON" when="true"
+flow dismountChoice -> dismount-old-MPOO "MPOO" when="false"
+flow dismount-old-MPON -> dismountJoin
+flow dismount-old-MPOO -> dismountJoin
+flow dismountJoin -> mount-new
+flow mount-new -> read-meter
+flow read-meter -> send-values
+flow send-values -> tell-go
+flow tell-go -> notify-msp
+flow notify-msp -> end0

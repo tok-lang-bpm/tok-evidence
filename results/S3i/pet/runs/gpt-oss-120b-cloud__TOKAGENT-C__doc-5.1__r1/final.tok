@@ -1,0 +1,23 @@
+tok 1.0 "Loan Approval Process"
+
+pool org "Organization"
+  lane cust "Customer"
+    start s1 "Loan request received"
+    task t_receive "Receive loan request"
+  lane risk "Risk Assessment Service"
+    task t_risk "Invoke risk assessment Web service"
+    xor xor1 "Risk assessment outcome?"
+    task t_approve "Approve loan"
+    task t_deny "Deny loan"
+    task t_approver "Invoke approver Web service"
+    task t_feedback "Send feedback to customer"
+    end e_end "Process completed"
+
+flow s1 -> t_receive -> t_risk -> xor1
+flow xor1 -> t_approve "approve" when="loanAmount < 10000 and risk = \"low\""
+flow xor1 -> t_deny "deny" when="risk = \"high\""
+flow xor1 -> t_approver "review" when="reviewNeeded or loanAmount >= 10000"
+flow t_approve -> t_feedback
+flow t_deny -> t_feedback
+flow t_approver -> t_feedback
+flow t_feedback -> e_end

@@ -1,0 +1,29 @@
+tok 1.0 "Equipment change"
+
+pool organisation "Organisation"
+  lane mpon "MPON"
+    start s "Equipment change intended"
+    task notify_intent "Notify the MPOO about equipment change intentions"
+    task final_reading_mpon "Perform the final reading"
+    task dismount_old_mpon "Dismount the old equipment"
+    xor joined
+    task mount_new "Mount the new device"
+    task read_meter "Read the meter count from the installed meter"
+    task send_final "Send the values of the final reading to the GO"
+    task tell_go "Tell the GO about the device changes, the master data and the meter count at installation"
+  lane mpoo "MPOO"
+    xor choose_self "Self dismounting?"
+    task announce_self "Announce self dismounting to the MPON"
+    task notify_no "Notify the MPON about no self-dismounting of the MPOO"
+    task final_reading_mpoo "Perform the final reading"
+    task dismount_old_mpoo "Dismount the old equipment"
+  lane go "GO"
+    task notify_msp "Notify the MSP about the device changes, the master data, the meter count at dismounting, and the meter count at installation"
+    end done "Process completed"
+
+flow s -> notify_intent -> choose_self
+flow choose_self -> announce_self "self dismounting"
+flow choose_self -> notify_no "no self-dismounting"
+flow announce_self -> final_reading_mpoo -> dismount_old_mpoo -> joined
+flow notify_no -> final_reading_mpon -> dismount_old_mpon -> joined
+flow joined -> mount_new -> read_meter -> send_final -> tell_go -> notify_msp -> done

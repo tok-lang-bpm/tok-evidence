@@ -1,0 +1,56 @@
+tok 1.0
+
+pool restaurant "Restaurant" {
+  lane guest "Guest" {
+    task choose-wait          "Choose dish and wait"
+    task place-order         "Place order with employee"
+    task guest-appears       "Guest appears at service hatch"
+    task guest-eat           "Guest eats meal"
+  }
+
+  lane employee "Employee" {
+    task enter-order-pos     "Enter order into POS system"
+    task collect-money       "Collect money from guest"
+    task setup-buzzer        "Set up buzzer and pass to guest"
+    task inform-chef         "Inform chef of new meal order"
+    task set-buzzer          "Set off buzzer"
+    task employee-call       "Call guest after 5 minutes"
+    task employee-hand       "Hand over meal to guest"
+  }
+
+  lane chef "Chef" {
+    task prepare-meal        "Prepare meal"
+    task place-meal-hatch    "Place meal in service hatch"
+    task inform-employee     "Inform employee that meal is ready"
+  }
+
+  lane pos "POS System" {
+    // No explicit tasks; POS system is used by employee in the task above.
+  }
+}
+
+start
+end
+
+xor guest-react "Guest reacts to buzzer?"
+
+flow start               -> choose-wait
+flow choose-wait         -> place-order
+flow place-order         -> enter-order-pos
+flow enter-order-pos     -> collect-money
+flow collect-money       -> setup-buzzer
+flow setup-buzzer        -> inform-chef
+flow inform-chef         -> prepare-meal
+flow prepare-meal        -> place-meal-hatch
+flow place-meal-hatch    -> inform-employee
+flow inform-employee     -> set-buzzer
+flow set-buzzer          -> guest-react
+
+flow guest-react -> employee-call "no"   when="react = false"
+flow guest-react -> guest-appears       default
+
+flow employee-call -> guest-react
+
+flow guest-appears -> employee-hand
+flow employee-hand -> guest-eat
+flow guest-eat     -> end

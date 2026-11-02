@@ -1,0 +1,74 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process of an Office Supply Request starts when any employee of the organization submits an office supply request. Once the requirement is registered, the request is received by the immediate supervisor of the employee requesting the office supplies. The supervisor must approve or ask for a change, or reject the request. If the request is rejected the process will end. If the request is asked to make a change then it is returned to the petitioner / employee who can review the comments for the change request. If the request is approved it will go to the purchase department that will be in charge of making quotations (using a subprocess) and select a vendor. If the vendor is not valid in the system the purchase department will have to choose a different vendor. After a vendor is selected and confirmed, the system will generate and send a purchase order and wait for the product to be delivered and the invoice received. In any case the system will send a notification to let the user know what the result was. In any of the cases, approval, rejection or change required the system will send the user a notification.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Office Supply Request"
+
+pool office "Office"
+  lane employee "Employee"
+    start submitted "Request submitted"
+    task submit "Submit office supply request"
+    task review "Review comments for change request"
+  lane supervisor "Immediate Supervisor"
+    task receive_request "Receive request"
+    xor approval "Approve, ask for change, or reject?"
+  lane purchase "Purchase Department"
+    sub quotations "Make quotations"
+      start qstart "Quotation started"
+      task make_quotations "Make quotations"
+      end qend "Quotations completed"
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different "Choose different vendor"
+    task confirm_vendor "Confirm vendor"
+  lane system "System"
+    task generate_po "Generate purchase order"
+    task send_po "Send purchase order"
+    and wait_delivery_invoice "Wait for delivery and invoice"
+    task wait_delivery "Wait for product to be delivered"
+    task receive_invoice "Receive invoice"
+    and delivery_invoice_received "Delivery and invoice received"
+    task send_notification "Send notification"
+    end completed "Request completed"
+
+flow submitted -> submit -> receive_request -> approval
+flow approval -> quotations "approved"
+flow approval -> review "change required"
+flow approval -> send_notification "rejected"
+flow quotations -> select_vendor
+flow select_vendor -> vendor_valid
+flow vendor_valid -> confirm_vendor "yes"
+flow vendor_valid -> choose_different "no"
+flow choose_different -> vendor_valid
+flow confirm_vendor -> generate_po
+flow generate_po -> send_po
+flow send_po -> wait_delivery_invoice
+flow wait_delivery_invoice -> wait_delivery
+flow wait_delivery_invoice -> receive_invoice
+flow wait_delivery -> delivery_invoice_received
+flow receive_invoice -> delivery_invoice_received
+flow delivery_invoice_received -> send_notification
+flow review -> send_notification
+flow send_notification -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 13: warning W042: path without an end event (element without outgoing flow) (qstart)
+- line 14: warning W041: element not reachable from a start event (make_quotations)
+- line 14: warning W042: path without an end event (element without outgoing flow) (make_quotations)
+- line 15: warning W041: element not reachable from a start event (qend)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

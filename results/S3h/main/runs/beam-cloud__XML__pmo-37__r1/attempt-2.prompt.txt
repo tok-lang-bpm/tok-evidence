@@ -1,0 +1,132 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+Title: Contract
+
+For your contract project you need parts from several web shops.
+In order to find out which web shop has the right parts, you have to query them all, and find out how much they can deliver, at which price, and how long it will take.
+Create a list of parts that you order from each shop.
+If one shop has not enough  parts, order from several shops.
+Always use the cheapest parts.
+The parts arrive in batches in a random order, typically they are +/- 2 days earlier/later.
+When the first parts arrive you start building.
+Sometimes you have to reorder parts.
+If your stock (for a single part) falls below 5, you reorder (the cheapest), if it falls below 3 you reorder again (the fastest).
+If it is zero, you write a mail to your friends, complaining about the webshops.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="contract-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="contract-process" isExecutable="false">
+    <bpmn:laneSet id="contract-lanes">
+      <bpmn:lane id="you" name="You">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>time</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-enough</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-one</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-several</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-order-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-reorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-stock-5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-cheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-stock-3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-fastest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-stock-0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>write-mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Contract project" />
+    <bpmn:task id="query" name="Query web shops" />
+    <bpmn:task id="amount" name="Find out how much they can deliver" />
+    <bpmn:task id="price" name="Find out at which price" />
+    <bpmn:task id="time" name="Find out how long it will take" />
+    <bpmn:task id="list" name="Create a list of parts" />
+    <bpmn:exclusiveGateway id="gw-enough" name="One shop has enough parts?" />
+    <bpmn:task id="order-one" name="Order from one shop" />
+    <bpmn:task id="order-several" name="Order from several shops" />
+    <bpmn:exclusiveGateway id="gw-order-join" />
+    <bpmn:task id="receive" name="Receive parts" />
+    <bpmn:task id="build" name="Start building" />
+    <bpmn:exclusiveGateway id="gw-reorder" name="Need to reorder?" />
+    <bpmn:exclusiveGateway id="gw-stock-5" name="Stock below 5?" />
+    <bpmn:task id="reorder-cheapest" name="Reorder the cheapest" />
+    <bpmn:exclusiveGateway id="gw-stock-3" name="Stock below 3?" />
+    <bpmn:task id="reorder-fastest" name="Reorder the fastest" />
+    <bpmn:exclusiveGateway id="gw-stock-0" name="Stock zero?" />
+    <bpmn:task id="write-mail" name="Write a mail to your friends" />
+    <bpmn:exclusiveGateway id="gw-done" />
+    <bpmn:endEvent id="end" name="Contract completed" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="query" />
+    <bpmn:sequenceFlow id="f2" sourceRef="query" targetRef="amount" />
+    <bpmn:sequenceFlow id="f3" sourceRef="amount" targetRef="price" />
+    <bpmn:sequenceFlow id="f4" sourceRef="price" targetRef="time" />
+    <bpmn:sequenceFlow id="f5" sourceRef="time" targetRef="list" />
+    <bpmn:sequenceFlow id="f6" sourceRef="list" targetRef="gw-enough" />
+    <bpmn:sequenceFlow id="f7" name="yes" sourceRef="gw-enough" targetRef="order-one">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">oneShopHasEnoughParts</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f8" name="no" sourceRef="gw-enough" targetRef="order-several" default="f8" />
+    <bpmn:sequenceFlow id="f9" sourceRef="order-one" targetRef="gw-order-join" />
+    <bpmn:sequenceFlow id="f10" sourceRef="order-several" targetRef="gw-order-join" />
+    <bpmn:sequenceFlow id="f11" sourceRef="gw-order-join" targetRef="receive" />
+    <bpmn:sequenceFlow id="f12" sourceRef="receive" targetRef="build" />
+    <bpmn:sequenceFlow id="f13" sourceRef="build" targetRef="gw-reorder" />
+    <bpmn:sequenceFlow id="f14" name="no" sourceRef="gw-reorder" targetRef="gw-done" default="f14" />
+    <bpmn:sequenceFlow id="f15" name="yes" sourceRef="gw-reorder" targetRef="gw-stock-5">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reorderNeeded</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f16" name="no" sourceRef="gw-stock-5" targetRef="gw-done" default="f16" />
+    <bpmn:sequenceFlow id="f17" name="yes" sourceRef="gw-stock-5" targetRef="reorder-cheapest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f18" sourceRef="reorder-cheapest" targetRef="gw-stock-3" />
+    <bpmn:sequenceFlow id="f19" name="no" sourceRef="gw-stock-3" targetRef="gw-done" default="f19" />
+    <bpmn:sequenceFlow id="f20" name="yes" sourceRef="gw-stock-3" targetRef="reorder-fastest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f21" sourceRef="reorder-fastest" targetRef="gw-stock-0" />
+    <bpmn:sequenceFlow id="f22" name="no" sourceRef="gw-stock-0" targetRef="gw-done" default="f22" />
+    <bpmn:sequenceFlow id="f23" name="yes" sourceRef="gw-stock-0" targetRef="write-mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock == 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f24" sourceRef="write-mail" targetRef="gw-done" />
+    <bpmn:sequenceFlow id="f25" sourceRef="gw-done" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- line 62: Element '{http://www.omg.org/spec/BPMN/20100524/MODEL}sequenceFlow', attribute 'default': The attribute 'default' is not allowed.
+- line 68: Element '{http://www.omg.org/spec/BPMN/20100524/MODEL}sequenceFlow', attribute 'default': The attribute 'default' is not allowed.
+- line 72: Element '{http://www.omg.org/spec/BPMN/20100524/MODEL}sequenceFlow', attribute 'default': The attribute 'default' is not allowed.
+- line 77: Element '{http://www.omg.org/spec/BPMN/20100524/MODEL}sequenceFlow', attribute 'default': The attribute 'default' is not allowed.
+- line 82: Element '{http://www.omg.org/spec/BPMN/20100524/MODEL}sequenceFlow', attribute 'default': The attribute 'default' is not allowed.
+- conditional-flows: f8: Sequence flow is missing condition
+- conditional-flows: f14: Sequence flow is missing condition
+- conditional-flows: f16: Sequence flow is missing condition
+- conditional-flows: f19: Sequence flow is missing condition
+- conditional-flows: f22: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

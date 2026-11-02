@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <!-- Collaboration and pool -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL"
+                      name="ACME AG"
+                      processRef="process_main" />
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="process_main" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANESET_ORG">
+      <bpmn:lane id="lane_secretariat" name="Secretariat">
+        <bpmn:flowNodeRef>task_receive_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_forward_to_accounting</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_accounting" name="Accounting employee">
+        <bpmn:flowNodeRef>task_identify_create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_check_items</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_send_to_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_forward_commercial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_return_to_accounting</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_payment</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_internal_mail" name="Internal mail">
+        <bpmn:flowNodeRef>task_send_to_manager</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_send_next</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_cost_manager" name="Cost Center Manager">
+        <bpmn:flowNodeRef>task_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_send_back_accounting</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_commercial" name="Commercial manager">
+        <bpmn:flowNodeRef>task_commercial_audit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_board" name="Board">
+        <bpmn:flowNodeRef>task_board_review</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Start invoice receipt" />
+
+    <!-- Secretariat tasks -->
+    <bpmn:task id="task_receive_invoice" name="Receive invoice (paper or fax)" />
+    <bpmn:task id="task_forward_to_accounting"
+               name="Forward invoice after visual inspection to accounting employee" />
+
+    <!-- Accounting tasks -->
+    <bpmn:task id="task_identify_create"
+               name="Identify charging suppliers and create new invoice instance" />
+    <bpmn:task id="task_check_items"
+               name="Check invoice items and note cost centers on docket" />
+    <bpmn:task id="task_send_to_mail"
+               name="Send docket and invoice copy to internal mail" />
+
+    <!-- Internal mail tasks -->
+    <bpmn:task id="task_send_to_manager"
+               name="Send docket and invoice copy to first cost centre manager" />
+    <bpmn:task id="task_send_next"
+               name="Send invoice copy to next cost centre manager" />
+
+    <!-- Cost centre manager task -->
+    <bpmn:task id="task_review"
+               name="Review invoice copy for accuracy" />
+    <!-- Decision after review -->
+    <bpmn:exclusiveGateway id="gw_review"
+                           name="Review outcome" />
+    <!-- Accurate path -->
+    <bpmn:exclusiveGateway id="gw_all_reviewed"
+                           name="All items reviewed?" />
+    <!-- Inconsistent path -->
+    <bpmn:task id="task_send_back_accounting"
+               name="Send invoice copy back to accounting (inconsistent)" />
+    <bpmn:task id="task_clarify"
+               name="Clarify with vendor / consult cost centre managers" />
+
+    <!-- Accounting forwards to commercial manager -->
+    <bpmn:task id="task_forward_commercial"
+               name="Forward invoice copy to commercial manager" />
+
+    <!-- Commercial audit -->
+    <bpmn:task id="task_commercial_audit"
+               name="Commercial audit and approve payment" />
+    <bpmn:exclusiveGateway id="gw_amount"
+                           name="Amount > EUR 20?" />
+
+    <!-- Board review -->
+    <bpmn:task id="task_board_review"
+               name="Board review (4‑eyes principle)" />
+    <bpmn:task id="task_return_to_accounting"
+               name="Return invoice to accounting for signature" />
+
+    <!-- Complaint handling -->
+    <bpmn:exclusiveGateway id="gw_complaint"
+                           name="Complaint?" />
+    <bpmn:task id="task_resolve_complaint"
+               name="Resolve complaint with supplier" />
+
+    <!-- Final payment -->
+    <bpmn:task id="task_payment"
+               name="Give payment instructions and close instance" />
+
+    <!-- End -->
+    <bpmn:endEvent id="end" name="Process end" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_to_receive" sourceRef="start" targetRef="task_receive_invoice" />
+    <bpmn:sequenceFlow id="f_receive_to_forward" sourceRef="task_receive_invoice" targetRef="task_forward_to_accounting" />
+    <bpmn:sequenceFlow id="f_forward_to_identify" sourceRef="task_forward_to_accounting" targetRef="task_identify_create" />
+    <bpmn:sequenceFlow id="f_identify_to_check" sourceRef="task_identify_create" targetRef="task_check_items" />
+    <bpmn:sequenceFlow id="f_check_to_mail" sourceRef="task_check_items" targetRef="task_send_to_mail" />
+    <bpmn:sequenceFlow id="f_mail_to_manager" sourceRef="task_send_to_mail" targetRef="task_send_to_manager" />
+    <bpmn:sequenceFlow id="f_manager_to_review" sourceRef="task_send_to_manager" targetRef="task_review" />
+    <bpmn:sequenceFlow id="f_review_to_gateway" sourceRef="task_review" targetRef="gw_review" />
+
+    <!-- Review outcomes -->
+    <bpmn:sequenceFlow id="f_accurate" sourceRef="gw_review" targetRef="gw_all_reviewed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">accurate</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_inconsistent" sourceRef="gw_review" targetRef="task_send_back_accounting">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">inconsistent</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Inconsistent handling -->
+    <bpmn:sequenceFlow id="f_back_to_clarify" sourceRef="task_send_back_accounting" targetRef="task_clarify" />
+    <bpmn:sequenceFlow id="f_clarify_to_manager" sourceRef="task_clarify" targetRef="task_send_to_manager" />
+
+    <!-- Accurate handling -->
+    <bpmn:sequenceFlow id="f_all_done" sourceRef="gw_all_reviewed" targetRef="task_forward_commercial">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">all_done</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_more" sourceRef="gw_all_reviewed" targetRef="task_send_next">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">more</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_next_to_review" sourceRef="task_send_next" targetRef="task_review" />
+
+    <!-- Commercial audit -->
+    <bpmn:sequenceFlow id="f_forward_to_commercial" sourceRef="task_forward_commercial" targetRef="task_commercial_audit" />
+    <bpmn:sequenceFlow id="f_audit_to_amount" sourceRef="task_commercial_audit" targetRef="gw_amount" />
+
+    <!-- Amount decision -->
+    <bpmn:sequenceFlow id="f_amount_yes" sourceRef="gw_amount" targetRef="task_board_review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">amount &gt; 20000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_amount_no" sourceRef="gw_amount" targetRef="gw_complaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">amount &lt;= 20000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Board path -->
+    <bpmn:sequenceFlow id="f_board_to_return" sourceRef="task_board_review" targetRef="task_return_to_accounting" />
+    <bpmn:sequenceFlow id="f_return_to_complaint" sourceRef="task_return_to_accounting" targetRef="gw_complaint" />
+
+    <!-- Complaint handling -->
+    <bpmn:sequenceFlow id="f_complaint_yes" sourceRef="gw_complaint" targetRef="task_resolve_complaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">complaint</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_complaint_no" sourceRef="gw_complaint" targetRef="task_payment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">no_complaint</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="f_resolve_to_payment" sourceRef="task_resolve_complaint" targetRef="task_payment" />
+    <bpmn:sequenceFlow id="f_payment_to_end" sourceRef="task_payment" targetRef="end" />
+
+  </bpmn:process>
+</bpmn:definitions>

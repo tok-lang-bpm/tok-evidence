@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Room service at The Evanstonian" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="hotel" name="The Evanstonian" processRef="hotel-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="hotel-process" name="Room service at The Evanstonian" isExecutable="false">
+    <bpmn:laneSet id="hotel-lanes">
+      <bpmn:lane id="guest" name="Guest">
+        <bpmn:flowNodeRef>wants</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>call</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="manager" name="Room-service manager">
+        <bpmn:flowNodeRef>take</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ticket</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>toSommelier</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="kitchen" name="Kitchen">
+        <bpmn:flowNodeRef>food</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sommelier" name="Sommelier">
+        <bpmn:flowNodeRef>alcohol</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>otherAlc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alcMerge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="waiter" name="Waiter">
+        <bpmn:flowNodeRef>cart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>drinks</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deliver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>postpone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>debit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="wants" name="Guest wants room service" />
+    <bpmn:task id="call" name="Call room service" />
+    <bpmn:task id="take" name="Take down the order" />
+    <bpmn:task id="ticket" name="Submit the order ticket to the kitchen" />
+    <bpmn:task id="toSommelier" name="Give the order to the sommelier" />
+    <bpmn:task id="assign" name="Assign the order to the waiter" />
+    <bpmn:parallelGateway id="prepare" />
+    <bpmn:task id="food" name="Prepare the food" />
+    <bpmn:exclusiveGateway id="alcohol" name="Order includes alcohol?" default="f-alcohol-alcMerge" />
+    <bpmn:task id="wine" name="Fetch wine from the cellar" />
+    <bpmn:task id="otherAlc" name="Prepare other alcoholic beverages" />
+    <bpmn:exclusiveGateway id="alcMerge" />
+    <bpmn:task id="cart" name="Ready the cart" />
+    <bpmn:task id="drinks" name="Prepare nonalcoholic drinks" />
+    <bpmn:parallelGateway id="ready" />
+    <bpmn:task id="deliver" name="Deliver the food, wine and cart to the guest's room" />
+    <bpmn:task id="return" name="Return to the room-service station" />
+    <bpmn:exclusiveGateway id="billing" name="Another order to prepare or deliver?" default="f-billing-debit" />
+    <bpmn:task id="postpone" name="Postpone the billing" />
+    <bpmn:task id="debit" name="Debit the guest's account" />
+    <bpmn:endEvent id="done" name="Order delivered and billed" />
+    <bpmn:sequenceFlow id="f-wants-call" sourceRef="wants" targetRef="call" />
+    <bpmn:sequenceFlow id="f-call-take" sourceRef="call" targetRef="take" />
+    <bpmn:sequenceFlow id="f-take-ticket" sourceRef="take" targetRef="ticket" />
+    <bpmn:sequenceFlow id="f-ticket-toSommelier" sourceRef="ticket" targetRef="toSommelier" />
+    <bpmn:sequenceFlow id="f-toSommelier-assign" sourceRef="toSommelier" targetRef="assign" />
+    <bpmn:sequenceFlow id="f-assign-prepare" sourceRef="assign" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-prepare-food" sourceRef="prepare" targetRef="food" />
+    <bpmn:sequenceFlow id="f-food-ready" sourceRef="food" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-prepare-drinks" sourceRef="prepare" targetRef="drinks" />
+    <bpmn:sequenceFlow id="f-drinks-ready" sourceRef="drinks" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-prepare-cart" sourceRef="prepare" targetRef="cart" />
+    <bpmn:sequenceFlow id="f-cart-ready" sourceRef="cart" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-prepare-alcohol" sourceRef="prepare" targetRef="alcohol" />
+    <bpmn:sequenceFlow id="f-alcohol-wine" name="yes" sourceRef="alcohol" targetRef="wine">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">order_has_alcohol</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-alcohol-alcMerge" name="no" sourceRef="alcohol" targetRef="alcMerge" />
+    <bpmn:sequenceFlow id="f-wine-otherAlc" sourceRef="wine" targetRef="otherAlc" />
+    <bpmn:sequenceFlow id="f-otherAlc-alcMerge" sourceRef="otherAlc" targetRef="alcMerge" />
+    <bpmn:sequenceFlow id="f-alcMerge-ready" sourceRef="alcMerge" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-ready-deliver" sourceRef="ready" targetRef="deliver" />
+    <bpmn:sequenceFlow id="f-deliver-return" sourceRef="deliver" targetRef="return" />
+    <bpmn:sequenceFlow id="f-return-billing" sourceRef="return" targetRef="billing" />
+    <bpmn:sequenceFlow id="f-billing-postpone" name="yes" sourceRef="billing" targetRef="postpone">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">another_order_pending</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-postpone-billing" sourceRef="postpone" targetRef="billing" />
+    <bpmn:sequenceFlow id="f-billing-debit" name="no" sourceRef="billing" targetRef="debit" />
+    <bpmn:sequenceFlow id="f-debit-done" sourceRef="debit" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

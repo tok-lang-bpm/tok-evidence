@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Meter operation registration" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Report_of_the_MPON" name="Report of the MPON" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Meter operation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Meter operation registration" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>s-start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-op</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equip-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acquire</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equip-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>examine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reg-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mpoo-reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mspo-reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reg-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm-fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm-assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assigned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mpoo-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mspo-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-sp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fail-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mpoo-fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-mspo-fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fail-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-failed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>changes</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s-start" name="Meter operation" />
+    <bpmn:task id="report-op" name="Report the meter operation to the GO" />
+    <bpmn:inclusiveGateway id="equip-split" default="f-equip-split-changes" />
+    <bpmn:task id="acquire" name="Perform the equipment acquisition" />
+    <bpmn:inclusiveGateway id="equip-join" />
+    <bpmn:exclusiveGateway id="completed" name="Process completed successfully?" default="f-completed-report-fail" />
+    <bpmn:task id="report-ok" name="Report the successful completion of the entire process" />
+    <bpmn:task id="report-fail" name="Report the failure of the entire process" />
+    <bpmn:exclusiveGateway id="report-merge" />
+    <bpmn:task id="examine" name="Examine the application of the MPON" />
+    <bpmn:exclusiveGateway id="decide" name="Application confirmed?" default="f-decide-reject" />
+    <bpmn:task id="reject" name="Reject the application of the MPON" />
+    <bpmn:task id="confirm" name="Confirm the application of the MPON" />
+    <bpmn:parallelGateway id="reg-split" />
+    <bpmn:task id="inform-mpoo-reg" name="Inform the MPOO about the registration confirmation of the MPON" />
+    <bpmn:task id="inform-mspo-reg" name="Inform the MSPO about the registration confirmation of the MPON" />
+    <bpmn:parallelGateway id="reg-join" />
+    <bpmn:receiveTask id="wait-report" name="Receive the report of the MPON" messageRef="Message_Report_of_the_MPON" />
+    <bpmn:boundaryEvent id="deadline" name="Time limit exceeded" attachedToRef="wait-report">
+      <bpmn:timerEventDefinition id="deadline-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="inform-timeout" name="Inform the MPON about the failure of the overall transaction" />
+    <bpmn:endEvent id="end-timeout" name="Overall transaction failed" />
+    <bpmn:exclusiveGateway id="report-check" name="Failure reported?" default="f-report-check-assign" />
+    <bpmn:task id="confirm-fail" name="Confirm the failure of the assignment to the MPON" />
+    <bpmn:task id="assign" name="Assign the MPON" />
+    <bpmn:task id="confirm-assign" name="Confirm the assignment to the MPON" />
+    <bpmn:exclusiveGateway id="assign-merge" />
+    <bpmn:exclusiveGateway id="assigned" name="Assignment made?" default="f-assigned-fail-split" />
+    <bpmn:parallelGateway id="assign-split" />
+    <bpmn:task id="inform-mpoo-ok" name="Inform the MPOO about the assignment of the MPON" />
+    <bpmn:task id="inform-mspo-ok" name="Inform the MSPO about the assignment of the MPON" />
+    <bpmn:task id="inform-sp" name="Inform the SP about the assignment of the MPON" />
+    <bpmn:parallelGateway id="assign-join" />
+    <bpmn:endEvent id="end-done" name="Assignment completed" />
+    <bpmn:parallelGateway id="fail-split" />
+    <bpmn:task id="inform-mpoo-fail" name="Inform the MPOO about the failure of the assignment of the MPON" />
+    <bpmn:task id="inform-mspo-fail" name="Inform the MSPO about the failure of the assignment of the MPON" />
+    <bpmn:parallelGateway id="fail-join" />
+    <bpmn:endEvent id="end-failed" name="Assignment failed" />
+    <bpmn:endEvent id="end-rejected" name="Application rejected" />
+    <bpmn:task id="changes" name="Perform the equipment changes" />
+    <bpmn:sequenceFlow id="f-s-start-report-op" sourceRef="s-start" targetRef="report-op" />
+    <bpmn:sequenceFlow id="f-report-op-examine" sourceRef="report-op" targetRef="examine" />
+    <bpmn:sequenceFlow id="f-examine-decide" sourceRef="examine" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-confirm" name="yes" sourceRef="decide" targetRef="confirm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confirmed = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decide-reject" name="no" sourceRef="decide" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-reject-end-rejected" sourceRef="reject" targetRef="end-rejected" />
+    <bpmn:sequenceFlow id="f-confirm-reg-split" sourceRef="confirm" targetRef="reg-split" />
+    <bpmn:sequenceFlow id="f-reg-split-inform-mpoo-reg" sourceRef="reg-split" targetRef="inform-mpoo-reg" />
+    <bpmn:sequenceFlow id="f-reg-split-inform-mspo-reg" sourceRef="reg-split" targetRef="inform-mspo-reg" />
+    <bpmn:sequenceFlow id="f-inform-mpoo-reg-reg-join" sourceRef="inform-mpoo-reg" targetRef="reg-join" />
+    <bpmn:sequenceFlow id="f-inform-mspo-reg-reg-join" sourceRef="inform-mspo-reg" targetRef="reg-join" />
+    <bpmn:sequenceFlow id="f-reg-join-equip-split" sourceRef="reg-join" targetRef="equip-split" />
+    <bpmn:sequenceFlow id="f-equip-split-acquire" name="acquisition" sourceRef="equip-split" targetRef="acquire">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">acquisition = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-equip-split-changes" name="changes" sourceRef="equip-split" targetRef="changes" />
+    <bpmn:sequenceFlow id="f-acquire-equip-join" sourceRef="acquire" targetRef="equip-join" />
+    <bpmn:sequenceFlow id="f-changes-equip-join" sourceRef="changes" targetRef="equip-join" />
+    <bpmn:sequenceFlow id="f-equip-join-completed" sourceRef="equip-join" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-completed-report-ok" name="yes" sourceRef="completed" targetRef="report-ok">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">success = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-completed-report-fail" name="no" sourceRef="completed" targetRef="report-fail" />
+    <bpmn:sequenceFlow id="f-report-ok-report-merge" sourceRef="report-ok" targetRef="report-merge" />
+    <bpmn:sequenceFlow id="f-report-fail-report-merge" sourceRef="report-fail" targetRef="report-merge" />
+    <bpmn:sequenceFlow id="f-report-merge-wait-report" sourceRef="report-merge" targetRef="wait-report" />
+    <bpmn:sequenceFlow id="f-wait-report-report-check" sourceRef="wait-report" targetRef="report-check" />
+    <bpmn:sequenceFlow id="f-deadline-inform-timeout" sourceRef="deadline" targetRef="inform-timeout" />
+    <bpmn:sequenceFlow id="f-inform-timeout-end-timeout" sourceRef="inform-timeout" targetRef="end-timeout" />
+    <bpmn:sequenceFlow id="f-report-check-confirm-fail" name="yes" sourceRef="report-check" targetRef="confirm-fail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">failure = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-report-check-assign" name="no" sourceRef="report-check" targetRef="assign" />
+    <bpmn:sequenceFlow id="f-confirm-fail-assign-merge" sourceRef="confirm-fail" targetRef="assign-merge" />
+    <bpmn:sequenceFlow id="f-assign-confirm-assign" sourceRef="assign" targetRef="confirm-assign" />
+    <bpmn:sequenceFlow id="f-confirm-assign-assign-merge" sourceRef="confirm-assign" targetRef="assign-merge" />
+    <bpmn:sequenceFlow id="f-assign-merge-assigned" sourceRef="assign-merge" targetRef="assigned" />
+    <bpmn:sequenceFlow id="f-assigned-assign-split" name="yes" sourceRef="assigned" targetRef="assign-split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">assigned = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-assigned-fail-split" name="no" sourceRef="assigned" targetRef="fail-split" />
+    <bpmn:sequenceFlow id="f-assign-split-inform-mpoo-ok" sourceRef="assign-split" targetRef="inform-mpoo-ok" />
+    <bpmn:sequenceFlow id="f-assign-split-inform-mspo-ok" sourceRef="assign-split" targetRef="inform-mspo-ok" />
+    <bpmn:sequenceFlow id="f-assign-split-inform-sp" sourceRef="assign-split" targetRef="inform-sp" />
+    <bpmn:sequenceFlow id="f-inform-mpoo-ok-assign-join" sourceRef="inform-mpoo-ok" targetRef="assign-join" />
+    <bpmn:sequenceFlow id="f-inform-mspo-ok-assign-join" sourceRef="inform-mspo-ok" targetRef="assign-join" />
+    <bpmn:sequenceFlow id="f-inform-sp-assign-join" sourceRef="inform-sp" targetRef="assign-join" />
+    <bpmn:sequenceFlow id="f-assign-join-end-done" sourceRef="assign-join" targetRef="end-done" />
+    <bpmn:sequenceFlow id="f-fail-split-inform-mpoo-fail" sourceRef="fail-split" targetRef="inform-mpoo-fail" />
+    <bpmn:sequenceFlow id="f-fail-split-inform-mspo-fail" sourceRef="fail-split" targetRef="inform-mspo-fail" />
+    <bpmn:sequenceFlow id="f-inform-mpoo-fail-fail-join" sourceRef="inform-mpoo-fail" targetRef="fail-join" />
+    <bpmn:sequenceFlow id="f-inform-mspo-fail-fail-join" sourceRef="inform-mspo-fail" targetRef="fail-join" />
+    <bpmn:sequenceFlow id="f-fail-join-end-failed" sourceRef="fail-join" targetRef="end-failed" />
+  </bpmn:process>
+</bpmn:definitions>

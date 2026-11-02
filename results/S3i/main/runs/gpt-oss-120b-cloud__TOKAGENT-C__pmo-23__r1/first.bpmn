@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Credit Scoring Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_ScoringRequest" name="ScoringRequest" />
+  <bpmn:message id="Message_ScoringResult" name="ScoringResult" />
+  <bpmn:message id="Message_DelayNotice" name="DelayNotice" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="bank" name="Bank" processRef="bank-process" />
+    <bpmn:participant id="agency" name="Agency" processRef="agency-process" />
+    <bpmn:messageFlow id="m-sr-a_start" name="ScoringRequest" sourceRef="sr" targetRef="a_start" messageRef="Message_ScoringRequest" />
+    <bpmn:messageFlow id="m-si-ri" name="ScoringResult" sourceRef="si" targetRef="ri" messageRef="Message_ScoringResult" />
+    <bpmn:messageFlow id="m-sd-rd" name="DelayNotice" sourceRef="sd" targetRef="rd" messageRef="Message_DelayNotice" />
+    <bpmn:messageFlow id="m-s2-rl" name="ScoringResult" sourceRef="s2" targetRef="rl" messageRef="Message_ScoringResult" />
+  </bpmn:collaboration>
+  <bpmn:process id="bank-process" name="Bank" isExecutable="false">
+    <bpmn:laneSet id="bank-lanes">
+      <bpmn:lane id="clerk" name="Sales Clerk">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_clerk</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Banking System">
+        <bpmn:flowNodeRef>sr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ri</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_system</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start credit scoring" />
+    <bpmn:task id="cr" name="Receive credit-scoring request" />
+    <bpmn:endEvent id="e_clerk" name="Clerk done" />
+    <bpmn:task id="sr" name="Send scoring request to agency" />
+    <bpmn:exclusiveGateway id="g1" name="Result type?" />
+    <bpmn:task id="ri" name="Receive immediate result" />
+    <bpmn:task id="rd" name="Receive delay notice" />
+    <bpmn:task id="dm" name="Display delay message to clerk" />
+    <bpmn:task id="rl" name="Receive level 2 result" />
+    <bpmn:task id="pr" name="Present result to clerk" />
+    <bpmn:endEvent id="e_system" name="Process end" />
+    <bpmn:sequenceFlow id="f-s-cr" sourceRef="s" targetRef="cr" />
+    <bpmn:sequenceFlow id="f-cr-sr" sourceRef="cr" targetRef="sr" />
+    <bpmn:sequenceFlow id="f-sr-g1" sourceRef="sr" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-ri" name="immediate" sourceRef="g1" targetRef="ri" />
+    <bpmn:sequenceFlow id="f-g1-rd" name="delayed" sourceRef="g1" targetRef="rd" />
+    <bpmn:sequenceFlow id="f-ri-pr" sourceRef="ri" targetRef="pr" />
+    <bpmn:sequenceFlow id="f-pr-e_system" sourceRef="pr" targetRef="e_system" />
+    <bpmn:sequenceFlow id="f-rd-dm" sourceRef="rd" targetRef="dm" />
+    <bpmn:sequenceFlow id="f-dm-rl" sourceRef="dm" targetRef="rl" />
+    <bpmn:sequenceFlow id="f-rl-pr" sourceRef="rl" targetRef="pr" />
+    <bpmn:sequenceFlow id="f-dm-rl-2" sourceRef="dm" targetRef="rl" />
+    <bpmn:sequenceFlow id="f-rl-pr-2" sourceRef="rl" targetRef="pr" />
+  </bpmn:process>
+  <bpmn:process id="agency-process" name="Agency" isExecutable="false">
+    <bpmn:startEvent id="a_start" name="Scoring request received">
+      <bpmn:messageEventDefinition id="a_start-def" messageRef="Message_ScoringRequest" />
+    </bpmn:startEvent>
+    <bpmn:task id="l1" name="Perform level 1 scoring" />
+    <bpmn:exclusiveGateway id="g2" name="Immediate result?" />
+    <bpmn:sendTask id="si" name="Send immediate result" messageRef="Message_ScoringResult" />
+    <bpmn:sendTask id="sd" name="Send delay notice" messageRef="Message_DelayNotice" />
+    <bpmn:task id="l2" name="Perform level 2 scoring" />
+    <bpmn:sendTask id="s2" name="Send level 2 result" messageRef="Message_ScoringResult" />
+    <bpmn:endEvent id="a_end" name="Agency end" />
+  </bpmn:process>
+</bpmn:definitions>

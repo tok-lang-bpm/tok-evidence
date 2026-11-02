@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Contract" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Contract" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="procurement" name="Procurement">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order_single</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order_multiple</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_arrival</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>start_build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder_cheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder_fastest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complain_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_complain</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Contract start" />
+    <bpmn:task id="query" name="Query web shops" />
+    <bpmn:task id="assess" name="Find delivery, price, and lead time" />
+    <bpmn:task id="create_list" name="Create list of parts to order from each shop" />
+    <bpmn:exclusiveGateway id="check_stock" name="Single shop sufficient?" />
+    <bpmn:task id="order_single" name="Order parts from single shop" />
+    <bpmn:task id="order_multiple" name="Order parts from several shops" />
+    <bpmn:task id="wait_arrival" name="Wait for first parts arrival" />
+    <bpmn:task id="start_build" name="Start building" />
+    <bpmn:exclusiveGateway id="stock_check" name="Stock level check" />
+    <bpmn:task id="reorder_cheapest" name="Reorder cheapest parts" />
+    <bpmn:task id="reorder_fastest" name="Reorder fastest parts" />
+    <bpmn:task id="complain_mail" name="Write complaint mail to friends" />
+    <bpmn:endEvent id="end_success" name="Contract completed" />
+    <bpmn:endEvent id="end_complain" name="Complaint sent" />
+    <bpmn:sequenceFlow id="f-start-query" sourceRef="start" targetRef="query" />
+    <bpmn:sequenceFlow id="f-query-assess" sourceRef="query" targetRef="assess" />
+    <bpmn:sequenceFlow id="f-assess-create_list" sourceRef="assess" targetRef="create_list" />
+    <bpmn:sequenceFlow id="f-create_list-check_stock" sourceRef="create_list" targetRef="check_stock" />
+    <bpmn:sequenceFlow id="f-check_stock-order_single" name="yes" sourceRef="check_stock" targetRef="order_single" />
+    <bpmn:sequenceFlow id="f-check_stock-order_multiple" name="no" sourceRef="check_stock" targetRef="order_multiple" />
+    <bpmn:sequenceFlow id="f-order_single-wait_arrival" sourceRef="order_single" targetRef="wait_arrival" />
+    <bpmn:sequenceFlow id="f-order_multiple-wait_arrival" sourceRef="order_multiple" targetRef="wait_arrival" />
+    <bpmn:sequenceFlow id="f-wait_arrival-start_build" sourceRef="wait_arrival" targetRef="start_build" />
+    <bpmn:sequenceFlow id="f-start_build-stock_check" sourceRef="start_build" targetRef="stock_check" />
+    <bpmn:sequenceFlow id="f-stock_check-reorder_cheapest" sourceRef="stock_check" targetRef="reorder_cheapest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 5 and stock &gt;= 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock_check-reorder_fastest" sourceRef="stock_check" targetRef="reorder_fastest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 3 and stock &gt; 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock_check-complain_mail" sourceRef="stock_check" targetRef="complain_mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock_check-end_success" sourceRef="stock_check" targetRef="end_success">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &gt;= 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-reorder_cheapest-wait_arrival" sourceRef="reorder_cheapest" targetRef="wait_arrival" />
+    <bpmn:sequenceFlow id="f-reorder_fastest-wait_arrival" sourceRef="reorder_fastest" targetRef="wait_arrival" />
+    <bpmn:sequenceFlow id="f-complain_mail-end_complain" sourceRef="complain_mail" targetRef="end_complain" />
+  </bpmn:process>
+</bpmn:definitions>

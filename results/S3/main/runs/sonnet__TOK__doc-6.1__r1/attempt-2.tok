@@ -1,0 +1,62 @@
+tok 1.0 "ACME invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received on paper or fax"
+    task receive "Receive invoice in central inbox"
+    task inspect "Inspect invoice visually"
+    task forward "Forward invoice to accounting employee"
+  lane accounting "Accounting employee"
+    task identify "Identify charging supplier"
+    task create "Create new invoice instance"
+    task checkitems "Check invoice items"
+    task note "Note cost center and cost center manager for each position on docket"
+    task sendfirst "Send docket and copy of invoice to first cost center manager"
+    task clarify "Clarify inconsistencies with vendor"
+    xor consult "Consultation of cost center managers necessary?"
+    task consulting "Consult cost center managers by telephone or e-mail"
+    xor consultdone
+    task sendagain "Send copy of invoice to cost center managers again"
+    task forwardcomm "Forward copy of invoice to commercial manager"
+    task resolve "Resolve complaint with supplier"
+    task instruct "Give payment instructions"
+    task close "Close instance in ACME Financial Accounting"
+    end paid "Invoice processed"
+  lane manager "Cost center manager"
+    xor mgrin
+    task review "Review content for accuracy"
+    xor accurate "Everything in order?"
+    task markap "Note AP code on docket"
+    xor more "More cost center managers on the list?"
+    task reject "Reject AP with note and explanatory statement on docket"
+  lane commercial "Commercial manager"
+    xor auditin
+    task audit "Make commercial audit"
+    xor complaint "Complaint?"
+    task approve "Issue approval for payment"
+    xor amount "Bill amount exceeds EUR 20?"
+    xor amountdone
+    task returncopy "Return copy of invoice and docket to accounting employee in signature file"
+  lane board "Board"
+    task boardcheck "Check invoice again"
+
+flow received -> receive -> inspect -> forward -> identify -> create -> checkitems -> note -> sendfirst -> mgrin -> review -> accurate
+flow accurate -> markap "yes" when="everything in order"
+flow accurate -> reject "no" default
+flow markap -> more
+flow more -> mgrin "yes" when="more cost center managers on the list"
+flow more -> forwardcomm "no" default
+flow reject -> clarify -> consult
+flow consult -> consulting "yes" when="consultation necessary"
+flow consult -> consultdone "no" default
+flow consulting -> consultdone
+flow consultdone -> sendagain -> mgrin
+flow forwardcomm -> auditin -> audit -> complaint
+flow complaint -> resolve "yes" when="complaint exists"
+flow resolve -> auditin
+flow complaint -> approve "no" default
+flow approve -> amount
+flow amount -> boardcheck "yes" when="amount > 20"
+flow amount -> amountdone "no" default
+flow boardcheck -> amountdone
+flow amountdone -> returncopy -> instruct -> close -> paid

@@ -1,0 +1,83 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The sales clerks in a bank can use their software frontend to receive the credit-scoring for a certain customer. 
+This starts a process in the banking system which communicates with the agency in the background. 
+This process sends a scoring request to the agency right after the beginning. 
+Then, the Agency does a first quick scoring (level 1). 
+This will often lead to an immediate result which is then returned directly to the banking system within seconds. 
+The banking process presents the result to the clerk sitting at the frontend. 
+Sometimes the scoring cannot be determined immediately and takes longer. 
+In this case the agency informs the banking process of the delay and then starts the level 2 scoring (which can take up to a couple of minutes). 
+After the scoring result is determined, the information is sent back to the banking process. 
+The banking process displays a message to the clerk when he receives information about the delay to check again later. 
+As soon as the result arrives, it can be seen at the frontend.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Credit scoring process"
+
+pool bank "Bank"
+  lane clerk "Clerk"
+    start start "Clerk initiates credit scoring"
+    task display_delay "Display delay message to clerk"
+    task display_result "Display scoring result to clerk"
+    end end_process "Scoring process completed"
+  lane system "Banking System"
+    send send_request "Send scoring request to agency" message="Scoring request"
+    eventgw wait_agency "Wait for agency response"
+    receive receive_immediate "Receive scoring result" message="Scoring result"
+    receive receive_delay "Receive scoring delay" message="Scoring delay"
+    receive receive_final "Receive final scoring result" message="Scoring result"
+
+    flow start -> send_request
+    flow send_request -> wait_agency
+    flow wait_agency -> receive_immediate
+    flow wait_agency -> receive_delay
+    flow receive_immediate -> display_result
+    flow receive_delay -> display_delay
+    flow display_delay -> receive_final
+    flow receive_final -> display_result
+    flow display_result -> end_process
+
+pool agency "Agency"
+  lane agency_lane "Agency"
+    start start_agency "Scoring request received"
+    service level1_scoring "Perform level 1 quick scoring"
+    xor immediate_gateway "Immediate result?"
+    send send_result "Send scoring result to banking system" message="Scoring result"
+    send inform_delay "Inform banking system of delay" message="Scoring delay"
+    service level2_scoring "Perform level 2 scoring"
+    end end_agency "Agency process completed"
+
+    flow start_agency -> level1_scoring
+    flow level1_scoring -> immediate_gateway
+    flow immediate_gateway -> send_result "yes"
+    flow immediate_gateway -> inform_delay "no"
+    flow inform_delay -> level2_scoring
+    flow level2_scoring -> send_result
+    flow send_result -> end_agency
+
+message send_request -> start_agency "Scoring request" [id=request_msg]
+message send_result -> receive_immediate "Scoring result" [id=result_msg]
+message send_result -> receive_final "Scoring result" [id=result_msg]
+message inform_delay -> receive_delay "Scoring delay" [id=delay_msg]
+```
+
+The tok checker reports these problems in it:
+
+- line 44: error T001: invalid token: unexpected character '['
+- line 45: error T001: invalid token: unexpected character '['
+- line 46: error T001: invalid token: unexpected character '['
+- line 47: error T001: invalid token: unexpected character '['
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

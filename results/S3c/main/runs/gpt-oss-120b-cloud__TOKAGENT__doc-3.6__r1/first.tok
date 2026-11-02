@@ -1,0 +1,68 @@
+tok 1.0
+
+pool org "Organization" {
+  lane claimant "Claimant"
+  lane internal "Internal"
+  lane cms "Claims Management System"
+}
+
+start start "Claim received"
+
+task check_insurance "Check whether claimant is insured" lane=internal
+
+xor insured? "Insured?"
+
+# Not insured path
+flow insured? -> inform_reject "Reject claim" when="!insured"
+
+task inform_reject "Inform claimant that claim must be rejected" lane=internal
+flow inform_reject -> end_reject
+
+end end_reject
+
+# Insured path
+flow insured? -> evaluate_severity "Proceed" when="insured"
+
+task evaluate_severity "Evaluate severity of claim" lane=internal
+
+xor severity "Severity simple or complex?"
+
+flow severity -> send_simple "Send simple forms" when="simple"
+flow severity -> send_complex "Send complex forms" default
+
+# send forms tasks
+
+task send_simple "Send simple forms to claimant" lane=internal
+
+task send_complex "Send complex forms to claimant" lane=internal
+
+# merge after sending forms
+xor forms_sent "Forms sent"
+flow send_simple -> forms_sent
+flow send_complex -> forms_sent
+
+# receive returned forms
+receive receive_forms "Receive returned forms" lane=claimant
+flow forms_sent -> receive_forms
+
+# check completeness
+task check_completeness "Check forms for completeness" lane=internal
+flow receive_forms -> check_completeness
+
+xor complete? "Forms complete?"
+flow check_completeness -> complete? ""
+
+flow complete? -> register_claim "Forms complete" when="complete"
+flow complete? -> inform_update "Forms incomplete" default
+
+# register claim
+task register_claim "Register claim in Claims Management system" lane=cms
+flow register_claim -> end_complete
+
+end end_complete
+
+# inform update
+task inform_update "Inform claimant to update forms" lane=internal
+receive receive_updated "Receive updated forms" lane=claimant
+flow inform_update -> receive_updated
+flow receive_updated -> check_completeness

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Shipping Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Shipping Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="sec" name="Secretary">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shipDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitParallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amountDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>invite</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeLargeSmall</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>label</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>insDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>insure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinAll</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="loghead" name="Logistics Dept Head" />
+      <bpmn:lane id="wh" name="Warehousemen">
+        <bpmn:flowNodeRef>package</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:exclusiveGateway id="shipDecision" name="Goods shall be shipped?" default="f-shipDecision-e" />
+    <bpmn:task id="clarify" name="Secretary clarifies who will do the shipping" />
+    <bpmn:parallelGateway id="splitParallel" name="Parallel activities" />
+    <bpmn:exclusiveGateway id="amountDecision" name="Large amounts?" default="f-amountDecision-mergeLargeSmall" />
+    <bpmn:task id="invite" name="Secretary invites three logistic companies" />
+    <bpmn:task id="select" name="Secretary selects a logistic company" />
+    <bpmn:exclusiveGateway id="mergeLargeSmall" name="Merge shipping types" />
+    <bpmn:task id="label" name="Secretary writes package label" />
+    <bpmn:exclusiveGateway id="insDecision" name="Parcel insurance needed?" default="f-insDecision-joinAll" />
+    <bpmn:task id="insure" name="Logistics Dept Head takes parcel insurance" />
+    <bpmn:parallelGateway id="joinAll" name="Join parallel activities" />
+    <bpmn:task id="prepare" name="Prepare packaged goods for pickup" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:task id="package" name="Warehousemen package goods" />
+    <bpmn:sequenceFlow id="f-s-shipDecision" sourceRef="s" targetRef="shipDecision" />
+    <bpmn:sequenceFlow id="f-shipDecision-clarify" name="yes" sourceRef="shipDecision" targetRef="clarify">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">shipped</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-shipDecision-e" name="no" sourceRef="shipDecision" targetRef="e" />
+    <bpmn:sequenceFlow id="f-clarify-splitParallel" sourceRef="clarify" targetRef="splitParallel" />
+    <bpmn:sequenceFlow id="f-splitParallel-amountDecision" sourceRef="splitParallel" targetRef="amountDecision" />
+    <bpmn:sequenceFlow id="f-splitParallel-package" sourceRef="splitParallel" targetRef="package" />
+    <bpmn:sequenceFlow id="f-amountDecision-invite" name="large" sourceRef="amountDecision" targetRef="invite">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">large</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-amountDecision-mergeLargeSmall" name="small" sourceRef="amountDecision" targetRef="mergeLargeSmall" />
+    <bpmn:sequenceFlow id="f-invite-select" sourceRef="invite" targetRef="select" />
+    <bpmn:sequenceFlow id="f-select-mergeLargeSmall" sourceRef="select" targetRef="mergeLargeSmall" />
+    <bpmn:sequenceFlow id="f-mergeLargeSmall-label" sourceRef="mergeLargeSmall" targetRef="label" />
+    <bpmn:sequenceFlow id="f-label-insDecision" sourceRef="label" targetRef="insDecision" />
+    <bpmn:sequenceFlow id="f-insDecision-insure" name="yes" sourceRef="insDecision" targetRef="insure">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">insurance</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-insDecision-joinAll" name="no" sourceRef="insDecision" targetRef="joinAll" />
+    <bpmn:sequenceFlow id="f-insure-joinAll" sourceRef="insure" targetRef="joinAll" />
+    <bpmn:sequenceFlow id="f-package-joinAll" sourceRef="package" targetRef="joinAll" />
+    <bpmn:sequenceFlow id="f-joinAll-prepare" sourceRef="joinAll" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-prepare-e" sourceRef="prepare" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

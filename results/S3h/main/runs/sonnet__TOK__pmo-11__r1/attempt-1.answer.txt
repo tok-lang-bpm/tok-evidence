@@ -1,0 +1,34 @@
+```tok
+tok 1.0 "Subscription lifecycle"
+
+pool org "Subscription organisation"
+  lane customer "Customer"
+    start signedup "Customer signs up"
+    task signup "Enter personal and payment information"
+    task cancelreq "Submit the cancellation request"
+  lane system "System"
+    task generate "Generate the account"
+    task assign "Assign access"
+    task billing "Trigger automated billing cycles"
+    task updates "Send updates, product enhancements and renewal notifications"
+    xor cancels "Does the customer cancel?"
+  lane support "Support team"
+    task process "Process the cancellation request"
+    xor terms "Is a refund due under the terms?"
+    task refund "Apply the refund"
+    task charges "Apply the charges"
+    xor applied
+    task deactivate "Deactivate the subscription"
+    task settle "Settle the final account balance"
+    end done "Subscription closed"
+
+flow signedup -> signup -> generate -> assign -> billing -> updates -> cancels
+flow cancels -> updates "no" default
+flow cancels -> cancelreq "yes" when="cancel = true"
+flow cancelreq -> process -> terms
+flow terms -> refund "yes" when="refundDue = true"
+flow terms -> charges "no" default
+flow refund -> applied
+flow charges -> applied
+flow applied -> deactivate -> settle -> done
+```

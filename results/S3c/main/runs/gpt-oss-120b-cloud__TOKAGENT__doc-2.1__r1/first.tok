@@ -1,0 +1,157 @@
+tok 1.0
+
+pool teleco "TELECO" {
+  lane customer "Customer"
+  lane cs "Customer Service"
+  lane sm "Service Management"
+  lane rp "Resource Provisioning"
+  lane bc "Billing & Collections"
+  lane es "Electronic Service"
+}
+
+start start "Service degradation perceived"
+
+task send-params "Send problem parameters list to Customer Service"
+
+task enter-report "Enter problem report into system T"
+
+task compare-sla "Compare problem report to customer SLA"
+
+task determine-measures "Determine counter measures and priorities"
+
+task determine-significance "Determine customer significance"
+
+xor premium-gw "Is customer premium?"
+
+task extra-fix "Extra problem fix process"
+
+xor significance-gw "Is significance affecting counter measures?"
+
+task create-detailed-report "Create detailed problem report"
+
+task send-detailed-to-sm "Send detailed problem report to Service Management"
+
+xor analyzable-gw "Is problem analyzable by Service Management?"
+
+task send-detailed-to-rp "Send detailed problem report to Resource Provisioning"
+
+// Resource Provisioning path
+
+task rp-receive "Receive detailed problem report"
+
+task check-problems "Check for possible problems"
+
+xor problems-gw "Problems detected?"
+
+task normal-notification "Create normal service execution notification"
+
+task rp-analyze "Analyze problem and create trouble report"
+
+task send-status "Include report in status report and send to Service Management"
+
+// Service Management processing after receiving status report (from both paths)
+
+task prepare-final-status "Prepare final status report"
+
+xor final-alt "Final status decision"
+
+// Alternative 1: No problem detected at all
+
+task send-actual-performance "Send actual service performance to Customer Service"
+
+// Alternative 2: Minor corrective actions required
+
+task minor-corrective "Undertake minor corrective actions"
+
+task create-problem-resolution "Create problem resolution report"
+
+task send-problem-resolution "Send problem resolution report to Customer Service"
+
+// Alternative 3: Automatic resource restoration required
+
+task create-restoration-request "Create request for automatic resource restoration"
+
+task send-restoration-request "Send restoration request to Resource Provisioning"
+
+task rp-receive-restoration "Receive restoration request"
+
+boundary timer timeout "Terminate process" on=rp-receive-restoration timer=P2D
+
+task track-errors "Track all possible errors"
+
+task rp-corrective "Undertake corrective actions"
+
+task create-troubleshooting-report "Create trouble-shooting report"
+
+task send-troubleshooting-to-sm "Send trouble-shooting report to Service Management"
+
+// After receiving trouble-shooting report, Service Management creates problem resolution report
+
+task sm-create-problem-resolution "Create problem resolution report"
+
+task sm-send-problem-resolution "Send problem resolution report to Customer Service"
+
+// Converge paths to parallel activities
+
+and parallel-start "Parallel activities start"
+
+// Parallel activities
+
+task create-customer-report "Create report for the customer"
+
+task report-sla-rebate "Report SLA violation rebate to Billing & Collections"
+
+task send-customer-report "Send customer report to Customer"
+
+and parallel-end "Parallel activities end"
+
+end end "Process ends"
+
+// Flows
+flow start -> send-params ""
+flow send-params -> enter-report ""
+flow enter-report -> compare-sla ""
+flow compare-sla -> determine-measures ""
+flow determine-measures -> determine-significance ""
+flow determine-significance -> premium-gw ""
+flow premium-gw -> extra-fix "yes"
+flow premium-gw -> significance-gw "no"
+flow extra-fix -> significance-gw ""
+flow significance-gw -> determine-measures "yes"
+flow significance-gw -> create-detailed-report "no"
+flow create-detailed-report -> send-detailed-to-sm ""
+flow send-detailed-to-sm -> analyzable-gw ""
+flow analyzable-gw -> send-detailed-to-rp "no"
+flow analyzable-gw -> rp-receive "yes"
+flow send-detailed-to-rp -> rp-receive ""
+flow rp-receive -> check-problems ""
+flow check-problems -> problems-gw ""
+flow problems-gw -> normal-notification "no"
+flow problems-gw -> rp-analyze "yes"
+flow normal-notification -> send-status ""
+flow rp-analyze -> send-status ""
+flow send-status -> prepare-final-status ""
+flow prepare-final-status -> final-alt ""
+flow final-alt -> send-actual-performance "no problem"
+flow final-alt -> minor-corrective "minor corrective"
+flow final-alt -> create-restoration-request "auto restoration"
+flow send-actual-performance -> parallel-start ""
+flow minor-corrective -> create-problem-resolution ""
+flow create-problem-resolution -> send-problem-resolution ""
+flow send-problem-resolution -> parallel-start ""
+flow create-restoration-request -> send-restoration-request ""
+flow send-restoration-request -> rp-receive-restoration ""
+flow rp-receive-restoration -> track-errors ""
+flow track-errors -> rp-corrective ""
+flow rp-corrective -> create-troubleshooting-report ""
+flow create-troubleshooting-report -> send-troubleshooting-to-sm ""
+flow send-troubleshooting-to-sm -> sm-create-problem-resolution ""
+flow sm-create-problem-resolution -> sm-send-problem-resolution ""
+flow sm-send-problem-resolution -> parallel-start ""
+flow parallel-start -> create-customer-report ""
+flow parallel-start -> report-sla-rebate ""
+flow parallel-start -> send-customer-report ""
+flow create-customer-report -> parallel-end ""
+flow report-sla-rebate -> parallel-end ""
+flow send-customer-report -> parallel-end ""
+flow parallel-end -> end ""

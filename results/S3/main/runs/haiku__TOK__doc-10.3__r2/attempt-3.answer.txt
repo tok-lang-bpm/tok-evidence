@@ -1,0 +1,44 @@
+```tok
+tok 1.0 "Deregistration of the measuring point"
+
+pool go "GO"
+  lane mpoo "MPOO"
+    start needed "Deregistration needed"
+    task deregister "Deregister the measuring point at the GO"
+    task confirm_cont "Confirm the continuation to the MPOO"
+  lane go_op "GO"
+    task verify "Verify the deregistration"
+    xor accepted "Deregistration accepted?"
+    task reject "Reject the deregistration of the MPOO"
+    end rejected "Deregistration rejected"
+    task prelim "Preliminarily confirm the deregistration of the MPOO"
+    task prepare "Prepare the readmission of the measuring point"
+    xor oblige_q "Oblige the MPOO to continue the operations?"
+    task oblige "Oblige the MPOO to continue the operations"
+    xor merge_obl
+    or equip_q "Equipment acquisition and/or equipment changes?"
+    task acquire "Perform the equipment acquisition"
+    task change "Perform the equipment changes"
+    or equip_join
+    task assign "Assign the GO as MPO"
+    task inform_mpoo "Inform the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "Inform the MSPO about the assignment of the GO"
+    task inform_sp "Inform the SP about the assignment of the GO"
+    end done "Assignment of the GO completed"
+
+flow needed -> deregister -> verify -> accepted
+flow accepted -> reject "no"
+flow reject -> rejected
+flow accepted -> prelim "yes"
+flow prelim -> prepare -> oblige_q
+flow oblige_q -> oblige "yes"
+flow oblige_q -> merge_obl "no"
+flow oblige -> confirm_cont -> merge_obl
+flow merge_obl -> equip_q
+flow equip_q -> acquire "acquisition" when="acquisition_needed"
+flow equip_q -> change "changes" when="changes_needed"
+flow equip_q -> equip_join "none" default
+flow acquire -> equip_join
+flow change -> equip_join
+flow equip_join -> assign -> inform_mpoo -> inform_mspo -> inform_sp -> done
+```

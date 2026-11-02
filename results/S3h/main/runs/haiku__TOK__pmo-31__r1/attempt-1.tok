@@ -1,0 +1,55 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizzard "Blizzard"
+  lane player "Player"
+    start begin "Start creating a character"
+    and fork
+    task names "Come up with good character names"
+    task enterAccount "Enter the account information"
+    task clickLink "Click the link in the confirmation mail"
+    xor payChoice "Payment method?"
+    task payMethod "Select the payment method"
+    task enterCard "Enter the credit card information"
+    task enterIban "Enter the IBAN and BIC numbers"
+    and joinAll
+    task loginGame "Log into the game"
+    task selectRealm "Select realm, race and class"
+    task enterNames "Enter the names one by one"
+    and fork2
+  lane generator "Character generator"
+    task checkAccount "Check whether you have a battle.net account"
+    xor hasAccount "Battle.net account exists?"
+    xor accountReady
+    task checkSub "Check whether you have an active WoW subscription"
+    xor hasSub "Active WoW subscription?"
+    xor subReady
+    task checkName "Check whether the name is still available"
+    xor nameFree "Name still available?"
+    task sendConfirm "Send the confirmation"
+    task makeSelfies "Create selfies of your character"
+    and joinEnd
+    catch expansion "Expansion released" message="Expansion released"
+    task sendExpansion "Send the message about the expansion"
+    end finished "Character created"
+
+flow begin -> fork
+flow fork -> names -> joinAll
+flow fork -> checkAccount -> hasAccount
+flow hasAccount -> accountReady "yes"
+flow hasAccount -> enterAccount "no"
+flow enterAccount -> clickLink -> accountReady
+flow accountReady -> checkSub -> hasSub
+flow hasSub -> subReady "yes"
+flow hasSub -> payMethod "no"
+flow payMethod -> payChoice
+flow payChoice -> enterCard "credit card"
+flow payChoice -> enterIban "bank account"
+flow enterCard -> subReady
+flow enterIban -> subReady
+flow subReady -> joinAll
+flow joinAll -> loginGame -> selectRealm -> enterNames -> checkName -> nameFree
+flow nameFree -> enterNames "no"
+flow nameFree -> fork2 "yes"
+flow fork2 -> sendConfirm -> joinEnd
+flow fork2 -> makeSelfies -> joinEnd
+flow joinEnd -> expansion -> sendExpansion -> finished

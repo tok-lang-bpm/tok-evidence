@@ -1,0 +1,110 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4699,
+  "output_tokens": 1335,
+  "seconds": 5.306242299993755,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model this process as a BPMN process, with pool (organisation) and lanes per actor. Actors: employees, employer, accident insurance provider, Labour Inspectorate, self-employed person, students/schoolchildren (maybe \"student\" lane), schools/universities/directorate?, maybe \"private insurer\". However the description is long; we need to create a coherent process but minimal. Likely lanes: Employee, Employer, AccidentInsurance, LabourInspectorate, SelfEmployed, School (or Education). Could combine some.\n\nWe need start event, tasks for steps: \"Gather information about work accident\", \"Determine if accident qualifies as work accident\", decisions for each condition. Then \"Employee informs employer\", \"Employer reports to Labour Inspectorate if fatality/serious injury\", \"Report to accident insurance provider within 5 days\", \"Self-employed reports to accident insurance provider\", \"Students/schoolchildren report to directorate\", \"Schools report to accident insurance provider\", \"Private insurance party reports in writing\". Also \"Report to private insurer within conditions\". We'll need exclusive gateway after determination, then parallel branches for reports.\n\nSimplify: After employee informs employer (task), decision: \"Is accident fatal or serious injury?\" yes -> employer reports to Labour Inspectorate (task). Also regardless, must report to accident insurance provider (task). Self-employed path separate start? maybe a separate lane: self-employed person must report to insurance provider. Students/schoolchildren must report to directorate and schools must report to insurance provider.\n\nWe'll model as one process with multiple lanes: Employee, Employer, InsuranceProvider, LabourInspectorate, SelfEmployed, Education, PrivateInsurer (maybe). Each lane will have tasks.\n\nStart event in Employee lane: \"Accident occurs\". Then task \"Gather accident information\". Then task \"Inform employer\". Flow to Employer lane: \"Receive accident report\". Then decision \"Fatal or serious injury?\" -> yes: task \"Report to Labour Inspectorate\". Both yes and no flow to task \"Report to accident insurance provider\". End events after each reporting.\n\nParallel: After employer side, also there might be \"Report to insurance provider\" path; also \"Self-employed report\" could be parallel independent; but they are separate actors that also must report. Provide parallel gateway after employee informs employer, to split: one branch to Employer lane, another to SelfEmployed lane (if self-employed person). Also another branch to Education lane (if student). Use XOR decision to determine which actor (Employee vs SelfEmployed vs Student). Might use a decision \"Who is the affected person?\" with branches.\n\nSimplify: Use exclusive gateway after \"Gather accident information\" decision \"Is person employee?\" yes -> go to Employer lane; no -> decision \"Is person self-employed?\" yes -> SelfEmployed lane; else -> Education lane.\n\nGiven complexity, we can include activities as described.\n\nLet's craft the tok model.\n\nWe'll create pool \"Organization\". Lanes: employee, employer, insurance, labour_inspectorate, self_employed, education, private_insurer.\n\nNow write tasks with labels.\n\nTasks:\n\nEmployee lane:\n- start \"Accident occurs\"\n- task \"Gather accident information\"\n- task \"Inform employer of accident\"\n\nEmployer lane:\n- task \"Receive accident report\"\n- xor \"Fatal or serious injury?\"\n- task \"Report to Labour Inspectorate\"\n- task \"Report to accident insurance provider\"\n\nSelfEmployed lane:\n- task \"Report to accident insurance provider (self-employed)\"\n\nEducation lane:\n- task \"Report accident to directorate\"\n- task \"School reports to accident insurance provider\"\n\nPrivateInsurer lane:\n- task \"Report accident in writing to private insurer\"\n\nInsuranceProvider lane: may not need separate tasks (just receive reports). Could be end events after reports.\n\nWe'll need end events for each path.\n\nParallel: after employee informs employer, the process for self-employed and education happen in parallel? But they are exclusive based on person type. Use decision to route.\n\nDefine XOR \"Accident party type?\" with branches \"Employee\", \"Self-employed\", \"Student/School\".\n\nImplement:\n\nflow start -> gather -> inform_employer -> party_type decision.\n\nbranch employee: flow -> employer lane start (receive report) -> fatal decision etc -> report to insurer -> end.\n\nbranch self-employed: flow -> self_employed task -> end.\n\nbranch student: flow -> education tasks: report to directorate, school report to insurer -> end.\n\nAlso after employer reports to insurer, maybe also end.\n\nAdd end events per path.\n\nNow create tok syntax.\n\nNeed IDs.\n\nLet's code.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Work Accident\" [executable]\n    pool org \"Organization\"\n      lane employee \"Employee\"\n        start acc \"Accident occurs\"\n        task gather \"Gather accident information\"\n        task inform \"Inform employer of accident\"\n        xor party \"Accident party type?\"\n        flow acc -> gather -> inform -> party\n        # Employee branch\n        lane employer \"Employer\"\n          task receive \"Receive accident report\"\n          xor serious \"Fatal or serious injury?\"\n          task report_inspector \"Report to Labour Inspectorate\"\n          task report_insurer \"Report to accident insurance provider\"\n          end done_emp \"Process completed (employee)\"\n        lane self_employed \"Self-Employed\"\n          task self_report \"Report to accident insurance provider (self-employed)\"\n          end done_self \"Process completed (self-employed)\"\n        lane education \"Education\"\n          task report_directorate \"Report accident to directorate\"\n          task school_report \"School reports to accident insurance provider\"\n          end done_edu \"Process completed (education)\"\n        # Flows for branches\n        flow party -> receive \"Employee\"\n        flow party -> self_report \"Self-Employed\"\n        flow party -> report_directorate \"Student/School\"\n        # Employee path flows\n        flow receive -> serious\n        flow serious -> report_inspector \"Yes\"\n        flow serious -> report_insurer \"No\"\n        flow report_inspector -> report_insurer\n        flow report_insurer -> done_emp\n        # Education path flows\n        flow report_directorate -> school_report -> done_edu\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 6086,
+  "output_tokens": 398,
+  "seconds": 4.750009999988833,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We must provide only text, not path. Let's try again with only text field.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work Accident\" [executable]\n    pool org \"Organization\"\n      lane employee \"Employee\"\n        start acc \"Accident occurs\"\n        task gather \"Gather accident information\"\n        task inform \"Inform employer of accident\"\n        xor party \"Accident party type?\"\n        flow acc -> gather -> inform -> party\n      lane employer \"Employer\"\n        task receive \"Receive accident report\"\n        xor serious \"Fatal or serious injury?\"\n        task report_inspector \"Report to Labour Inspectorate\"\n        task report_insurer \"Report to accident insurance provider\"\n        end done_emp \"Process completed (employee)\"\n      lane self_employed \"Self-Employed\"\n        task self_report \"Report to accident insurance provider (self-employed)\"\n        end done_self \"Process completed (self-employed)\"\n      lane education \"Education\"\n        task report_directorate \"Report accident to directorate\"\n        task school_report \"School reports to accident insurance provider\"\n        end done_edu \"Process completed (education)\"\n      # Branch flows\n      flow party -> receive \"Employee\"\n      flow party -> self_report \"Self-Employed\"\n      flow party -> report_directorate \"Student/School\"\n      # Employee path\n      flow receive -> serious\n      flow serious -> report_inspector \"Yes\"\n      flow serious -> report_insurer \"No\"\n      flow report_inspector -> report_insurer\n      flow report_insurer -> done_emp\n      # Education path\n      flow report_directorate -> school_report -> done_edu"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 2: error P005: the document must start with a header such as 'tok 1.0'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6601,
+  "output_tokens": 656,
+  "seconds": 4.543365699995775,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The error: header line includes [executable] after title; syntax: tok 1.0 \"Title\" [executable] is okay? but maybe need space before bracket? In cheat sheet: `tok 1.0 \"Title\" [executable]` is correct. Yet error says unexpected character '[' at line 1. Perhaps need no space before bracket? Actually example: `tok 1.0 \"Application handling\"` (no bracket). For executable, maybe syntax: `tok 1.0 \"Application handling\" [executable]`. It should be okay. Maybe the tool expects header only `tok 1.0 \"Title\"` without flags? Let's omit [executable] for simplicity. Also need proper indentation: after pool line, indent block with two spaces. Also lanes need to be nested inside pool with indentation. Also the comment lines with '# Branch flows' may be okay.\n\nBut error also says must start with header. Our line begins with `tok 1.0 \"Work Accident\" [executable]` which seems correct. Maybe the tool doesn't accept [executable] in header for version 1.0? It may be allowed. Let's try without it.\n\nAlso we need to close pool? The pool block ends after lanes; indentation consistent.\n\nLet's produce text without [executable] and ensure each line starts with proper syntax.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work Accident\"\n    pool org \"Organization\"\n      lane employee \"Employee\"\n        start acc \"Accident occurs\"\n        task gather \"Gather accident information\"\n        task inform \"Inform employer of accident\"\n        xor party \"Accident party type?\"\n        flow acc -> gather -> inform -> party\n      lane employer \"Employer\"\n        task receive \"Receive accident report\"\n        xor serious \"Fatal or serious injury?\"\n        task report_inspector \"Report to Labour Inspectorate\"\n        task report_insurer \"Report to accident insurance provider\"\n        end done_emp \"Process completed (employee)\"\n      lane self_employed \"Self-Employed\"\n        task self_report \"Report to accident insurance provider (self-employed)\"\n        end done_self \"Process completed (self-employed)\"\n      lane education \"Education\"\n        task report_directorate \"Report accident to directorate\"\n        task school_report \"School reports to accident insurance provider\"\n        end done_edu \"Process completed (education)\"\n      # Branch flows\n      flow party -> receive \"Employee\"\n      flow party -> self_report \"Self-Employed\"\n      flow party -> report_directorate \"Student/School\"\n      # Employee path\n      flow receive -> serious\n      flow serious -> report_inspector \"Yes\"\n      flow serious -> report_insurer \"No\"\n      flow report_inspector -> report_insurer\n      flow report_insurer -> done_emp\n      # Education path\n      flow report_directorate -> school_report -> done_edu"
+    },
+    "is_error": false,
+    "result": "line 16: warning W042: path without an end event (element without outgoing flow) (self_report)\nline 17: warning W041: element not reachable from a start event (done_self)\n0 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7377,
+  "output_tokens": 594,
+  "seconds": 2.5774226000066847,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We have warnings: self_report path no outgoing flow to an end event. The self_report task should lead to an end event. We need an end after self_report. Similarly done_self is unreachable because no flow leads to it; we need flow from self_report to done_self or use end directly after self_report instead of separate end.\n\nSimplify: Remove separate end done_self, replace with end after self_report. Use end event ID maybe done_self.\n\nAdd flow self_report -> done_self. Also need end element defined after self_report; can reuse done_self as end.\n\nSimilarly need flow self_report -\\u003e done_self.\n\nAdd: after task self_report, define end done_self and flow.\n\nAlso ensure flow self_report -\\u003e done_self.\n\nLet's modify.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work Accident\"\n    pool org \"Organization\"\n      lane employee \"Employee\"\n        start acc \"Accident occurs\"\n        task gather \"Gather accident information\"\n        task inform \"Inform employer of accident\"\n        xor party \"Accident party type?\"\n        flow acc -> gather -> inform -> party\n      lane employer \"Employer\"\n        task receive \"Receive accident report\"\n        xor serious \"Fatal or serious injury?\"\n        task report_inspector \"Report to Labour Inspectorate\"\n        task report_insurer \"Report to accident insurance provider\"\n        end done_emp \"Process completed (employee)\"\n      lane self_employed \"Self-Employed\"\n        task self_report \"Report to accident insurance provider (self-employed)\"\n        end done_self \"Process completed (self-employed)\"\n        flow self_report -> done_self\n      lane education \"Education\"\n        task report_directorate \"Report accident to directorate\"\n        task school_report \"School reports to accident insurance provider\"\n        end done_edu \"Process completed (education)\"\n        flow report_directorate -> school_report -> done_edu\n      # Branch flows\n      flow party -> receive \"Employee\"\n      flow party -> self_report \"Self-Employed\"\n      flow party -> report_directorate \"Student/School\"\n      # Employee path\n      flow receive -> serious\n      flow serious -> report_inspector \"Yes\"\n      flow serious -> report_insurer \"No\"\n      flow report_inspector -> report_insurer\n      flow report_insurer -> done_emp"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 7997,
+  "output_tokens": 318,
+  "seconds": 3.3086566000129096,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Work Accident\"\n    pool org \"Organization\"\n      lane employee \"Employee\"\n        start acc \"Accident occurs\"\n        task gather \"Gather accident information\"\n        task inform \"Inform employer of accident\"\n        xor party \"Accident party type?\"\n        flow acc -> gather -> inform -> party\n      lane employer \"Employer\"\n        task receive \"Receive accident report\"\n        xor serious \"Fatal or serious injury?\"\n        task report_inspector \"Report to Labour Inspectorate\"\n        task report_insurer \"Report to accident insurance provider\"\n        end done_emp \"Process completed (employee)\"\n      lane self_employed \"Self-Employed\"\n        task self_report \"Report to accident insurance provider (self-employed)\"\n        end done_self \"Process completed (self-employed)\"\n        flow self_report -> done_self\n      lane education \"Education\"\n        task report_directorate \"Report accident to directorate\"\n        task school_report \"School reports to accident insurance provider\"\n        end done_edu \"Process completed (education)\"\n        flow report_directorate -> school_report -> done_edu\n      # Branch flows\n      flow party -> receive \"Employee\"\n      flow party -> self_report \"Self-Employed\"\n      flow party -> report_directorate \"Student/School\"\n      # Employee path\n      flow receive -> serious\n      flow serious -> report_inspector \"Yes\"\n      flow serious -> report_insurer \"No\"\n      flow report_inspector -> report_insurer\n      flow report_insurer -> done_emp\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

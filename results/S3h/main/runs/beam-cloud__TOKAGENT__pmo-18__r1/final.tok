@@ -1,0 +1,76 @@
+tok 1.0 "University Enrollment"
+
+pool university "University Enrollment"
+  lane student "Student"
+    start start_process "Start"
+    task submit_application "Submit application online"
+    task provide_missing "Provide missing items"
+    task confirm_enrollment "Confirm enrollment"
+    task receive_orientation "Receive orientation materials"
+    task obtain_id "Obtain student ID card"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve schedule conflicts"
+    task begin_classes "Begin attending classes"
+    task add_drop "Add or drop courses"
+    task review_grades "Review grades online"
+    task submit_appeal "Submit appeal form"
+    task await_decision "Await a decision"
+    xor international_student "International student?"
+    xor g_int_join "International processing complete?"
+    xor add_drop_choice "Add or drop courses?"
+    xor grievances "Grievances?"
+    xor g_grievance_join "Grievance processing complete?"
+    xor continue_semester "Continue for another semester?"
+    boundary cancel_enrollment on=confirm_enrollment timer=P7D
+  lane admissions "Admissions Office"
+    task review_documents "Review application and supporting documents"
+    task notify_missing "Notify applicant to provide missing items"
+    task send_acceptance "Send acceptance letter"
+    task send_rejection "Send rejection letter"
+    task cancel_application "Cancel application"
+    task post_grades "Post grades"
+    xor docs_complete "Documents complete?"
+    and g_parallel "Concurrent processing"
+    and g_join "Processing complete"
+    xor application_accepted "Application accepted?"
+    end end_rejected "Rejection"
+    end end_canceled "Application canceled"
+    end end_complete "Process completed"
+  lane admissions_committee "Admissions Committee"
+    task evaluate_application "Evaluate application"
+  lane finance "Finance Department"
+    task process_fees "Process application fees or waivers"
+  lane it "IT Department"
+    task setup_accounts "Set up student accounts"
+  lane iso "International Student Office"
+    task visa_processing "Assist with visa processing"
+  lane advisor "Academic Advisor"
+    task meet_advisor "Meet with academic advisor"
+  lane appeals "Appeals Committee"
+    task meet_appeals "Meet with appeals committee"
+
+flow start_process -> submit_application -> review_documents -> docs_complete
+flow docs_complete -> notify_missing "Documents missing" when="documents_missing = true"
+flow notify_missing -> provide_missing -> review_documents
+flow docs_complete -> g_parallel "All documents received" default
+flow g_parallel -> evaluate_application
+flow g_parallel -> process_fees
+flow evaluate_application -> g_join
+flow process_fees -> g_join -> application_accepted
+flow application_accepted -> send_acceptance "Accepted" when="accepted = true"
+flow application_accepted -> send_rejection "Rejected" default
+flow send_rejection -> end_rejected
+flow send_acceptance -> confirm_enrollment
+flow cancel_enrollment -> cancel_application -> end_canceled
+flow confirm_enrollment -> receive_orientation -> setup_accounts -> international_student
+flow international_student -> visa_processing "International student" when="international = true"
+flow international_student -> g_int_join default
+flow visa_processing -> g_int_join -> obtain_id -> meet_advisor -> select_courses -> resolve_conflicts -> begin_classes -> add_drop_choice
+flow add_drop_choice -> add_drop "Add or drop courses" when="add_drop = true"
+flow add_drop_choice -> post_grades default
+flow add_drop -> post_grades -> review_grades -> grievances
+flow grievances -> submit_appeal "Grievances exist" when="grievance = true"
+flow grievances -> g_grievance_join default
+flow submit_appeal -> meet_appeals -> await_decision -> g_grievance_join -> continue_semester
+flow continue_semester -> end_complete "Graduates or withdraws" when="graduated_or_withdrew = true"
+flow continue_semester -> meet_advisor "Another semester" default

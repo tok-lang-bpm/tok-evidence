@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="go_pool" name="GO Organization" processRef="go_pool-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="go_pool-process" name="GO Organization" isExecutable="false">
+    <bpmn:laneSet id="go_pool-lanes">
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>verify_dereg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision_dereg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prelim_confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare_readmission</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision_oblige</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bind_continue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_equipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equipment_acquisition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equipment_changes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_equipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign_mpo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_mpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_mspo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_sp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>deregister_mpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_continue</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mspo" name="MSPO" />
+      <bpmn:lane id="sp" name="SP" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="verify_dereg" name="verifies the deregistration" />
+    <bpmn:exclusiveGateway id="decision_dereg" name="Decision on deregistration" default="f-decision_dereg-reject" />
+    <bpmn:task id="reject" name="rejects the deregistration" />
+    <bpmn:task id="prelim_confirm" name="preliminarily confirms the deregistration" />
+    <bpmn:task id="prepare_readmission" name="prepares the readmission of the measuring point" />
+    <bpmn:exclusiveGateway id="decision_oblige" name="GO may oblige continuation" default="f-decision_oblige-split_equipment" />
+    <bpmn:task id="bind_continue" name="binds the MPOO to continue the operation" />
+    <bpmn:parallelGateway id="split_equipment" name="Equipment actions" />
+    <bpmn:task id="equipment_acquisition" name="performs equipment acquisition" />
+    <bpmn:task id="equipment_changes" name="performs equipment changes" />
+    <bpmn:parallelGateway id="join_equipment" />
+    <bpmn:task id="assign_mpo" name="assigns the GO as MPO" />
+    <bpmn:task id="inform_mpoo" name="informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO" />
+    <bpmn:task id="inform_mspo" name="informs the MSPO about the assignment of the GO" />
+    <bpmn:task id="inform_sp" name="informs the SP about the assignment of the GO" />
+    <bpmn:endEvent id="end" name="End" />
+    <bpmn:task id="deregister_mpoo" name="deregisters at the GO" />
+    <bpmn:task id="confirm_continue" name="confirms the continuation" />
+    <bpmn:sequenceFlow id="f-start-deregister_mpoo" sourceRef="start" targetRef="deregister_mpoo" />
+    <bpmn:sequenceFlow id="f-deregister_mpoo-verify_dereg" sourceRef="deregister_mpoo" targetRef="verify_dereg" />
+    <bpmn:sequenceFlow id="f-verify_dereg-decision_dereg" sourceRef="verify_dereg" targetRef="decision_dereg" />
+    <bpmn:sequenceFlow id="f-decision_dereg-reject" sourceRef="decision_dereg" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-decision_dereg-prelim_confirm" sourceRef="decision_dereg" targetRef="prelim_confirm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confirm</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-prelim_confirm-prepare_readmission" sourceRef="prelim_confirm" targetRef="prepare_readmission" />
+    <bpmn:sequenceFlow id="f-prepare_readmission-decision_oblige" sourceRef="prepare_readmission" targetRef="decision_oblige" />
+    <bpmn:sequenceFlow id="f-decision_oblige-bind_continue" sourceRef="decision_oblige" targetRef="bind_continue">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oblige</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decision_oblige-split_equipment" sourceRef="decision_oblige" targetRef="split_equipment" />
+    <bpmn:sequenceFlow id="f-bind_continue-confirm_continue" sourceRef="bind_continue" targetRef="confirm_continue" />
+    <bpmn:sequenceFlow id="f-confirm_continue-split_equipment" sourceRef="confirm_continue" targetRef="split_equipment" />
+    <bpmn:sequenceFlow id="f-split_equipment-equipment_acquisition" sourceRef="split_equipment" targetRef="equipment_acquisition" />
+    <bpmn:sequenceFlow id="f-split_equipment-equipment_changes" sourceRef="split_equipment" targetRef="equipment_changes" />
+    <bpmn:sequenceFlow id="f-equipment_acquisition-join_equipment" sourceRef="equipment_acquisition" targetRef="join_equipment" />
+    <bpmn:sequenceFlow id="f-equipment_changes-join_equipment" sourceRef="equipment_changes" targetRef="join_equipment" />
+    <bpmn:sequenceFlow id="f-join_equipment-assign_mpo" sourceRef="join_equipment" targetRef="assign_mpo" />
+    <bpmn:sequenceFlow id="f-assign_mpo-inform_mpoo" sourceRef="assign_mpo" targetRef="inform_mpoo" />
+    <bpmn:sequenceFlow id="f-inform_mpoo-inform_mspo" sourceRef="inform_mpoo" targetRef="inform_mspo" />
+    <bpmn:sequenceFlow id="f-inform_mspo-inform_sp" sourceRef="inform_mspo" targetRef="inform_sp" />
+    <bpmn:sequenceFlow id="f-inform_sp-end" sourceRef="inform_sp" targetRef="end" />
+    <bpmn:sequenceFlow id="f-reject-end" sourceRef="reject" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

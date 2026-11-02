@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mail handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mail handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mail_unit" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>start_collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sort_unopened_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distribute_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="registry" name="Registry">
+        <bpmn:flowNodeRef>receive_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>open_and_sort_register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>quality_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_compliant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compile_rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_matter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>envelope_post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cashier" name="Cashier">
+        <bpmn:flowNodeRef>take_fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print_file</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>and_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>and_join</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_collect" name="Start" />
+    <bpmn:task id="collect_mail" name="Collect mail from party" />
+    <bpmn:task id="sort_unopened_mail" name="Sort unopened mail into business areas" />
+    <bpmn:task id="distribute_mail" name="Distribute mail" />
+    <bpmn:task id="receive_mail" name="Receive mail" />
+    <bpmn:task id="open_and_sort_register" name="Open mail, sort into groups and register in manual incoming Mail Register" />
+    <bpmn:task id="quality_check" name="Perform quality check" />
+    <bpmn:exclusiveGateway id="check_compliant" name="Mail compliant?" default="f-check_compliant-capture_matter" />
+    <bpmn:task id="compile_rejection" name="Compile rejection list" />
+    <bpmn:task id="send_rejection" name="Send rejection to party" />
+    <bpmn:task id="capture_matter" name="Capture matter details and provide to Cashier" />
+    <bpmn:task id="envelope_post" name="Put receipt and documents into envelope and post to party" />
+    <bpmn:endEvent id="end_rejected" name="Process ended - Rejection" />
+    <bpmn:task id="take_fees" name="Take applicable fees" />
+    <bpmn:task id="capture_party" name="Capture Party Details" />
+    <bpmn:task id="print_file" name="Print Physical Court File" />
+    <bpmn:endEvent id="end_success" name="Process ended - Completed" />
+    <bpmn:parallelGateway id="and_split" name="Parallel processing" />
+    <bpmn:parallelGateway id="and_join" name="Join parallel" />
+    <bpmn:sequenceFlow id="f-start_collect-collect_mail" sourceRef="start_collect" targetRef="collect_mail" />
+    <bpmn:sequenceFlow id="f-collect_mail-sort_unopened_mail" sourceRef="collect_mail" targetRef="sort_unopened_mail" />
+    <bpmn:sequenceFlow id="f-sort_unopened_mail-distribute_mail" sourceRef="sort_unopened_mail" targetRef="distribute_mail" />
+    <bpmn:sequenceFlow id="f-distribute_mail-receive_mail" sourceRef="distribute_mail" targetRef="receive_mail" />
+    <bpmn:sequenceFlow id="f-receive_mail-open_and_sort_register" sourceRef="receive_mail" targetRef="open_and_sort_register" />
+    <bpmn:sequenceFlow id="f-open_and_sort_register-quality_check" sourceRef="open_and_sort_register" targetRef="quality_check" />
+    <bpmn:sequenceFlow id="f-quality_check-check_compliant" sourceRef="quality_check" targetRef="check_compliant" />
+    <bpmn:sequenceFlow id="f-check_compliant-compile_rejection" name="no" sourceRef="check_compliant" targetRef="compile_rejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-check_compliant-capture_matter" name="yes" sourceRef="check_compliant" targetRef="capture_matter" />
+    <bpmn:sequenceFlow id="f-compile_rejection-send_rejection" sourceRef="compile_rejection" targetRef="send_rejection" />
+    <bpmn:sequenceFlow id="f-send_rejection-end_rejected" sourceRef="send_rejection" targetRef="end_rejected" />
+    <bpmn:sequenceFlow id="f-capture_matter-take_fees" sourceRef="capture_matter" targetRef="take_fees" />
+    <bpmn:sequenceFlow id="f-take_fees-and_split" sourceRef="take_fees" targetRef="and_split" />
+    <bpmn:sequenceFlow id="f-and_split-envelope_post" sourceRef="and_split" targetRef="envelope_post" />
+    <bpmn:sequenceFlow id="f-and_split-capture_party" sourceRef="and_split" targetRef="capture_party" />
+    <bpmn:sequenceFlow id="f-capture_party-print_file" sourceRef="capture_party" targetRef="print_file" />
+    <bpmn:sequenceFlow id="f-print_file-and_join" sourceRef="print_file" targetRef="and_join" />
+    <bpmn:sequenceFlow id="f-envelope_post-and_join" sourceRef="envelope_post" targetRef="and_join" />
+    <bpmn:sequenceFlow id="f-and_join-end_success" sourceRef="and_join" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

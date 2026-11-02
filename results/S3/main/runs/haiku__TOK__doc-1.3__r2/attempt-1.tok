@@ -1,0 +1,43 @@
+tok 1.0 "Evanstonian room service"
+
+pool hotel "The Evanstonian"
+  lane guest "Guest"
+    start called "Guest calls room service"
+  lane manager "Room-service manager"
+    task take "Take down the order"
+    task submit "Submit the order ticket to the kitchen"
+    task give "Give the order to the sommelier"
+    task assign "Assign the order to the waiter"
+    and fork
+  lane kitchen "Kitchen"
+    task food "Prepare the food"
+  lane sommelier "Sommelier"
+    xor alc "Alcoholic beverage ordered?"
+    task wine "Fetch wine from the cellar"
+    task others "Prepare other alcoholic beverages"
+    xor alcmerge
+  lane waiter "Waiter"
+    task drinks "Prepare nonalcoholic drinks"
+    task cart "Ready the cart"
+    and ready
+    task deliver "Deliver the order to the guest's room"
+    task return "Return to the room-service station"
+    xor busy "Another order to prepare or deliver?"
+    task defer "Defer billing"
+    xor billmerge
+    task debit "Debit the guest's account"
+    end done "Order delivered and billed"
+
+flow called -> take -> submit -> give -> assign -> fork
+flow fork -> food -> ready
+flow fork -> alc
+flow fork -> drinks -> cart -> ready
+flow alc -> wine "yes" when="alcoholic"
+flow alc -> alcmerge "no" default
+flow wine -> others -> alcmerge
+flow alcmerge -> ready
+flow ready -> deliver -> return -> busy
+flow busy -> defer "yes" when="another order"
+flow busy -> billmerge "no" default
+flow defer -> billmerge
+flow billmerge -> debit -> done

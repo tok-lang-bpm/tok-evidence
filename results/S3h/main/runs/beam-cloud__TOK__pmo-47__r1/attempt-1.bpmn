@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="New Application for Registering for an USI course" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="New Application for Registering for an USI course" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="applicant" name="Applicant">
+        <bpmn:flowNodeRef>want</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_course</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_one</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_university</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request_activation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_response</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>log_in</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tweet</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete_registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_ticket</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_uni</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>account_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>no_slots</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>tell_courses</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>slots</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="want" name="Want to register for a USI course" />
+    <bpmn:task id="select_course" name="Select a course" />
+    <bpmn:task id="select_one" name="Select one" />
+    <bpmn:task id="check_account" name="Check if already has an account" />
+    <bpmn:task id="check_university" name="Check registered at an eligible university" />
+    <bpmn:task id="register_account" name="Register account" />
+    <bpmn:task id="request_activation" name="Request activation" />
+    <bpmn:task id="wait_response" name="Wait for response" />
+    <bpmn:task id="log_in" name="Log into account" />
+    <bpmn:task id="tweet" name="Tweet to friends" />
+    <bpmn:task id="complete_registration" name="Complete registration" />
+    <bpmn:task id="provide_payment" name="Provide payment information" />
+    <bpmn:task id="receive_ticket" name="Receive course ticket" />
+    <bpmn:exclusiveGateway id="gw_account" name="Already has an account?" default="f-gw_account-check_university" />
+    <bpmn:exclusiveGateway id="gw_uni" name="Registered at an eligible university?" default="f-gw_uni-request_activation" />
+    <bpmn:exclusiveGateway id="account_merge" name="Account ready" />
+    <bpmn:endEvent id="done" name="Course registration completed" />
+    <bpmn:endEvent id="no_slots" name="No slots available" />
+    <bpmn:task id="tell_courses" name="Tell courses and dates" />
+    <bpmn:exclusiveGateway id="slots" name="Slots free?" default="f-slots-no_slots" />
+    <bpmn:sequenceFlow id="f-want-select_course" sourceRef="want" targetRef="select_course" />
+    <bpmn:sequenceFlow id="f-select_course-slots" sourceRef="select_course" targetRef="slots" />
+    <bpmn:sequenceFlow id="f-slots-tell_courses" name="yes" sourceRef="slots" targetRef="tell_courses">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">slotsFree</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-slots-no_slots" name="no" sourceRef="slots" targetRef="no_slots" />
+    <bpmn:sequenceFlow id="f-tell_courses-select_one" sourceRef="tell_courses" targetRef="select_one" />
+    <bpmn:sequenceFlow id="f-select_one-check_account" sourceRef="select_one" targetRef="check_account" />
+    <bpmn:sequenceFlow id="f-check_account-gw_account" sourceRef="check_account" targetRef="gw_account" />
+    <bpmn:sequenceFlow id="f-gw_account-account_merge" name="yes" sourceRef="gw_account" targetRef="account_merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_account-check_university" name="no" sourceRef="gw_account" targetRef="check_university" />
+    <bpmn:sequenceFlow id="f-check_university-gw_uni" sourceRef="check_university" targetRef="gw_uni" />
+    <bpmn:sequenceFlow id="f-gw_uni-register_account" name="yes" sourceRef="gw_uni" targetRef="register_account">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">registeredAtUniversity</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_uni-request_activation" name="no" sourceRef="gw_uni" targetRef="request_activation" />
+    <bpmn:sequenceFlow id="f-request_activation-wait_response" sourceRef="request_activation" targetRef="wait_response" />
+    <bpmn:sequenceFlow id="f-wait_response-account_merge" sourceRef="wait_response" targetRef="account_merge" />
+    <bpmn:sequenceFlow id="f-register_account-account_merge" sourceRef="register_account" targetRef="account_merge" />
+    <bpmn:sequenceFlow id="f-account_merge-log_in" sourceRef="account_merge" targetRef="log_in" />
+    <bpmn:sequenceFlow id="f-log_in-tweet" sourceRef="log_in" targetRef="tweet" />
+    <bpmn:sequenceFlow id="f-tweet-complete_registration" sourceRef="tweet" targetRef="complete_registration" />
+    <bpmn:sequenceFlow id="f-complete_registration-provide_payment" sourceRef="complete_registration" targetRef="provide_payment" />
+    <bpmn:sequenceFlow id="f-provide_payment-receive_ticket" sourceRef="provide_payment" targetRef="receive_ticket" />
+    <bpmn:sequenceFlow id="f-receive_ticket-done" sourceRef="receive_ticket" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,124 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+Title: Farming Bot
+
+Players want to create custom farming bots, that help them gather resources.
+First you have to find out which resources you want.
+Up to 10 resources in parallel can be collected, some resources are more urgently needed than others.
+Some resources are required to create tools that are needed to gather other resources (create a custom logic of the dependencies in your game).
+After all preferences are collected, your bot starts farming.
+Sometimes,  random natural disasters strike and set your bot back.
+Whenever some milestones are reached, you are notified.
+During farming it is possible to update the list of to be farmed materials (at all times).
+After the bot is finished, you should be able to brag to selected friends and/or send them materials.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="game" name="Game" processRef="farming-bot-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="farming-bot-process" isExecutable="false">
+    <bpmn:laneSet id="farming-bot-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>urgency</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming Bot">
+        <bpmn:flowNodeRef>tools_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_tools</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tools_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect_prefs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>start_farming</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resume_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gather</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disaster_evt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update_evt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>apply_update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>milestone_evt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>milestone_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="request" name="Player wants a farming bot" />
+    <bpmn:task id="choose" name="Choose the resources to farm" />
+    <bpmn:task id="urgency" name="Set the urgency of each resource" />
+    <bpmn:exclusiveGateway id="tools_gw" name="Tools needed for the selected resources?" default="f5" />
+    <bpmn:task id="create_tools" name="Create the required tools" />
+    <bpmn:exclusiveGateway id="tools_merge" />
+    <bpmn:task id="collect_prefs" name="Collect all preferences" />
+    <bpmn:task id="start_farming" name="Start farming" />
+    <bpmn:exclusiveGateway id="resume_gw" name="Resume farming" />
+    <bpmn:task id="gather" name="Gather the selected resources (up to 10 in parallel)">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+    </bpmn:task>
+    <bpmn:boundaryEvent id="disaster_evt" name="Natural disaster strikes" attachedToRef="gather" cancelActivity="true">
+      <bpmn:signalEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="recover" name="Recover the bot from the disaster" />
+    <bpmn:boundaryEvent id="update_evt" name="Player updates the list" attachedToRef="gather" cancelActivity="true">
+      <bpmn:messageEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="updateList" name="Update the list of materials to farm" />
+    <bpmn:task id="apply_update" name="Apply the updated list of materials" />
+    <bpmn:boundaryEvent id="milestone_evt" name="Milestone reached" attachedToRef="gather" cancelActivity="false">
+      <bpmn:signalEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="notify" name="Notify the player of the milestone" />
+    <bpmn:endEvent id="milestone_end" name="Milestone notified" />
+    <bpmn:inclusiveGateway id="share_gw" name="Brag, send or both?" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="send" name="Send materials to selected friends" />
+    <bpmn:inclusiveGateway id="share_merge" />
+    <bpmn:endEvent id="done" name="Bot finished and shared" />
+    <bpmn:sequenceFlow id="f1" sourceRef="request" targetRef="choose" />
+    <bpmn:sequenceFlow id="f2" sourceRef="choose" targetRef="urgency" />
+    <bpmn:sequenceFlow id="f3" sourceRef="urgency" targetRef="tools_gw" />
+    <bpmn:sequenceFlow id="f4" name="yes" sourceRef="tools_gw" targetRef="create_tools" />
+    <bpmn:sequenceFlow id="f5" name="no" sourceRef="tools_gw" targetRef="tools_merge" />
+    <bpmn:sequenceFlow id="f6" sourceRef="create_tools" targetRef="tools_merge" />
+    <bpmn:sequenceFlow id="f7" sourceRef="tools_merge" targetRef="collect_prefs" />
+    <bpmn:sequenceFlow id="f8" sourceRef="collect_prefs" targetRef="start_farming" />
+    <bpmn:sequenceFlow id="f9" sourceRef="start_farming" targetRef="resume_gw" />
+    <bpmn:sequenceFlow id="f10" sourceRef="resume_gw" targetRef="gather" />
+    <bpmn:sequenceFlow id="f11" sourceRef="gather" targetRef="share_gw" />
+    <bpmn:sequenceFlow id="f12" name="Brag" sourceRef="share_gw" targetRef="brag" />
+    <bpmn:sequenceFlow id="f13" name="Send" sourceRef="share_gw" targetRef="send" />
+    <bpmn:sequenceFlow id="f14" sourceRef="brag" targetRef="share_merge" />
+    <bpmn:sequenceFlow id="f15" sourceRef="send" targetRef="share_merge" />
+    <bpmn:sequenceFlow id="f16" sourceRef="share_merge" targetRef="done" />
+    <bpmn:sequenceFlow id="f17" sourceRef="disaster_evt" targetRef="recover" />
+    <bpmn:sequenceFlow id="f18" sourceRef="recover" targetRef="resume_gw" />
+    <bpmn:sequenceFlow id="f19" sourceRef="update_evt" targetRef="updateList" />
+    <bpmn:sequenceFlow id="f20" sourceRef="updateList" targetRef="apply_update" />
+    <bpmn:sequenceFlow id="f21" sourceRef="apply_update" targetRef="resume_gw" />
+    <bpmn:sequenceFlow id="f22" sourceRef="milestone_evt" targetRef="notify" />
+    <bpmn:sequenceFlow id="f23" sourceRef="notify" targetRef="milestone_end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: f4: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

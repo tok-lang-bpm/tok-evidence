@@ -1,0 +1,124 @@
+tok 1.0 "Service degradation process"
+
+pool p "TELECO"
+  lane customer "Customer"
+    start start "Start"
+    task perceive-service-degradation "Perceive service degradation"
+    task send-problem-parameters "Send list of problem parameters"
+    task receive-customer-report "Receive report about service performance and problem resolution"
+    end end-process "End"
+  lane customer-service "Customer Service"
+    task enter-problem-report "Enter problem report into system T"
+    task compare-report-sla "Compare problem report to customer SLA"
+    task determine-counter-measures "Determine necessary counter measures and priorities"
+    task determine-customer-significance "Determine customer significance"
+    xor premium-split "Customer premium?"
+    task link-extra-problem-fix "Link to extra problem fix process"
+    xor premium-join "Join after premium handling"
+    xor significance-split "Customer significance affects counter measures?"
+    task create-detailed-report "Create detailed problem report"
+    task send-detailed-report-sm "Send detailed problem report to Service Management"
+    task receive-actual-service-performance "Receive actual service performance"
+    task receive-problem-resolution-report "Receive problem resolution report"
+    xor join-cs-reports "Join received reports"
+    and fork-cs "Trigger concurrent activities"
+    task create-customer-report "Create report for customer"
+    task send-customer-report "Send report to customer"
+    task report-sla-rebate "Report SLA violation rebate to Billing & Collections"
+    and join-cs "Join completed activities"
+  lane service-management "Service Management"
+    task investigate-analyzability "Investigate whether problem analyzable at Service Management or located at Resource Provisioning"
+    xor analyzable-split "Problem analyzable by Service Management?"
+    task send-detailed-report-rp "Send detailed problem report to Resource Provisioning"
+    task perform-analysis "Perform analysis"
+    task create-trouble-report-sm "Create trouble report indicating type of problem"
+    task prepare-final-status-report "Prepare final status report"
+    xor measures-split "Counter measures based on final status report?"
+    task send-actual-service-performance "Send actual service performance to Customer Service"
+    task undertake-corrective-actions-sm "Undertake corrective actions"
+    task create-problem-resolution-report "Create problem resolution report"
+    task send-problem-resolution-report "Send problem resolution report to Customer Service"
+    task create-restoration-request "Create request for automatic resource restoration"
+    task send-restoration-request "Send restoration request to Resource Provisioning"
+    task receive-trouble-shooting-report "Receive trouble-shooting report"
+  lane resource-provisioning "Resource Provisioning"
+    task check-possible-problems "Check whether there are any possible problems"
+    task create-normal-execution-notification "Create notification about normal service execution"
+    task analyze-problem-rp "Analyze problem"
+    task create-trouble-report-rp "Create trouble report"
+    task include-status-report "Include report in status report and send back to Service Management"
+    task receive-restoration-request "Receive restoration request"
+    boundary rp-timeout "Timeout after 2 days" on=receive-restoration-request timer=P2D
+    task track-errors "Track all possible errors"
+    task undertake-corrective-actions-rp "Undertake all necessary corrective actions"
+    task create-trouble-shooting-report "Create trouble-shooting report"
+    task send-trouble-shooting-report "Send trouble-shooting report to Service Management"
+    end end-rp-timeout "Terminate process" terminate
+    end end-rp-restoration "End"
+  lane billing "Billing & Collections"
+    task adjust-billing "Adjust billing"
+
+  # flows customer
+  flow start -> perceive-service-degradation
+  flow perceive-service-degradation -> send-problem-parameters
+  flow send-problem-parameters -> enter-problem-report
+  # customer service before sm
+  flow enter-problem-report -> compare-report-sla
+  flow compare-report-sla -> determine-counter-measures
+  flow determine-counter-measures -> determine-customer-significance
+  flow determine-customer-significance -> premium-split
+  flow premium-split -> link-extra-problem-fix "Premium" when="customerPremium = true"
+  flow premium-split -> premium-join "Not premium" default
+  flow link-extra-problem-fix -> premium-join
+  flow premium-join -> significance-split
+  flow significance-split -> determine-counter-measures "Affects counter measures" when="customerSignificanceAffectsCounterMeasures = true"
+  flow significance-split -> create-detailed-report "Does not affect" default
+  flow create-detailed-report -> send-detailed-report-sm
+  # service management analyzability
+  flow send-detailed-report-sm -> investigate-analyzability
+  flow investigate-analyzability -> analyzable-split
+  flow analyzable-split -> send-detailed-report-rp "Not analyzable" when="serviceManagementCanAnalyze = false"
+  flow analyzable-split -> perform-analysis "Analyzable" default
+  flow perform-analysis -> create-trouble-report-sm
+  flow create-trouble-report-sm -> prepare-final-status-report
+  # resource provisioning problem check
+  flow send-detailed-report-rp -> check-possible-problems
+  flow check-possible-problems -> create-normal-execution-notification "No problems" when="noPossibleProblems = true"
+  flow check-possible-problems -> analyze-problem-rp "Problem detected" default
+  flow analyze-problem-rp -> create-trouble-report-rp
+  flow create-trouble-report-rp -> include-status-report
+  flow create-normal-execution-notification -> include-status-report
+  flow include-status-report -> prepare-final-status-report
+  # service management final measures
+  flow prepare-final-status-report -> measures-split
+  flow measures-split -> send-actual-service-performance "No problem detected at all" when="noProblemDetectedAtAll = true"
+  flow measures-split -> undertake-corrective-actions-sm "Minor corrective actions required" when="minorCorrectiveActionsRequired = true"
+  flow measures-split -> create-restoration-request "Automatic resource restoration required" default
+  flow undertake-corrective-actions-sm -> create-problem-resolution-report
+  flow create-problem-resolution-report -> send-problem-resolution-report
+  flow create-restoration-request -> send-restoration-request
+  flow send-restoration-request -> receive-restoration-request
+  # resource provisioning restoration wait
+  flow rp-timeout -> end-rp-timeout
+  flow receive-restoration-request -> track-errors
+  flow track-errors -> undertake-corrective-actions-rp
+  flow undertake-corrective-actions-rp -> create-trouble-shooting-report
+  flow create-trouble-shooting-report -> send-trouble-shooting-report
+  flow send-trouble-shooting-report -> receive-trouble-shooting-report
+  flow receive-trouble-shooting-report -> create-problem-resolution-report
+  flow send-trouble-shooting-report -> end-rp-restoration
+  # service management to customer service
+  flow send-actual-service-performance -> receive-actual-service-performance
+  flow send-problem-resolution-report -> receive-problem-resolution-report
+  # customer service final concurrent
+  flow receive-actual-service-performance -> join-cs-reports
+  flow receive-problem-resolution-report -> join-cs-reports
+  flow join-cs-reports -> fork-cs
+  flow fork-cs -> create-customer-report
+  flow fork-cs -> report-sla-rebate
+  flow create-customer-report -> send-customer-report
+  flow send-customer-report -> join-cs
+  flow report-sla-rebate -> adjust-billing
+  flow adjust-billing -> join-cs
+  flow join-cs -> receive-customer-report
+  flow receive-customer-report -> end-process

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Metering equipment change" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Equipment_change_intention" name="Equipment change intention" />
+  <bpmn:message id="Message_Final_reading_values" name="Final reading values" />
+  <bpmn:message id="Message_Device_changes_master_data_meter_count_at_installation" name="Device changes, master data, meter count at installation" />
+  <bpmn:message id="Message_Device_changes_master_data_meter_counts" name="Device changes, master data, meter counts" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="p" name="Metering point operation" processRef="p-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="p-process" name="Metering equipment change" isExecutable="false">
+    <bpmn:laneSet id="p-lanes">
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>n1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dis</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mnt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inf</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ann</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>nosd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>msp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Equipment change intention" />
+    <bpmn:sendTask id="n1" name="Notify MPOO about equipment change intentions" messageRef="Message_Equipment_change_intention" />
+    <bpmn:task id="fr" name="Perform final reading">
+      <bpmn:documentation>Performed by MPON or MPOO (MPON when MPOO does not self-dismount)</bpmn:documentation>
+    </bpmn:task>
+    <bpmn:task id="dis" name="Dismount old equipment">
+      <bpmn:documentation>Performed by MPON or MPOO (MPON when MPOO does not self-dismount)</bpmn:documentation>
+    </bpmn:task>
+    <bpmn:task id="mnt" name="Mount new device" />
+    <bpmn:task id="rd" name="Read meter count from installed meter" />
+    <bpmn:sendTask id="gv" name="Send values of final reading to GO" messageRef="Message_Final_reading_values" />
+    <bpmn:sendTask id="inf" name="Tell GO about device changes, master data and meter count at installation" messageRef="Message_Device_changes_master_data_meter_count_at_installation" />
+    <bpmn:exclusiveGateway id="g1" name="Self-dismounting?" />
+    <bpmn:task id="ann" name="Announce self-dismounting to MPON" />
+    <bpmn:task id="nosd" name="Notify MPON about no self-dismounting" />
+    <bpmn:exclusiveGateway id="g2" />
+    <bpmn:sendTask id="msp" name="Notify MSP about device changes, master data, meter count at dismounting and at installation" messageRef="Message_Device_changes_master_data_meter_counts" />
+    <bpmn:endEvent id="e" name="Change process finished" />
+    <bpmn:sequenceFlow id="f-s-n1" sourceRef="s" targetRef="n1" />
+    <bpmn:sequenceFlow id="f-n1-g1" sourceRef="n1" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-ann" name="yes" sourceRef="g1" targetRef="ann" />
+    <bpmn:sequenceFlow id="f-g1-nosd" name="no" sourceRef="g1" targetRef="nosd" />
+    <bpmn:sequenceFlow id="f-ann-g2" sourceRef="ann" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-nosd-g2" sourceRef="nosd" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-g2-fr" sourceRef="g2" targetRef="fr" />
+    <bpmn:sequenceFlow id="f-fr-dis" sourceRef="fr" targetRef="dis" />
+    <bpmn:sequenceFlow id="f-dis-mnt" sourceRef="dis" targetRef="mnt" />
+    <bpmn:sequenceFlow id="f-mnt-rd" sourceRef="mnt" targetRef="rd" />
+    <bpmn:sequenceFlow id="f-rd-gv" sourceRef="rd" targetRef="gv" />
+    <bpmn:sequenceFlow id="f-gv-inf" sourceRef="gv" targetRef="inf" />
+    <bpmn:sequenceFlow id="f-inf-msp" sourceRef="inf" targetRef="msp" />
+    <bpmn:sequenceFlow id="f-msp-e" sourceRef="msp" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

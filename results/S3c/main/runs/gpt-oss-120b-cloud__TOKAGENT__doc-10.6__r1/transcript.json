@@ -1,0 +1,110 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4122,
+  "output_tokens": 878,
+  "seconds": 4.000374199997168,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to produce a tok model.\n\nProcess: \"The MSPN sends a dismissal to the MSPO.\" => task \"send dismissal\". Actors: MSPN (sender) and MSPO (receiver). Use one pool for organisation (maybe the whole process). Actually we need one pool for organisation, and lanes for each actor. So pool \"organisation\" with lanes \"MSPN\" and \"MSPO\". Tasks inside lanes accordingly.\n\nSequence: start event. Then task \"send dismissal\" performed by MSPN lane. Then probably a message flow? Since it's between lanes in same pool, just flow. Then task \"review dismissal\" performed by MSPO lane. Then exclusive gateway for decision: \"reject dismissal\" vs \"confirm dismissal\". Two tasks? Might be tasks \"reject dismissal\" and \"confirm dismissal\" each in MSPO lane. Then end events after each.\n\nWe need to give IDs for each element. Provide flows.\n\nLet's craft Tok.\n\nHeader: tok 1.0 (to have all features). We'll define pool: pool org \"Organisation\". Inside block with lanes: lane mspn \"MSPN\", lane mspo \"MSPO\". Then tasks inside respective lanes.\n\nDefine tasks:\ntask send-dismissal \"send dismissal\"\ntask review-dismissal \"review dismissal\"\ntask reject-dismissal \"reject dismissal\"\ntask confirm-dismissal \"confirm dismissal\"\n\nAdd start and end events.\n\nWe'll need to place start event maybe in MSPN lane? Usually start event is in pool but not lane-specific? In tok we can put start in a lane block? I think start can be inside lane. Use start start \"Start\". Then flow start -> send-dismissal.\n\nAfter send-dismissal flow -> review-dismissal.\n\nAfter review-dismissal flow -> xor gateway decision.\n\nDefine xor decision label \"dismissal decision\". ID maybe decision.\n\nGateway: xor decision \"dismissal decision\". Then flows from decision to reject-dismissal with when=\"rejected\" maybe, and to confirm-dismissal with when=\"confirmed\". Or default.\n\nThen each to end event.\n\nAdd end events.\n\nNow put them in correct order: flows after pools section.\n\nFull tok:\n\ntok 1.0\npool org \"Organisation\" {\n  lane mspn \"MSPN\" {\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  }\n  lane mspo \"MSPO\" {\n    task review-dismissal \"review dismissal\"\n    xor decision \"dismissal decision\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\n  }\n}\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm\n\nCheck correctness: ensure unique IDs. End events IDs end-reject and end-confirm. Might need end events IDs without hyphens? hyphens allowed.\n\nNow run check.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "path": "",
+     "text": "tok 1.0\npool org \"Organisation\" {\n  lane mspn \"MSPN\" {\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  }\n  lane mspo \"MSPO\" {\n    task review-dismissal \"review dismissal\"\n    xor decision \"dismissal decision\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\n  }\n}\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5028,
+  "output_tokens": 249,
+  "seconds": 1.0540070999995805,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We passed both text and path fields as empty path and text. According to spec, we can pass just text. Remove path field.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organisation\" {\n  lane mspn \"MSPN\" {\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  }\n  lane mspo \"MSPO\" {\n    task review-dismissal \"review dismissal\"\n    xor decision \"dismissal decision\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\n  }\n}\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm"
+    },
+    "is_error": false,
+    "result": "line 2: error T001: invalid token: unexpected character '{'\nline 3: error T001: invalid token: unexpected character '{'\nline 6: error T001: invalid token: unexpected character '}'\nline 7: error T001: invalid token: unexpected character '{'\nline 14: error T001: invalid token: unexpected character '}'\nline 15: error T001: invalid token: unexpected character '}'\nline 16: error T003: indentation does not match any open block\n7 error(s), 7 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5437,
+  "output_tokens": 474,
+  "seconds": 1.756982799997786,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Tok syntax seems to be different. Let's recall cheat sheet: In tok, pools and lanes are declared with indentation, not braces? Actually cheat sheet uses block indentation: e.g.,\n\npool org \"Organisation\"\n  lane mspn \"MSPN\"\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  lane mspo \"MSPO\"\n    ...\n\nSo no braces. Let's correct.\n\nAlso need to close blocks using dedent. So just indentation.\n\nLet's rewrite.\n\ntok 1.0\npool org \"Organisation\"\n  lane mspn \"MSPN\"\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  lane mspo \"MSPO\"\n    task review-dismissal \"review dismissal\"\n    xor decision \"dismissal decision\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm\n\nNow check again.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organisation\"\n  lane mspn \"MSPN\"\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  lane mspo \"MSPO\"\n    task review-dismissal \"review dismissal\"\n    xor decision \"dismissal decision\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm"
+    },
+    "is_error": false,
+    "result": "line 8: note L020: name of a splitting gateway is not a question (decision)\n0 error(s), 1 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 5985,
+  "output_tokens": 334,
+  "seconds": 1.4839875000179745,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Diagnostic L020: name of a splitting gateway is not a question (decision). For xor gateway, label should be a question. So we need to make label a question, e.g., \"dismissal rejected?\". Let's set label \"reject dismissal?\" or \"dismissal decision?\" The rule expects a question phrase. We'll use \"dismissal rejected?\" maybe.\n\nChange xor line to: xor decision \"Dismissal rejected?\" (question). Probably fine.\n\nNow check again.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organisation\"\n  lane mspn \"MSPN\"\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  lane mspo \"MSPO\"\n    task review-dismissal \"review dismissal\"\n    xor decision \"Dismissal rejected?\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 6345,
+  "output_tokens": 168,
+  "seconds": 0.7831512999837287,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0\npool org \"Organisation\"\n  lane mspn \"MSPN\"\n    start start \"Start\"\n    task send-dismissal \"send dismissal\"\n  lane mspo \"MSPO\"\n    task review-dismissal \"review dismissal\"\n    xor decision \"Dismissal rejected?\"\n    task reject-dismissal \"reject dismissal\"\n    task confirm-dismissal \"confirm dismissal\"\n    end end-reject \"End\"\n    end end-confirm \"End\"\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> reject-dismissal \"reject\" when=\"rejected\"\nflow decision -> confirm-dismissal \"confirm\" when=\"confirmed\"\nflow reject-dismissal -> end-reject\nflow confirm-dismissal -> end-confirm\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

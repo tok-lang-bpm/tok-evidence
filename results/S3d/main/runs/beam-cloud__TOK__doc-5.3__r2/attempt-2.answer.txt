@@ -1,0 +1,51 @@
+```tok
+tok 1.0 "Office Supply Request"
+
+pool office "Office"
+  lane employee "Employee"
+    start submitted "Request submitted"
+    task submit "Submit office supply request"
+    task review "Review comments for change request"
+  lane supervisor "Immediate Supervisor"
+    task receive_request "Receive request"
+    xor approval "Approve, ask for change, or reject?"
+  lane purchase "Purchase Department"
+    sub quotations "Make quotations"
+      start qstart "Quotation started"
+      task make_quotations "Make quotations"
+      end qend "Quotations completed"
+      flow qstart -> make_quotations -> qend
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different "Choose different vendor"
+    task confirm_vendor "Confirm vendor"
+  lane system "System"
+    task generate_po "Generate purchase order"
+    task send_po "Send purchase order"
+    and wait_delivery_invoice "Wait for delivery and invoice"
+    task wait_delivery "Wait for product to be delivered"
+    task receive_invoice "Receive invoice"
+    and delivery_invoice_received "Delivery and invoice received"
+    task send_notification "Send notification"
+    end completed "Request completed"
+
+flow submitted -> submit -> receive_request -> approval
+flow approval -> quotations "approved"
+flow approval -> review "change required"
+flow approval -> send_notification "rejected"
+flow quotations -> select_vendor
+flow select_vendor -> vendor_valid
+flow vendor_valid -> confirm_vendor "yes"
+flow vendor_valid -> choose_different "no"
+flow choose_different -> vendor_valid
+flow confirm_vendor -> generate_po
+flow generate_po -> send_po
+flow send_po -> wait_delivery_invoice
+flow wait_delivery_invoice -> wait_delivery
+flow wait_delivery_invoice -> receive_invoice
+flow wait_delivery -> delivery_invoice_received
+flow receive_invoice -> delivery_invoice_received
+flow delivery_invoice_received -> send_notification
+flow review -> send_notification
+flow send_notification -> completed
+```

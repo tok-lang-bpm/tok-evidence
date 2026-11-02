@@ -1,0 +1,34 @@
+tok 1.0 "Expense report"
+
+pool org "Organisation"
+  lane sys "Accounting system"
+    start s "Expense report received"
+    sub handle "Process expense report"
+      start hs "Start"
+      xor hasacc "Employee has an account?"
+      task mkacc "Create new account"
+      xor m1
+      task review "Review expense report"
+      xor amt "Amount under $200?"
+      task auto "Approve automatically"
+      xor m2
+      task pay "Reimburse to direct deposit account"
+      task rej "Send rejection notice by email"
+      end he1 "Reimbursed"
+      end he2 "Rejected"
+    end done "Request completed"
+    boundary t7 on=handle timer=P7D noninterrupting
+    task prog "Send approval in progress email"
+    end e7 "Notice sent"
+    boundary t30 on=handle timer=P30D
+    task canc "Send cancellation notice by email"
+    task resub "Request re-submission of expense report"
+    end e30 "Request cancelled"
+  lane sup "Supervisor"
+    task appr "Approve expense report"
+    xor ok "Approved?"
+
+flow s -> handle
+flow handle -> done
+flow t7 -> prog -> e7
+flow t30 -> canc -> resub -> e30

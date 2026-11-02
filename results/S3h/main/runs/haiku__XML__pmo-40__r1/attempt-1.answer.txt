@@ -1,0 +1,69 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="oee-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="oee-process" isExecutable="false">
+    <bpmn:laneSet id="oee-lanes">
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>stopMachine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="oeeSystem" name="OEE system">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resumeMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>connectedGate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endDisconnected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calculate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>thresholdGate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>continueMeasuring</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start monitoring" />
+    <bpmn:exclusiveGateway id="resumeMerge" name="Measuring resumed or OEE ok" />
+    <bpmn:task id="collect" name="Collect relevant information from the machine" />
+    <bpmn:exclusiveGateway id="connectedGate" name="Machine connected?" />
+    <bpmn:endEvent id="endDisconnected" name="Process stopped" />
+    <bpmn:task id="calculate" name="Calculate the Overall Equipment Efficiency (OEE)" />
+    <bpmn:exclusiveGateway id="thresholdGate" name="OEE below threshold?" />
+    <bpmn:parallelGateway id="parSplit" name="Stop and notify" />
+    <bpmn:task id="stopMachine" name="Stop the machine" />
+    <bpmn:task id="sendEmail" name="Send an email to the engineer" />
+    <bpmn:parallelGateway id="parJoin" name="Stop and notify done" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted" />
+    <bpmn:task id="continueMeasuring" name="Continue measuring" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="resumeMerge" />
+    <bpmn:sequenceFlow id="f2" sourceRef="resumeMerge" targetRef="collect" />
+    <bpmn:sequenceFlow id="f3" sourceRef="collect" targetRef="connectedGate" />
+    <bpmn:sequenceFlow id="f4" name="yes" sourceRef="connectedGate" targetRef="calculate">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">machine connected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" name="no" sourceRef="connectedGate" targetRef="endDisconnected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">machine disconnected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" sourceRef="calculate" targetRef="thresholdGate" />
+    <bpmn:sequenceFlow id="f7" name="yes" sourceRef="thresholdGate" targetRef="parSplit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">OEE below threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f8" name="no" sourceRef="thresholdGate" targetRef="resumeMerge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">OEE at or above threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f9" sourceRef="parSplit" targetRef="stopMachine" />
+    <bpmn:sequenceFlow id="f10" sourceRef="parSplit" targetRef="sendEmail" />
+    <bpmn:sequenceFlow id="f11" sourceRef="stopMachine" targetRef="parJoin" />
+    <bpmn:sequenceFlow id="f12" sourceRef="sendEmail" targetRef="parJoin" />
+    <bpmn:sequenceFlow id="f13" sourceRef="parJoin" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f14" sourceRef="restarted" targetRef="continueMeasuring" />
+    <bpmn:sequenceFlow id="f15" sourceRef="continueMeasuring" targetRef="resumeMerge" />
+  </bpmn:process>
+</bpmn:definitions>
+```

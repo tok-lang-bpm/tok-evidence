@@ -1,0 +1,90 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Every weekday morning, the database is backed up and then it is checked to see whether the Account Defaulter table has new records. If no new records are found, then the process should check the CRM system to see whether new returns have been filed. If new returns exist, then register all defaulting accounts and customers. If the defaulting client codes have not been previously advised, produce another table of defaulting accounts and send to account management. All of this must be completed by 2: 30 pm, if it is not, then an alert should be sent to the supervisor. Once the new defaulting account report has been completed, check the CRM system to see whether new returns have been filed. If new returns have been filed, reconcile with the existing account defaulters table. This must be completed by 4: 0 pm otherwise a supervisor should be sent a message.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Defaulter Processing" [executable]
+
+pool org "Organization"
+  lane db "Database"
+    start start1 "Start"
+    task backup "Back up the database"
+    task check_new "Check for new records in Account Defaulter table"
+    xor new_records "New records?"
+    end no_new_records "Process ends – new records found"
+
+  lane crm "CRM System"
+    task check_crm1 "Check CRM system for new returns (first check)"
+    xor new_returns1 "New returns exist?"
+    end no_returns1 "Process ends – no returns (first check)"
+    task check_crm2 "Check CRM system for new returns (second check)"
+    xor new_returns2 "New returns exist?"
+    task reconcile "Reconcile with existing account defaulters table"
+    xor deadline2 "Completed by 16:00?"
+    task alert_supervisor2 "Send alert to supervisor (deadline missed)"
+    end end_success "Process completed successfully"
+    end end_alert2 "Process ended – deadline 2 missed"
+    end end_no_returns2 "Process ends – no returns (second check)"
+
+  lane am "Account Management"
+    task register_accounts "Register defaulting accounts and customers"
+    xor not_advised "Client codes not previously advised?"
+    task produce_table "Produce table of defaulting accounts"
+    task send_table "Send table to account management"
+    xor deadline1 "Completed by 14:30?"
+    task alert_supervisor1 "Send alert to supervisor (deadline missed)"
+    end end_alert1 "Process ended – deadline 1 missed"
+
+  lane supervisor "Supervisor"
+    # (tasks used only for alerts; they belong to this lane)
+    task alert_supervisor1 "Send alert to supervisor (deadline missed)"
+    task alert_supervisor2 "Send alert to supervisor (deadline missed)"
+
+flow start1 -> backup -> check_new -> new_records
+flow new_records -> no_new_records "yes"
+flow new_records -> check_crm1 "no"
+
+flow check_crm1 -> new_returns1
+flow new_returns1 -> no_returns1 "no"
+flow new_returns1 -> register_accounts "yes"
+
+flow register_accounts -> not_advised
+flow not_advised -> produce_table "yes"
+flow produce_table -> send_table -> deadline1
+flow not_advised -> deadline1 "no"
+
+flow deadline1 -> alert_supervisor1 "no"
+flow deadline1 -> check_crm2 "yes"
+
+flow alert_supervisor1 -> check_crm2
+
+flow check_crm2 -> new_returns2
+flow new_returns2 -> end_no_returns2 "no"
+flow new_returns2 -> reconcile "yes"
+
+flow reconcile -> deadline2
+flow deadline2 -> end_success "yes"
+flow deadline2 -> alert_supervisor2 "no"
+
+flow alert_supervisor2 -> end_alert2
+```
+
+The tok checker reports these problems in it:
+
+- line 1: error T001: invalid token: unexpected character '['
+- line 3: error P005: the document must start with a header such as 'tok 1.0'
+- line 35: error R001: identifier 'alert_supervisor1' is already used on line 30
+- line 36: error R001: identifier 'alert_supervisor2' is already used on line 19
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

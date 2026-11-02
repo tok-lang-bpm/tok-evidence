@@ -1,0 +1,33 @@
+tok 1.0 "Measurement exchange"
+
+pool org "Organisation"
+  lane go "GO"
+    start requested "Measurements needed"
+    task request "Request the measurements from the MSP"
+    task processv "Process the measured values"
+    task sendchg "Send the changed values to the MSP"
+    task transmit "Transmit the readings to the SP"
+    end done "Readings transmitted"
+  lane msp "MSP"
+    task check "Check the received request"
+    xor accepted "Request accepted?"
+    task deny "Deny the request of the GO"
+    task perform "Perform the measurement"
+    xor readok "Reading successful?"
+    task failinf "Inform the GO about the failure of the reading"
+    task sendvals "Transmit the measured values to the GO"
+    end failed "Failure reported"
+
+pool sp "SP"
+
+flow requested -> request -> check -> accepted
+flow accepted -> perform "yes"
+flow accepted -> deny "no"
+flow deny -> failinf
+flow perform -> readok
+flow readok -> sendvals "yes"
+flow readok -> failinf "no"
+flow failinf -> failed
+flow sendvals -> processv -> sendchg -> transmit -> done
+
+message transmit -> sp "Readings"

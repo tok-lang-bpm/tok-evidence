@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Office Supply Request" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="office" name="Office" processRef="office-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="office-process" name="Office Supply Request" isExecutable="false">
+    <bpmn:laneSet id="office-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>receive_req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sup_decision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchase" name="Purchase department">
+        <bpmn:flowNodeRef>quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>vendor_valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose_vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_vendor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generate_po</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_parallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_delivery</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Office supply request needed" />
+    <bpmn:task id="submit" name="Submit office supply request" />
+    <bpmn:task id="review" name="Review comments for the change request" />
+    <bpmn:task id="receive_req" name="Receive office supply request" />
+    <bpmn:exclusiveGateway id="sup_decision" name="Approve, request change, or reject?" />
+    <bpmn:subProcess id="quotations" name="Make quotations">
+      <bpmn:startEvent id="qstart" name="Start quotations" />
+      <bpmn:task id="prepare" name="Prepare quotations" />
+      <bpmn:endEvent id="qend" name="Quotations made" />
+      <bpmn:sequenceFlow id="f-qstart-prepare" sourceRef="qstart" targetRef="prepare" />
+      <bpmn:sequenceFlow id="f-prepare-qend" sourceRef="prepare" targetRef="qend" />
+    </bpmn:subProcess>
+    <bpmn:task id="select_vendor" name="Select a vendor" />
+    <bpmn:exclusiveGateway id="vendor_valid" name="Is the vendor valid in the system?" />
+    <bpmn:task id="choose_vendor" name="Choose a different vendor" />
+    <bpmn:task id="confirm_vendor" name="Confirm vendor" />
+    <bpmn:task id="register" name="Register the requirement" />
+    <bpmn:task id="generate_po" name="Generate and send purchase order" />
+    <bpmn:parallelGateway id="wait_parallel" name="Wait for delivery and invoice" />
+    <bpmn:task id="wait_delivery" name="Wait for the product to be delivered" />
+    <bpmn:task id="receive_invoice" name="Receive invoice" />
+    <bpmn:parallelGateway id="wait_done" name="Delivery and invoice received" />
+    <bpmn:exclusiveGateway id="merge" name="Merge" />
+    <bpmn:task id="notify" name="Send notification" />
+    <bpmn:endEvent id="completed" name="Office supply request completed" />
+    <bpmn:sequenceFlow id="f-needed-submit" sourceRef="needed" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-register" sourceRef="submit" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-receive_req" sourceRef="register" targetRef="receive_req" />
+    <bpmn:sequenceFlow id="f-receive_req-sup_decision" sourceRef="receive_req" targetRef="sup_decision" />
+    <bpmn:sequenceFlow id="f-sup_decision-merge" name="reject" sourceRef="sup_decision" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-sup_decision-review" name="request change" sourceRef="sup_decision" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-merge" sourceRef="review" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-sup_decision-quotations" name="approve" sourceRef="sup_decision" targetRef="quotations" />
+    <bpmn:sequenceFlow id="f-quotations-select_vendor" sourceRef="quotations" targetRef="select_vendor" />
+    <bpmn:sequenceFlow id="f-select_vendor-vendor_valid" sourceRef="select_vendor" targetRef="vendor_valid" />
+    <bpmn:sequenceFlow id="f-vendor_valid-choose_vendor" name="no" sourceRef="vendor_valid" targetRef="choose_vendor" />
+    <bpmn:sequenceFlow id="f-choose_vendor-select_vendor" sourceRef="choose_vendor" targetRef="select_vendor" />
+    <bpmn:sequenceFlow id="f-vendor_valid-confirm_vendor" name="yes" sourceRef="vendor_valid" targetRef="confirm_vendor" />
+    <bpmn:sequenceFlow id="f-confirm_vendor-generate_po" sourceRef="confirm_vendor" targetRef="generate_po" />
+    <bpmn:sequenceFlow id="f-generate_po-wait_parallel" sourceRef="generate_po" targetRef="wait_parallel" />
+    <bpmn:sequenceFlow id="f-wait_parallel-wait_delivery" sourceRef="wait_parallel" targetRef="wait_delivery" />
+    <bpmn:sequenceFlow id="f-wait_parallel-receive_invoice" sourceRef="wait_parallel" targetRef="receive_invoice" />
+    <bpmn:sequenceFlow id="f-wait_delivery-wait_done" sourceRef="wait_delivery" targetRef="wait_done" />
+    <bpmn:sequenceFlow id="f-receive_invoice-wait_done" sourceRef="receive_invoice" targetRef="wait_done" />
+    <bpmn:sequenceFlow id="f-wait_done-merge" sourceRef="wait_done" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-merge-notify" sourceRef="merge" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-completed" sourceRef="notify" targetRef="completed" />
+  </bpmn:process>
+</bpmn:definitions>

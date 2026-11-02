@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Car Service" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="office" name="Police and car service" processRef="office-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="office-process" name="Car Service" isExecutable="false">
+    <bpmn:laneSet id="office-lanes">
+      <bpmn:lane id="police" name="Police app">
+        <bpmn:flowNodeRef>serviceDone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkReg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notRegistered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fined</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="driver" name="Car driver">
+        <bpmn:flowNodeRef>goes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>goService</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mechanic" name="Mechanic at the car service">
+        <bpmn:flowNodeRef>enterProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forkRepair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>repair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>statusUpdates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinRepair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterNext</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="serviceDone" name="Service completed successfully" />
+    <bpmn:serviceTask id="checkReg" name="Check whether the car is still registered" />
+    <bpmn:exclusiveGateway id="registered" name="Car still registered?" />
+    <bpmn:sendTask id="notify" name="Notify the driver of the service reminder" />
+    <bpmn:task id="fine" name="Fine the driver" />
+    <bpmn:endEvent id="notRegistered" name="Reminder not sent" />
+    <bpmn:endEvent id="fined" name="Driver fined" />
+    <bpmn:exclusiveGateway id="goes" name="Go to the car service?" />
+    <bpmn:task id="goService" name="Go to the car service" />
+    <bpmn:intermediateCatchEvent id="wait30" name="30 days pass">
+      <bpmn:timerEventDefinition id="wait30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="pay" name="Pay for the repair in the app" />
+    <bpmn:task id="enterProblems" name="Enter the problems of the car for reference" />
+    <bpmn:parallelGateway id="forkRepair" name="Repair and status updates" />
+    <bpmn:task id="repair" name="Repair the car" />
+    <bpmn:sendTask id="statusUpdates" name="Send status updates by email">
+      <bpmn:standardLoopCharacteristics />
+    </bpmn:sendTask>
+    <bpmn:parallelGateway id="joinRepair" name="Repair done" />
+    <bpmn:task id="enterSuccess" name="Enter that the repair was successful" />
+    <bpmn:task id="handover" name="Hand over the Pickerl" />
+    <bpmn:task id="enterNext" name="Enter the time of the next service" />
+    <bpmn:endEvent id="done" name="Service finished" />
+    <bpmn:sequenceFlow id="f-serviceDone-checkReg" sourceRef="serviceDone" targetRef="checkReg" />
+    <bpmn:sequenceFlow id="f-checkReg-registered" sourceRef="checkReg" targetRef="registered" />
+    <bpmn:sequenceFlow id="f-registered-notify" name="yes" sourceRef="registered" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-registered-notRegistered" name="no" sourceRef="registered" targetRef="notRegistered" />
+    <bpmn:sequenceFlow id="f-notify-goes" sourceRef="notify" targetRef="goes" />
+    <bpmn:sequenceFlow id="f-goes-goService" name="yes" sourceRef="goes" targetRef="goService" />
+    <bpmn:sequenceFlow id="f-goes-wait30" name="no" sourceRef="goes" targetRef="wait30" />
+    <bpmn:sequenceFlow id="f-wait30-fine" sourceRef="wait30" targetRef="fine" />
+    <bpmn:sequenceFlow id="f-fine-fined" sourceRef="fine" targetRef="fined" />
+    <bpmn:sequenceFlow id="f-goService-enterProblems" sourceRef="goService" targetRef="enterProblems" />
+    <bpmn:sequenceFlow id="f-enterProblems-forkRepair" sourceRef="enterProblems" targetRef="forkRepair" />
+    <bpmn:sequenceFlow id="f-forkRepair-repair" sourceRef="forkRepair" targetRef="repair" />
+    <bpmn:sequenceFlow id="f-repair-joinRepair" sourceRef="repair" targetRef="joinRepair" />
+    <bpmn:sequenceFlow id="f-forkRepair-statusUpdates" sourceRef="forkRepair" targetRef="statusUpdates" />
+    <bpmn:sequenceFlow id="f-statusUpdates-joinRepair" sourceRef="statusUpdates" targetRef="joinRepair" />
+    <bpmn:sequenceFlow id="f-joinRepair-pay" sourceRef="joinRepair" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-enterSuccess" sourceRef="pay" targetRef="enterSuccess" />
+    <bpmn:sequenceFlow id="f-enterSuccess-handover" sourceRef="enterSuccess" targetRef="handover" />
+    <bpmn:sequenceFlow id="f-handover-enterNext" sourceRef="handover" targetRef="enterNext" />
+    <bpmn:sequenceFlow id="f-enterNext-done" sourceRef="enterNext" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

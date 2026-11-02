@@ -1,0 +1,129 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ACME_POOL" name="ACME AG" processRef="process1"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="laneSet1">
+      <bpmn:lane id="laneSecretariat" name="Secretariat">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sec_receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sec_forward</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneAccounting" name="Accounting">
+        <bpmn:flowNodeRef>acct_identify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_send_manager</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_receive_from_managers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_consult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_forward_commercial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acct_receive_from_board</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approval_issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resolve_complaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>payment_and_close</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneManager" name="Cost Center Manager">
+        <bpmn:flowNodeRef>mgr_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgr_mark_ap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgr_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgr_send_back</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCommercial" name="Commercial Manager">
+        <bpmn:flowNodeRef>comm_audit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_amount_gt20</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneBoard" name="Board">
+        <bpmn:flowNodeRef>board_review</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Invoice received (paper/fax)"/>
+
+    <bpmn:task id="sec_receive" name="Receive invoice (paper/fax)"/>
+    <bpmn:task id="sec_forward" name="Forward invoice to accounting"/>
+
+    <bpmn:task id="acct_identify" name="Identify charging suppliers and create invoice instance"/>
+    <bpmn:task id="acct_check" name="Check invoice items and note cost centers"/>
+
+    <bpmn:task id="acct_send_manager" name="Send docket and invoice copy to next cost center manager"/>
+
+    <bpmn:exclusiveGateway id="gw_manager_loop" name="More managers to process?"/>
+
+    <bpmn:task id="mgr_review" name="Review invoice content"/>
+    <bpmn:exclusiveGateway id="gw_is_accurate" name="Is position accurate?"/>
+    <bpmn:task id="mgr_mark_ap" name="Mark position as accurate (AP)"/>
+    <bpmn:task id="mgr_reject" name="Reject AP with note"/>
+    <bpmn:task id="mgr_send_back" name="Send invoice copy back to accounting"/>
+
+    <bpmn:task id="acct_receive_from_managers" name="Receive invoice from cost center managers"/>
+    <bpmn:task id="acct_clarify" name="Clarify inconsistency with vendor"/>
+    <bpmn:task id="acct_consult" name="Consult cost center managers again"/>
+
+    <bpmn:task id="acct_forward_commercial" name="Forward invoice to commercial manager"/>
+
+    <bpmn:task id="comm_audit" name="Conduct commercial audit"/>
+    <bpmn:exclusiveGateway id="gw_amount_gt20" name="Invoice amount > EUR 20?"/>
+
+    <bpmn:task id="board_review" name="Board review invoice"/>
+    <bpmn:task id="acct_receive_from_board" name="Receive invoice from board"/>
+
+    <bpmn:task id="approval_issue" name="Issue approval for payment"/>
+    <bpmn:exclusiveGateway id="gw_complaint" name="Complaint during commercial audit?"/>
+
+    <bpmn:task id="resolve_complaint" name="Resolve complaint with supplier"/>
+    <bpmn:task id="payment_and_close" name="Give payment instructions and close invoice"/>
+
+    <bpmn:endEvent id="end" name="Process completed"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="sec_receive"/>
+    <bpmn:sequenceFlow id="flow2" sourceRef="sec_receive" targetRef="sec_forward"/>
+    <bpmn:sequenceFlow id="flow3" sourceRef="sec_forward" targetRef="acct_identify"/>
+    <bpmn:sequenceFlow id="flow4" sourceRef="acct_identify" targetRef="acct_check"/>
+    <bpmn:sequenceFlow id="flow5" sourceRef="acct_check" targetRef="acct_send_manager"/>
+    <bpmn:sequenceFlow id="flow6" sourceRef="acct_send_manager" targetRef="gw_manager_loop"/>
+
+    <!-- Manager loop -->
+    <bpmn:sequenceFlow id="flow7" sourceRef="gw_manager_loop" name="more managers" targetRef="mgr_review"/>
+    <bpmn:sequenceFlow id="flow8" sourceRef="gw_manager_loop" name="all approved" targetRef="acct_receive_from_managers"/>
+
+    <bpmn:sequenceFlow id="flow9" sourceRef="mgr_review" targetRef="gw_is_accurate"/>
+
+    <bpmn:sequenceFlow id="flow10" sourceRef="gw_is_accurate" name="yes" targetRef="mgr_mark_ap"/>
+    <bpmn:sequenceFlow id="flow11" sourceRef="gw_is_accurate" name="no" targetRef="mgr_reject"/>
+
+    <bpmn:sequenceFlow id="flow12" sourceRef="mgr_mark_ap" targetRef="gw_manager_loop"/>
+    <bpmn:sequenceFlow id="flow13" sourceRef="mgr_reject" targetRef="mgr_send_back"/>
+
+    <bpmn:sequenceFlow id="flow14" sourceRef="mgr_send_back" targetRef="acct_clarify"/>
+
+    <bpmn:sequenceFlow id="flow15" sourceRef="acct_clarify" targetRef="acct_consult"/>
+    <bpmn:sequenceFlow id="flow16" sourceRef="acct_consult" targetRef="acct_send_manager"/>
+
+    <bpmn:sequenceFlow id="flow17" sourceRef="acct_receive_from_managers" targetRef="acct_forward_commercial"/>
+    <bpmn:sequenceFlow id="flow18" sourceRef="acct_forward_commercial" targetRef="comm_audit"/>
+    <bpmn:sequenceFlow id="flow19" sourceRef="comm_audit" targetRef="gw_amount_gt20"/>
+
+    <bpmn:sequenceFlow id="flow20" sourceRef="gw_amount_gt20" name="yes" targetRef="board_review"/>
+    <bpmn:sequenceFlow id="flow21" sourceRef="gw_amount_gt20" name="no" targetRef="approval_issue"/>
+
+    <bpmn:sequenceFlow id="flow22" sourceRef="board_review" targetRef="acct_receive_from_board"/>
+    <bpmn:sequenceFlow id="flow23" sourceRef="acct_receive_from_board" targetRef="approval_issue"/>
+
+    <bpmn:sequenceFlow id="flow24" sourceRef="approval_issue" targetRef="gw_complaint"/>
+
+    <bpmn:sequenceFlow id="flow25" sourceRef="gw_complaint" name="yes" targetRef="resolve_complaint"/>
+    <bpmn:sequenceFlow id="flow26" sourceRef="gw_complaint" name="no" targetRef="payment_and_close"/>
+
+    <bpmn:sequenceFlow id="flow27" sourceRef="resolve_complaint" targetRef="payment_and_close"/>
+    <bpmn:sequenceFlow id="flow28" sourceRef="payment_and_close" targetRef="end"/>
+  </bpmn:process>
+</bpmn:definitions>
+```

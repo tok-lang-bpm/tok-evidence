@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="LANPartyProcess" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="LANPartyProcess" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE_ORG" name="Organizer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendInvitations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveGames</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelSplit1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>appointDate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwCheckAgreement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelJoin1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>downloadGames</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>findBeerRequirement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwBeerEnough</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>buyBeer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enjoyParty</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endParty</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwGamesMissing</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_FRI" name="Friends">
+        <bpmn:flowNodeRef>friendsSendGames</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>friendsConfirmDate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>friendsProvideBeer</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start LAN party planning" />
+
+    <bpmn:task id="sendInvitations" name="Send invitations to 10 friends" />
+    <bpmn:task id="friendsSendGames" name="Send list of desired games" />
+    <bpmn:task id="receiveGames" name="Receive game list" />
+
+    <bpmn:parallelGateway id="parallelSplit1" />
+
+    <!-- Branch A: Date selection -->
+    <bpmn:task id="appointDate" name="Appoint a date for the LAN party" />
+    <bpmn:task id="friendsConfirmDate" name="Confirm date availability" />
+    <bpmn:exclusiveGateway id="gwCheckAgreement" name="8 or more people agree?" />
+    <!-- Loop back if not enough -->
+    <bpmn:exclusiveGateway id="gwGamesMissing" name="Missing games?" />
+    <!-- Branch B: Game availability -->
+    <bpmn:task id="downloadGames" name="Download missing games" />
+
+    <bpmn:parallelGateway id="parallelJoin1" />
+
+    <bpmn:task id="friendsProvideBeer" name="Provide beer requirement" />
+    <bpmn:task id="findBeerRequirement" name="Find out how much beer friends will require" />
+    <bpmn:exclusiveGateway id="gwBeerEnough" name="Enough beer?" />
+    <bpmn:task id="buyBeer" name="Buy missing beer" />
+    <bpmn:task id="enjoyParty" name="Enjoy the LAN party" />
+    <bpmn:endEvent id="endParty" name="LAN party enjoyed" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="sf1" sourceRef="start" targetRef="sendInvitations" />
+    <bpmn:sequenceFlow id="sf2" sourceRef="sendInvitations" targetRef="friendsSendGames" />
+    <bpmn:sequenceFlow id="sf3" sourceRef="friendsSendGames" targetRef="receiveGames" />
+    <bpmn:sequenceFlow id="sf4" sourceRef="receiveGames" targetRef="parallelSplit1" />
+
+    <!-- Parallel split branches -->
+    <bpmn:sequenceFlow id="sf5" sourceRef="parallelSplit1" targetRef="appointDate" />
+    <bpmn:sequenceFlow id="sf6" sourceRef="parallelSplit1" targetRef="gwGamesMissing" />
+
+    <!-- Branch A (date) -->
+    <bpmn:sequenceFlow id="sf7" sourceRef="appointDate" targetRef="friendsConfirmDate" />
+    <bpmn:sequenceFlow id="sf8" sourceRef="friendsConfirmDate" targetRef="gwCheckAgreement" />
+    <bpmn:sequenceFlow id="sf9_yes" name="yes" sourceRef="gwCheckAgreement" targetRef="parallelJoin1" />
+    <bpmn:sequenceFlow id="sf9_no" name="no" sourceRef="gwCheckAgreement" targetRef="appointDate" />
+
+    <!-- Branch B (games) -->
+    <bpmn:sequenceFlow id="sf10_missing" name="missing" sourceRef="gwGamesMissing" targetRef="downloadGames" />
+    <bpmn:sequenceFlow id="sf11_all" name="all present" sourceRef="gwGamesMissing" targetRef="parallelJoin1" />
+    <bpmn:sequenceFlow id="sf12" sourceRef="downloadGames" targetRef="parallelJoin1" />
+
+    <!-- After parallel join -->
+    <bpmn:sequenceFlow id="sf13" sourceRef="parallelJoin1" targetRef="friendsProvideBeer" />
+    <bpmn:sequenceFlow id="sf14" sourceRef="friendsProvideBeer" targetRef="findBeerRequirement" />
+    <bpmn:sequenceFlow id="sf15" sourceRef="findBeerRequirement" targetRef="gwBeerEnough" />
+    <bpmn:sequenceFlow id="sf16_yes" name="enough" sourceRef="gwBeerEnough" targetRef="enjoyParty" />
+    <bpmn:sequenceFlow id="sf16_no" name="not enough" sourceRef="gwBeerEnough" targetRef="buyBeer" />
+    <bpmn:sequenceFlow id="sf17" sourceRef="buyBeer" targetRef="enjoyParty" />
+    <bpmn:sequenceFlow id="sf18" sourceRef="enjoyParty" targetRef="endParty" />
+  </bpmn:process>
+</bpmn:definitions>

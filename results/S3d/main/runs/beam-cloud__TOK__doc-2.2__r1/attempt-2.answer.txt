@@ -1,0 +1,92 @@
+```tok
+tok 1.0 "Switch-over request"
+
+pool organisation "Organisation"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit_data "Transmit customer data"
+    task check_contract "Check contract details"
+    task receive_bill_customer "Receive final billing"
+    end end_customer "Customer process ends"
+  lane customer_service "Customer Service"
+    task receive_data "Receive customer data"
+    task enter_data "Enter customer data object into CRM system"
+    task compare_data "Compare customer data with internal database"
+    task check_data "Check completeness and plausibility"
+    task correct_errors "Correct errors"
+    xor g_errors "Errors found?"
+    task create_customer "Create new customer object"
+    xor g_exists "Customer exists?"
+    task prepare_docs "Prepare contract documents"
+    task analyze_issues "Analyze and resolve issues"
+    task regenerate_docs "Regenerate contract documents"
+    task send_confirmation "Send confirmation document"
+    task create_cis_contract "Create CIS contract"
+    task receive_meter_cs "Receive meter data"
+    task import_meter "Import meter data"
+    eventgw g_response "Customer response?"
+    catch withdraw "Withdrawal received" message="Withdrawal"
+    catch confirm "Confirmation received" message="Confirmation"
+    catch timeout "7 days elapsed" timer=P7D
+    xor g_docs "Contract documents generated successfully?"
+    xor response_merged "Customer response merged"
+    and tail_split "Start tail activities"
+    end end_withdrawn "Contract withdrawn"
+    end end_new_customer "New customer won"
+  lane cis "CIS"
+    task check_docs "Check contract documents automatically"
+    task send_request_go "Send switch-over request to grid operator"
+  lane grid_operator "Grid Operator"
+    task check_concurrence "Check supplier concurrence"
+    task transmit_comment "Transmit response comment"
+    xor g_concurrence "Supplier concurrence?"
+    task inform_suppliers "Inform involved suppliers"
+    task demand_resolution "Demand resolution of conflict"
+    task communicate_old "Communicate with old supplier"
+    task terminate_agreement "Terminate sales agreement"
+    task transmit_meter "Transmit power meter data"
+    task compute_billing "Compute final billing"
+    task send_billing_go "Send final billing to old supplier"
+    end end_go "Grid operator process ends"
+  lane old_supplier "Old Supplier"
+    task receive_meter_os "Receive power meter data"
+    task create_bill_customer "Create final billing for customer"
+    task send_bill_customer "Send final billing to customer"
+    task receive_billing_go "Receive final billing from grid operator"
+    end end_old "Old supplier process ends"
+
+flow request -> transmit_data -> receive_data -> enter_data -> compare_data -> check_data
+flow check_data -> g_errors
+flow g_errors -> correct_errors "yes" when="errorsFound"
+flow correct_errors -> check_data
+flow g_errors -> g_exists "no" default
+flow g_exists -> create_customer "no" default
+flow create_customer -> prepare_docs
+flow g_exists -> prepare_docs "yes" when="customerExists"
+flow prepare_docs -> check_docs
+flow check_docs -> g_docs
+flow g_docs -> send_confirmation "yes" when="documentsGenerated"
+flow g_docs -> analyze_issues "no" default
+flow analyze_issues -> regenerate_docs -> check_docs
+flow send_confirmation -> send_request_go -> check_concurrence -> transmit_comment -> g_concurrence
+flow g_concurrence -> inform_suppliers "yes" when="supplierConcurrence"
+flow inform_suppliers -> demand_resolution -> communicate_old -> terminate_agreement -> end_go
+flow g_concurrence -> create_cis_contract "no" default
+flow create_cis_contract -> check_contract -> g_response
+flow g_response -> withdraw
+flow g_response -> confirm
+flow g_response -> timeout
+flow withdraw -> end_withdrawn
+flow confirm -> response_merged
+flow timeout -> response_merged
+flow response_merged -> tail_split
+flow tail_split -> transmit_meter
+flow tail_split -> compute_billing
+flow transmit_meter -> receive_meter_cs -> import_meter -> end_new_customer
+flow transmit_meter -> receive_meter_os -> create_bill_customer -> send_bill_customer
+flow send_bill_customer -> end_old
+flow send_bill_customer -> receive_bill_customer -> end_customer
+flow compute_billing -> send_billing_go
+flow send_billing_go -> receive_billing_go -> end_old
+flow send_billing_go -> end_go
+```

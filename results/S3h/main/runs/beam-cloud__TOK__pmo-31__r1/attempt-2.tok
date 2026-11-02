@@ -1,0 +1,66 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizzard "Blizzard"
+  lane player "Player"
+    start create "Create character"
+    and split_initial
+    task brainstorm "Come up with good character names"
+    task check_bn "Check whether you have a battle.net account"
+    xor has_bn "Have a battle.net account?"
+    task enter_account "Enter the account information"
+    task click_link "Click the link received in the confirmation mail"
+    xor merge_bn "Battle.net account ready"
+    task check_sub "Check if you have an active WoW subscription"
+    xor has_sub "Have an active WoW subscription?"
+    task select_payment "Select the payment method"
+    xor pay_method "Choose payment method?"
+    task enter_cc "Enter your credit card information"
+    task enter_iban "Enter your IBAN and BIC numbers"
+    xor merge_pay "Payment entered"
+    xor merge_sub "Subscription ready"
+    task login "Log into the game"
+    task select_character "Select realm, race and class"
+    and join_initial
+    task enter_name "Enter a character name"
+    xor name_available "Is the name still available?"
+    and split_reward
+    task get_confirmation "Get a confirmation"
+    task get_selfies "Get some selfies of your character"
+    and join_reward
+    catch expansion "Expansion released" signal="Expansion released"
+    task get_message "Get another message"
+    end done "Character created"
+
+flow create -> split_initial
+flow split_initial -> check_bn
+flow split_initial -> brainstorm
+flow check_bn -> has_bn
+flow has_bn -> enter_account "No" when="not hasBattleNetAccount"
+flow has_bn -> merge_bn "Yes" default
+flow enter_account -> click_link
+flow click_link -> merge_bn
+flow merge_bn -> check_sub
+flow check_sub -> has_sub
+flow has_sub -> select_payment "No" when="not hasWowSubscription"
+flow has_sub -> merge_sub "Yes" default
+flow select_payment -> pay_method
+flow pay_method -> enter_cc "Credit card"
+flow pay_method -> enter_iban "Bank account"
+flow enter_cc -> merge_pay
+flow enter_iban -> merge_pay
+flow merge_pay -> merge_sub
+flow merge_sub -> login
+flow login -> select_character
+flow select_character -> join_initial
+flow brainstorm -> join_initial
+flow join_initial -> enter_name
+flow enter_name -> name_available
+flow name_available -> enter_name "No" when="not nameAvailable"
+flow name_available -> split_reward "Yes" default
+flow split_reward -> get_confirmation
+flow split_reward -> get_selfies
+flow get_confirmation -> join_reward
+flow get_selfies -> join_reward
+flow join_reward -> expansion
+flow expansion -> get_message
+flow get_message -> done

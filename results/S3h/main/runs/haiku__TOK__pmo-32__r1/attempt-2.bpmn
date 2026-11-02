@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="farm" name="Farming Bot" processRef="farm-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="farm-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="farm-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rank</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming bot">
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gather</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dis</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fjoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Bot needed" />
+    <bpmn:task id="find" name="Find out which resources you want" />
+    <bpmn:task id="rank" name="Set the urgency of each resource" />
+    <bpmn:task id="deps" name="Define the dependencies between resources" />
+    <bpmn:task id="update" name="Update the list of materials to be farmed" />
+    <bpmn:inclusiveGateway id="split" name="Brag and/or send materials?" default="f-split-joined" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="sendm" name="Send materials to selected friends" />
+    <bpmn:inclusiveGateway id="joined" />
+    <bpmn:endEvent id="done" name="Bot used" />
+    <bpmn:task id="collect" name="Collect all preferences" />
+    <bpmn:task id="start" name="Start farming" />
+    <bpmn:parallelGateway id="fork" />
+    <bpmn:task id="gather" name="Collect up to 10 resources in parallel">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="dis" name="Natural disaster strikes?" default="f-dis-merge" />
+    <bpmn:task id="recover" name="Recover the bot from the disaster" />
+    <bpmn:exclusiveGateway id="merge" />
+    <bpmn:task id="notify" name="Notify the player when a milestone is reached" />
+    <bpmn:parallelGateway id="fjoin" />
+    <bpmn:sequenceFlow id="f-needed-find" sourceRef="needed" targetRef="find" />
+    <bpmn:sequenceFlow id="f-find-rank" sourceRef="find" targetRef="rank" />
+    <bpmn:sequenceFlow id="f-rank-deps" sourceRef="rank" targetRef="deps" />
+    <bpmn:sequenceFlow id="f-deps-collect" sourceRef="deps" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-start" sourceRef="collect" targetRef="start" />
+    <bpmn:sequenceFlow id="f-start-fork" sourceRef="start" targetRef="fork" />
+    <bpmn:sequenceFlow id="f-fork-gather" sourceRef="fork" targetRef="gather" />
+    <bpmn:sequenceFlow id="f-gather-fjoin" sourceRef="gather" targetRef="fjoin" />
+    <bpmn:sequenceFlow id="f-fork-dis" sourceRef="fork" targetRef="dis" />
+    <bpmn:sequenceFlow id="f-dis-recover" name="yes" sourceRef="dis" targetRef="recover">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">disaster = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-dis-merge" name="no" sourceRef="dis" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-recover-merge" sourceRef="recover" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-merge-fjoin" sourceRef="merge" targetRef="fjoin" />
+    <bpmn:sequenceFlow id="f-fork-notify" sourceRef="fork" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-fjoin" sourceRef="notify" targetRef="fjoin" />
+    <bpmn:sequenceFlow id="f-fork-update" sourceRef="fork" targetRef="update" />
+    <bpmn:sequenceFlow id="f-update-fjoin" sourceRef="update" targetRef="fjoin" />
+    <bpmn:sequenceFlow id="f-fjoin-split" sourceRef="fjoin" targetRef="split" />
+    <bpmn:sequenceFlow id="f-split-brag" name="yes" sourceRef="split" targetRef="brag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">brag = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-split-sendm" name="yes" sourceRef="split" targetRef="sendm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">send = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-split-joined" name="no" sourceRef="split" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-brag-joined" sourceRef="brag" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-sendm-joined" sourceRef="sendm" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-joined-done" sourceRef="joined" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

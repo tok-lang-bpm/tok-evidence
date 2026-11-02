@@ -1,0 +1,40 @@
+tok 1.0
+
+pool org "Organization" {
+  lane csr "Customer Service Representative" {
+    start start "Start"
+    task send_offer "Send Mortgage offer to customer"
+    task wait_reply "Wait for customer reply"
+    xor reply_dec "Customer reply"
+    task update_decline "Update case details"
+    task archive_decline "Archive case prior to cancellation"
+    task move_admin "Move case to administration for completion"
+    task request_docs "Generate message to customer requesting outstanding documents"
+    task receive_docs "Receive customer documents"
+    boundary timer_no_answer on=receive_docs timer=P14D
+    task timeout_update "Update case details"
+    task timeout_archive "Archive case prior to cancellation"
+    end end1 "End"
+    end end2 "End"
+    end end3 "End"
+  }
+  lane admin "Administration" {
+    task complete_admin "Complete case"
+  }
+}
+
+flow start -> send_offer
+flow send_offer -> wait_reply
+flow wait_reply -> reply_dec
+flow reply_dec -> update_decline "decline" when="reply = 'decline'"
+flow update_decline -> archive_decline
+flow archive_decline -> end1
+flow reply_dec -> move_admin "complete_all" when="reply = 'complete_all'"
+flow move_admin -> complete_admin
+flow complete_admin -> end2
+flow reply_dec -> request_docs "incomplete" when="reply = 'incomplete'"
+flow request_docs -> receive_docs
+flow receive_docs -> move_admin
+flow timer_no_answer -> timeout_update
+flow timeout_update -> timeout_archive
+flow timeout_archive -> end3

@@ -1,0 +1,43 @@
+tok 1.0
+
+pool org "Organisation" {
+  lane operator "Operator"
+  lane customer "Customer"
+}
+
+start start "Start" lane=operator
+receive receive-order "Receive order properties" lane=operator
+gateway and g1 "Order parts parallel" lane=operator
+task order-guide-bar "Order guide bar" lane=operator
+task order-chain "Order chain" lane=operator
+task order-motor "Order motor/electric" lane=operator
+gateway and g2 "Parts ordered" lane=operator
+task wait-parts "Wait for parts arrival" lane=operator
+task inspect-parts "Inspect parts" lane=operator
+task assemble-parts "Assemble parts" lane=operator
+task send-updates "Send updates to customer" lane=operator
+send send-first-saw "Send first saw to customer" lane=operator
+receive receive-feedback "Receive customer feedback" lane=operator
+gateway xor decision-like "Customer likes first saw?" lane=operator
+task produce-rest "Produce rest of order" lane=operator
+end end-yes "End - Order completed" lane=operator
+end end-no "End - Order cancelled" lane=operator
+
+flow start -> receive-order
+flow receive-order -> g1
+flow g1 -> order-guide-bar "order guide bar"
+flow g1 -> order-chain "order chain"
+flow g1 -> order-motor "order motor"
+flow order-guide-bar -> g2
+flow order-chain -> g2
+flow order-motor -> g2
+flow g2 -> wait-parts
+flow wait-parts -> inspect-parts
+flow inspect-parts -> assemble-parts
+flow assemble-parts -> send-updates
+flow send-updates -> send-first-saw
+flow send-first-saw -> receive-feedback
+flow receive-feedback -> decision-like
+flow decision-like -> produce-rest "yes" when="like == true"
+flow decision-like -> end-no "no" when="like == false"
+flow produce-rest -> end-yes

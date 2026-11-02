@@ -1,0 +1,52 @@
+tok 1.0
+
+pool org "Organization"
+    lane employee "Employee"
+        start start "Office supply request submitted"
+        task submit "Submit office supply request"
+        task review "Review change comments"
+        end end_reject "Process ended after rejection"
+        end end_success "Process ended after approval"
+    lane supervisor "Supervisor"
+        task receive "Receive office supply request"
+        xor decision "Supervisor decision?"
+        task reject "Reject request"
+        task change_req "Return request for change"
+        task approve "Approve request"
+    lane purchase "Purchase Department"
+        sub quotation "Quotation and vendor selection"
+            start q_start "Start quotation"
+            task make_quotations "Make quotations"
+            task select_vendor "Select vendor"
+            xor vendor_valid "Vendor valid?"
+            task choose_vendor "Choose different vendor"
+            end q_end "End quotation"
+    lane system "System"
+        task notify_reject "Send rejection notification"
+        task notify_change "Send change required notification"
+        task gen_po "Generate and send purchase order"
+        task wait "Wait for product delivery and invoice"
+        task notify_approve "Send approval notification"
+
+flow start -> submit
+flow submit -> receive
+flow receive -> decision
+flow decision -> reject "Reject"
+flow decision -> change_req "Change required"
+flow decision -> approve "Approve"
+flow reject -> notify_reject
+flow notify_reject -> end_reject
+flow change_req -> notify_change
+flow notify_change -> review
+flow review -> decision
+flow approve -> quotation
+flow q_start -> make_quotations
+flow make_quotations -> select_vendor
+flow select_vendor -> vendor_valid
+flow vendor_valid -> q_end default
+flow vendor_valid -> choose_vendor when="false"
+flow choose_vendor -> vendor_valid
+flow quotation -> gen_po
+flow gen_po -> wait
+flow wait -> notify_approve
+flow notify_approve -> end_success

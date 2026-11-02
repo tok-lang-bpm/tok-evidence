@@ -1,0 +1,50 @@
+tok 1.0 "Expense Report Process"
+
+pool org "Organisation"
+  lane emp "Employee"
+    task resubmit "Re-submit expense report"
+  lane sup "Supervisor"
+    user appr "Approve expense report"
+  lane fin "Finance"
+    start s "Expense report received" message="Expense report"
+    xor gacct "Employee has account?"
+    task createacct "Create new account"
+    xor gacctj "Account ready"
+    task review "Review for automatic approval"
+    sub handle "Process expense report"
+      start sh "Start processing"
+      xor gamount "Amount under $200?"
+      xor gsup "Approved?"
+      task reimburse "Reimburse to direct deposit"
+      send reject "Send rejection notice" message="Rejection"
+      end eh-approved "Approved"
+      end eh-rejected "Rejected"
+      flow sh -> gamount
+      flow gamount -> reimburse "under $200" when="amount < 200"
+      flow gamount -> appr "equals or over $200" default
+      flow appr -> gsup
+      flow gsup -> reimburse "approved" when="approved = true"
+      flow gsup -> reject "rejected" default
+      flow reimburse -> eh-approved
+      flow reject -> eh-rejected
+    end
+    boundary b7 on=handle timer=P7D noninterrupting
+    boundary b30 on=handle timer=P30D
+    task sendprogress "Send approval in progress email"
+    task sendcancel "Send cancellation notice"
+    end e-completed "Completed"
+    end e-notified "Notified"
+    end e-cancelled "Cancelled"
+    flow s -> gacct
+    flow gacct -> createacct "no" when="hasAccount = false"
+    flow gacct -> gacctj "yes" default
+    flow createacct -> gacctj
+    flow gacctj -> review
+    flow review -> handle
+    flow handle -> e-completed
+    flow b7 -> sendprogress
+    flow sendprogress -> e-notified
+    flow b30 -> sendcancel
+    flow sendcancel -> resubmit
+    flow resubmit -> e-cancelled
+end

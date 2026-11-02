@@ -1,0 +1,72 @@
+tok 1.0 "Meter operation process"
+
+pool org "Organisation"
+  lane mp_on "MPON"
+    start s "Start"
+    task report_meter_operation "report meter operation"
+    task mp_on_perform_equipment "perform equipment acquisition and / or equipment changes"
+    task mp_on_inform_go_failure "inform GO about failure of entire process"
+    task mp_on_inform_go_success "inform GO about successful completion of entire process"
+  lane go "GO"
+    task examine_application "examine application"
+    task reject_application "reject application"
+    task confirm_application "confirm application"
+    task inform_mpoo_registration_confirmation "inform MPOO about registration confirmation"
+    task inform_ms_po_registration_confirmation "inform MSPO about registration confirmation"
+    task inform_mp_on_failure_overall_transaction "inform MPON about failure of overall transaction by deadline"
+    task confirm_failure_assignment "confirm failure of assignment to MPON"
+    task assign_mp_on "assign MPON"
+    task confirm_assignment "confirm assignment to MPON"
+    task inform_mpoo_failure_assignment "inform MPOO about failure of assignment of MPON"
+    task inform_mpoo_assignment "inform MPOO about assignment of MPON"
+    task inform_ms_po_failure_assignment "inform MSPO about failure of assignment of MPON"
+    task inform_ms_po_assignment "inform MSPO about assignment of MPON"
+    task inform_sp_assignment "inform SP about assignment of MPON"
+    xor gw_application "reject or confirm application?"
+    and gw_registration "inform MPOO and MSPO"
+    and gw_registration_join "registration confirmed"
+    and gw_perform_split "MPON and MPOO perform equipment acquisition and / or equipment changes"
+    and gw_perform_join "equipment performed"
+    xor gw_result "inform GO about failure or success?"
+    xor gw_deadline "MPON message present at GO by deadline?"
+    end e_rejected "End (rejected)"
+    end e_timeout "End (timeout)"
+    end e_failure "End (failure)"
+    end e_success "End (success)"
+  lane mp_oo "MPOO"
+    task mp_oo_perform_equipment "perform equipment acquisition and / or equipment changes"
+  lane ms_po "MSPO"
+  lane sp "SP"
+
+flow s -> report_meter_operation
+flow report_meter_operation -> examine_application
+flow examine_application -> gw_application
+flow gw_application -> reject_application "reject application"
+flow gw_application -> confirm_application "confirm application"
+flow reject_application -> e_rejected
+flow confirm_application -> gw_registration
+flow gw_registration -> inform_mpoo_registration_confirmation
+flow gw_registration -> inform_ms_po_registration_confirmation
+flow inform_mpoo_registration_confirmation -> gw_registration_join
+flow inform_ms_po_registration_confirmation -> gw_registration_join
+flow gw_registration_join -> gw_perform_split
+flow gw_perform_split -> mp_on_perform_equipment
+flow gw_perform_split -> mp_oo_perform_equipment
+flow mp_on_perform_equipment -> gw_perform_join
+flow mp_oo_perform_equipment -> gw_perform_join
+flow gw_perform_join -> gw_deadline
+flow gw_deadline -> inform_mp_on_failure_overall_transaction "no message" default
+flow gw_deadline -> gw_result "message present"
+flow gw_result -> mp_on_inform_go_failure "failure of entire process"
+flow gw_result -> mp_on_inform_go_success "successful completion of entire process"
+flow mp_on_inform_go_failure -> confirm_failure_assignment
+flow mp_on_inform_go_success -> assign_mp_on
+flow confirm_failure_assignment -> inform_mpoo_failure_assignment
+flow inform_mpoo_failure_assignment -> inform_ms_po_failure_assignment
+flow inform_ms_po_failure_assignment -> e_failure
+flow assign_mp_on -> confirm_assignment
+flow confirm_assignment -> inform_mpoo_assignment
+flow inform_mpoo_assignment -> inform_ms_po_assignment
+flow inform_ms_po_assignment -> inform_sp_assignment
+flow inform_sp_assignment -> e_success
+flow inform_mp_on_failure_overall_transaction -> e_timeout

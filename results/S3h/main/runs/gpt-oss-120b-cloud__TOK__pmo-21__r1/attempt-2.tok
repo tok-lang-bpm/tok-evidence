@@ -1,0 +1,54 @@
+tok 1.0 "Shipping Process"
+
+pool org "Organisation"
+  lane secretary "Secretary"
+    start start "Start shipping process"
+    xor ship_decision "Ship goods?"
+    task clarify "Clarify who will do the shipping"
+    xor amount_decision "Large amounts?"
+    task invite "Invite logistic companies"
+    task select "Select logistic company"
+    task label "Write package label"
+    task prepare "Prepare goods for pickup"
+    end done "Shipping completed"
+    end not_shipped "No shipping required"
+
+  lane logistics_head "Logistics Department Head"
+    task insurance "Take parcel insurance"
+
+  lane warehousemen "Warehousemen"
+    task package "Package goods"
+
+  and split_large "Parallel large‑amount activities"
+  and join_large "Join large‑amount activities"
+  and split_small "Parallel small‑amount activities"
+  and join_small "Join small‑amount activities"
+
+# Sequence flows
+flow start -> ship_decision
+flow ship_decision -> clarify "yes"
+flow ship_decision -> not_shipped "no"
+
+flow clarify -> amount_decision
+
+flow amount_decision -> invite "yes"
+flow amount_decision -> split_small "no"
+
+flow invite -> select -> split_large
+
+flow split_large -> label
+flow split_large -> insurance
+flow split_large -> package
+flow label -> join_large
+flow insurance -> join_large
+flow package -> join_large
+
+flow split_small -> label
+flow split_small -> package
+flow label -> join_small
+flow package -> join_small
+
+flow join_large -> prepare
+flow join_small -> prepare
+
+flow prepare -> done

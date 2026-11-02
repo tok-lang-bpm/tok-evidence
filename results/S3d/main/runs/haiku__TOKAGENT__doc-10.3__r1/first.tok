@@ -1,0 +1,42 @@
+tok 1.0 "Deregistration of a measuring point"
+
+# Doubt: "the MPOO confirmes the continuation to the MPOO" is read as: the MPOO confirms the continuation to the GO.
+# Doubt: the informs to MSPO and SP are tasks of the GO without message flows, since the text names no reply.
+pool org "GO"
+  lane mpoo "MPOO"
+    start s "Deregistration request"
+    task dereg "Deregister the measuring point"
+    task confirm-cont "Confirm the continuation of the operations"
+  lane go "GO"
+    task verify "Verify the deregistration"
+    xor accepted "Is the deregistration accepted?"
+    task prelim "Preliminarily confirm the deregistration of the MPOO"
+    task reject "Reject the deregistration of the MPOO"
+    end rejected "Deregistration rejected"
+    task prepare "Prepare the readmission of the measuring point"
+    xor oblige-q "Oblige the MPOO to continue the operations?"
+    task oblige "Oblige the MPOO to continue the operations"
+    xor merge-cont
+    or equip-split
+    task acquire "Perform the equipment acquisition"
+    task change "Perform the equipment changes"
+    or equip-join
+    task assign "Assign the GO as MPO"
+    task inform-mpoo "Inform the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform-mspo "Inform the MSPO about the assignment of the GO"
+    task inform-sp "Inform the SP about the assignment of the GO"
+    end done "Assignment of the GO completed"
+
+flow s -> dereg -> verify -> accepted
+flow accepted -> prelim "yes" when="accepted = true"
+flow accepted -> reject "no" default
+flow reject -> rejected
+flow prelim -> prepare -> oblige-q
+flow oblige-q -> oblige "yes" when="continuation = true"
+flow oblige-q -> merge-cont "no" default
+flow oblige -> confirm-cont -> merge-cont -> equip-split
+flow equip-split -> acquire "acquisition" when="acquisition = true"
+flow equip-split -> change "changes" when="changes = true"
+flow acquire -> equip-join
+flow change -> equip-join
+flow equip-join -> assign -> inform-mpoo -> inform-mspo -> inform-sp -> done

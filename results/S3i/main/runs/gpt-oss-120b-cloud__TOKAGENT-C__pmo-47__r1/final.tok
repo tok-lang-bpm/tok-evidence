@@ -1,0 +1,44 @@
+tok 1.0 "New Application for Registering for an USI course"
+
+pool org "Sports Institute"
+  lane user "User"
+    start start "Start"
+    task select_course "Select a course"
+    task select_one "Select one"
+    task log_in "Log into account"
+    and parallel_start
+    task tweet "Connect Twitter and tweet"
+    task complete_registration "Complete registration and provide payment"
+    and parallel_end
+    task receive_ticket "Receive course ticket"
+    end end_ticket "Course ticket received"
+
+  lane system "System"
+    xor slots_free "Slots free?"
+    task show_courses "Show courses and dates"
+    xor account_exists "Account exists?"
+    xor eligible_uni "Eligible university?"
+    task register_account "Register account"
+    task request_activation "Request activation"
+    task wait_activation "Wait for activation response"
+    end end_no_slots "No slots available"
+
+flow start -> select_course -> slots_free
+flow slots_free -> show_courses "yes"
+flow slots_free -> end_no_slots "no"
+flow show_courses -> select_one
+flow select_one -> account_exists
+flow account_exists -> log_in "yes"
+flow account_exists -> eligible_uni "no"
+flow eligible_uni -> register_account "yes"
+flow eligible_uni -> request_activation "no"
+flow register_account -> log_in
+flow request_activation -> wait_activation
+flow wait_activation -> log_in
+flow log_in -> parallel_start
+flow parallel_start -> tweet
+flow parallel_start -> complete_registration
+flow tweet -> parallel_end
+flow complete_registration -> parallel_end
+flow parallel_end -> receive_ticket
+flow receive_ticket -> end_ticket

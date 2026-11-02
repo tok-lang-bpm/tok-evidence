@@ -1,0 +1,39 @@
+tok 1.0 "Ticket booking"
+
+pool booking "Ticket booking"
+  lane customer "Customer"
+    start searching "Customer searches for a ticket"
+    task select "Select the route, date and time"
+    task provideinfo "Provide personal information"
+    task providepay "Provide payment details"
+    task travel "Complete the journey"
+    xor feedbackq "Feedback or services wanted?"
+    task feedback "Provide post-travel feedback"
+    xor feedbackm
+    end done "Process concluded"
+  lane system "Booking system"
+    task generate "Generate the ticket"
+    and split
+    xor channel "Email or SMS?"
+    task email "Send the ticket by email"
+    task sms "Send the ticket by SMS"
+    xor channelm
+    and joined
+    task remind "Send reminders and check-in or boarding instructions"
+  lane company "Travel company"
+    task inventory "Update the seat inventory"
+
+flow searching -> select -> provideinfo -> providepay -> generate -> split
+flow split -> channel
+flow split -> inventory
+flow channel -> email "email"
+flow channel -> sms "SMS"
+flow email -> channelm
+flow sms -> channelm
+flow channelm -> joined
+flow inventory -> joined
+flow joined -> remind -> travel -> feedbackq
+flow feedbackq -> feedback "yes"
+flow feedbackq -> feedbackm "no"
+flow feedback -> feedbackm
+flow feedbackm -> done

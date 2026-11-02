@@ -1,0 +1,46 @@
+tok 1.0 "Meter operation registration"
+
+pool org "Organisation"
+  lane MPON "MPON"
+    start s "Start"
+    task rep "Report the meter operation"
+    task equip "Perform the equipment acquisition and / or equipment changes"
+    task infFail "Inform the GO about the failure of the entire process"
+    task infSuccess "Inform the GO about the successful completion of the entire process"
+  lane GO "GO"
+    task exam "Examine the application"
+    xor app "Application confirmed?"
+    task rej "Reject the application"
+    task conf "Confirm the application"
+    task infMPOOreg "Inform the MPOO about the registration confirmation"
+    task infMSPOreg "Inform the MSPO about the registration confirmation"
+    xor result "Entire process completed?"
+    task infDeadline "Inform the MPON about the failure of the overall transaction by deadline"
+    task confFail "Confirm the failure of the assignment"
+    task assign "Assign the MPON"
+    task confAssign "Confirm the assignment to the MPON"
+    task infMPOOfail "Inform the MPOO about the failure of the assignment"
+    task infMPOOassign "Inform the MPOO about the assignment"
+    task infMSPOfail "Inform the MSPO about the failure of the assignment"
+    task infMSPOassign "Inform the MSPO about the assignment"
+    task infSPassign "Inform the SP about the assignment"
+    end eRejected "Application rejected"
+    end eFail "Process failed"
+    end eSuccess "Process completed"
+    end eTimeout "Process failed by deadline"
+  lane MPOO "MPOO"
+  lane MSPO "MSPO"
+  lane SP "SP"
+
+flow s -> rep -> exam -> app
+flow app -> rej "no"
+flow app -> conf "yes"
+flow rej -> eRejected
+flow conf -> infMPOOreg -> infMSPOreg -> equip
+flow equip -> result
+flow result -> infFail "failure"
+flow result -> infSuccess "success"
+flow result -> infDeadline "no message" default
+flow infFail -> confFail -> infMPOOfail -> infMSPOfail -> eFail
+flow infSuccess -> assign -> confAssign -> infMPOOassign -> infMSPOassign -> infSPassign -> eSuccess
+flow infDeadline -> eTimeout

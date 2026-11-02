@@ -1,0 +1,33 @@
+tok 1.0
+
+pool court "Court Process" {
+  lane staff "Staff"
+  lane associate "Associate"
+  lane judge "Judge"
+}
+
+start start "Start"
+
+task check-files "Check pending files" lane=staff
+xor decision-missing "Files missing?" lane=staff
+task search-files "Initiate file search" lane=staff
+task track-files "Track files to location" lane=staff
+and parallel-split "Parallel split"
+task hand-files "Hand files to Associate" lane=associate
+task distribute-lawlist "Distribute Judgeis Lawlist" lane=staff
+and parallel-join "Parallel join"
+task conduct-hearings "Conduct directions hearings" lane=judge
+end end "End"
+
+flow start -> check-files
+flow check-files -> decision-missing
+flow decision-missing -> search-files "yes" when="missing = true"
+flow decision-missing -> track-files "no" when="missing = false"
+flow search-files -> parallel-split
+flow track-files -> parallel-split
+flow parallel-split -> hand-files
+flow parallel-split -> distribute-lawlist
+flow hand-files -> parallel-join
+flow distribute-lawlist -> parallel-join
+flow parallel-join -> conduct-hearings
+flow conduct-hearings -> end

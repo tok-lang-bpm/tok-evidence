@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Small Company" processRef="process1"/>
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="salesLane" name="Sales Department">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="storehouseLane" name="Storehouse">
+        <bpmn:flowNodeRef>informStorehouse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwCheckPart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reservePart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backorderPart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwMoreParts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>storehouseDone</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineeringLane" name="Engineering Department">
+        <bpmn:flowNodeRef>informEngineering</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareAssembly</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Order received"/>
+
+    <!-- Sales decision -->
+    <bpmn:task id="decide" name="Decide order acceptance"/>
+    <bpmn:exclusiveGateway id="gwDecision" name="Order accepted?"/>
+
+    <!-- Reject path -->
+    <bpmn:endEvent id="endReject" name="Order rejected"/>
+
+    <!-- Accept path -->
+    <bpmn:parallelGateway id="splitInfo"/>
+
+    <!-- Inform storehouse -->
+    <bpmn:task id="informStorehouse" name="Inform storehouse"/>
+
+    <!-- Storehouse part processing loop -->
+    <bpmn:exclusiveGateway id="gwCheckPart" name="Check part availability"/>
+    <bpmn:task id="reservePart" name="Reserve part"/>
+    <bpmn:task id="backorderPart" name="Back‑order part"/>
+    <bpmn:exclusiveGateway id="gwMoreParts" name="More parts?"/>
+    <bpmn:task id="storehouseDone" name="Storehouse completed"/>
+
+    <!-- Inform engineering -->
+    <bpmn:task id="informEngineering" name="Inform engineering"/>
+
+    <!-- Engineering preparation -->
+    <bpmn:task id="prepareAssembly" name="Prepare assembly"/>
+
+    <!-- Synchronisation -->
+    <bpmn:parallelGateway id="joinReady"/>
+
+    <!-- Assemble bicycle -->
+    <bpmn:task id="assemble" name="Assemble bicycle"/>
+
+    <!-- Ship bicycle -->
+    <bpmn:task id="ship" name="Ship bicycle"/>
+
+    <bpmn:endEvent id="endSuccess" name="Process completed"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="decide"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="decide" targetRef="gwDecision"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="gwDecision" targetRef="endReject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">rejected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f4" sourceRef="gwDecision" targetRef="splitInfo">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">accepted</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Parallel split to storehouse and engineering -->
+    <bpmn:sequenceFlow id="f5" sourceRef="splitInfo" targetRef="informStorehouse"/>
+    <bpmn:sequenceFlow id="f6" sourceRef="splitInfo" targetRef="informEngineering"/>
+
+    <!-- Storehouse processing -->
+    <bpmn:sequenceFlow id="f7" sourceRef="informStorehouse" targetRef="gwCheckPart"/>
+    <bpmn:sequenceFlow id="f8" sourceRef="gwCheckPart" targetRef="reservePart">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">available</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f9" sourceRef="gwCheckPart" targetRef="backorderPart">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">notAvailable</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f10" sourceRef="reservePart" targetRef="gwMoreParts"/>
+    <bpmn:sequenceFlow id="f11" sourceRef="backorderPart" targetRef="gwMoreParts"/>
+    <bpmn:sequenceFlow id="f12" sourceRef="gwMoreParts" targetRef="gwCheckPart">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">moreItems</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f13" sourceRef="gwMoreParts" targetRef="storehouseDone">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">noMoreItems</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Engineering preparation -->
+    <bpmn:sequenceFlow id="f14" sourceRef="informEngineering" targetRef="prepareAssembly"/>
+
+    <!-- Synchronisation before assembly -->
+    <bpmn:sequenceFlow id="f15" sourceRef="storehouseDone" targetRef="joinReady"/>
+    <bpmn:sequenceFlow id="f16" sourceRef="prepareAssembly" targetRef="joinReady"/>
+
+    <!-- Assembly and shipping -->
+    <bpmn:sequenceFlow id="f17" sourceRef="joinReady" targetRef="assemble"/>
+    <bpmn:sequenceFlow id="f18" sourceRef="assemble" targetRef="ship"/>
+    <bpmn:sequenceFlow id="f19" sourceRef="ship" targetRef="endSuccess"/>
+
+  </bpmn:process>
+</bpmn:definitions>

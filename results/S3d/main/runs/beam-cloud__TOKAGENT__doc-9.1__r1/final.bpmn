@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Account Defaulter Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Account Defaulter Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="staff" name="Staff">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert_supervisor1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_alert1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_msg_supervisor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Every weekday morning" />
+    <bpmn:subProcess id="sp1" name="Morning defaulter processing">
+      <bpmn:startEvent id="sp1_start" name="Start morning processing" />
+      <bpmn:task id="backup" name="Back up database" />
+      <bpmn:task id="check_defaulter" name="Check Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="gw_new" name="New records found?" default="f-gw_new-sp1_end" />
+      <bpmn:task id="check_crm1" name="Check CRM system for new returns" />
+      <bpmn:exclusiveGateway id="gw_returns1" name="New returns exist?" default="f-gw_returns1-sp1_end" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="gw_advised" name="Defaulting client codes previously advised?" default="f-gw_advised-sp1_end" />
+      <bpmn:task id="produce_table" name="Produce table of defaulting accounts" />
+      <bpmn:task id="send_acct_mgmt" name="Send defaulting accounts table to account management" />
+      <bpmn:endEvent id="sp1_end" name="Defaulter report completed" />
+      <bpmn:sequenceFlow id="f-sp1_start-backup" sourceRef="sp1_start" targetRef="backup" />
+      <bpmn:sequenceFlow id="f-backup-check_defaulter" sourceRef="backup" targetRef="check_defaulter" />
+      <bpmn:sequenceFlow id="f-check_defaulter-gw_new" sourceRef="check_defaulter" targetRef="gw_new" />
+      <bpmn:sequenceFlow id="f-gw_new-check_crm1" name="No new records" sourceRef="gw_new" targetRef="check_crm1">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newRecords = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-gw_new-sp1_end" name="New records found" sourceRef="gw_new" targetRef="sp1_end" />
+      <bpmn:sequenceFlow id="f-check_crm1-gw_returns1" sourceRef="check_crm1" targetRef="gw_returns1" />
+      <bpmn:sequenceFlow id="f-gw_returns1-register" name="New returns exist" sourceRef="gw_returns1" targetRef="register">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturns = true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-gw_returns1-sp1_end" name="No new returns" sourceRef="gw_returns1" targetRef="sp1_end" />
+      <bpmn:sequenceFlow id="f-register-gw_advised" sourceRef="register" targetRef="gw_advised" />
+      <bpmn:sequenceFlow id="f-gw_advised-produce_table" name="Not previously advised" sourceRef="gw_advised" targetRef="produce_table">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">advised = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-gw_advised-sp1_end" name="Previously advised" sourceRef="gw_advised" targetRef="sp1_end" />
+      <bpmn:sequenceFlow id="f-produce_table-send_acct_mgmt" sourceRef="produce_table" targetRef="send_acct_mgmt" />
+      <bpmn:sequenceFlow id="f-send_acct_mgmt-sp1_end" sourceRef="send_acct_mgmt" targetRef="sp1_end" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="b1" name="Send alert deadline" attachedToRef="sp1" cancelActivity="false">
+      <bpmn:timerEventDefinition id="b1-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert_supervisor1" name="Send alert to supervisor" />
+    <bpmn:endEvent id="e_alert1" name="Alert sent" />
+    <bpmn:subProcess id="sp2" name="Reconciliation processing">
+      <bpmn:startEvent id="sp2_start" name="Start reconciliation" />
+      <bpmn:task id="check_crm2" name="Check CRM system for new returns" />
+      <bpmn:exclusiveGateway id="gw_returns2" name="New returns filed?" default="f-gw_returns2-sp2_end" />
+      <bpmn:task id="reconcile" name="Reconcile with existing account defaulters table" />
+      <bpmn:endEvent id="sp2_end" name="Reconciliation completed" />
+      <bpmn:sequenceFlow id="f-sp2_start-check_crm2" sourceRef="sp2_start" targetRef="check_crm2" />
+      <bpmn:sequenceFlow id="f-check_crm2-gw_returns2" sourceRef="check_crm2" targetRef="gw_returns2" />
+      <bpmn:sequenceFlow id="f-gw_returns2-reconcile" name="New returns filed" sourceRef="gw_returns2" targetRef="reconcile">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturns2 = true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-gw_returns2-sp2_end" name="No new returns" sourceRef="gw_returns2" targetRef="sp2_end" />
+      <bpmn:sequenceFlow id="f-reconcile-sp2_end" sourceRef="reconcile" targetRef="sp2_end" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="b2" name="Send message deadline" attachedToRef="sp2" cancelActivity="false">
+      <bpmn:timerEventDefinition id="b2-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT4H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="send_msg_supervisor" name="Send message to supervisor" />
+    <bpmn:endEvent id="e_msg" name="Message sent" />
+    <bpmn:endEvent id="e_end" name="End" />
+    <bpmn:sequenceFlow id="f-b1-alert_supervisor1" sourceRef="b1" targetRef="alert_supervisor1" />
+    <bpmn:sequenceFlow id="f-alert_supervisor1-e_alert1" sourceRef="alert_supervisor1" targetRef="e_alert1" />
+    <bpmn:sequenceFlow id="f-s-sp1" sourceRef="s" targetRef="sp1" />
+    <bpmn:sequenceFlow id="f-sp1-sp2" sourceRef="sp1" targetRef="sp2" />
+    <bpmn:sequenceFlow id="f-sp2-e_end" sourceRef="sp2" targetRef="e_end" />
+    <bpmn:sequenceFlow id="f-b2-send_msg_supervisor" sourceRef="b2" targetRef="send_msg_supervisor" />
+    <bpmn:sequenceFlow id="f-send_msg_supervisor-e_msg" sourceRef="send_msg_supervisor" targetRef="e_msg" />
+  </bpmn:process>
+</bpmn:definitions>

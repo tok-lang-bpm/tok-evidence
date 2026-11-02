@@ -1,0 +1,43 @@
+```tok
+tok 1.0 "Expense Report Processing"
+
+pool company "Company"
+  lane employee "Employee"
+    start start1 "Expense report received"
+    end end1 "Rejection notice sent"
+    end end2 "Reimbursement completed"
+    end end3 "Process cancelled"
+    end end4 "Approval in progress email sent"
+  lane system "System"
+    task create1 "Create new account"
+    task review1 "Review expense report"
+    task reject_email1 "Send rejection email"
+    task progress_email1 "Send approval in progress email"
+    task cancel_email1 "Send cancellation email"
+    task reimburse1 "Reimburse employee via direct deposit"
+    xor xor1 "Employee has account?"
+    xor xor2 "Amount < 200?"
+    xor xor3 "Supervisor approval?"
+    # boundaries for timers on the review activity
+    boundary timer7 "7‑day timer" on=review1 timer=P7D noninterrupting
+    boundary timer30 "30‑day timer" on=review1 timer=P30D
+  lane supervisor "Supervisor"
+    task approve1 "Supervisor approves expense report"
+
+flow start1 -> xor1
+flow xor1 -> review1 "yes"
+flow xor1 -> create1 "no"
+flow create1 -> review1
+flow review1 -> xor2
+flow xor2 -> reimburse1 "yes"
+flow xor2 -> approve1 "no"
+flow approve1 -> xor3
+flow xor3 -> reimburse1 "approved"
+flow xor3 -> reject_email1 "rejected"
+flow reject_email1 -> end1
+flow reimburse1 -> end2
+flow timer7 -> progress_email1
+flow progress_email1 -> end4
+flow timer30 -> cancel_email1
+flow cancel_email1 -> end3
+```

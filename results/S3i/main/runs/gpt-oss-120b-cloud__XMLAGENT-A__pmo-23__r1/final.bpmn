@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs" targetNamespace="http://example.org/bpmn">
+  <!-- messages -->
+  <bpmn:message id="msgScoringRequest" name="Scoring Request" />
+  <bpmn:message id="msgImmediateResult" name="Immediate Result" />
+  <bpmn:message id="msgDelayNotice" name="Delay Notice" />
+  <bpmn:message id="msgFinalResult" name="Final Result" />
+  <bpmn:collaboration id="collab">
+    <bpmn:participant id="bank" name="Bank" processRef="bankProcess" />
+    <bpmn:participant id="agency" name="Agency" processRef="agencyProcess" />
+    <!-- message flows -->
+    <bpmn:messageFlow id="mf1" sourceRef="sendRequest" targetRef="agencyStart" messageRef="msgScoringRequest" />
+    <bpmn:messageFlow id="mf2" sourceRef="agencyImmediateResult" targetRef="catchImmediateResult" messageRef="msgImmediateResult" />
+    <bpmn:messageFlow id="mf3" sourceRef="agencyDelayNotice" targetRef="catchDelayNotice" messageRef="msgDelayNotice" />
+    <bpmn:messageFlow id="mf4" sourceRef="agencyFinalResult" targetRef="catchFinalResult" messageRef="msgFinalResult" />
+  </bpmn:collaboration>
+
+  <!-- Bank Process -->
+  <bpmn:process id="bankProcess" isExecutable="false">
+    <bpmn:laneSet id="bankLanes">
+      <bpmn:lane id="laneClerk" name="Sales Clerk">
+        <bpmn:flowNodeRef>receiveRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>presentResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>displayDelay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>presentResultAfterDelay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneSystem" name="Banking System">
+        <bpmn:flowNodeRef>startEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayWaitResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchImmediateResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchDelayNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchFinalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endImmediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAfterDelay</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="startEvent" name="Process start" />
+    <bpmn:task id="receiveRequest" name="Receive scoring request from clerk" />
+    <bpmn:task id="sendRequest" name="Send scoring request to agency" />
+    <bpmn:eventBasedGateway id="gatewayWaitResult" name="Wait for result" />
+    <bpmn:intermediateCatchEvent id="catchImmediateResult" name="Receive immediate result">
+      <bpmn:messageEventDefinition messageRef="msgImmediateResult" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="presentResult" name="Present result to clerk" />
+    <bpmn:endEvent id="endImmediate" name="Process end (immediate)" />
+    <bpmn:intermediateCatchEvent id="catchDelayNotice" name="Receive delay notice">
+      <bpmn:messageEventDefinition messageRef="msgDelayNotice" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="displayDelay" name="Display delay message to clerk" />
+    <bpmn:intermediateCatchEvent id="catchFinalResult" name="Receive final result">
+      <bpmn:messageEventDefinition messageRef="msgFinalResult" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="presentResultAfterDelay" name="Present result to clerk" />
+    <bpmn:endEvent id="endAfterDelay" name="Process end (after delay)" />
+    <!-- sequence flows -->
+    <bpmn:sequenceFlow id="sf_start_receive" sourceRef="startEvent" targetRef="receiveRequest" />
+    <bpmn:sequenceFlow id="sf_receive_send" sourceRef="receiveRequest" targetRef="sendRequest" />
+    <bpmn:sequenceFlow id="sf_send_gateway" sourceRef="sendRequest" targetRef="gatewayWaitResult" />
+    <bpmn:sequenceFlow id="sf_gateway_to_immediate" sourceRef="gatewayWaitResult" targetRef="catchImmediateResult" />
+    <bpmn:sequenceFlow id="sf_immediate_to_present" sourceRef="catchImmediateResult" targetRef="presentResult" />
+    <bpmn:sequenceFlow id="sf_present_to_end" sourceRef="presentResult" targetRef="endImmediate" />
+    <bpmn:sequenceFlow id="sf_gateway_to_delay" sourceRef="gatewayWaitResult" targetRef="catchDelayNotice" />
+    <bpmn:sequenceFlow id="sf_delay_to_display" sourceRef="catchDelayNotice" targetRef="displayDelay" />
+    <bpmn:sequenceFlow id="sf_display_to_final" sourceRef="displayDelay" targetRef="catchFinalResult" />
+    <bpmn:sequenceFlow id="sf_final_to_present" sourceRef="catchFinalResult" targetRef="presentResultAfterDelay" />
+    <bpmn:sequenceFlow id="sf_presentAfterDelay_to_end" sourceRef="presentResultAfterDelay" targetRef="endAfterDelay" />
+  </bpmn:process>
+
+  <!-- Agency Process -->
+  <bpmn:process id="agencyProcess" isExecutable="false">
+    <bpmn:startEvent id="agencyStart" name="Receive scoring request">
+      <bpmn:messageEventDefinition messageRef="msgScoringRequest" />
+    </bpmn:startEvent>
+    <bpmn:task id="agencyQuickScore" name="Perform quick scoring (level 1)" />
+    <bpmn:exclusiveGateway id="agencyGateway" name="Immediate result?" />
+    <bpmn:task id="agencyImmediateResult" name="Send immediate result" />
+    <bpmn:task id="agencyDelayNotice" name="Send delay notice" />
+    <bpmn:task id="agencyLevel2Score" name="Perform level 2 scoring" />
+    <bpmn:task id="agencyFinalResult" name="Send final result" />
+    <bpmn:endEvent id="agencyEnd" name="Agency process end" />
+    <!-- sequence flows -->
+    <bpmn:sequenceFlow id="sf_ag_start_quick" sourceRef="agencyStart" targetRef="agencyQuickScore" />
+    <bpmn:sequenceFlow id="sf_quick_gateway" sourceRef="agencyQuickScore" targetRef="agencyGateway" />
+    <bpmn:sequenceFlow id="sf_gateway_yes" sourceRef="agencyGateway" targetRef="agencyImmediateResult" name="yes" />
+    <bpmn:sequenceFlow id="sf_gateway_no" sourceRef="agencyGateway" targetRef="agencyDelayNotice" name="no" />
+    <bpmn:sequenceFlow id="sf_immediate_end" sourceRef="agencyImmediateResult" targetRef="agencyEnd" />
+    <bpmn:sequenceFlow id="sf_delay_to_level2" sourceRef="agencyDelayNotice" targetRef="agencyLevel2Score" />
+    <bpmn:sequenceFlow id="sf_level2_to_final" sourceRef="agencyLevel2Score" targetRef="agencyFinalResult" />
+    <bpmn:sequenceFlow id="sf_final_end" sourceRef="agencyFinalResult" targetRef="agencyEnd" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool" name="Measurement process" processRef="measurement-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="measurement-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane-go" name="GO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>process-values</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-changed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit-readings</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-msp" name="MSP">
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>perform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit-values</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-denied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-failure</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Measurements needed" />
+    <bpmn:task id="request" name="Request the measurements" />
+    <bpmn:task id="check" name="Check the received request" />
+    <bpmn:exclusiveGateway id="gw-accepted" name="Request accepted?" default="f5" />
+    <bpmn:task id="deny" name="Deny the request" />
+    <bpmn:task id="perform" name="Perform the measurement" />
+    <bpmn:exclusiveGateway id="gw-success" name="Reading successful?" default="f8" />
+    <bpmn:task id="inform-failure" name="Inform the GO about the failure of the reading" />
+    <bpmn:task id="transmit-values" name="Transmit the measured values to the GO" />
+    <bpmn:task id="process-values" name="Process the measured values" />
+    <bpmn:task id="send-changed" name="Send the changed values to the MSP" />
+    <bpmn:task id="transmit-readings" name="Transmit the readings to the SP" />
+    <bpmn:endEvent id="end-denied" name="Request denied" />
+    <bpmn:endEvent id="end-failure" name="Failure reported" />
+    <bpmn:endEvent id="end-done" name="Readings transmitted" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="request" />
+    <bpmn:sequenceFlow id="f2" sourceRef="request" targetRef="check" />
+    <bpmn:sequenceFlow id="f3" sourceRef="check" targetRef="gw-accepted" />
+    <bpmn:sequenceFlow id="f4" name="no" sourceRef="gw-accepted" targetRef="deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">requestAccepted == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="gw-accepted" targetRef="perform" />
+    <bpmn:sequenceFlow id="f6" sourceRef="deny" targetRef="end-denied" />
+    <bpmn:sequenceFlow id="f7" sourceRef="perform" targetRef="gw-success" />
+    <bpmn:sequenceFlow id="f8" name="yes" sourceRef="gw-success" targetRef="transmit-values" />
+    <bpmn:sequenceFlow id="f9" name="no" sourceRef="gw-success" targetRef="inform-failure">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">readingSuccessful == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f10" sourceRef="inform-failure" targetRef="end-failure" />
+    <bpmn:sequenceFlow id="f11" sourceRef="transmit-values" targetRef="process-values" />
+    <bpmn:sequenceFlow id="f12" sourceRef="process-values" targetRef="send-changed" />
+    <bpmn:sequenceFlow id="f13" sourceRef="send-changed" targetRef="transmit-readings" />
+    <bpmn:sequenceFlow id="f14" sourceRef="transmit-readings" targetRef="end-done" />
+  </bpmn:process>
+</bpmn:definitions>

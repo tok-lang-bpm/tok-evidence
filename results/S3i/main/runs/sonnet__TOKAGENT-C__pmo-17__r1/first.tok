@@ -1,0 +1,67 @@
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane system "System"
+    start placed "Order placed"
+    task record "Record the order details"
+    task pay "Process the payment"
+    xor payok "Payment successful?"
+    task notifyfail "Notify the customer"
+    end failed "Order failed"
+    task check "Check stock availability"
+    xor instock "Items in stock?"
+    task backorder "Initiate a back-order"
+    task delay "Inform the customer about the delay"
+    task receiveback "Receive the back-order"
+    xor stockmerge
+    and split
+    and join
+    task dispatch "Dispatch the order"
+    task confirm "Send a shipping confirmation"
+    task update "Update the inventory levels"
+    task delivered "Confirm the delivery"
+    task feedback "Send a follow-up email for feedback"
+    xor issues "Issues reported?"
+    task label "Send a return shipping label"
+    task receive "Receive the returned items"
+    task inspect "Inspect the returned items"
+    task refund "Process a refund or replacement"
+    end done "Order completed"
+    end returned "Return handled"
+  lane warehouse "Warehouse"
+    task pick "Pick the items from the warehouse"
+    task qc "Perform quality control on the picked items"
+    xor gift "Gift wrapping requested?"
+    task wrap "Wrap the gift"
+    xor giftmerge
+    task pack "Package the items"
+  lane shipping "Shipping department"
+    task docs "Prepare shipping documents"
+    xor intl "International order?"
+    task customs "Prepare customs documentation"
+    xor intlmerge
+    task labels "Prepare shipping labels"
+
+flow placed -> record -> pay -> payok
+flow payok -> notifyfail "no"
+flow notifyfail -> failed
+flow payok -> check "yes"
+flow check -> instock
+flow instock -> backorder "no"
+flow backorder -> delay -> receiveback -> stockmerge
+flow instock -> stockmerge "yes"
+flow stockmerge -> pick -> qc -> split
+flow split -> gift
+flow gift -> wrap "yes"
+flow gift -> giftmerge "no"
+flow wrap -> giftmerge
+flow giftmerge -> pack -> join
+flow split -> docs -> intl
+flow intl -> customs "yes"
+flow intl -> intlmerge "no"
+flow customs -> intlmerge
+flow intlmerge -> labels -> join
+flow join -> dispatch -> confirm -> update -> delivered -> feedback -> issues
+flow issues -> label "yes"
+flow label -> receive -> inspect -> refund -> returned
+flow issues -> done "no"

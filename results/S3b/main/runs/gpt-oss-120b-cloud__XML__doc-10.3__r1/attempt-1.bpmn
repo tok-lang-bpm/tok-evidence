@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process1"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneMPOO" name="MPOO">
+        <bpmn:flowNodeRef>taskDeregister</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskConfirmContinuation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGO" name="GO">
+        <bpmn:flowNodeRef>taskVerify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskPrelimConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskPrepareReadmission</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayOblige</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskBindContinuation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskEquipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskAssignMPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskInformMPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayInformParallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskInformMSPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskInformSP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayInformJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Process start"/>
+
+    <bpmn:task id="taskDeregister" name="MPOO deregisters at the GO"/>
+    <bpmn:task id="taskVerify" name="GO verifies the deregistration"/>
+
+    <bpmn:exclusiveGateway id="gatewayDecision" name="Deregistration decision"/>
+    <bpmn:task id="taskReject" name="GO rejects the deregistration of the MPOO"/>
+    <bpmn:task id="taskPrelimConfirm" name="GO preliminarily confirms the deregistration of the MPOO"/>
+
+    <bpmn:task id="taskPrepareReadmission" name="GO prepares the readmission of the measuring point"/>
+
+    <bpmn:exclusiveGateway id="gatewayOblige" name="Oblige continuation?"/>
+    <bpmn:task id="taskBindContinuation" name="GO binds the MPOO to continue the operation"/>
+    <bpmn:task id="taskConfirmContinuation" name="MPOO confirms the continuation"/>
+
+    <bpmn:task id="taskEquipment" name="GO performs the equipment acquisition and/or equipment changes"/>
+    <bpmn:task id="taskAssignMPO" name="GO assigns the GO as MPO"/>
+    <bpmn:task id="taskInformMPOO" name="GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"/>
+
+    <bpmn:parallelGateway id="gatewayInformParallel"/>
+    <bpmn:task id="taskInformMSPO" name="GO informs the MSPO about the assignment of the GO"/>
+    <bpmn:task id="taskInformSP" name="GO informs the SP about the assignment of the GO"/>
+    <bpmn:parallelGateway id="gatewayInformJoin"/>
+
+    <bpmn:endEvent id="end" name="Process end"/>
+    <bpmn:endEvent id="endReject" name="Process end after rejection"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="taskDeregister"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="taskDeregister" targetRef="taskVerify"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="taskVerify" targetRef="gatewayDecision"/>
+
+    <bpmn:sequenceFlow id="f4" name="reject" sourceRef="gatewayDecision" targetRef="taskReject"/>
+    <bpmn:sequenceFlow id="f5" name="confirm" sourceRef="gatewayDecision" targetRef="taskPrelimConfirm"/>
+
+    <bpmn:sequenceFlow id="f6" sourceRef="taskReject" targetRef="endReject"/>
+
+    <bpmn:sequenceFlow id="f7" sourceRef="taskPrelimConfirm" targetRef="taskPrepareReadmission"/>
+    <bpmn:sequenceFlow id="f8" sourceRef="taskPrepareReadmission" targetRef="gatewayOblige"/>
+
+    <bpmn:sequenceFlow id="f9" name="yes" sourceRef="gatewayOblige" targetRef="taskBindContinuation"/>
+    <bpmn:sequenceFlow id="f10" name="no" sourceRef="gatewayOblige" targetRef="taskEquipment"/>
+
+    <bpmn:sequenceFlow id="f11" sourceRef="taskBindContinuation" targetRef="taskConfirmContinuation"/>
+    <bpmn:sequenceFlow id="f12" sourceRef="taskConfirmContinuation" targetRef="taskEquipment"/>
+
+    <bpmn:sequenceFlow id="f13" sourceRef="taskEquipment" targetRef="taskAssignMPO"/>
+    <bpmn:sequenceFlow id="f14" sourceRef="taskAssignMPO" targetRef="taskInformMPOO"/>
+    <bpmn:sequenceFlow id="f15" sourceRef="taskInformMPOO" targetRef="gatewayInformParallel"/>
+
+    <bpmn:sequenceFlow id="f16" sourceRef="gatewayInformParallel" targetRef="taskInformMSPO"/>
+    <bpmn:sequenceFlow id="f17" sourceRef="gatewayInformParallel" targetRef="taskInformSP"/>
+
+    <bpmn:sequenceFlow id="f18" sourceRef="taskInformMSPO" targetRef="gatewayInformJoin"/>
+    <bpmn:sequenceFlow id="f19" sourceRef="taskInformSP" targetRef="gatewayInformJoin"/>
+
+    <bpmn:sequenceFlow id="f20" sourceRef="gatewayInformJoin" targetRef="end"/>
+  </bpmn:process>
+</bpmn:definitions>

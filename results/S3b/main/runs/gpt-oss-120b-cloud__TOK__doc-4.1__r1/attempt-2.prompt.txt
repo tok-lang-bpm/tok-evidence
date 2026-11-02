@@ -1,0 +1,141 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The intake workflow starts with a notice by telephone at the secretarial office of the mental health care institute. This notice is done by the family doctor of somebody who is in need of mental treatment. The secretarial worker inquires after the name and residence of the patient. On the basis of this information, the doctor is put through to the nursing officer responsible for the part of the region that the patient lives in. The nursing officer makes a full inquiry into the mental, health, and social state of the patient in question. This information is recorded on a registration form. At the end of the conversation, this form is handed in at the secretarial office of the institute. Here, the information on the form is stored in the information system and subsequently printed. For new patients, a patient file is created. The registration form as well as the print from the information system are stored in the patient file. Patient files are kept at the secretarial office and may not leave the building. At the secretarial office, two registration cards are produced for respectively the future first and second intaker of the patient. The registration card contains a set of basic patient data. The new patient is added on the list of new notices. Halfway the week, at Wednesday, a staff meeting of the entire medical team takes place. The medical team consists of social-medical workers, physicians, and a psychiatrist. At this meeting, the team-leader assigns all new patients on the list of new notices to members of the team. Each patient will be assigned to a social-medical worker, who will act as the first intaker of the patient. One of the physicians will act as the second intaker. In assigning intakers, the teamleader takes into account their expertise, the region they are responsible for, earlier contacts they might have had with the patient, and their case load. The assignments are recorded on an assignment list which is handed to the secretarial office. For each new assignment, it is also determined whether the medical file of the patient is required. This information is added to the assignment list. The secretarial office stores the assignment of each patient of the assignment list in the information system. It passes the produced registration cards to the first and second intaker of each newly assigned patient. An intaker keeps this registration with him at times when visiting the patient and in his close proximity when he is at the office. For each patient for which the medical file is required, the secretarial office prepares and sends a letter to the family doctor of the patient, requesting for a copy of the medical file. As soon as this copy is received, the secretarial office will inform the second intaker and add the copy to the patient file. The first intaker plans a meeting with the patient as soon as this is possible. During the first meeting, the patient is examined using a standard checklist which is filled out. Additional observations are registered in a personal notebook. After a visit, the first intaker puts a copy of these notes in the file of a patient. The standard checklist is also added to the patient's file. The second intaker plans the first meeting only after the medical information of the physician if required has been received. Physicians use dictaphones to record their observations made during meetings with patients. The secretarial office types out these tapes, after which the information is added to the patient file. As soon as the meetings of the first and second intaker with the patient have taken place, the secretarial office puts the patient on the list of patients that reach this status. For the staff meeting on Wednesday, they provide the team-leader with a list of these patients. For each of these patients, the first and second intaker together with the team-leader and the attending psychiatrist formulate a treatment plan. This treatment plan formally ends the intake procedure.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Intake workflow"
+
+pool org "Mental Health Care Institute"
+  lane family_doctor "Family Doctor"
+    start s1 "Notice by telephone"
+    task t1 "Give notice by telephone"
+
+  lane secretarial "Secretarial Office"
+    task t2 "Inquire patient name and residence"
+    task t3 "Connect to nursing officer"
+    task t6 "Store information in information system"
+    task t7 "Print registration form"
+    task t8 "Store registration form and print in patient file"
+    task t9 "Produce first registration card"
+    task t10 "Produce second registration card"
+    task t11 "Add patient to new notices list"
+    task t12 "Hold staff meeting (Wednesday)"
+    task t13 "Distribute registration cards to intakers"
+    task t14 "Store assignment in information system"
+    task t15 "Prepare and send letter to family doctor"
+    task t16 "Inform second intaker of received medical file"
+    task t17 "Add medical file copy to patient file"
+    task t18 "Type dictaphone notes"
+    task t19 "Add typed notes to patient file"
+    task t20 "Put patient on status list"
+    task t21 "Provide status list to team leader"
+
+  lane nursing_officer "Nursing Officer"
+    task t4 "Conduct full inquiry and record on registration form"
+    task t5 "Hand registration form to secretarial office"
+
+  lane team_leader "Team Leader"
+    xor g1 "Is new patient?"
+    task t22 "Create patient file"
+    and a1 "Produce registration cards"
+    and a2 "Cards produced"
+    task t23 "Assign new patients to intakers"
+    task t24 "Record assignment list"
+    xor g2 "Medical file required?"
+    task t25 "Formulate treatment plan"
+
+  lane first_intaker "First Intaker"
+    task f1 "Plan meeting with patient"
+    task f2 "Conduct first meeting and complete checklist"
+    task f3 "Register additional observations"
+    task f4 "Store notes and checklist in patient file"
+
+  lane second_intaker "Second Intaker"
+    task s1 "Plan meeting with patient"
+    task s2 "Conduct second meeting"
+    task s3 "Record observations with dictaphone"
+
+  lane psychiatrist "Psychiatrist"
+    # No separate tasks; participates in treatment plan formulation
+
+# Flows
+flow s1 -> t1
+flow t1 -> t2
+flow t2 -> t3
+flow t3 -> t4
+flow t4 -> t5
+flow t5 -> t6
+flow t6 -> t7
+flow t7 -> g1
+
+# New patient branch
+flow g1 -> t22                 # yes
+flow t22 -> t8
+flow t8 -> a1
+flow a1 -> t9
+flow a1 -> t10
+flow a1 -> a2
+flow a2 -> t11
+
+# Existing patient branch
+flow g1 -> t11                # no (direct to add to list)
+
+flow t11 -> t12
+flow t12 -> t23
+flow t23 -> t24
+flow t24 -> t13
+flow t13 -> g2
+
+# Medical file required branch
+flow g2 -> t15                # yes
+flow t15 -> catch_medical_copy
+catch catch_medical_copy "Receive medical file copy"
+flow catch_medical_copy -> t16
+flow catch_medical_copy -> t17
+flow t16 -> a3
+flow t17 -> a3
+and a3 "Copy handling complete"
+
+# No medical file needed branch
+flow g2 -> a3                # no, directly to next step
+
+# After copy handling
+flow a3 -> f1
+flow f1 -> f2
+flow f2 -> f3
+flow f3 -> f4
+
+flow a3 -> s1
+flow s1 -> s2
+flow s2 -> s3
+flow s3 -> t18
+flow t18 -> t19
+
+# Synchronize first and second intaker outcomes
+and sync_intake "Intake meetings completed"
+flow f4 -> sync_intake
+flow t19 -> sync_intake
+
+flow sync_intake -> t20
+flow t20 -> t21
+flow t21 -> t25
+flow t25 -> end e "Intake procedure completed"
+```
+
+The tok checker reports these problems in it:
+
+- line 49: error R001: identifier 's1' is already used on line 5
+- line 117: error P007: malformed attribute near 'Intake procedure completed'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

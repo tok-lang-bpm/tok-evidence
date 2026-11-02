@@ -1,0 +1,42 @@
+tok 1.0 "Instruct an artist to create a 3D model and print it"
+
+pool org "Custom 3D model printing"
+  lane customer "Customer"
+    start s "Craving a custom 3D model"
+    task instruct "Instruct artist to create project"
+    task send-sketches "Send several sketches"
+    task tell-changes "Tell artist what to change"
+    xor satisfied "Satisfied with the result?"
+    task choose-color "Choose plastic color"
+    xor in-stock "Color in stock?"
+    task check-amount "Check how much color is left"
+    xor under-100 "Less than 100 grams left?"
+    task shopping "Put plastic on shopping list"
+    task order-color "Order plastic color"
+    xor plastic-ready "Plastic at hand"
+    and fork-all "Split work"
+    task gcode "Generate gcode file from STL"
+    and join-all "Join work"
+  lane artist "Artist"
+    task create-project "Create project"
+    task change-project "Change project"
+    task send-stl "Send STL file"
+  lane printer "3D printer"
+    task turn-on "Turn on printer"
+    task heat-up "Heat up bed and extruder" doc="The printer sends its status back continuously"
+    task print-model "Print model"
+    end end-model "Model printed"
+
+flow s -> instruct -> send-sketches -> create-project -> tell-changes -> change-project -> satisfied
+flow satisfied -> send-stl "yes" when="satisfied = true"
+flow satisfied -> tell-changes "no" default
+flow send-stl -> choose-color -> in-stock
+flow in-stock -> check-amount "yes" when="inStock = true"
+flow in-stock -> order-color "no" default
+flow check-amount -> under-100
+flow under-100 -> shopping "yes" when="amount < 100"
+flow under-100 -> plastic-ready "no" default
+flow shopping -> plastic-ready
+flow order-color -> plastic-ready -> fork-all
+flow fork-all -> turn-on -> heat-up -> join-all
+flow fork-all -> gcode -> join-all -> print-model -> end-model

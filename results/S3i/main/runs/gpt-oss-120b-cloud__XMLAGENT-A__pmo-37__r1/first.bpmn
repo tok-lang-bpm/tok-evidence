@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Procurement" name="Procurement">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_QueryShops</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CollectInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateOrderList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ShopEnough</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_OrderSingle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_OrderMultiple</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_StockLevel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReorderCheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReorderFastest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Complaint</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Logistics" name="Logistics">
+        <bpmn:flowNodeRef>Task_ReceiveParts</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Production" name="Production">
+        <bpmn:flowNodeRef>Task_StartBuilding</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_MonitorStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="Contract process start" />
+    <bpmn:task id="Task_QueryShops" name="Query web shops for parts" />
+    <bpmn:task id="Task_CollectInfo" name="Collect delivery, price, lead time info" />
+    <bpmn:task id="Task_CreateOrderList" name="Create list of parts to order from each shop" />
+    <bpmn:exclusiveGateway id="Gateway_ShopEnough" name="Shop has enough parts?" />
+    <bpmn:task id="Task_OrderSingle" name="Order parts from single shop" />
+    <bpmn:task id="Task_OrderMultiple" name="Order parts from multiple shops" />
+    <bpmn:task id="Task_ReceiveParts" name="Receive parts batches" />
+    <bpmn:task id="Task_StartBuilding" name="Start building" />
+    <bpmn:task id="Task_MonitorStock" name="Monitor stock levels" />
+    <bpmn:exclusiveGateway id="Gateway_StockLevel" name="Stock level?" />
+    <bpmn:task id="Task_ReorderCheapest" name="Reorder cheapest parts" />
+    <bpmn:task id="Task_ReorderFastest" name="Reorder fastest parts" />
+    <bpmn:task id="Task_SendComplaint" name="Send complaint email" />
+    <bpmn:endEvent id="EndEvent_Completed" name="Production completed" />
+    <bpmn:endEvent id="EndEvent_Complaint" name="Process ended with complaint" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_QueryShops" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_QueryShops" targetRef="Task_CollectInfo" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_CollectInfo" targetRef="Task_CreateOrderList" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_CreateOrderList" targetRef="Gateway_ShopEnough" />
+    <bpmn:sequenceFlow id="Flow_5" name="yes" sourceRef="Gateway_ShopEnough" targetRef="Task_OrderSingle">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">enough</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" name="no" sourceRef="Gateway_ShopEnough" targetRef="Task_OrderMultiple">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!enough</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_OrderSingle" targetRef="Task_ReceiveParts" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_OrderMultiple" targetRef="Task_ReceiveParts" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_ReceiveParts" targetRef="Task_StartBuilding" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_StartBuilding" targetRef="Task_MonitorStock" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_MonitorStock" targetRef="Gateway_StockLevel" />
+    <bpmn:sequenceFlow id="Flow_12" name="stock >=5" sourceRef="Gateway_StockLevel" targetRef="EndEvent_Completed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock >= 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_13" name="5>stock>=3" sourceRef="Gateway_StockLevel" targetRef="Task_ReorderCheapest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock < 5 && stock >= 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_14" name="3>stock>0" sourceRef="Gateway_StockLevel" targetRef="Task_ReorderFastest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock < 3 && stock > 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15" name="stock =0" sourceRef="Gateway_StockLevel" targetRef="Task_SendComplaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock == 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Task_ReorderCheapest" targetRef="Task_ReceiveParts" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_ReorderFastest" targetRef="Task_ReceiveParts" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_SendComplaint" targetRef="EndEvent_Complaint" />
+  </bpmn:process>
+</bpmn:definitions>

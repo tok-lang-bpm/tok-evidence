@@ -1,0 +1,41 @@
+tok 1.0 "Mortgage offer process"
+
+pool org "Organisation"
+  lane csr "Customer Service Representative"
+    start s "Start"
+    send send-offer "send Mortgage offer"
+    eventgw wait "wait for reply"
+    catch decline "Customer declines mortgage" message="Decline"
+    catch completed "Completed offer documents received" message="Completed offer documents"
+    catch no-answer "No answer received" timer=P14D
+    xor check-docs "All prerequisite documents provided?"
+    task update-decline "update case details"
+    task archive-decline "archive work"
+    end cancel-decline "Case cancelled"
+    task move-admin "move case to administration for completion"
+    end complete "Case completed"
+    task request-docs "generate message requesting outstanding documents"
+    task update-timeout "update case details"
+    task archive-timeout "archive work"
+    end cancel-timeout "Case cancelled"
+
+    flow s -> send-offer
+    flow send-offer -> wait
+    flow wait -> decline
+    flow wait -> completed
+    flow wait -> no-answer
+
+    flow decline -> update-decline
+    flow update-decline -> archive-decline
+    flow archive-decline -> cancel-decline
+
+    flow completed -> check-docs
+    flow check-docs -> move-admin "yes" when="allPrerequisiteDocuments = true"
+    flow check-docs -> request-docs "no" default
+    flow move-admin -> complete
+
+    flow request-docs -> wait
+
+    flow no-answer -> update-timeout
+    flow update-timeout -> archive-timeout
+    flow archive-timeout -> cancel-timeout

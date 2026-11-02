@@ -1,0 +1,54 @@
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online Shop"
+  lane customer "Customer"
+    start s "Start"
+    task log-in "Log into E-Shop"
+    task select-product "Select product"
+    task add-cart "Add product to shopping cart"
+    task save-product "Save product"
+    task check-all "Check if all products selected"
+    task enter-payment "Enter payment data"
+    task enter-shipping "Enter shipping address"
+    task enter-billing "Enter billing address"
+  lane system "System"
+    task check-creds "Check credentials"
+    xor gw-login "Login successful?"
+    xor gw-all "All products selected?"
+    and gw-split
+    task finish-order-1 "Finish order"
+    task prepare-payment "Prepare payment"
+    task prepare-shipment "Prepare shipment"
+    xor gw-billing "Billing address differs?"
+    and gw-join
+    task finish-order-2 "Finish order"
+    end e "End"
+    end e-stop "Shopping stops"
+  lane bank "Bank"
+    task confirm-payment "Confirm payment"
+
+flow s -> log-in
+flow log-in -> check-creds
+flow check-creds -> gw-login
+flow gw-login -> select-product "successful" when="loginOk = true"
+flow gw-login -> e-stop "failed" default
+flow select-product -> add-cart
+flow add-cart -> save-product
+flow save-product -> check-all
+flow check-all -> gw-all
+flow gw-all -> select-product "no" default
+flow gw-all -> gw-split "yes" when="allSelected = true"
+flow gw-split -> finish-order-1
+flow gw-split -> prepare-payment
+flow gw-split -> prepare-shipment
+flow finish-order-1 -> gw-join
+flow prepare-payment -> enter-payment
+flow enter-payment -> confirm-payment
+flow confirm-payment -> gw-join
+flow prepare-shipment -> enter-shipping
+flow enter-shipping -> gw-billing
+flow gw-billing -> enter-billing "yes" when="billingDiffers = true"
+flow gw-billing -> gw-join "no" default
+flow enter-billing -> gw-join
+flow gw-join -> finish-order-2
+flow finish-order-2 -> e

@@ -1,0 +1,65 @@
+tok 1.0 "Annual audit process"
+
+pool company "Multinational company"
+  lane coord "Audit coordinator"
+    start started "Audit process initiated"
+    task notify "Send the notification to the regional office"
+    and fork_start
+    end closed "Audit process closed"
+  lane regional "Regional office"
+    task prepare "Prepare the financial statements"
+    task gather "Gather the necessary documents"
+    and join_start
+    task submit "Submit the documents to the central audit team"
+    task clarify "Provide the necessary clarifications"
+  lane compliance "Compliance team"
+    task check_reg "Check for regulatory updates"
+  lane central "Central audit team"
+    xor merge_review
+    task review "Review the submission"
+    xor discrepancy "Discrepancies found?"
+    task request "Request clarifications from the regional office"
+    and fork_risk
+    task fin_risk "Evaluate the financial risks"
+    task op_risk "Evaluate the operational risks"
+    task comp_risk "Evaluate the compliance risks"
+    and join_risk
+    xor high "High risk identified?"
+    task analyse "Analyse the data"
+    task interview "Conduct the interviews"
+    xor site "Site visit required?"
+    task visit "Conduct the site visit"
+    xor merge_risks
+    task compile "Compile the audit report"
+    xor merge_report
+    task update "Update the report accordingly"
+    task resubmit "Resubmit the report to the audit director"
+    task distribute "Distribute the final report to the executive board"
+    task archive "Archive the final report"
+  lane director "Audit director"
+    task review_report "Review the audit report"
+    xor approved "Report approved?"
+
+flow started -> notify -> fork_start
+flow fork_start -> prepare -> gather -> join_start
+flow fork_start -> check_reg -> join_start
+flow join_start -> submit -> merge_review
+flow merge_review -> review -> discrepancy
+flow discrepancy -> request "Yes"
+flow request -> clarify -> merge_review
+flow discrepancy -> fork_risk "No"
+flow fork_risk -> fin_risk -> join_risk
+flow fork_risk -> op_risk -> join_risk
+flow fork_risk -> comp_risk -> join_risk
+flow join_risk -> high
+flow high -> analyse "Yes"
+flow analyse -> interview -> site
+flow site -> visit "Yes"
+flow visit -> merge_risks
+flow site -> merge_risks "No"
+flow high -> merge_risks "No"
+flow merge_risks -> compile -> merge_report -> review_report -> approved
+flow approved -> distribute "Yes"
+flow distribute -> archive -> closed
+flow approved -> update "No"
+flow update -> resubmit -> merge_report

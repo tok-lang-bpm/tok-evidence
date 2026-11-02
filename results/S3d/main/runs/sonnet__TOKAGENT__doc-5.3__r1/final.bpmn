@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Office Supply Request" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Office Supply Request" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="emp" name="Employee">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review-comments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-rej</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="System">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-rej</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-chg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-app</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gen-po</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-del</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recv-prod</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recv-inv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-del</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sup" name="Supervisor">
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dec</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="pur" name="Purchase department">
+        <bpmn:flowNodeRef>split-app</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>quot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-app</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Office supply request needed" />
+    <bpmn:task id="submit" name="Submit office supply request" />
+    <bpmn:task id="review-comments" name="Review change comments" />
+    <bpmn:endEvent id="e-rej" name="Request rejected" />
+    <bpmn:task id="register" name="Register requirement" />
+    <bpmn:task id="notify-rej" name="Send rejection notification" />
+    <bpmn:task id="notify-chg" name="Send change notification" />
+    <bpmn:task id="notify-app" name="Send approval notification" />
+    <bpmn:task id="gen-po" name="Generate and send purchase order" />
+    <bpmn:parallelGateway id="split-del" />
+    <bpmn:receiveTask id="recv-prod" name="Receive product delivery" />
+    <bpmn:receiveTask id="recv-inv" name="Receive invoice" />
+    <bpmn:parallelGateway id="join-del" />
+    <bpmn:task id="decide" name="Review request" />
+    <bpmn:exclusiveGateway id="dec" name="Decision?" />
+    <bpmn:parallelGateway id="split-app" />
+    <bpmn:subProcess id="quot" name="Make quotations">
+      <bpmn:startEvent id="qs" name="Quotations needed" />
+      <bpmn:task id="qask" name="Request quotations from vendors" />
+      <bpmn:task id="qcmp" name="Compare quotations" />
+      <bpmn:endEvent id="qe" name="Quotations made" />
+      <bpmn:sequenceFlow id="f-qs-qask" sourceRef="qs" targetRef="qask" />
+      <bpmn:sequenceFlow id="f-qask-qcmp" sourceRef="qask" targetRef="qcmp" />
+      <bpmn:sequenceFlow id="f-qcmp-qe" sourceRef="qcmp" targetRef="qe" />
+    </bpmn:subProcess>
+    <bpmn:task id="select" name="Select vendor" />
+    <bpmn:exclusiveGateway id="valid" name="Vendor valid in system?" />
+    <bpmn:parallelGateway id="join-app" />
+    <bpmn:endEvent id="e-done" name="Request completed" />
+    <bpmn:sequenceFlow id="f-s-submit" sourceRef="s" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-register" sourceRef="submit" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-decide" sourceRef="register" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-dec" sourceRef="decide" targetRef="dec" />
+    <bpmn:sequenceFlow id="f-dec-notify-rej" name="Rejected" sourceRef="dec" targetRef="notify-rej" />
+    <bpmn:sequenceFlow id="f-dec-notify-chg" name="Change requested" sourceRef="dec" targetRef="notify-chg" />
+    <bpmn:sequenceFlow id="f-dec-split-app" name="Approved" sourceRef="dec" targetRef="split-app" />
+    <bpmn:sequenceFlow id="f-notify-rej-e-rej" sourceRef="notify-rej" targetRef="e-rej" />
+    <bpmn:sequenceFlow id="f-notify-chg-review-comments" sourceRef="notify-chg" targetRef="review-comments" />
+    <bpmn:sequenceFlow id="f-review-comments-submit" sourceRef="review-comments" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-split-app-notify-app" sourceRef="split-app" targetRef="notify-app" />
+    <bpmn:sequenceFlow id="f-split-app-quot" sourceRef="split-app" targetRef="quot" />
+    <bpmn:sequenceFlow id="f-quot-select" sourceRef="quot" targetRef="select" />
+    <bpmn:sequenceFlow id="f-select-valid" sourceRef="select" targetRef="valid" />
+    <bpmn:sequenceFlow id="f-valid-select" name="No" sourceRef="valid" targetRef="select" />
+    <bpmn:sequenceFlow id="f-valid-gen-po" name="Yes" sourceRef="valid" targetRef="gen-po" />
+    <bpmn:sequenceFlow id="f-gen-po-split-del" sourceRef="gen-po" targetRef="split-del" />
+    <bpmn:sequenceFlow id="f-split-del-recv-prod" sourceRef="split-del" targetRef="recv-prod" />
+    <bpmn:sequenceFlow id="f-split-del-recv-inv" sourceRef="split-del" targetRef="recv-inv" />
+    <bpmn:sequenceFlow id="f-recv-prod-join-del" sourceRef="recv-prod" targetRef="join-del" />
+    <bpmn:sequenceFlow id="f-recv-inv-join-del" sourceRef="recv-inv" targetRef="join-del" />
+    <bpmn:sequenceFlow id="f-join-del-join-app" sourceRef="join-del" targetRef="join-app" />
+    <bpmn:sequenceFlow id="f-notify-app-join-app" sourceRef="notify-app" targetRef="join-app" />
+    <bpmn:sequenceFlow id="f-join-app-e-done" sourceRef="join-app" targetRef="e-done" />
+  </bpmn:process>
+</bpmn:definitions>

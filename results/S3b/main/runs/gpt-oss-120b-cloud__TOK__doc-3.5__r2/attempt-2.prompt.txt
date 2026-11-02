@@ -1,0 +1,88 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Mail from the party is collected on a daily basis by the Mail Processing Unit. Within this unit, the Mail Clerk sorts the unopened mail into the various business areas. The mail is then distributed. When the mail is received by the Registry, it is opened and sorted into groups for distribution, and thus registered in a manual incoming Mail Register. Afterwards, the Assistant Registry Manager within the Registry performs a quality check. If the mail is not compliant, a list of requisition explaining the reason for rejection is compiled and sent back to the party. Otherwise, the matter details (types of action) are captured and provided to the Cashier, who takes the applicable fees attached to the mail. At this point, the Assistant Registry Manager puts the receipt and copied documents into an envelope and posts it to the party. Meantime, the Cashier captures the Party Details and prints the Physical Court File.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Mail processing"
+
+pool org "Organisation"
+  lane mpunit "Mail Processing Unit"
+    start start "Mail collected"
+    task mp_sort "Sort unopened mail into business areas"
+    task mp_distribute "Distribute mail"
+
+  lane registry "Registry"
+    task reg_open "Open mail"
+    task reg_sort "Sort mail into groups for distribution"
+    task reg_register "Register in manual incoming Mail Register"
+
+  lane arm "Assistant Registry Manager"
+    task arm_quality "Perform quality check"
+    xor quality_check "Mail compliant?"
+    task arm_compile "Compile rejection list"
+    task arm_send "Send rejection list back to party"
+    task arm_capture "Capture matter details and provide to Cashier"
+    task arm_envelope "Put receipt and documents into envelope"
+    task arm_post "Post envelope to party"
+
+  lane cashier "Cashier"
+    task cashier_fees "Take applicable fees"
+    task cashier_capture "Capture Party Details"
+    task cashier_print "Print Physical Court File"
+
+  end reject_end "Process ended - rejection"
+  end success_end "Process completed"
+
+flow start -> mp_sort
+flow mp_sort -> mp_distribute
+flow mp_distribute -> reg_open
+flow reg_open -> reg_sort
+flow reg_sort -> reg_register
+flow reg_register -> arm_quality
+flow arm_quality -> quality_check
+
+flow quality_check -> arm_compile "no" when="not compliant"
+flow quality_check -> arm_capture "yes" when="compliant"
+
+flow arm_compile -> arm_send
+flow arm_send -> reject_end
+
+flow arm_capture -> cashier_fees
+
+flow cashier_fees -> split_parallel
+flow split_parallel -> arm_envelope
+flow split_parallel -> cashier_capture
+
+flow arm_envelope -> arm_post
+flow arm_post -> join_parallel
+
+flow cashier_capture -> cashier_print
+flow cashier_print -> join_parallel
+
+flow join_parallel -> success_end
+```
+
+The tok checker reports these problems in it:
+
+- line 28: error R030: 'reject_end' is in a pool with lanes but outside every lane
+- line 29: error R030: 'success_end' is in a pool with lanes but outside every lane
+- line 39: error F002: FEEL syntax error: unexpected 'compliant'
+- line 47: error R002: unknown flow node 'split_parallel'
+- line 48: error R002: unknown flow node 'split_parallel'
+- line 49: error R002: unknown flow node 'split_parallel'
+- line 52: error R002: unknown flow node 'join_parallel'
+- line 55: error R002: unknown flow node 'join_parallel'
+- line 57: error R002: unknown flow node 'join_parallel'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

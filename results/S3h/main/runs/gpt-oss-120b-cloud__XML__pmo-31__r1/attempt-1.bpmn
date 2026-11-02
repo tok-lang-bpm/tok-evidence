@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="blizzardPool" name="Blizzard" processRef="character-generator-process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="character-generator-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="systemLane" name="System">
+        <bpmn:flowNodeRef>checkBnet</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_haveBnet</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkSub</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_haveSub</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>selectPayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_paymentMethod</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="userLane" name="User">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterAccountInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterCC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterBankInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>comeUpWithNames</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterNames</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>loginAndSelect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveExpansionMsg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start character creation" />
+    <bpmn:parallelGateway id="fork1" name="Parallel start" />
+    
+    <!-- Account setup branch (System) -->
+    <bpmn:task id="checkBnet" name="Check battle.net account" />
+    <bpmn:exclusiveGateway id="gw_haveBnet" name="Do you have a battle.net account?" />
+    <bpmn:task id="enterAccountInfo" name="Enter account information and click confirmation link" />
+    <bpmn:task id="checkSub" name="Check active WoW subscription" />
+    <bpmn:exclusiveGateway id="gw_haveSub" name="Do you have an active WoW subscription?" />
+    <bpmn:task id="selectPayment" name="Select payment method" />
+    <bpmn:exclusiveGateway id="gw_paymentMethod" name="Choose payment method" />
+    <bpmn:task id="enterCC" name="Enter credit card information" />
+    <bpmn:task id="enterBankInfo" name="Enter IBAN and BIC numbers" />
+    
+    <!-- Name creation branch (User) -->
+    <bpmn:task id="comeUpWithNames" name="Come up with good character names" />
+    <bpmn:task id="enterNames" name="Enter character names one by one until a name is still available" />
+    <bpmn:task id="receiveConfirmation" name="Receive confirmation and selfies" />
+    
+    <!-- Join -->
+    <bpmn:parallelGateway id="join1" name="Parallel join" />
+    
+    <!-- Final steps -->
+    <bpmn:task id="loginAndSelect" name="Log into the game and select realm, race and class" />
+    <bpmn:task id="receiveExpansionMsg" name="Receive expansion release message" />
+    <bpmn:endEvent id="end" name="Character creation completed" />
+    
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="sf_start_fork" sourceRef="start" targetRef="fork1" />
+    
+    <!-- Fork to branches -->
+    <bpmn:sequenceFlow id="sf_fork_account" sourceRef="fork1" targetRef="checkBnet" />
+    <bpmn:sequenceFlow id="sf_fork_names" sourceRef="fork1" targetRef="comeUpWithNames" />
+    
+    <!-- Account branch flows -->
+    <bpmn:sequenceFlow id="sf_checkBnet_gw" sourceRef="checkBnet" targetRef="gw_haveBnet" />
+    <bpmn:sequenceFlow id="sf_gw_noAccount" name="no" sourceRef="gw_haveBnet" targetRef="enterAccountInfo" />
+    <bpmn:sequenceFlow id="sf_gw_yesAccount" name="yes" sourceRef="gw_haveBnet" targetRef="checkSub" />
+    <bpmn:sequenceFlow id="sf_enterAccount_checkSub" sourceRef="enterAccountInfo" targetRef="checkSub" />
+    
+    <bpmn:sequenceFlow id="sf_checkSub_gw" sourceRef="checkSub" targetRef="gw_haveSub" />
+    <bpmn:sequenceFlow id="sf_gw_noSub" name="no" sourceRef="gw_haveSub" targetRef="selectPayment" />
+    <bpmn:sequenceFlow id="sf_gw_yesSub" name="yes" sourceRef="gw_haveSub" targetRef="join1" />
+    
+    <bpmn:sequenceFlow id="sf_selectPayment_gw" sourceRef="selectPayment" targetRef="gw_paymentMethod" />
+    <bpmn:sequenceFlow id="sf_gw_credit" name="credit card" sourceRef="gw_paymentMethod" targetRef="enterCC" />
+    <bpmn:sequenceFlow id="sf_gw_bank" name="bank account" sourceRef="gw_paymentMethod" targetRef="enterBankInfo" />
+    <bpmn:sequenceFlow id="sf_enterCC_join" sourceRef="enterCC" targetRef="join1" />
+    <bpmn:sequenceFlow id="sf_enterBank_join" sourceRef="enterBankInfo" targetRef="join1" />
+    
+    <!-- Name branch flows -->
+    <bpmn:sequenceFlow id="sf_comeUp_enterNames" sourceRef="comeUpWithNames" targetRef="enterNames" />
+    <bpmn:sequenceFlow id="sf_enterNames_confirm" sourceRef="enterNames" targetRef="receiveConfirmation" />
+    <bpmn:sequenceFlow id="sf_confirm_join" sourceRef="receiveConfirmation" targetRef="join1" />
+    
+    <!-- After join -->
+    <bpmn:sequenceFlow id="sf_join_login" sourceRef="join1" targetRef="loginAndSelect" />
+    <bpmn:sequenceFlow id="sf_login_msg" sourceRef="loginAndSelect" targetRef="receiveExpansionMsg" />
+    <bpmn:sequenceFlow id="sf_msg_end" sourceRef="receiveExpansionMsg" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

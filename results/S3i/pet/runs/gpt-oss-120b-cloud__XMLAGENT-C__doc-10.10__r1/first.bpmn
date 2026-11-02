@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE_FAULT_DETECTOR" name="Fault Detector">
+        <bpmn:flowNodeRef>task_report</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_MPO" name="MPO">
+        <bpmn:flowNodeRef>task_suspicion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_examine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_go_initial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_msp_initial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_fix_fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_share_results</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_go_resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_msp_resolution</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_GO" name="GO">
+        <bpmn:flowNodeRef>task_inform_go_initial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_go_resolution</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_MSP" name="MSP">
+        <bpmn:flowNodeRef>task_inform_msp_initial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_msp_resolution</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:exclusiveGateway id="gateway_start" name="Report or Suspicion" />
+    <bpmn:task id="task_report" name="Fault detector reports a failure to the MPO" />
+    <bpmn:task id="task_suspicion" name="MPO has a suspicion of their own fault" />
+    <bpmn:task id="task_examine" name="MPO examines the failure" />
+    <bpmn:exclusiveGateway id="gateway_decision" name="MPO confirms or rejects" />
+    <bpmn:endEvent id="end_reject" name="Failure rejected" />
+    <bpmn:parallelGateway id="parallel_inform_initial" />
+    <bpmn:task id="task_inform_go_initial" name="MPO informs GO" />
+    <bpmn:task id="task_inform_msp_initial" name="MPO informs MSP" />
+    <bpmn:parallelGateway id="parallel_inform_initial_join" />
+    <bpmn:task id="task_fix_fault" name="MPO fixes the fault at the measuring device" />
+    <bpmn:task id="task_share_results" name="MPO shares the results of the repairs with the fault detector" />
+    <bpmn:parallelGateway id="parallel_inform_resolution" />
+    <bpmn:task id="task_inform_go_resolution" name="MPO informs GO about the resolution of the interference" />
+    <bpmn:task id="task_inform_msp_resolution" name="MPO informs MSP about the resolution of the interference" />
+    <bpmn:parallelGateway id="parallel_inform_resolution_join" />
+    <bpmn:endEvent id="end_success" name="Process completed" />
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="gateway_start" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="gateway_start" targetRef="task_report" name="report" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="gateway_start" targetRef="task_suspicion" name="suspicion" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="task_report" targetRef="task_examine" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="task_suspicion" targetRef="task_examine" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="task_examine" targetRef="gateway_decision" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="gateway_decision" targetRef="end_reject" name="reject" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="gateway_decision" targetRef="parallel_inform_initial" name="confirm" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="parallel_inform_initial" targetRef="task_inform_go_initial" />
+    <bpmn:sequenceFlow id="flow10" sourceRef="parallel_inform_initial" targetRef="task_inform_msp_initial" />
+    <bpmn:sequenceFlow id="flow11" sourceRef="task_inform_go_initial" targetRef="parallel_inform_initial_join" />
+    <bpmn:sequenceFlow id="flow12" sourceRef="task_inform_msp_initial" targetRef="parallel_inform_initial_join" />
+    <bpmn:sequenceFlow id="flow13" sourceRef="parallel_inform_initial_join" targetRef="task_fix_fault" />
+    <bpmn:sequenceFlow id="flow14" sourceRef="task_fix_fault" targetRef="task_share_results" />
+    <bpmn:sequenceFlow id="flow15" sourceRef="task_share_results" targetRef="parallel_inform_resolution" />
+    <bpmn:sequenceFlow id="flow16" sourceRef="parallel_inform_resolution" targetRef="task_inform_go_resolution" />
+    <bpmn:sequenceFlow id="flow17" sourceRef="parallel_inform_resolution" targetRef="task_inform_msp_resolution" />
+    <bpmn:sequenceFlow id="flow18" sourceRef="task_inform_go_resolution" targetRef="parallel_inform_resolution_join" />
+    <bpmn:sequenceFlow id="flow19" sourceRef="task_inform_msp_resolution" targetRef="parallel_inform_resolution_join" />
+    <bpmn:sequenceFlow id="flow20" sourceRef="parallel_inform_resolution_join" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

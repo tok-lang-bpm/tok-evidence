@@ -1,0 +1,30 @@
+tok 1.0 "Measurement request handling"
+
+pool org "Organisation"
+  lane go "GO"
+    start begin "Measurements needed"
+    task request "Request the measurements"
+    task process "Process the measured values"
+    task sendchanged "Send the changed values to the MSP"
+    task transmit "Transmit the readings to the SP"
+    end done "Readings transmitted"
+    end denied "Request denied"
+    end failed "Failure reported"
+  lane msp "MSP"
+    task check "Check the received request"
+    xor accept "Request accepted?"
+    task deny "Deny the request"
+    task measure "Perform the measurement"
+    xor success "Reading successful?"
+    task inform "Inform the GO about the failure of the reading"
+    task transmitvalues "Transmit the measured values to the GO"
+
+flow begin -> request -> check -> accept
+flow accept -> measure "yes"
+flow accept -> deny "no"
+flow deny -> denied
+flow measure -> success
+flow success -> transmitvalues "yes"
+flow success -> inform "no"
+flow inform -> failed
+flow transmitvalues -> process -> sendchanged -> transmit -> done

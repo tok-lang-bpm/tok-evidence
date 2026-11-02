@@ -1,0 +1,43 @@
+tok 1.0 "Expense report reimbursement"
+
+pool org "Organisation"
+  lane system "System"
+    start received "Expense report received"
+    xor has_account "Employee has an account?"
+    task create_account "Create a new account"
+    xor account_ready
+    task review "Review the report for automatic approval"
+    xor amount "Amount under $200?"
+    task auto_approve "Approve the report automatically"
+    xor decided
+    xor approved "Report approved?"
+    task reject_notice "Send the rejection notice by email"
+    task reimburse "Pay the reimbursement to the direct deposit bank account"
+    task progress_email "Send the approval in progress email"
+    end progress_sent "Approval in progress email sent"
+    end rejected "Report rejected"
+    end paid "Reimbursement paid"
+  lane supervisor "Supervisor"
+    task supervisor_approve "Approve the report"
+    boundary progress_timer "7 days passed" on=supervisor_approve timer=P7D noninterrupting
+    boundary cancel_timer "30 days passed" on=supervisor_approve timer=P30D
+  lane employee "Employee"
+    task cancel_notice "Send the cancellation notice by email"
+    task resubmit "Re-submit the expense report"
+    end resubmitted "Expense report re-submitted"
+
+flow received -> has_account
+flow has_account -> create_account "no"
+flow has_account -> account_ready "yes"
+flow create_account -> account_ready
+flow account_ready -> review -> amount
+flow amount -> auto_approve "yes" when="amount < 200"
+flow amount -> supervisor_approve "no" when="amount >= 200"
+flow auto_approve -> decided
+flow supervisor_approve -> approved
+flow approved -> decided "yes"
+flow approved -> reject_notice "no"
+flow reject_notice -> rejected
+flow decided -> reimburse -> paid
+flow progress_timer -> progress_email -> progress_sent
+flow cancel_timer -> cancel_notice -> resubmit -> resubmitted

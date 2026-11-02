@@ -1,0 +1,41 @@
+tok 1.0 "Equipment change"
+
+pool org "Organisation"
+  lane MPON "MPON"
+    start s "Start"
+    task t1 "notify MPOO about equipment change intentions"
+    xor g3 "Who performs the final reading?"
+    task t_fr_mpon "perform the final reading"
+    xor g4
+    xor g5 "Who dismounts the old equipment?"
+    task t_dm_mpon "dismount the old equipment"
+    xor g6
+    task t_mount "mount the new device"
+    task t_read "read the meter count from the installed meter"
+    task t_send "send the values of the final reading to the GO"
+    task t_tell "tell the GO about the device changes, the master data and the meter count at installation"
+  lane MPOO "MPOO"
+    xor g1 "Self-dismounting?"
+    task t_self "announce self dismounting to MPON"
+    task t_noself "notify MPON about no self-dismounting"
+    xor g2
+    task t_fr_mpoo "perform the final reading"
+    task t_dm_mpoo "dismount the old equipment"
+  lane GO "GO"
+    task t_go "notify the MSP about the device changes, the master data, the meter count at dismounting, and the meter count at installation"
+  lane MSP "MSP"
+    end e "End"
+
+flow s -> t1 -> g1
+flow g1 -> t_self "self-dismounting" when=""
+flow g1 -> t_noself "no self-dismounting" when=""
+flow t_self -> g2
+flow t_noself -> g2 -> g3
+flow g3 -> t_fr_mpon "MPON" when=""
+flow g3 -> t_fr_mpoo "MPOO" when=""
+flow t_fr_mpon -> g4
+flow t_fr_mpoo -> g4 -> g5
+flow g5 -> t_dm_mpon "MPON" when=""
+flow g5 -> t_dm_mpoo "MPOO" when=""
+flow t_dm_mpon -> g6
+flow t_dm_mpoo -> g6 -> t_mount -> t_read -> t_send -> t_tell -> t_go -> e

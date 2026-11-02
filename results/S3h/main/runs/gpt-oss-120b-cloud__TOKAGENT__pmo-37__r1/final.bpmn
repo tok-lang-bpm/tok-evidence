@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organization" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="procurement" name="Procurement">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>q1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision-shop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-single</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-multiple</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-cheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-fastest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-complaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="production" name="Production">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>start-building</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="q1" name="Query all web shops for parts availability, price and delivery time" />
+    <bpmn:task id="list" name="Create list of parts per shop" />
+    <bpmn:exclusiveGateway id="decision-shop" name="Is one shop enough?" default="f-decision-shop-order-multiple" />
+    <bpmn:task id="order-single" name="Order parts from single shop" />
+    <bpmn:task id="order-multiple" name="Order parts from multiple shops" />
+    <bpmn:exclusiveGateway id="stock-split" name="Is stock level low?" default="f-stock-split-end" />
+    <bpmn:exclusiveGateway id="stock-join" name="Reorder loop join" />
+    <bpmn:task id="reorder-cheapest" name="Reorder parts (cheapest)" />
+    <bpmn:task id="reorder-fastest" name="Reorder parts (fastest)" />
+    <bpmn:task id="send-complaint" name="Send complaint email to friends" />
+    <bpmn:endEvent id="end" name="End" />
+    <bpmn:task id="receive" name="Receive parts batches" />
+    <bpmn:task id="start-building" name="Start building" />
+    <bpmn:sequenceFlow id="f-start-q1" sourceRef="start" targetRef="q1" />
+    <bpmn:sequenceFlow id="f-q1-list" sourceRef="q1" targetRef="list" />
+    <bpmn:sequenceFlow id="f-list-decision-shop" sourceRef="list" targetRef="decision-shop" />
+    <bpmn:sequenceFlow id="f-decision-shop-order-single" name="yes" sourceRef="decision-shop" targetRef="order-single">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">enough</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decision-shop-order-multiple" name="no" sourceRef="decision-shop" targetRef="order-multiple" />
+    <bpmn:sequenceFlow id="f-order-single-receive" sourceRef="order-single" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-order-multiple-receive" sourceRef="order-multiple" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-start-building" sourceRef="receive" targetRef="start-building" />
+    <bpmn:sequenceFlow id="f-start-building-stock-split" sourceRef="start-building" targetRef="stock-split" />
+    <bpmn:sequenceFlow id="f-stock-split-reorder-cheapest" name="stock &lt; 5" sourceRef="stock-split" targetRef="reorder-cheapest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-split-reorder-fastest" name="stock &lt; 3" sourceRef="stock-split" targetRef="reorder-fastest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-split-send-complaint" name="stock = 0" sourceRef="stock-split" targetRef="send-complaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-split-end" sourceRef="stock-split" targetRef="end" />
+    <bpmn:sequenceFlow id="f-reorder-cheapest-stock-join" sourceRef="reorder-cheapest" targetRef="stock-join" />
+    <bpmn:sequenceFlow id="f-reorder-fastest-stock-join" sourceRef="reorder-fastest" targetRef="stock-join" />
+    <bpmn:sequenceFlow id="f-stock-join-stock-split" sourceRef="stock-join" targetRef="stock-split" />
+    <bpmn:sequenceFlow id="f-send-complaint-end" sourceRef="send-complaint" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

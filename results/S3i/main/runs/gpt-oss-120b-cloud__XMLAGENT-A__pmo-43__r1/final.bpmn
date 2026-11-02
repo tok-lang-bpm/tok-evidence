@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Police" processRef="process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process_1" isExecutable="false">
+    <bpmn:laneSet id="laneset_1">
+      <bpmn:lane id="lane_system" name="System">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckRegistration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyDriver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelGateway_Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendStatusUpdates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelGateway_Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EnterRepairSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EnterNextServiceTime</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PayThroughApp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FineDriver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Fine</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_driver" name="Driver">
+        <bpmn:flowNodeRef>Gateway_GoToService</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateTimer_30Days</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_mechanic" name="Mechanic">
+        <bpmn:flowNodeRef>Task_EnterProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateTimer_WaitRepair</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_1" name="Service completed" />
+    <bpmn:task id="Task_CheckRegistration" name="Check car registration" />
+    <bpmn:exclusiveGateway id="Gateway_Registered" name="Car registered?" />
+    <bpmn:task id="Task_NotifyDriver" name="Notify driver" />
+    <bpmn:exclusiveGateway id="Gateway_GoToService" name="Driver goes to service?" />
+    <bpmn:task id="Task_FineDriver" name="Fine driver" />
+    <bpmn:intermediateCatchEvent id="IntermediateTimer_30Days" name="30 days elapsed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT720H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_EnterProblems" name="Enter car problems" />
+    <bpmn:parallelGateway id="ParallelGateway_Split" />
+    <bpmn:task id="Task_SendStatusUpdates" name="Send status updates via email" />
+    <bpmn:intermediateCatchEvent id="IntermediateTimer_WaitRepair" name="Wait for repair">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="ParallelGateway_Join" />
+    <bpmn:task id="Task_EnterRepairSuccess" name="Enter repair successful and issue Pickerl" />
+    <bpmn:task id="Task_EnterNextServiceTime" name="Enter next service time" />
+    <bpmn:task id="Task_PayThroughApp" name="Pay through app" />
+    <bpmn:endEvent id="EndEvent_Success" name="Process completed" />
+    <bpmn:endEvent id="EndEvent_Fine" name="Process ended with fine" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="StartEvent_1" targetRef="Task_CheckRegistration" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="Task_CheckRegistration" targetRef="Gateway_Registered" />
+    <bpmn:sequenceFlow id="flow3_yes" name="yes" sourceRef="Gateway_Registered" targetRef="Task_NotifyDriver">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">registered</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow3_no" name="no" sourceRef="Gateway_Registered" targetRef="EndEvent_Fine">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!registered</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow4" sourceRef="Task_NotifyDriver" targetRef="Gateway_GoToService" />
+    <bpmn:sequenceFlow id="flow5_yes" name="yes" sourceRef="Gateway_GoToService" targetRef="Task_EnterProblems" />
+    <bpmn:sequenceFlow id="flow5_no" name="no" sourceRef="Gateway_GoToService" targetRef="IntermediateTimer_30Days" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="IntermediateTimer_30Days" targetRef="Task_FineDriver" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="Task_FineDriver" targetRef="EndEvent_Fine" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="Task_EnterProblems" targetRef="ParallelGateway_Split" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="ParallelGateway_Split" targetRef="Task_SendStatusUpdates" />
+    <bpmn:sequenceFlow id="flow10" sourceRef="ParallelGateway_Split" targetRef="IntermediateTimer_WaitRepair" />
+    <bpmn:sequenceFlow id="flow11" sourceRef="Task_SendStatusUpdates" targetRef="ParallelGateway_Join" />
+    <bpmn:sequenceFlow id="flow12" sourceRef="IntermediateTimer_WaitRepair" targetRef="ParallelGateway_Join" />
+    <bpmn:sequenceFlow id="flow13" sourceRef="ParallelGateway_Join" targetRef="Task_EnterRepairSuccess" />
+    <bpmn:sequenceFlow id="flow14" sourceRef="Task_EnterRepairSuccess" targetRef="Task_EnterNextServiceTime" />
+    <bpmn:sequenceFlow id="flow15" sourceRef="Task_EnterNextServiceTime" targetRef="Task_PayThroughApp" />
+    <bpmn:sequenceFlow id="flow16" sourceRef="Task_PayThroughApp" targetRef="EndEvent_Success" />
+  </bpmn:process>
+</bpmn:definitions>

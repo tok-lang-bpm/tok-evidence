@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="laneSet">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_signup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_submit_cancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>Task_generate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_trigger</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="support" name="Support team">
+        <bpmn:flowNodeRef>Task_process_cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_apply_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_apply_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_refund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_charge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_conclude_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_deactivate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_settle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_conclude_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_1" name="Subscription service needed" />
+
+    <bpmn:task id="Task_signup" name="Sign up for subscription service, entering personal and payment information" />
+    <bpmn:task id="Task_generate" name="Generate an account" />
+    <bpmn:task id="Task_assign" name="Assign access" />
+    <bpmn:task id="Task_trigger" name="Trigger automated billing cycles" />
+    <bpmn:task id="Task_receive" name="Receive regular updates, product enhancements, or renewal notifications" />
+
+    <bpmn:exclusiveGateway id="Gw_cancel" name="Cancel subscription?" default="Flow_cancel_no" />
+
+    <bpmn:task id="Task_submit_cancel" name="Submit a cancellation request" />
+    <bpmn:task id="Task_process_cancel" name="Process the cancellation request" />
+
+    <bpmn:exclusiveGateway id="Gw_apply_split" name="Apply refunds or charges?" default="Flow_apply_none" />
+    <bpmn:task id="Task_refund" name="Apply refund" />
+    <bpmn:task id="Task_charge" name="Apply charge" />
+    <bpmn:exclusiveGateway id="Gw_apply_join" />
+
+    <bpmn:parallelGateway id="Gw_conclude_split" />
+    <bpmn:task id="Task_deactivate" name="Deactivate the subscription" />
+    <bpmn:task id="Task_settle" name="Settle the final account balance" />
+    <bpmn:parallelGateway id="Gw_conclude_join" />
+
+    <bpmn:endEvent id="EndEvent_1" name="Subscription deactivated and balance settled" />
+
+    <bpmn:sequenceFlow id="Flow_start" sourceRef="StartEvent_1" targetRef="Task_signup" />
+    <bpmn:sequenceFlow id="Flow_signup_generate" sourceRef="Task_signup" targetRef="Task_generate" />
+    <bpmn:sequenceFlow id="Flow_generate_assign" sourceRef="Task_generate" targetRef="Task_assign" />
+    <bpmn:sequenceFlow id="Flow_assign_trigger" sourceRef="Task_assign" targetRef="Task_trigger" />
+    <bpmn:sequenceFlow id="Flow_trigger_receive" sourceRef="Task_trigger" targetRef="Task_receive" />
+    <bpmn:sequenceFlow id="Flow_receive_cancel" sourceRef="Task_receive" targetRef="Gw_cancel" />
+
+    <bpmn:sequenceFlow id="Flow_cancel_yes" name="yes" sourceRef="Gw_cancel" targetRef="Task_submit_cancel" />
+    <bpmn:sequenceFlow id="Flow_cancel_no" name="no" sourceRef="Gw_cancel" targetRef="Task_receive" />
+
+    <bpmn:sequenceFlow id="Flow_submit_process" sourceRef="Task_submit_cancel" targetRef="Task_process_cancel" />
+    <bpmn:sequenceFlow id="Flow_process_apply" sourceRef="Task_process_cancel" targetRef="Gw_apply_split" />
+
+    <bpmn:sequenceFlow id="Flow_apply_refund" name="Refund" sourceRef="Gw_apply_split" targetRef="Task_refund" />
+    <bpmn:sequenceFlow id="Flow_apply_charge" name="Charge" sourceRef="Gw_apply_split" targetRef="Task_charge" />
+    <bpmn:sequenceFlow id="Flow_apply_none" sourceRef="Gw_apply_split" targetRef="Gw_apply_join" />
+
+    <bpmn:sequenceFlow id="Flow_refund_join" sourceRef="Task_refund" targetRef="Gw_apply_join" />
+    <bpmn:sequenceFlow id="Flow_charge_join" sourceRef="Task_charge" targetRef="Gw_apply_join" />
+
+    <bpmn:sequenceFlow id="Flow_apply_conclude" sourceRef="Gw_apply_join" targetRef="Gw_conclude_split" />
+    <bpmn:sequenceFlow id="Flow_conclude_deactivate" sourceRef="Gw_conclude_split" targetRef="Task_deactivate" />
+    <bpmn:sequenceFlow id="Flow_conclude_settle" sourceRef="Gw_conclude_split" targetRef="Task_settle" />
+    <bpmn:sequenceFlow id="Flow_deactivate_join" sourceRef="Task_deactivate" targetRef="Gw_conclude_join" />
+    <bpmn:sequenceFlow id="Flow_settle_join" sourceRef="Task_settle" targetRef="Gw_conclude_join" />
+    <bpmn:sequenceFlow id="Flow_join_end" sourceRef="Gw_conclude_join" targetRef="EndEvent_1" />
+  </bpmn:process>
+</bpmn:definitions>

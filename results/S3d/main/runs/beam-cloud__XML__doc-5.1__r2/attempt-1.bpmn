@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="loan-approval-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="loan-approval-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk-assessment" name="Risk Assessment Web Service">
+        <bpmn:flowNodeRef>assess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-to-approver</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="approver" name="Approver Web Service">
+        <bpmn:flowNodeRef>receive-by-approver</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Customer request for a loan amount received" />
+    <bpmn:task id="assess" name="Assess the request" />
+    <bpmn:exclusiveGateway id="decision" name="Loan decision" />
+    <bpmn:task id="approve" name="Approve the loan" />
+    <bpmn:task id="deny" name="Deny the loan" />
+    <bpmn:task id="send-to-approver" name="Send the request to the approver Web service" />
+    <bpmn:task id="receive-by-approver" name="Receive the request" />
+    <bpmn:task id="feedback" name="Receive feedback from the assessor or approver" />
+    <bpmn:endEvent id="end" name="Feedback received" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="assess" />
+    <bpmn:sequenceFlow id="f2" sourceRef="assess" targetRef="decision" />
+    <bpmn:sequenceFlow id="f3" name="Loan is small and customer is low risk" sourceRef="decision" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">loanSmall = true and customerLowRisk = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f4" name="Customer is high risk" sourceRef="decision" targetRef="deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">customerHighRisk = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" name="Customer needs further review or loan amount is $10,000 or more" sourceRef="decision" targetRef="send-to-approver">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">needsFurtherReview = true or loanAmount &gt;= 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" sourceRef="approve" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f7" sourceRef="deny" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f8" sourceRef="send-to-approver" targetRef="receive-by-approver" />
+    <bpmn:sequenceFlow id="f9" sourceRef="receive-by-approver" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f10" sourceRef="feedback" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

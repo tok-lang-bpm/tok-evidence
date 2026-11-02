@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report reimbursement" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Expense report reimbursement" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>has_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>account_ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>auto_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decided</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress_sent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>supervisor_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress_timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel_timer</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>cancel_notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmitted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Expense report received" />
+    <bpmn:exclusiveGateway id="has_account" name="Employee has an account?" />
+    <bpmn:task id="create_account" name="Create a new account" />
+    <bpmn:exclusiveGateway id="account_ready" />
+    <bpmn:task id="review" name="Review the report for automatic approval" />
+    <bpmn:exclusiveGateway id="amount" name="Amount under $200?" />
+    <bpmn:task id="auto_approve" name="Approve the report automatically" />
+    <bpmn:exclusiveGateway id="decided" />
+    <bpmn:exclusiveGateway id="approved" name="Report approved?" />
+    <bpmn:task id="reject_notice" name="Send the rejection notice by email" />
+    <bpmn:task id="reimburse" name="Pay the reimbursement to the direct deposit bank account" />
+    <bpmn:task id="progress_email" name="Send the approval in progress email" />
+    <bpmn:endEvent id="progress_sent" name="Approval in progress email sent" />
+    <bpmn:endEvent id="rejected" name="Report rejected" />
+    <bpmn:endEvent id="paid" name="Reimbursement paid" />
+    <bpmn:task id="supervisor_approve" name="Approve the report" />
+    <bpmn:boundaryEvent id="progress_timer" name="7 days passed" attachedToRef="supervisor_approve" cancelActivity="false">
+      <bpmn:timerEventDefinition id="progress_timer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="cancel_timer" name="30 days passed" attachedToRef="supervisor_approve">
+      <bpmn:timerEventDefinition id="cancel_timer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="cancel_notice" name="Send the cancellation notice by email" />
+    <bpmn:task id="resubmit" name="Re-submit the expense report" />
+    <bpmn:endEvent id="resubmitted" name="Expense report re-submitted" />
+    <bpmn:sequenceFlow id="f-received-has_account" sourceRef="received" targetRef="has_account" />
+    <bpmn:sequenceFlow id="f-has_account-create_account" name="no" sourceRef="has_account" targetRef="create_account" />
+    <bpmn:sequenceFlow id="f-has_account-account_ready" name="yes" sourceRef="has_account" targetRef="account_ready" />
+    <bpmn:sequenceFlow id="f-create_account-account_ready" sourceRef="create_account" targetRef="account_ready" />
+    <bpmn:sequenceFlow id="f-account_ready-review" sourceRef="account_ready" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-amount" sourceRef="review" targetRef="amount" />
+    <bpmn:sequenceFlow id="f-amount-auto_approve" name="yes" sourceRef="amount" targetRef="auto_approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-amount-supervisor_approve" name="no" sourceRef="amount" targetRef="supervisor_approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &gt;= 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-auto_approve-decided" sourceRef="auto_approve" targetRef="decided" />
+    <bpmn:sequenceFlow id="f-supervisor_approve-approved" sourceRef="supervisor_approve" targetRef="approved" />
+    <bpmn:sequenceFlow id="f-approved-decided" name="yes" sourceRef="approved" targetRef="decided" />
+    <bpmn:sequenceFlow id="f-approved-reject_notice" name="no" sourceRef="approved" targetRef="reject_notice" />
+    <bpmn:sequenceFlow id="f-reject_notice-rejected" sourceRef="reject_notice" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-decided-reimburse" sourceRef="decided" targetRef="reimburse" />
+    <bpmn:sequenceFlow id="f-reimburse-paid" sourceRef="reimburse" targetRef="paid" />
+    <bpmn:sequenceFlow id="f-progress_timer-progress_email" sourceRef="progress_timer" targetRef="progress_email" />
+    <bpmn:sequenceFlow id="f-progress_email-progress_sent" sourceRef="progress_email" targetRef="progress_sent" />
+    <bpmn:sequenceFlow id="f-cancel_timer-cancel_notice" sourceRef="cancel_timer" targetRef="cancel_notice" />
+    <bpmn:sequenceFlow id="f-cancel_notice-resubmit" sourceRef="cancel_notice" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="f-resubmit-resubmitted" sourceRef="resubmit" targetRef="resubmitted" />
+  </bpmn:process>
+</bpmn:definitions>

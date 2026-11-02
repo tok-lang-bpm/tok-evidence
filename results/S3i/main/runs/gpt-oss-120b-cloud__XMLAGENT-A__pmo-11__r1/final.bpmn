@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="Process_1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Customer" name="Customer">
+        <bpmn:flowNodeRef>StartEvent_SignUp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EnterInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitCancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Task_GenerateAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AssignAccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TriggerBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendUpdates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CancelDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Support" name="Support Team">
+        <bpmn:flowNodeRef>Task_ProcessCancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_RefundDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ApplyRefund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ApplyCharge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Deactivate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SettleBalance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_SignUp" name="Customer signs up for subscription" />
+    <bpmn:task id="Task_EnterInfo" name="Enter personal and payment information" />
+    <bpmn:task id="Task_GenerateAccount" name="Generate account" />
+    <bpmn:task id="Task_AssignAccess" name="Assign access" />
+    <bpmn:task id="Task_TriggerBilling" name="Trigger automated billing cycles" />
+    <bpmn:task id="Task_SendUpdates" name="Send regular updates, product enhancements, or renewal notifications" />
+    <bpmn:exclusiveGateway id="Gateway_CancelDecision" name="Customer decides to cancel?" />
+    <bpmn:task id="Task_SubmitCancel" name="Submit cancellation request" />
+    <bpmn:task id="Task_ProcessCancel" name="Process cancellation request" />
+    <bpmn:exclusiveGateway id="Gateway_RefundDecision" name="Refund or charge applicable?" />
+    <bpmn:task id="Task_ApplyRefund" name="Apply refund" />
+    <bpmn:task id="Task_ApplyCharge" name="Apply charge" />
+    <bpmn:parallelGateway id="Gateway_ParallelSplit" />
+    <bpmn:task id="Task_Deactivate" name="Deactivate subscription" />
+    <bpmn:task id="Task_SettleBalance" name="Settle final account balance" />
+    <bpmn:parallelGateway id="Gateway_ParallelJoin" />
+    <bpmn:endEvent id="EndEvent_Completed" name="Process completed" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_SignUp" targetRef="Task_EnterInfo" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_EnterInfo" targetRef="Task_GenerateAccount" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_GenerateAccount" targetRef="Task_AssignAccess" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_AssignAccess" targetRef="Task_TriggerBilling" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_TriggerBilling" targetRef="Task_SendUpdates" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_SendUpdates" targetRef="Gateway_CancelDecision" />
+    <bpmn:sequenceFlow id="Flow_7_No" name="no" sourceRef="Gateway_CancelDecision" targetRef="Task_SendUpdates" />
+    <bpmn:sequenceFlow id="Flow_8_Yes" name="yes" sourceRef="Gateway_CancelDecision" targetRef="Task_SubmitCancel" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_SubmitCancel" targetRef="Task_ProcessCancel" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_ProcessCancel" targetRef="Gateway_RefundDecision" />
+    <bpmn:sequenceFlow id="Flow_11_Refund" name="refund" sourceRef="Gateway_RefundDecision" targetRef="Task_ApplyRefund" />
+    <bpmn:sequenceFlow id="Flow_12_Charge" name="charge" sourceRef="Gateway_RefundDecision" targetRef="Task_ApplyCharge" />
+    <bpmn:sequenceFlow id="Flow_13_FromRefund" sourceRef="Task_ApplyRefund" targetRef="Gateway_ParallelSplit" />
+    <bpmn:sequenceFlow id="Flow_14_FromCharge" sourceRef="Task_ApplyCharge" targetRef="Gateway_ParallelSplit" />
+    <bpmn:sequenceFlow id="Flow_15_ToDeactivate" sourceRef="Gateway_ParallelSplit" targetRef="Task_Deactivate" />
+    <bpmn:sequenceFlow id="Flow_16_ToSettle" sourceRef="Gateway_ParallelSplit" targetRef="Task_SettleBalance" />
+    <bpmn:sequenceFlow id="Flow_17_FromDeactivate" sourceRef="Task_Deactivate" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_18_FromSettle" sourceRef="Task_SettleBalance" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Gateway_ParallelJoin" targetRef="EndEvent_Completed" />
+  </bpmn:process>
+</bpmn:definitions>

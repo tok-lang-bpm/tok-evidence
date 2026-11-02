@@ -1,0 +1,39 @@
+tok 1.0 "Billing Process"
+
+pool org "Organisation"
+  lane MPOO "MPOO"
+    start start1 "Start"
+    task send_temp_cont_mpoon "Send bill for temporary continuation of metering point operations"
+    task send_equipment_acq "Send bill for equipment acquisition"
+  lane MSPO "MSPO"
+    task send_temp_cont_mspo "Send bill for temporary continuation of the measurement"
+    task send_additional_readings "Send bill for additional readings"
+  lane GO "GO"
+    xor bill_type "Bill type?"
+    xor examine_choice "Examiner?"
+    task examine_bill "Examine the bill"
+    xor confirm_decision "Confirm or reject?"
+    task confirm_invoice "Confirm invoice with payment advice"
+    task reject_invoice "Reject invoice"
+    end end_confirm "End"
+    end end_reject "End"
+  lane MPON "MPON"
+    task examine_equipment_bill_mp "Examine the bill"
+
+flow start1 -> bill_type
+flow bill_type -> send_temp_cont_mpoon "MPOO temp"
+flow bill_type -> send_temp_cont_mspo "MSPO temp"
+flow bill_type -> send_additional_readings "MSPO additional"
+flow bill_type -> send_equipment_acq "equipment"
+flow send_temp_cont_mpoon -> examine_bill
+flow send_temp_cont_mspo -> examine_bill
+flow send_additional_readings -> examine_bill
+flow send_equipment_acq -> examine_choice
+flow examine_choice -> examine_bill "GO"
+flow examine_choice -> examine_equipment_bill_mp "MPON"
+flow examine_bill -> confirm_decision
+flow examine_equipment_bill_mp -> confirm_decision
+flow confirm_decision -> confirm_invoice "confirm"
+flow confirm_decision -> reject_invoice "reject"
+flow confirm_invoice -> end_confirm
+flow reject_invoice -> end_reject

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="Online Shop" processRef="shop-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" name="Online Shop" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="cust" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>add_to_cart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_payment_data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_shipping_address</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_billing_address</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_failure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="E-Shop System">
+        <bpmn:flowNodeRef>wait_login_confirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>save_product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_all_selected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_bank_confirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare_shipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finalize_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_more</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_address</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_payment_shipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_payment_shipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_payment</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" />
+    <bpmn:task id="login" name="Log into E-Shop system" />
+    <bpmn:task id="select_product" name="Select product" />
+    <bpmn:task id="add_to_cart" name="Add product to shopping cart" />
+    <bpmn:task id="enter_payment_data" name="Enter payment data" />
+    <bpmn:task id="enter_shipping_address" name="Enter shipping address" />
+    <bpmn:task id="enter_billing_address" name="Enter billing address" />
+    <bpmn:endEvent id="end_success" />
+    <bpmn:endEvent id="end_failure" />
+    <bpmn:task id="wait_login_confirmation" name="Wait for login confirmation" />
+    <bpmn:task id="save_product" name="Save product" />
+    <bpmn:task id="check_all_selected" name="Check if every product was already selected" />
+    <bpmn:task id="finish_order" name="Finish order by shopping system" />
+    <bpmn:task id="wait_bank_confirmation" name="Wait for bank confirms payment" />
+    <bpmn:task id="prepare_shipment" name="Prepare shipment" />
+    <bpmn:task id="finalize_order" name="Finalize order by system" />
+    <bpmn:exclusiveGateway id="gw_login" name="Login successful?" default="f-gw_login-end_failure" />
+    <bpmn:exclusiveGateway id="gw_more" name="All products selected?" default="f-gw_more-finish_order" />
+    <bpmn:exclusiveGateway id="gw_address" name="Shipping address equals billing address?" default="f-gw_address-join_payment" />
+    <bpmn:parallelGateway id="split_payment_shipment" name="Split payment and shipment" />
+    <bpmn:parallelGateway id="join_payment_shipment" name="Join payment and shipment" />
+    <bpmn:parallelGateway id="split_payment" name="Split payment parallel" />
+    <bpmn:parallelGateway id="join_payment" name="Join payment parallel" />
+    <bpmn:sequenceFlow id="f-start-login" sourceRef="start" targetRef="login" />
+    <bpmn:sequenceFlow id="f-login-wait_login_confirmation" sourceRef="login" targetRef="wait_login_confirmation" />
+    <bpmn:sequenceFlow id="f-wait_login_confirmation-gw_login" sourceRef="wait_login_confirmation" targetRef="gw_login" />
+    <bpmn:sequenceFlow id="f-gw_login-select_product" sourceRef="gw_login" targetRef="select_product">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">login_success = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_login-end_failure" sourceRef="gw_login" targetRef="end_failure" />
+    <bpmn:sequenceFlow id="f-select_product-add_to_cart" sourceRef="select_product" targetRef="add_to_cart" />
+    <bpmn:sequenceFlow id="f-add_to_cart-save_product" sourceRef="add_to_cart" targetRef="save_product" />
+    <bpmn:sequenceFlow id="f-save_product-check_all_selected" sourceRef="save_product" targetRef="check_all_selected" />
+    <bpmn:sequenceFlow id="f-check_all_selected-gw_more" sourceRef="check_all_selected" targetRef="gw_more" />
+    <bpmn:sequenceFlow id="f-gw_more-select_product" sourceRef="gw_more" targetRef="select_product">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all_selected = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_more-finish_order" sourceRef="gw_more" targetRef="finish_order" />
+    <bpmn:sequenceFlow id="f-finish_order-split_payment_shipment" sourceRef="finish_order" targetRef="split_payment_shipment" />
+    <bpmn:sequenceFlow id="f-split_payment_shipment-enter_payment_data" sourceRef="split_payment_shipment" targetRef="enter_payment_data" />
+    <bpmn:sequenceFlow id="f-split_payment_shipment-prepare_shipment" sourceRef="split_payment_shipment" targetRef="prepare_shipment" />
+    <bpmn:sequenceFlow id="f-enter_payment_data-split_payment" sourceRef="enter_payment_data" targetRef="split_payment" />
+    <bpmn:sequenceFlow id="f-split_payment-wait_bank_confirmation" sourceRef="split_payment" targetRef="wait_bank_confirmation" />
+    <bpmn:sequenceFlow id="f-split_payment-enter_shipping_address" sourceRef="split_payment" targetRef="enter_shipping_address" />
+    <bpmn:sequenceFlow id="f-enter_shipping_address-gw_address" sourceRef="enter_shipping_address" targetRef="gw_address" />
+    <bpmn:sequenceFlow id="f-gw_address-join_payment" sourceRef="gw_address" targetRef="join_payment" />
+    <bpmn:sequenceFlow id="f-gw_address-enter_billing_address" sourceRef="gw_address" targetRef="enter_billing_address">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">shipping_eq_billing = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-enter_billing_address-join_payment" sourceRef="enter_billing_address" targetRef="join_payment" />
+    <bpmn:sequenceFlow id="f-wait_bank_confirmation-join_payment" sourceRef="wait_bank_confirmation" targetRef="join_payment" />
+    <bpmn:sequenceFlow id="f-join_payment-join_payment_shipment" sourceRef="join_payment" targetRef="join_payment_shipment" />
+    <bpmn:sequenceFlow id="f-prepare_shipment-join_payment_shipment" sourceRef="prepare_shipment" targetRef="join_payment_shipment" />
+    <bpmn:sequenceFlow id="f-join_payment_shipment-finalize_order" sourceRef="join_payment_shipment" targetRef="finalize_order" />
+    <bpmn:sequenceFlow id="f-finalize_order-end_success" sourceRef="finalize_order" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

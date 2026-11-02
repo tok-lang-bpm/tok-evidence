@@ -1,0 +1,76 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Consider a process for purchasing items from an online shop.
+The user starts an order by logging in to their account.
+Then, the user simultaneously selects the items to purchase and sets a payment method.
+Afterward, the user either pays or completes an installment agreement.
+After selecting the items, the user chooses between multiple options for a free reward.
+Since the reward value depends on the purchase value, this step is done after selecting the items, but it is independent of the payment activities.
+Finally, the items are delivered.
+The user has the right to return items for exchange.
+Every time items are returned, a new delivery is made.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Online shop purchase process"
+
+pool online_shop "Online Shop"
+  lane user "User"
+    start start "Start order"
+    task login "log in to account"
+    and split1 "Select and set payment"
+    task select "select items to purchase"
+    task set_payment "set payment method"
+    and join1 "After selection and payment method"
+    and split2 "Payment and reward parallel"
+    xor pay_dec "Payment decision?"
+    task pay "pay"
+    task installment "complete installment agreement"
+    task reward "choose reward option"
+    and join2 "After payment and reward"
+    xor return_dec "Return items?"
+    task return "return items for exchange"
+    end done "order completed"
+  lane shop "Shop"
+    task deliver "deliver items"
+
+# Sequence flows
+flow start -> login
+flow login -> split1
+flow split1 -> select
+flow split1 -> set_payment
+flow select -> join1
+flow set_payment -> join1
+flow join1 -> split2
+flow split2 -> pay_dec
+flow split2 -> reward
+flow pay_dec -> pay
+flow pay_dec -> installment
+flow pay -> join2
+flow installment -> join2
+flow reward -> join2
+flow join2 -> deliver
+flow deliver -> return_dec
+flow return_dec -> done
+flow return_dec -> return
+flow return -> deliver
+```
+
+The tok checker reports these problems in it:
+
+- line 33: warning W021: branch of an XOR/OR split without label, condition or default status (f-pay_dec-pay)
+- line 34: warning W021: branch of an XOR/OR split without label, condition or default status (f-pay_dec-installment)
+- line 40: warning W021: branch of an XOR/OR split without label, condition or default status (f-return_dec-done)
+- line 41: warning W021: branch of an XOR/OR split without label, condition or default status (f-return_dec-return)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

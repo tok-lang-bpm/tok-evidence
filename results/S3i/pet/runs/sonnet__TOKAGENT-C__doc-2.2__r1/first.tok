@@ -1,0 +1,84 @@
+tok 1.0 "Power supplier switch-over"
+
+pool company "Power supplier switch-over"
+  lane customer "Customer"
+    start requested "Switch-over requested"
+    task transmit "Transmit customer data"
+    task checkcontract "Check the contract details"
+    eventgw decide "Customer decision"
+    catch confirm "Contract confirmed" message="Confirmation"
+    catch withdraw "Contract withdrawn" message="Withdrawal"
+    catch wait "7 days passed" timer=P7D
+    end withdrawn "Switch withdrawn"
+    end billed "Final billing received"
+    task receivebill "Receive the final billing"
+  lane service "Customer service"
+    task receive "Receive the customer data"
+    task enter "Enter customer data object into CRM"
+    task compare "Compare data with customer data base"
+    xor errors "Errors found?"
+    task correct "Correct the errors"
+    xor exists "Customer exists?"
+    task create "Create a new customer object"
+    task prepare "Prepare the contract documents"
+    task ciscontract "Create CIS contract"
+    xor merge1
+    task import "Import the meter data"
+    end imported "Meter data imported"
+    xor merge2
+  lane cis "CIS"
+    task checkdocs "Check the contract documents"
+    xor docsok "Documents generated correctly?"
+    task resolve "Analyze and resolve the issues"
+    and split1
+    task confirmation "Send the confirmation document"
+    task sendreq "Send the request to the grid operator"
+    and join1
+  lane grid "Grid operator"
+    task checkreq "Check the switch-over request"
+    task comment "Transmit the response comment"
+    xor concurrence "Supplier concurrence?"
+    task inform "Inform the suppliers and demand conflict resolution"
+    task terminate "Terminate the sales agreement with the old supplier"
+    end conflict "Conflict handed over"
+    task meter "Transmit the meter data"
+    and split2
+    task compute "Compute the final billing"
+    task sendbill "Send the final billing to the old supplier"
+    end gridend "Grid operator done"
+  lane old "Old supplier"
+    task createbill "Create the final billing"
+    task sendfinal "Send the final billing to the customer"
+    end oldend "Old supplier done"
+
+flow requested -> transmit -> receive -> enter -> compare -> errors
+flow errors -> correct "yes"
+flow errors -> exists "no"
+flow correct -> exists
+flow exists -> create "no"
+flow exists -> merge2 "yes"
+flow create -> merge2
+flow merge2 -> prepare
+flow prepare -> merge1 -> checkdocs -> docsok
+flow docsok -> resolve "no"
+flow resolve -> merge1
+flow docsok -> split1 "yes"
+flow split1 -> confirmation
+flow split1 -> sendreq
+flow confirmation -> join1
+flow sendreq -> join1
+flow join1 -> checkreq -> comment -> concurrence
+flow concurrence -> inform "yes"
+flow inform -> terminate -> conflict
+flow concurrence -> ciscontract "no"
+flow ciscontract -> checkcontract -> decide
+flow decide -> confirm
+flow decide -> withdraw
+flow decide -> wait
+flow withdraw -> withdrawn
+flow confirm -> meter
+flow wait -> meter
+flow meter -> split2
+flow split2 -> import -> imported
+flow split2 -> compute -> sendbill -> createbill -> sendfinal -> receivebill -> billed
+flow sendbill -> gridend

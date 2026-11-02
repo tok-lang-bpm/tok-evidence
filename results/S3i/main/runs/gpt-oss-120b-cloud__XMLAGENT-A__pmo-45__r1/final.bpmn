@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/online-shop">
+
+  <!-- Collaboration with one participant (the organisation) -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Org" name="Online Shop" processRef="process" />
+  </bpmn:collaboration>
+
+  <!-- Process definition -->
+  <bpmn:process id="process" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="lane_customer" name="Customer">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_selectProduct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_addToCart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_saveProduct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterPayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterShipping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="lane_system" name="E‑Shop System">
+        <bpmn:flowNodeRef>Task_checkLogin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_allSelected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_finishOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Pg_split1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_waitBank</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Pg_paymentSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Pg_paymentJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_prepareShipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Pg_joinAll</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_completeOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_loginFailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_addressEquality</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="Start" name="Customer logs in" />
+
+    <bpmn:task id="Task_checkLogin" name="Check login credentials" />
+    <bpmn:exclusiveGateway id="Gw_login" name="Login successful?" />
+
+    <bpmn:endEvent id="End_loginFailed" name="Shopping experience stopped" />
+
+    <bpmn:task id="Task_selectProduct" name="Select product" />
+    <bpmn:task id="Task_addToCart" name="Add product to shopping cart" />
+    <bpmn:task id="Task_saveProduct" name="Save product" />
+    <bpmn:exclusiveGateway id="Gw_allSelected" name="All products selected?" />
+
+    <bpmn:task id="Task_finishOrder" name="Finish order" />
+    <bpmn:parallelGateway id="Pg_split1" name="Parallel split (payment & shipment)" />
+
+    <!-- Payment branch -->
+    <bpmn:task id="Task_enterPayment" name="Enter payment data" />
+    <bpmn:parallelGateway id="Pg_paymentSplit" name="Parallel split (bank & address)" />
+    <bpmn:task id="Task_waitBank" name="Wait for bank confirmation" />
+    <bpmn:task id="Task_enterShipping" name="Enter shipping address" />
+    <bpmn:exclusiveGateway id="Gw_addressEquality" name="Shipping address = billing address?" />
+    <bpmn:task id="Task_enterBilling" name="Enter billing address" />
+    <bpmn:parallelGateway id="Pg_paymentJoin" name="Join payment activities" />
+
+    <!-- Shipment branch -->
+    <bpmn:task id="Task_prepareShipment" name="Prepare shipment" />
+
+    <!-- Join both branches -->
+    <bpmn:parallelGateway id="Pg_joinAll" name="Join payment and shipment" />
+    <bpmn:task id="Task_completeOrder" name="Complete order" />
+    <bpmn:endEvent id="End_success" name="Order finished" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="F_start_checkLogin" sourceRef="Start" targetRef="Task_checkLogin" />
+    <bpmn:sequenceFlow id="F_checkLogin_loginGw" sourceRef="Task_checkLogin" targetRef="Gw_login" />
+    <bpmn:sequenceFlow id="F_login_yes" sourceRef="Gw_login" targetRef="Task_selectProduct">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">loginSuccessful</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_login_no" sourceRef="Gw_login" targetRef="End_loginFailed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!loginSuccessful</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_select_addToCart" sourceRef="Task_selectProduct" targetRef="Task_addToCart" />
+    <bpmn:sequenceFlow id="F_addToCart_saveProduct" sourceRef="Task_addToCart" targetRef="Task_saveProduct" />
+    <bpmn:sequenceFlow id="F_saveProduct_allSelectedGw" sourceRef="Task_saveProduct" targetRef="Gw_allSelected" />
+    <bpmn:sequenceFlow id="F_allSelected_no" sourceRef="Gw_allSelected" targetRef="Task_selectProduct">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!allSelected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_allSelected_yes" sourceRef="Gw_allSelected" targetRef="Task_finishOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">allSelected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_finish_split" sourceRef="Task_finishOrder" targetRef="Pg_split1" />
+
+    <!-- Parallel split into payment and shipment -->
+    <bpmn:sequenceFlow id="F_split_payment" sourceRef="Pg_split1" targetRef="Task_enterPayment" />
+    <bpmn:sequenceFlow id="F_split_shipment" sourceRef="Pg_split1" targetRef="Task_prepareShipment" />
+
+    <!-- Payment branch flows -->
+    <bpmn:sequenceFlow id="F_enterPayment_paymentSplit" sourceRef="Task_enterPayment" targetRef="Pg_paymentSplit" />
+    <bpmn:sequenceFlow id="F_paymentSplit_bank" sourceRef="Pg_paymentSplit" targetRef="Task_waitBank" />
+    <bpmn:sequenceFlow id="F_paymentSplit_address" sourceRef="Pg_paymentSplit" targetRef="Task_enterShipping" />
+    <bpmn:sequenceFlow id="F_shipping_addressEquality" sourceRef="Task_enterShipping" targetRef="Gw_addressEquality" />
+    <bpmn:sequenceFlow id="F_addressEquality_yes" sourceRef="Gw_addressEquality" targetRef="Pg_paymentJoin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">shippingEqualsBilling</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_addressEquality_no" sourceRef="Gw_addressEquality" targetRef="Task_enterBilling">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!shippingEqualsBilling</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_enterBilling_toJoin" sourceRef="Task_enterBilling" targetRef="Pg_paymentJoin" />
+    <bpmn:sequenceFlow id="F_waitBank_toJoin" sourceRef="Task_waitBank" targetRef="Pg_paymentJoin" />
+
+    <!-- Shipment branch flow -->
+    <bpmn:sequenceFlow id="F_prepareShipment_toJoinAll" sourceRef="Task_prepareShipment" targetRef="Pg_joinAll" />
+
+    <!-- Join payment and shipment -->
+    <bpmn:sequenceFlow id="F_paymentJoin_toJoinAll" sourceRef="Pg_paymentJoin" targetRef="Pg_joinAll" />
+
+    <!-- Final steps -->
+    <bpmn:sequenceFlow id="F_joinAll_complete" sourceRef="Pg_joinAll" targetRef="Task_completeOrder" />
+    <bpmn:sequenceFlow id="F_complete_end" sourceRef="Task_completeOrder" targetRef="End_success" />
+
+  </bpmn:process>
+</bpmn:definitions>

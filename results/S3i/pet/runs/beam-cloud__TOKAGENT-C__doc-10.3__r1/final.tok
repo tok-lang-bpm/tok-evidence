@@ -1,0 +1,40 @@
+tok 1.0 "Deregistration of MPOO"
+
+pool organisation "Organisation"
+  lane mpoo "MPOO"
+    start start "Deregistration started"
+    task deregister "Deregister at the GO"
+    task confirm_continuation "Confirm the continuation"
+  lane go "GO"
+    task verify "Verify the deregistration"
+    xor verification "Reject or preliminarily confirm?"
+    task reject "Reject the deregistration of the MPOO"
+    task prelim "Preliminarily confirm the deregistration of the MPOO"
+    task prepare "Prepare the readmission of the measuring point"
+    xor oblige "Oblige to continue operations?"
+    task oblige_task "Oblige the MPOO to continue the operations"
+    xor oblige_join "Continuation handled?"
+    or equipment "Perform equipment acquisition and/or changes?"
+    task acquire "Perform the equipment acquisition"
+    task changes "Perform the equipment changes"
+    or equipment_done "Equipment done?"
+    task assign "Assign the GO as MPO"
+    task inform_mpoo "Inform the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "Inform the MSPO about the assignment of the GO"
+    task inform_sp "Inform the SP about the assignment of the GO"
+    end done "Process completed"
+
+flow start -> deregister -> verify -> verification
+flow verification -> reject "reject"
+flow verification -> prelim "preliminarily confirm"
+flow reject -> done
+flow prelim -> prepare -> oblige
+flow oblige -> oblige_task "yes"
+flow oblige -> oblige_join "no"
+flow oblige_task -> confirm_continuation -> oblige_join
+flow oblige_join -> equipment
+flow equipment -> acquire "acquisition" default
+flow equipment -> changes "changes" when="true"
+flow acquire -> equipment_done
+flow changes -> equipment_done
+flow equipment_done -> assign -> inform_mpoo -> inform_mspo -> inform_sp -> done

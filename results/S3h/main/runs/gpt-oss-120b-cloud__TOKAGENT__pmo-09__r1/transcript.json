@@ -1,0 +1,151 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4195,
+  "output_tokens": 1344,
+  "seconds": 4.568006000015885,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create a tok model: one pool for the organisation, and a lane for each actor: R&D team (maybe as lane). Others? The text doesn't name other actors; could treat the whole as R&D team lane. So one pool with lane \"R&D\". We'll have start, tasks, decisions, loops.\n\nSteps:\n\n1. Identify idea -> task: \"identify idea for new product or improvement\". (task)\n2. R&D team conducts initial research and feasibility studies -> task: \"conduct initial research and feasibility studies\"\n3. drafting design concepts -> task: \"draft design concepts\"\n4. After selecting a promising design -> decision: \"select promising design?\" Gate: xor. If yes proceed, if no maybe loop? The description says after selecting a promising design, prototype built. So decision maybe not needed; but could include a gateway where choosing design leads to building prototype. No alternative path described. Could still include gateway but with default? Could skip and directly flow.\n\nBut process: select promising design; then prototype built. Could treat \"select promising design\" as a task not a decision. However we need exclusive gateway for decisions. There's decision after testing: \"If a refinement is needed, then testing phase reinitiated.\" So need decision after collecting feedback.\n\nProcess steps:\n\n- Build prototype (task)\n- Prototype undergoes tests (task)\n- Collect feedback (task)\n- Decision: \"refinement needed?\" xor gateway.\n\nIf yes: refinement (task) then go back to testing phase (i.e., loop to test task). If no: proceed to final decision: \"prototype approved or discarded\". Could be another decision leading to end events \"approved\" and \"discarded\". Since end each path with end event. So need exclusive gateway, two outcomes.\n\nThus overall:\n\nStart -> task identify-idea -> task conduct-research -> task draft-design -> task build-prototype -> task test-prototype -> task collect-feedback -> xor gateway \"refinement needed?\" with two flows:\n- \"yes\" -> task refine-prototype -> flow back to test-prototype (maybe need loop). We can simply flow from refine-prototype to test-prototype.\n- \"no\" -> xor gateway \"approval decision\" with two outgoing flows: \"approved\" -> end \"Approved\" ; \"discarded\" -> end \"Discarded\".\n\nBut need to close loop: after refine, go to test again, then collect feedback again, then same decision again. So basically loop.\n\nImplementation in tok:\n\nHeader: tok 1.0 (so can use full features). We'll need pool and lane.\n\nSyntax:\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\"\n}\n\nDefine nodes with IDs etc.\n\nElements:\n\nstart start\ntask identify-idea \"Identify idea for new product or improvement\"\ntask conduct-research \"Conduct initial research and feasibility studies\"\ntask draft-design \"Draft design concepts\"\ntask build-prototype \"Build prototype using available materials and resources\"\ntask test-prototype \"Test prototype for functionality, safety, and market potential\"\ntask collect-feedback \"Collect feedback from testing phase\"\nxor decision-refine \"Is refinement needed?\"   // gateway with label includes question\ntask refine-prototype \"Refine prototype as needed\"\nxor decision-approval \"Is prototype approved?\" // final decision\n\nend end-approved \"Approved for further development\"\nend end-discarded \"Discarded\"\n\nNow flows:\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\n\nFrom decision-refine:\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\n\nAfter refine-prototype, loop back to test: flow refine-prototype -> test-prototype\n\nFrom decision-approval:\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n\nAll flows from exclusive gateways must have when or default. We gave when conditions.\n\nWe also need to ensure each exclusive gateway's outgoing flows have conditions, and no default needed.\n\nNow we need to place elements inside lane rd. In tok, we write elements inside lane block:\n\nlane rd {\n   start start\n   task identify-idea ...\n   ...\n   xor decision-refine ...\n   xor decision-approval ...\n   end end-approved ...\n   end end-discarded ...\n}\n\nBut start must be inside lane.\n\nNow write the model.\n\nWe'll need to check with tool. Let's construct text and run check.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\" {\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n  }\n}\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5590,
+  "output_tokens": 385,
+  "seconds": 2.8856631999951787,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to pass only text. The tool expects either text or path; we gave text but also path empty. Should omit path key.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\" {\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n  }\n}\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error T001: invalid token: unexpected character '{'\nline 17: error T001: invalid token: unexpected character '}'\nline 18: error T001: invalid token: unexpected character '}'\nline 20: error T003: indentation does not match any open block\n5 error(s), 5 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6128,
+  "output_tokens": 101,
+  "seconds": 1.5374745999870356,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The syntax for pool and lane maybe different. Let's recall tok syntax. From cheatsheet: pool ID \"Label\" { lane ID \"Label\" { ... } } Or pool ID \"Label\" { lane ID \"Label\" { statements } }. The errors indicate unexpected '{' at line 3 after pool. Perhaps need to declare lanes inside pool without braces? Let's get reference.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 8936,
+  "output_tokens": 548,
+  "seconds": 7.155979699979071,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need correct block syntax: indentation indicates blocks. The pool line maybe: `pool org \"Organisation\" {` then indent inner lines. The lane line inside pool: `lane rd \"R&D Team\"` (no braces?). Actually example: `pool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"` So lane is a statement; not a block. Nodes go inside lanes (by indentation). So we need:\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\"\n    start start\n    ...\n}\n\nThus lane is a statement; after it we indent further for its block. So syntax:\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\"\n    start start\n    task ...\n    ...\n}\n\nNo extra braces for lane. So let's adjust.\n\nAlso need to ensure indentation is consistent (spaces). Let's craft new model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane rd \"R&D Team\"\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n}\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P003: 'lane' cannot have an indented block\nline 17: error T001: invalid token: unexpected character '}'\nline 19: error T003: indentation does not match any open block\n5 error(s), 5 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9642,
+  "output_tokens": 492,
+  "seconds": 5.446407299983548,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Seems syntax for pool with block maybe not with braces but indentation also. Actually spec: `pool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process`. It likely uses indentation, not braces. So maybe:\n\npool org \"Organisation\"\n  lane rd \"R&D Team\"\n    start start\n    ...\n\nAnd close block by dedenting. No braces. Let's try that.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane rd \"R&D Team\"\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 10160,
+  "output_tokens": 352,
+  "seconds": 2.360440299991751,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Great, no errors. Could maybe format (canonical). Let's format.",
+  "tool_calls": [
+   {
+    "name": "fmt",
+    "arguments": {
+     "lang": "en",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane rd \"R&D Team\"\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n\nflow start -> identify-idea\nflow identify-idea -> conduct-research\nflow conduct-research -> draft-design\nflow draft-design -> build-prototype\nflow build-prototype -> test-prototype\nflow test-prototype -> collect-feedback\nflow collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+    },
+    "is_error": false,
+    "result": "tok 1.0\n\npool org \"Organisation\"\n  lane rd \"R&D Team\"\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n\nflow start -> identify-idea -> conduct-research -> draft-design -> build-prototype -> test-prototype -> collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 10836,
+  "output_tokens": 270,
+  "seconds": 4.358342899999116,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0\n\npool org \"Organisation\"\n  lane rd \"R&D Team\"\n    start start\n    task identify-idea \"Identify idea for new product or improvement\"\n    task conduct-research \"Conduct initial research and feasibility studies\"\n    task draft-design \"Draft design concepts\"\n    task build-prototype \"Build prototype using available materials and resources\"\n    task test-prototype \"Test prototype for functionality, safety, and market potential\"\n    task collect-feedback \"Collect feedback from testing phase\"\n    xor decision-refine \"Is refinement needed?\"\n    task refine-prototype \"Refine prototype as needed\"\n    xor decision-approval \"Is prototype approved?\"\n    end end-approved \"Approved for further development\"\n    end end-discarded \"Discarded\"\n\nflow start -> identify-idea -> conduct-research -> draft-design -> build-prototype -> test-prototype -> collect-feedback -> decision-refine\nflow decision-refine -> refine-prototype \"yes\" when=\"refinement = true\"\nflow decision-refine -> decision-approval \"no\" when=\"refinement = false\"\nflow refine-prototype -> test-prototype\nflow decision-approval -> end-approved \"approved\" when=\"approved = true\"\nflow decision-approval -> end-discarded \"discarded\" when=\"approved = false\"\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

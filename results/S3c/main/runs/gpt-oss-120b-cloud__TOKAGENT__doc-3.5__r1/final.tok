@@ -1,0 +1,45 @@
+tok 1.0
+
+pool org "Organization"
+  lane mail_processing_unit "Mail Processing Unit"
+    start start_event "Start"
+    task collect_mail "Collect mail from the party"
+  lane mail_clerk "Mail Clerk"
+    task sort_unopened_mail "Sort unopened mail into business areas"
+    task distribute_mail "Distribute mail"
+  lane registry "Registry"
+    task receive_mail "Receive mail"
+    task open_sort_register "Open and sort mail into groups and register in incoming Mail Register"
+    task quality_check "Perform quality check"
+  lane assistant_registry_manager "Assistant Registry Manager"
+    xor gw_compliant "Mail compliant?"
+    task compile_rejection_list "Compile list of requisition explaining reason for rejection and send back to party"
+    end end_reject "End"
+    task capture_matter_details "Capture matter details and provide to Cashier"
+    and gw_parallel_split "Parallel split"
+    task envelope_and_post "Put receipt and copied documents into an envelope and post to the party"
+    and gw_parallel_join "Parallel join"
+    end end_success "End"
+  lane cashier "Cashier"
+    task take_fees "Take applicable fees attached to the mail"
+    task capture_party_details "Capture Party Details"
+    task print_court_file "Print Physical Court File"
+
+flow start_event -> collect_mail
+flow collect_mail -> sort_unopened_mail
+flow sort_unopened_mail -> distribute_mail
+flow distribute_mail -> receive_mail
+flow receive_mail -> open_sort_register
+flow open_sort_register -> quality_check
+flow quality_check -> gw_compliant
+flow gw_compliant -> compile_rejection_list "No" when="compliant = false"
+flow gw_compliant -> capture_matter_details "Yes" default
+flow compile_rejection_list -> end_reject
+flow capture_matter_details -> take_fees
+flow take_fees -> gw_parallel_split
+flow gw_parallel_split -> envelope_and_post
+flow gw_parallel_split -> capture_party_details
+flow capture_party_details -> print_court_file
+flow print_court_file -> gw_parallel_join
+flow envelope_and_post -> gw_parallel_join
+flow gw_parallel_join -> end_success

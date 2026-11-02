@@ -1,0 +1,50 @@
+```tok
+tok 1.0 "Expense report reimbursement"
+
+pool company "Company"
+  lane system "System"
+    start received "Expense report received"
+    xor has_account "Employee has an account?"
+    task create_account "Create a new account"
+    xor account_ready "Account ready"
+    task review "Review the report for automatic approval"
+    xor under_200 "Amount under $200?"
+    task auto_approve "Approve the report automatically"
+    xor decided "Report approved"
+    task pay "Pay the reimbursement to the direct deposit bank account"
+    task reject_notice "Send rejection notice by email"
+    end paid "Reimbursement paid"
+    end rejected "Expense report rejected"
+    task remind_mail "Send approval in progress email"
+    end reminded "Approval in progress email sent"
+    task cancel_mail "Send cancellation notice by email"
+  lane supervisor "Supervisor"
+    user approve "Approve the report"
+    boundary remind "7 days passed" on=approve timer=P7D noninterrupting
+    boundary cancel "30 days passed" on=approve timer=P30D
+    xor supervisor_ok "Approved by supervisor?"
+  lane employee "Employee"
+    task resubmit "Re-submit the expense report"
+    end cancelled "Expense report must be re-submitted"
+
+flow received -> has_account
+flow has_account -> account_ready "yes" when="accountExists"
+flow has_account -> create_account "no" default
+flow create_account -> account_ready
+flow account_ready -> review
+flow review -> under_200
+flow under_200 -> auto_approve "yes" when="amount < 200"
+flow under_200 -> approve "no" when="amount >= 200"
+flow auto_approve -> decided
+flow approve -> supervisor_ok
+flow supervisor_ok -> decided "yes" when="approved"
+flow supervisor_ok -> reject_notice "no" default
+flow reject_notice -> rejected
+flow decided -> pay
+flow pay -> paid
+flow remind -> remind_mail
+flow remind_mail -> reminded
+flow cancel -> cancel_mail
+flow cancel_mail -> resubmit
+flow resubmit -> cancelled
+```

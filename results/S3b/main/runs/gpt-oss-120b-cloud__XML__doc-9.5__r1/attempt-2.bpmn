@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="expense-process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="expense-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_employee" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejectionEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelEmail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>supervisorApprove</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_system" name="System">
+        <bpmn:flowNodeRef>createAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>autoApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimbursementSub</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimburseTask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progressEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progressTimer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelTimer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejectionEmail</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Expense Report received" />
+
+    <!-- Account existence decision -->
+    <bpmn:exclusiveGateway id="accountCheck" name="Employee has account?" />
+    <bpmn:task id="createAccount" name="Create new account" />
+
+    <!-- Review -->
+    <bpmn:task id="reviewReport" name="Review expense report" />
+
+    <!-- Amount decision -->
+    <bpmn:exclusiveGateway id="amountDecision" name="Amount &lt; $200?" />
+    <bpmn:task id="autoApprove" name="Automatic approval" />
+    <bpmn:task id="supervisorApprove" name="Supervisor approves expense" />
+
+    <!-- Supervisor outcome decision -->
+    <bpmn:exclusiveGateway id="supervisorOutcome" name="Supervisor approves?" />
+    <bpmn:task id="rejectionEmail" name="Send rejection email to employee" />
+    <bpmn:endEvent id="endRejected" name="Rejection sent" />
+
+    <!-- Sub‑process handling reimbursement and timers -->
+    <bpmn:subProcess id="reimbursementSub" name="Handle reimbursement">
+      <bpmn:startEvent id="approvedStart" name="Approved" />
+      <bpmn:parallelGateway id="fork" name="Fork" />
+      <bpmn:task id="reimburseTask" name="Transfer reimbursement to bank account" />
+      <bpmn:intermediateCatchEvent id="progressTimer">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration>P7D</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:task id="progressEmail" name="Send approval‑in‑progress email" />
+      <bpmn:parallelGateway id="join" name="Join" />
+      <bpmn:endEvent id="endCompleted" name="Reimbursement completed" />
+      <bpmn:intermediateCatchEvent id="cancelTimer">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration>P30D</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:task id="cancelEmail" name="Send cancellation email to employee" />
+      <bpmn:endEvent id="endCancelled" name="Process cancelled" />
+      <!-- Flows inside sub‑process -->
+      <bpmn:sequenceFlow id="sf1" sourceRef="approvedStart" targetRef="fork" />
+      <bpmn:sequenceFlow id="sf2" sourceRef="fork" targetRef="reimburseTask" />
+      <bpmn:sequenceFlow id="sf3" sourceRef="fork" targetRef="progressTimer" />
+      <bpmn:sequenceFlow id="sf4" sourceRef="fork" targetRef="cancelTimer" />
+      <bpmn:sequenceFlow id="sf5" sourceRef="reimburseTask" targetRef="join" />
+      <bpmn:sequenceFlow id="sf6" sourceRef="progressTimer" targetRef="progressEmail" />
+      <bpmn:sequenceFlow id="sf7" sourceRef="progressEmail" targetRef="join" />
+      <bpmn:sequenceFlow id="sf8" sourceRef="join" targetRef="endCompleted" />
+      <bpmn:sequenceFlow id="sf9" sourceRef="cancelTimer" targetRef="cancelEmail" />
+      <bpmn:sequenceFlow id="sf10" sourceRef="cancelEmail" targetRef="endCancelled" />
+    </bpmn:subProcess>
+
+    <!-- End for successful path -->
+    <bpmn:endEvent id="endSuccess" name="Process finished" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_to_accountCheck" sourceRef="start" targetRef="accountCheck" />
+    <bpmn:sequenceFlow id="f_account_yes" name="yes" sourceRef="accountCheck" targetRef="reviewReport" />
+    <bpmn:sequenceFlow id="f_account_no" name="no" sourceRef="accountCheck" targetRef="createAccount" />
+    <bpmn:sequenceFlow id="f_created_to_review" sourceRef="createAccount" targetRef="reviewReport" />
+    <bpmn:sequenceFlow id="f_review_to_amount" sourceRef="reviewReport" targetRef="amountDecision" />
+    <bpmn:sequenceFlow id="f_amount_yes" name="under $200" sourceRef="amountDecision" targetRef="autoApprove" />
+    <bpmn:sequenceFlow id="f_amount_no" name="≥ $200" sourceRef="amountDecision" targetRef="supervisorApprove" />
+    <bpmn:sequenceFlow id="f_auto_to_sub" sourceRef="autoApprove" targetRef="reimbursementSub" />
+    <bpmn:sequenceFlow id="f_supervisor_to_outcome" sourceRef="supervisorApprove" targetRef="supervisorOutcome" />
+    <bpmn:sequenceFlow id="f_supervisor_yes" name="approved" sourceRef="supervisorOutcome" targetRef="reimbursementSub" />
+    <bpmn:sequenceFlow id="f_supervisor_no" name="rejected" sourceRef="supervisorOutcome" targetRef="rejectionEmail" />
+    <bpmn:sequenceFlow id="f_rejection_to_end" sourceRef="rejectionEmail" targetRef="endRejected" />
+    <bpmn:sequenceFlow id="f_sub_to_success" sourceRef="reimbursementSub" targetRef="endSuccess" />
+  </bpmn:process>
+</bpmn:definitions>

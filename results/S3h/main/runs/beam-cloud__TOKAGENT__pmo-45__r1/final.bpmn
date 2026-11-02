@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Ordering in an Online Shop" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="Online Shop" processRef="shop-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" name="Ordering in an Online Shop" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>log-in</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select-product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>add-cart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>save-product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-all</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-shipping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-billing</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>check-creds</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-all</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish-order-1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare-payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare-shipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish-order-2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-stop</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bank" name="Bank">
+        <bpmn:flowNodeRef>confirm-payment</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:task id="log-in" name="Log into E-Shop" />
+    <bpmn:task id="select-product" name="Select product" />
+    <bpmn:task id="add-cart" name="Add product to shopping cart" />
+    <bpmn:task id="save-product" name="Save product" />
+    <bpmn:task id="check-all" name="Check if all products selected" />
+    <bpmn:task id="enter-payment" name="Enter payment data" />
+    <bpmn:task id="enter-shipping" name="Enter shipping address" />
+    <bpmn:task id="enter-billing" name="Enter billing address" />
+    <bpmn:task id="check-creds" name="Check credentials" />
+    <bpmn:exclusiveGateway id="gw-login" name="Login successful?" default="f-gw-login-e-stop" />
+    <bpmn:exclusiveGateway id="gw-all" name="All products selected?" default="f-gw-all-select-product" />
+    <bpmn:parallelGateway id="gw-split" />
+    <bpmn:task id="finish-order-1" name="Finish order" />
+    <bpmn:task id="prepare-payment" name="Prepare payment" />
+    <bpmn:task id="prepare-shipment" name="Prepare shipment" />
+    <bpmn:exclusiveGateway id="gw-billing" name="Billing address differs?" default="f-gw-billing-gw-join" />
+    <bpmn:parallelGateway id="gw-join" />
+    <bpmn:task id="finish-order-2" name="Finish order" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:endEvent id="e-stop" name="Shopping stops" />
+    <bpmn:task id="confirm-payment" name="Confirm payment" />
+    <bpmn:sequenceFlow id="f-s-log-in" sourceRef="s" targetRef="log-in" />
+    <bpmn:sequenceFlow id="f-log-in-check-creds" sourceRef="log-in" targetRef="check-creds" />
+    <bpmn:sequenceFlow id="f-check-creds-gw-login" sourceRef="check-creds" targetRef="gw-login" />
+    <bpmn:sequenceFlow id="f-gw-login-select-product" name="successful" sourceRef="gw-login" targetRef="select-product">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">loginOk = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-login-e-stop" name="failed" sourceRef="gw-login" targetRef="e-stop" />
+    <bpmn:sequenceFlow id="f-select-product-add-cart" sourceRef="select-product" targetRef="add-cart" />
+    <bpmn:sequenceFlow id="f-add-cart-save-product" sourceRef="add-cart" targetRef="save-product" />
+    <bpmn:sequenceFlow id="f-save-product-check-all" sourceRef="save-product" targetRef="check-all" />
+    <bpmn:sequenceFlow id="f-check-all-gw-all" sourceRef="check-all" targetRef="gw-all" />
+    <bpmn:sequenceFlow id="f-gw-all-select-product" name="no" sourceRef="gw-all" targetRef="select-product" />
+    <bpmn:sequenceFlow id="f-gw-all-gw-split" name="yes" sourceRef="gw-all" targetRef="gw-split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">allSelected = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-split-finish-order-1" sourceRef="gw-split" targetRef="finish-order-1" />
+    <bpmn:sequenceFlow id="f-gw-split-prepare-payment" sourceRef="gw-split" targetRef="prepare-payment" />
+    <bpmn:sequenceFlow id="f-gw-split-prepare-shipment" sourceRef="gw-split" targetRef="prepare-shipment" />
+    <bpmn:sequenceFlow id="f-finish-order-1-gw-join" sourceRef="finish-order-1" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f-prepare-payment-enter-payment" sourceRef="prepare-payment" targetRef="enter-payment" />
+    <bpmn:sequenceFlow id="f-enter-payment-confirm-payment" sourceRef="enter-payment" targetRef="confirm-payment" />
+    <bpmn:sequenceFlow id="f-confirm-payment-gw-join" sourceRef="confirm-payment" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f-prepare-shipment-enter-shipping" sourceRef="prepare-shipment" targetRef="enter-shipping" />
+    <bpmn:sequenceFlow id="f-enter-shipping-gw-billing" sourceRef="enter-shipping" targetRef="gw-billing" />
+    <bpmn:sequenceFlow id="f-gw-billing-enter-billing" name="yes" sourceRef="gw-billing" targetRef="enter-billing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">billingDiffers = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-billing-gw-join" name="no" sourceRef="gw-billing" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f-enter-billing-gw-join" sourceRef="enter-billing" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f-gw-join-finish-order-2" sourceRef="gw-join" targetRef="finish-order-2" />
+    <bpmn:sequenceFlow id="f-finish-order-2-e" sourceRef="finish-order-2" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

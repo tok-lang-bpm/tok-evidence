@@ -1,0 +1,47 @@
+tok 0.5 id=Definitions_1 namespace=http://www.omg.org/spec/BPMN/20100524/MODEL collaboration=Collaboration_1
+
+pool Participant_1 "credit scoring frontend (bank)" process=Process_1 process-name=""
+
+pool Participant_2 "credit scoring (bank)" process=Process_2 process-name=""
+  task Task_1 "request credit score"
+  task Task_2 "send credit score"
+  task Task_3 "report delay"
+  xor ExclusiveGateway_1 "score received?"
+  xor ExclusiveGateway_2
+  start StartEvent_1 "scoring request received" message
+  end EndEvent_1 "scoring request handled"
+  catch IntermediateCatchEvent_1 "credit score received" message
+
+pool Participant_3 "scoring service" process=Process_3 process-name=""
+  task Task_4 "compute credit score (level 1)"
+  task Task_5 "send result"
+  task Task_6 "compute credit score (level 2)"
+  task Task_7 "send credit score"
+  xor ExclusiveGateway_3 "score available?"
+  xor ExclusiveGateway_4
+  start StartEvent_2 "scoring request received" message
+  end EndEvent_2 "scoring request handled"
+
+flow StartEvent_1 -> Task_1 id=SequenceFlow_1
+flow Task_1 -> ExclusiveGateway_1 id=SequenceFlow_2
+flow ExclusiveGateway_1 -> Task_3 "no" id=SequenceFlow_3
+flow Task_3 -> IntermediateCatchEvent_1 id=SequenceFlow_4
+flow IntermediateCatchEvent_1 -> ExclusiveGateway_2 id=SequenceFlow_5
+flow ExclusiveGateway_1 -> ExclusiveGateway_2 "yes" id=SequenceFlow_6
+flow ExclusiveGateway_2 -> Task_2 id=SequenceFlow_7
+flow Task_2 -> EndEvent_1 id=SequenceFlow_8
+flow StartEvent_2 -> Task_4 id=SequenceFlow_9
+flow Task_4 -> Task_5 id=SequenceFlow_10
+flow Task_5 -> ExclusiveGateway_3 id=SequenceFlow_11
+flow ExclusiveGateway_3 -> Task_6 "no" id=SequenceFlow_12
+flow Task_6 -> Task_7 id=SequenceFlow_13
+flow Task_7 -> ExclusiveGateway_4 id=SequenceFlow_14
+flow ExclusiveGateway_4 -> EndEvent_2 id=SequenceFlow_15
+flow ExclusiveGateway_3 -> ExclusiveGateway_4 "yes" id=SequenceFlow_16
+
+message Participant_1 -> StartEvent_1 id=MessageFlow_1
+message Task_3 -> Participant_1 id=MessageFlow_2
+message Task_2 -> Participant_1 id=MessageFlow_3
+message Task_1 -> StartEvent_2 id=MessageFlow_4
+message Task_5 -> Task_1 id=MessageFlow_5
+message Task_7 -> IntermediateCatchEvent_1 id=MessageFlow_6

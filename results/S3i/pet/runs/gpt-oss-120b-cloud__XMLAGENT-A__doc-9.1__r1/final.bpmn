@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration and participants -->
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Organisation" name="Organisation" processRef="Process_1" />
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="Process_1" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Database" name="Database">
+        <bpmn:flowNodeRef>Task_1_BackupDatabase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_2_CheckDefaulterTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_6_RegisterDefaultingAccounts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_14_ReconcileDefaulters</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CRM" name="CRM System">
+        <bpmn:flowNodeRef>Task_4_CheckCRMForReturns_NoDefaulter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_5_CheckCRMForReturns_DefaulterPath</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_12_CheckCRMAfterReport</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_AccountMgmt" name="Account Management">
+        <bpmn:flowNodeRef>Task_8_ProduceDefaultingTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_9_SendTableToAccountMgmt</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>Task_11_AlertSupervisor_2_30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_16_MessageSupervisor_4_00</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_1" name="Start weekday morning" />
+
+    <bpmn:task id="Task_1_BackupDatabase" name="1. Backup database" />
+    <bpmn:task id="Task_2_CheckDefaulterTable" name="2. Check Account Defaulter table for new records" />
+
+    <bpmn:exclusiveGateway id="Gateway_3_NewDefaulterRecords" name="3. New records in Account Defaulter?" />
+
+    <!-- Path when no new defaulter records -->
+    <bpmn:task id="Task_4_CheckCRMForReturns_NoDefaulter" name="4. Check CRM system for new returns" />
+    <bpmn:exclusiveGateway id="Gateway_5_NewReturns_NoDefaulter" name="5. New returns exist?" />
+
+    <bpmn:task id="Task_6_RegisterDefaultingAccounts" name="6. Register defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="Gateway_7_ClientCodesAdvised" name="7. Client codes previously advised?" />
+
+    <bpmn:task id="Task_8_ProduceDefaultingTable" name="8. Produce another table of defaulting accounts" />
+    <bpmn:task id="Task_9_SendTableToAccountMgmt" name="9. Send table to account management" />
+
+    <bpmn:exclusiveGateway id="Gateway_10_Deadline_2_30" name="10. Completed by 2:30 pm?" />
+    <bpmn:task id="Task_11_AlertSupervisor_2_30" name="11. Alert supervisor (after 2:30 pm)" />
+
+    <bpmn:endEvent id="EndEvent_1_Success" name="End – process completed" />
+    <bpmn:endEvent id="EndEvent_2_Alert" name="End – alert sent" />
+
+    <!-- After report completed, second part -->
+    <bpmn:task id="Task_12_CheckCRMAfterReport" name="12. Check CRM system for new returns (after report)" />
+    <bpmn:exclusiveGateway id="Gateway_13_NewReturns_AfterReport" name="13. New returns filed?" />
+
+    <bpmn:task id="Task_14_ReconcileDefaulters" name="14. Reconcile with existing account defaulters table" />
+    <bpmn:exclusiveGateway id="Gateway_15_Deadline_4_00" name="15. Completed by 4:00 pm?" />
+    <bpmn:task id="Task_16_MessageSupervisor_4_00" name="16. Send message to supervisor (after 4:00 pm)" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1_BackupDatabase" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1_BackupDatabase" targetRef="Task_2_CheckDefaulterTable" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_2_CheckDefaulterTable" targetRef="Gateway_3_NewDefaulterRecords" />
+
+    <!-- Yes – new defaulter records -->
+    <bpmn:sequenceFlow id="Flow_4_Yes" name="yes" sourceRef="Gateway_3_NewDefaulterRecords" targetRef="Task_6_RegisterDefaultingAccounts" />
+    <!-- No – no new defaulter records -->
+    <bpmn:sequenceFlow id="Flow_4_No" name="no" sourceRef="Gateway_3_NewDefaulterRecords" targetRef="Task_4_CheckCRMForReturns_NoDefaulter" />
+
+    <!-- CRM check after no defaulter records -->
+    <bpmn:sequenceFlow id="Flow_5_Yes" name="yes" sourceRef="Gateway_5_NewReturns_NoDefaulter" targetRef="Task_6_RegisterDefaultingAccounts" />
+    <bpmn:sequenceFlow id="Flow_5_No" name="no" sourceRef="Gateway_5_NewReturns_NoDefaulter" targetRef="EndEvent_2_Alert" />
+
+    <!-- After registration, decide on client code advice -->
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_6_RegisterDefaultingAccounts" targetRef="Gateway_7_ClientCodesAdvised" />
+    <bpmn:sequenceFlow id="Flow_7_Yes" name="yes" sourceRef="Gateway_7_ClientCodesAdvised" targetRef="Gateway_10_Deadline_2_30" />
+    <bpmn:sequenceFlow id="Flow_7_No" name="no" sourceRef="Gateway_7_ClientCodesAdvised" targetRef="Task_8_ProduceDefaultingTable" />
+
+    <!-- Produce and send table -->
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_8_ProduceDefaultingTable" targetRef="Task_9_SendTableToAccountMgmt" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_9_SendTableToAccountMgmt" targetRef="Gateway_10_Deadline_2_30" />
+
+    <!-- Deadline 2:30 check -->
+    <bpmn:sequenceFlow id="Flow_10_Yes" name="yes" sourceRef="Gateway_10_Deadline_2_30" targetRef="Task_12_CheckCRMAfterReport" />
+    <bpmn:sequenceFlow id="Flow_10_No" name="no" sourceRef="Gateway_10_Deadline_2_30" targetRef="Task_11_AlertSupervisor_2_30" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_11_AlertSupervisor_2_30" targetRef="EndEvent_2_Alert" />
+
+    <!-- After report completed, second CRM check -->
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_12_CheckCRMAfterReport" targetRef="Gateway_13_NewReturns_AfterReport" />
+    <bpmn:sequenceFlow id="Flow_13_Yes" name="yes" sourceRef="Gateway_13_NewReturns_AfterReport" targetRef="Task_14_ReconcileDefaulters" />
+    <bpmn:sequenceFlow id="Flow_13_No" name="no" sourceRef="Gateway_13_NewReturns_AfterReport" targetRef="EndEvent_1_Success" />
+
+    <!-- Reconciliation and deadline 4:00 -->
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_14_ReconcileDefaulters" targetRef="Gateway_15_Deadline_4_00" />
+    <bpmn:sequenceFlow id="Flow_15_Yes" name="yes" sourceRef="Gateway_15_Deadline_4_00" targetRef="EndEvent_1_Success" />
+    <bpmn:sequenceFlow id="Flow_15_No" name="no" sourceRef="Gateway_15_Deadline_4_00" targetRef="Task_16_MessageSupervisor_4_00" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Task_16_MessageSupervisor_4_00" targetRef="EndEvent_2_Alert" />
+
+    <!-- End flows for successful path after first part (if no second part needed) -->
+    <bpmn:sequenceFlow id="Flow_EndSuccess" sourceRef="Gateway_10_Deadline_2_30" name="yes" targetRef="EndEvent_1_Success" />
+
+  </bpmn:process>
+</bpmn:definitions>

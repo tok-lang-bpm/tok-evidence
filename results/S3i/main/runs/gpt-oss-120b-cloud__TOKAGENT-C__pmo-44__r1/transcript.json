@@ -1,0 +1,134 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3859,
+  "output_tokens": 2108,
+  "seconds": 11.975812500022585,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model process. Identify actors: robot (maybe system). Maybe only robot. Could have customer? The text mentions robot asks, asks if you want fries or wedges. The customer is the one ordering, but the robot receives order. So actors: Robot (system) and Customer (person). Use pool for organisation (the robot's organization). Lanes: robot, customer.\n\nActivities:\n\nStart event: \"order received\"? robot receives an order.\n\nSequence:\n\n1. start event (maybe \"order received\"). Robot receives order.\n\n2. Robot asks whether customer wants a menu or just burger. Decision: menu? XOR gateway.\n\nIf menu (yes): then robot starts preparing drink (activity \"prepare drink\").\n\nWhile doing so, he asks if you want fries or wedges. That's parallel? Actually while preparing drink, robot asks about fries/wedges. This is concurrent: drink preparation and fries/wedges decision? The description: \"While doing so, he asks if you want fries or wedges.\" So that is parallel: drink preparation in parallel with fries/wedges decision & preparation. So after menu decision, we have an AND-split: parallel branches: (a) prepare drink (duration variable). (b) ask fries/wedges decision and then prepare fries or wedges.\n\nSo after menu decision (yes path), we should have an AND gateway splitting.\n\nBranch A: task \"prepare drink\".\n\nBranch B: xor decision \"fries or wedges?\" Then two tasks: \"prepare fries\" or \"prepare wedges\". After that branch ends (join later).\n\nAfter these parallel branches both complete, they join at an AND-join (matching). Then robot prepares the burger (task \"prepare burger\") and gives status updates every 30 seconds: probably separate task? Could model as task \"give status updates\". But it's just an activity of giving updates during burger preparation. Could include a task \"give enthusiastic status updates\". Could place it after burger preparation? The description: \"After that, he prepares the burger, and gives you enthusiastic status updates every 30 seconds.\" That suggests during burger preparation, multiple status updates occur. Could model as parallel of \"prepare burger\" and \"give status updates\"? But they happen concurrently: status updates while preparing burger. Could be parallel but status updates are not a separate branch; it's just an activity. For simplicity, we might model as sequential: prepare burger then give status updates. But the phrase \"and gives you enthusiastic status updates every 30 seconds\" perhaps after preparation? I think it is during preparation, but not critical. We'll model as sequential: task \"prepare burger\", then task \"give enthusiastic status updates\". Or maybe integrate as same task \"prepare burger\" and have a loop of status updates. Simpler: just one task \"prepare burger\". The status updates can be ignored for modeling. But requirement: every activity in text becomes a task. So we need a task for \"give enthusiastic status updates\". We'll model as separate task after burger. However, order: after burger, delivery.\n\nSequence after burger & status updates: task \"deliver order via conveyor belt\". End event.\n\nNow, if menu decision is No (customer wants just burger), we skip drink and fries/wedges. So flow goes directly to prepare burger (maybe still give status updates) then delivery. So we need separate path.\n\nThus overall flow:\n\nStart -> task \"receive order\" (robot lane)\n\nxor gateway \"menu or just burger?\" decision.\n\nYes path:\n\n- task \"prepare drink\"\n\n- parallel branch: xor \"fries or wedges?\" leading to \"prepare fries\" / \"prepare wedges\".\n\nWe need parallel so that drink preparation and fries/wedges preparation happen concurrently. To achieve that: after the decision node, we have an AND-split into two branches:\n\nBut the decision about fries/wedges occurs while preparing drink. So we need to start the decision early. The flow: after \"prepare drink\" begins, robot also asks about fries/wedges, choose and prepare.\n\nSimplify: After menu decision, we create AND-split:\n\nBranch 1: task \"prepare drink\"\n\nBranch 2: xor \"fries or wedges?\" then tasks.\n\nAfter branches, AND-join, then task \"prepare burger\", then \"give enthusiastic status updates\", then \"deliver order\", then end.\n\nNo path (just burger): after decision \"menu?\" no goes directly to \"prepare burger\" (maybe status updates) then delivery then end.\n\nNeed to ensure flows. Use flow syntax.\n\nNow we need to include lanes: robot lane includes all tasks and decisions. Customer lane could have maybe only \"receive order\"? but for modeling we could also place \"receive order\" in robot lane. Could put \"customer\" lane with tasks like \"order\". However tasks are robot actions. So we can just have robot lane only; but requirement: one lane for each actor that performs activities. Only robot does tasks. So we could have a single lane \"Robot\". We'll do that.\n\nThus pool \"Robotic Burger Seller\". lane \"robot\" \"Robot\".\n\nStart event ID \"start\" label \"Order received\". Task IDs: \"receive\" \"Receive order\". Task \"ask menu\" maybe decision gate; we don't need a task but the decision.\n\nDecision XOR ID \"menu?\" label \"Menu or just burger?\" Flow from start->receive->menu.\n\nNow after decision, we need maybe separate flows: Yes -> AND split. For clarity we can have a gateway after decision: xor decision \"menu?\" then two outgoing flows: \"menu\" and \"burger-only\". Represent with flow statements with labels.\n\nWe must ensure IDs are unique.\n\nLet's draft model.\n\n```\ntok 1.0 \"Robotic Burger Seller\" [executable]\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and parallel1\n    # Branch A: drink preparation\n    task drink \"Prepare drink\"\n    # Branch B: fries/wedges decision and preparation\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and joinParallel\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    # Flows\n    flow start -> receive -> menu\n    flow menu -> parallel1 \"menu\"\n    flow menu -> burger \"just burger\"\n    flow parallel1 -> drink -> joinParallel\n    flow parallel1 -> fries -> friesPrep -> joinParallel\n    flow fries -> wedgesPrep -> joinParallel\n    flow joinParallel -> burger -> status -> deliver -> end\n```\n\nBut need proper flow syntax: flows are chain of nodes. The AND split and join need IDs. After menu decision, we need to split: we can directly have AND split without preceding task; maybe flow from menu to AND split.\n\nDefine AND gateway ID \"split\". Then downstream branches.\n\nSimplify flows: use explicit flow statements.\n\nDefine IDs:\n\nstart S\ntask receive R\nxor menu M\nand split A1\ntask drink D\nxor fries F\ntask friesPrep FR\ntask wedgesPrep W\nand join A2\ntask burger B\ntask status S2\ntask deliver DL\nend END\n\nNow flows:\n\nflow S -> R -> M\nflow M -> A1 \"menu\"\nflow M -> B \"just burger\"\nflow A1 -> D -> A2\nflow A1 -> F -> FR -> A2\nflow F -> W -> A2\nflow A2 -> B -> S2 -> DL -> END\n\nBut need to ensure FR and W are exclusive based on fries decision. So after F decision, two outgoing flows: one to FR, another to W.\n\nImplement as flow statements separately.\n\nLet's produce.\n\nNeed to ensure each statement ends at line.\n\nCheck for any syntax issues: XOR gateway must have an ID and maybe label. Use syntax: xor ID \"Label\". Same for and.\n\nHence:\n\nxor menu \"Menu or just burger?\"\nand split\nxor fries \"Fries or wedges?\"\nand join\n\nBut for and we need ID and optional label? We'll give ID.\n\nand split \"Parallel split\"\nand join \"Parallel join\"\n\nNow ensure flow lines:\n\nflow start -> receive -> menu\nflow menu -> split \"menu\"\nflow menu -> burger \"just burger\"\nflow split -> drink -> join\nflow split -> fries -> friesPrep -> join\nflow fries -> wedgesPrep -> join\nflow join -> burger -> status -> deliver -> end\n\nNow check required keywords: start event syntax: start ID \"Label\". Must supply ID.\n\nWe used ID \"start\". Good.\n\nend event syntax: end ID \"Label\". Provide ID \"end\".\n\nMake sure all IDs are unique and not reserved.\n\nPotential warnings: duplicate flow labels? okay.\n\nCheck if need to define tasks after lanes inside lane indent.\n\nLet's write final model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Robotic Burger Seller\" [executable]\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries -> friesPrep -> join\n    flow fries -> wedgesPrep -> join\n    flow join -> burger -> status -> deliver -> end\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 6027,
+  "output_tokens": 299,
+  "seconds": 5.952783899992937,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to call check with only text. Provide path empty? Not needed. Provide text only. Provide parameters: bpmn true, class descriptive, lang en, level basic. Let's call again.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Robotic Burger Seller\" [executable]\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries -> friesPrep -> join\n    flow fries -> wedgesPrep -> join\n    flow join -> burger -> status -> deliver -> end"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 3: error P005: the document must start with a header such as 'tok 1.0'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6451,
+  "output_tokens": 603,
+  "seconds": 4.55604370002402,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Header line: \"tok 1.0 \\\"Robotic Burger Seller\\\" [executable]\"—the bracket might be after header? In cheat sheet header is: tok 1.0 \"Title\" [executable]. So syntax fine. However error: unexpected character '[' maybe due to missing space after title? Actually header includes optional attributes after title. Provided correct. Maybe need version tags? Let’s check example: they wrote `tok 1.0 \"Application handling\"`. No [executable] there but optional. The error maybe because [executable] not allowed at top-level? It's allowed. Hmm maybe the server expects header without brackets? Or maybe missing closing bracket? It's fine.\n\nSecond error P005: doc must start with header such as 'tok 1.0'. So maybe stray newline before header? We have newline before header? The text begins with \"tok 1.0 ...\" no preceding newline. Might be issue with inner quotes? Actually correct.\n\nMaybe syntax for header does not allow [executable] after title? The cheat sheet shows `[executable]` after title as example: `tok 1.0 \"Title\" [executable]`. Yes allowed.\n\nMaybe the tool expects no extra spaces before header? We have none.\n\nCould be that the \"pool org\" syntax: need to include `process=` attribute? Not required.\n\nMaybe error T001 invalid token '[' indicates parser didn't expect '[' after title. Perhaps the server version expects header without brackets? Let's drop [executable] for safety.\n\nAlso ensure no stray Unicode dash characters: we used \" -\\u003e \" which is hyphen? Should be \"->\". Use \"->\". Use plain.\n\nLet's rewrite.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Robotic Burger Seller\"\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries -> friesPrep -> join\n    flow fries -> wedgesPrep -> join\n    flow join -> burger -> status -> deliver -> end"
+    },
+    "is_error": false,
+    "result": "line 23: warning W021: branch of an XOR/OR split without label, condition or default status (f-fries-friesPrep)\nline 24: warning W021: branch of an XOR/OR split without label, condition or default status (f-fries-wedgesPrep)\n0 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7200,
+  "output_tokens": 341,
+  "seconds": 3.572359099984169,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We have warnings for XOR branches lacking labels. Need to label flows from xor fries decision: \"fries\" and \"wedges\" labels. So modify flows: flow fries -> friesPrep \"fries\"; flow fries -> wedgesPrep \"wedges\". Ensure labels.\n\nAlso for xor menu, we have one branch labeled \"menu\" and other \"just burger\". Good.\n\nLet's adjust.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Robotic Burger Seller\"\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries -> friesPrep \"fries\" -> join\n    flow fries -> wedgesPrep \"wedges\" -> join\n    flow join -> burger -> status -> deliver -> end"
+    },
+    "is_error": false,
+    "result": "line 23: error P007: malformed attribute near '->'\nline 23: error R020: a flow line with a label or attributes must contain exactly one arrow\nline 24: error P007: malformed attribute near '->'\n3 error(s), 3 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 7677,
+  "output_tokens": 454,
+  "seconds": 3.192582500021672,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Our flow syntax for labeling with label after node: In cheat sheet, labeling is done as: `flow G -> D \"tak\" when=\"condition\"` where label after arrow and before optional when. So format: flow source -> target \"label\". Not multiple arrows. Our attempt to include intermediate node with label and continue arrow is not allowed. We need separate flow statements for each step. For XOR branch, we can have flow from fries decision to friesPrep with label \"fries\". Then separate flow from friesPrep to join. Similarly for wedges.\n\nThus modify: flow split -> fries -> friesPrep \"fries\". Then flow friesPrep -> join. And flow fries -> wedgesPrep \"wedges\". Then flow wedgesPrep -> join.\n\nBut we need a flow from split to fries decision? Already we have flow split -> fries (the xor). That's fine.\n\nNow adjust.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Robotic Burger Seller\"\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n    \n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries\n    flow fries -> friesPrep \"fries\"\n    flow friesPrep -> join\n    flow fries -> wedgesPrep \"wedges\"\n    flow wedgesPrep -> join\n    flow join -> burger -> status -> deliver -> end"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 8217,
+  "output_tokens": 220,
+  "seconds": 1.6350040000106674,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Robotic Burger Seller\"\n\npool org \"Robotic Burger Seller\"\n  lane robot \"Robot\"\n    start start \"Order received\"\n    task receive \"Receive order\"\n    xor menu \"Menu or just burger?\"\n    and split \"Parallel split\"\n    task drink \"Prepare drink\"\n    xor fries \"Fries or wedges?\"\n    task friesPrep \"Prepare fries\"\n    task wedgesPrep \"Prepare wedges\"\n    and join \"Parallel join\"\n    task burger \"Prepare burger\"\n    task status \"Give enthusiastic status updates\"\n    task deliver \"Deliver order via conveyor belt\"\n    end end \"Order delivered\"\n\n    flow start -> receive -> menu\n    flow menu -> split \"menu\"\n    flow menu -> burger \"just burger\"\n    flow split -> drink -> join\n    flow split -> fries\n    flow fries -> friesPrep \"fries\"\n    flow friesPrep -> join\n    flow fries -> wedgesPrep \"wedges\"\n    flow wedgesPrep -> join\n    flow join -> burger -> status -> deliver -> end\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

@@ -1,0 +1,75 @@
+tok 1.0 "Winning a new customer: power supplier switch"
+
+pool company "Power supplier"
+  lane customer "Customer"
+    start requested "Switch-over request"
+    task transmit "Transmit customer data"
+    task checkContract "Check the contract details"
+    eventgw decide
+    catch confirm "Contract confirmed" message="Confirmation"
+    catch withdraw "Contract withdrawn" message="Withdrawal"
+    catch timeout "7 days passed" timer=P7D
+    end withdrawn "Customer withdrew from the contract"
+  lane service "Customer service"
+    task receive "Receive the customer data"
+    task enter "Enter the customer data object into the CRM system"
+    task compare "Compare the customer data with the customer data base"
+    xor errors "Errors found?"
+    task correct "Correct the errors using the error list"
+    xor exists "Customer exists in the data base?"
+    task createCustomer "Create a new customer object"
+    xor existsMerge
+    task prepare "Prepare the contract documents"
+    task sendConfirmation "Send the confirmation document to the customer"
+    task createContract "Create the CIS contract"
+    xor acceptedMerge
+    task importMeter "Import the meter data to the systems"
+    and billingJoin
+    end done "New customer won"
+  lane cis "CIS"
+    task checkDocs "Check the contract documents"
+    xor docsOk "Contract documents generated correctly?"
+    task analyze "Analyze and resolve the issues"
+    task regenerate "Generate the contract documents again"
+    task sendRequest "Send the request to the grid operator"
+  lane grid "Grid operator"
+    task checkConcurrence "Check the switch-over request for supplier concurrence"
+    task comment "Transmit the response comment"
+    xor concurrence "Supplier concurrence?"
+    task informSuppliers "Inform all involved suppliers and demand the resolution of the conflict"
+    end conflict "Conflict handed to the suppliers"
+    task terminate "Terminate the sales agreement with the old supplier"
+    task transmitMeter "Transmit the meter data"
+    and meterSplit
+    task computeBilling "Compute the final billing"
+    task sendBilling "Send the final billing to the old supplier"
+  lane old "Old supplier"
+    task createBilling "Create the final billing"
+    task sendFinal "Send the final billing to the customer"
+
+flow requested -> transmit -> receive -> enter -> compare -> errors
+flow errors -> correct "yes"
+flow correct -> compare
+flow errors -> exists "no"
+flow exists -> createCustomer "no"
+flow exists -> existsMerge "yes"
+flow createCustomer -> existsMerge
+flow existsMerge -> prepare -> checkDocs -> docsOk
+flow docsOk -> analyze "no"
+flow analyze -> regenerate -> checkDocs
+flow docsOk -> sendConfirmation "yes"
+flow sendConfirmation -> sendRequest -> checkConcurrence -> comment -> concurrence
+flow concurrence -> informSuppliers "yes"
+flow informSuppliers -> conflict
+flow concurrence -> terminate "no"
+flow terminate -> createContract -> checkContract -> decide
+flow decide -> confirm
+flow decide -> withdraw
+flow decide -> timeout
+flow withdraw -> withdrawn
+flow confirm -> acceptedMerge
+flow timeout -> acceptedMerge
+flow acceptedMerge -> transmitMeter -> meterSplit
+flow meterSplit -> computeBilling -> sendBilling -> createBilling -> sendFinal -> billingJoin
+flow meterSplit -> importMeter -> billingJoin
+flow billingJoin -> done

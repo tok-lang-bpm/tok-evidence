@@ -1,0 +1,107 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+Title: Find a Job
+
+You have to regularly report, to which companies you wrote job applications.
+Based on your job applications, new potential job offers are sent to you.
+Companies have to confirm that they received job applications and rate the application.
+A job interview can be negotiated.
+When a company wants you to work for them, you enter the probation phase.
+After probation phase, you can rate the company and the company can rate you.
+Reviews for a company can only be seen (by job applicants) after 1 year.
+If a job becomes permanent, the process ends, unless you rated the company C or less, then you continue to receive job offers, but no longer have to report.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="applicant" name="Applicant">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-applications</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-company</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ratings-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ratings-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rating-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="company" name="Company">
+        <bpmn:flowNodeRef>confirm-receipt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-application</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>negotiate-interview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interview-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>want-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>permanent-gateway</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>send-job-offers</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Find a job" />
+    <bpmn:task id="report-applications" name="Report job applications" />
+    <bpmn:task id="send-job-offers" name="Send potential job offers" />
+    <bpmn:task id="confirm-receipt" name="Confirm receipt of job application" />
+    <bpmn:task id="rate-application" name="Rate application" />
+    <bpmn:exclusiveGateway id="interview-gateway" name="Job interview negotiated?" default="f-interview-no" />
+    <bpmn:task id="negotiate-interview" name="Negotiate job interview" />
+    <bpmn:exclusiveGateway id="want-gateway" name="Company wants you to work for them?" default="f-want-no" />
+    <bpmn:task id="enter-probation" name="Enter probation phase" />
+    <bpmn:parallelGateway id="ratings-split" name="Rate after probation" />
+    <bpmn:task id="rate-company" name="Rate company" />
+    <bpmn:task id="rate-applicant" name="Rate applicant" />
+    <bpmn:parallelGateway id="ratings-merge" />
+    <bpmn:exclusiveGateway id="permanent-gateway" name="Job becomes permanent?" default="f-permanent-no" />
+    <bpmn:exclusiveGateway id="rating-gateway" name="Rated company C or less?" default="f-rating-high" />
+    <bpmn:endEvent id="end" name="Job found" />
+    <bpmn:sequenceFlow id="f-start" sourceRef="start" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-report" sourceRef="report-applications" targetRef="send-job-offers" />
+    <bpmn:sequenceFlow id="f-send" sourceRef="send-job-offers" targetRef="confirm-receipt" />
+    <bpmn:sequenceFlow id="f-confirm" sourceRef="confirm-receipt" targetRef="rate-application" />
+    <bpmn:sequenceFlow id="f-rate-application" sourceRef="rate-application" targetRef="interview-gateway" />
+    <bpmn:sequenceFlow id="f-interview-yes" name="yes" sourceRef="interview-gateway" targetRef="negotiate-interview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">interview == "yes"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-interview-no" name="no" sourceRef="interview-gateway" targetRef="want-gateway" />
+    <bpmn:sequenceFlow id="f-negotiate" sourceRef="negotiate-interview" targetRef="want-gateway" />
+    <bpmn:sequenceFlow id="f-want-yes" name="yes" sourceRef="want-gateway" targetRef="enter-probation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">companyWants == "yes"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-want-no" name="no" sourceRef="want-gateway" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-probation" sourceRef="enter-probation" targetRef="ratings-split" />
+    <bpmn:sequenceFlow id="f-rate-company" sourceRef="ratings-split" targetRef="rate-company" />
+    <bpmn:sequenceFlow id="f-rate-applicant" sourceRef="ratings-split" targetRef="rate-applicant" />
+    <bpmn:sequenceFlow id="f-company-merge" sourceRef="rate-company" targetRef="ratings-merge" />
+    <bpmn:sequenceFlow id="f-applicant-merge" sourceRef="rate-applicant" targetRef="ratings-merge" />
+    <bpmn:sequenceFlow id="f-merge" sourceRef="ratings-merge" targetRef="permanent-gateway" />
+    <bpmn:sequenceFlow id="f-permanent-yes" name="yes" sourceRef="permanent-gateway" targetRef="rating-gateway">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">jobPermanent == "yes"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-permanent-no" name="no" sourceRef="permanent-gateway" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-rating-low" name="C or less" sourceRef="rating-gateway" targetRef="send-job-offers">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">rating <= "C"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-rating-high" name="higher than C" sourceRef="rating-gateway" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- not well-formed XML: StartTag: invalid element name, line 71, column 75 (<string>, line 71)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

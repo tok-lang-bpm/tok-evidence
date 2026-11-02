@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Bill examination and invoice confirmation" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="market" name="Metering market" processRef="market-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="market-process" name="Bill examination and invoice confirmation" isExecutable="false">
+    <bpmn:laneSet id="market-lanes">
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>bill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>kind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_temp_ops</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_equip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>route</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mspo" name="MSPO">
+        <bpmn:flowNodeRef>send_temp_meas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_readings</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_equip_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>examine_equip_mpon</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="bill" name="Bill to send" />
+    <bpmn:exclusiveGateway id="kind" name="Which bill is sent?" />
+    <bpmn:task id="send_temp_ops" name="Send the bill for the temporary continuation of the metering point operations to the GO" />
+    <bpmn:task id="send_equip" name="Send the bill for the equipment acquisition to the MPON or the GO" />
+    <bpmn:exclusiveGateway id="route" name="MPON or GO?" />
+    <bpmn:task id="send_temp_meas" name="Send the bill for the temporary continuation of the measurement to the GO" />
+    <bpmn:task id="send_readings" name="Send the bill for additional readings to the GO" />
+    <bpmn:exclusiveGateway id="received" name="Bill received" />
+    <bpmn:task id="examine_go" name="Examine the bill" />
+    <bpmn:task id="examine_equip_go" name="Examine the bill" />
+    <bpmn:exclusiveGateway id="examined" name="Bill examined" />
+    <bpmn:exclusiveGateway id="decide" name="Confirm or reject the invoice?" />
+    <bpmn:task id="confirm" name="Confirm the invoice with payment advice to the MPOO or the MSPO" />
+    <bpmn:task id="reject" name="Reject the invoice of the MPOO or the MSPO" />
+    <bpmn:endEvent id="paid" name="Invoice confirmed" />
+    <bpmn:endEvent id="rejected" name="Invoice rejected" />
+    <bpmn:task id="examine_equip_mpon" name="Examine the bill" />
+    <bpmn:sequenceFlow id="f-bill-kind" sourceRef="bill" targetRef="kind" />
+    <bpmn:sequenceFlow id="f-kind-send_temp_ops" name="MPOO: temporary continuation of metering point operations" sourceRef="kind" targetRef="send_temp_ops" />
+    <bpmn:sequenceFlow id="f-kind-send_temp_meas" name="MSPO: temporary continuation of measurement" sourceRef="kind" targetRef="send_temp_meas" />
+    <bpmn:sequenceFlow id="f-kind-send_readings" name="MSPO: additional readings" sourceRef="kind" targetRef="send_readings" />
+    <bpmn:sequenceFlow id="f-kind-send_equip" name="MPOO: equipment acquisition" sourceRef="kind" targetRef="send_equip" />
+    <bpmn:sequenceFlow id="f-send_temp_ops-received" sourceRef="send_temp_ops" targetRef="received" />
+    <bpmn:sequenceFlow id="f-send_temp_meas-received" sourceRef="send_temp_meas" targetRef="received" />
+    <bpmn:sequenceFlow id="f-send_readings-received" sourceRef="send_readings" targetRef="received" />
+    <bpmn:sequenceFlow id="f-received-examine_go" sourceRef="received" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f-examine_go-examined" sourceRef="examine_go" targetRef="examined" />
+    <bpmn:sequenceFlow id="f-send_equip-route" sourceRef="send_equip" targetRef="route" />
+    <bpmn:sequenceFlow id="f-route-examine_equip_go" name="to the GO" sourceRef="route" targetRef="examine_equip_go" />
+    <bpmn:sequenceFlow id="f-route-examine_equip_mpon" name="to the MPON" sourceRef="route" targetRef="examine_equip_mpon" />
+    <bpmn:sequenceFlow id="f-examine_equip_go-examined" sourceRef="examine_equip_go" targetRef="examined" />
+    <bpmn:sequenceFlow id="f-examine_equip_mpon-examined" sourceRef="examine_equip_mpon" targetRef="examined" />
+    <bpmn:sequenceFlow id="f-examined-decide" sourceRef="examined" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-confirm" name="confirmed" sourceRef="decide" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-decide-reject" name="rejected" sourceRef="decide" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-confirm-paid" sourceRef="confirm" targetRef="paid" />
+    <bpmn:sequenceFlow id="f-reject-rejected" sourceRef="reject" targetRef="rejected" />
+  </bpmn:process>
+</bpmn:definitions>

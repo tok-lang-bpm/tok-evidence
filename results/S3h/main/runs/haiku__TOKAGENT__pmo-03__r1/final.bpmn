@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Inventory restock" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Inventory restock" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="wh" name="Warehouse staff">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>threshold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert-type</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>manual-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>store</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="Inventory system">
+        <bpmn:flowNodeRef>alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-dates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-levels</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="proc" name="Procurement team">
+        <bpmn:flowNodeRef>order</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Inventory monitoring begins" />
+    <bpmn:task id="monitor" name="Monitor inventory levels" />
+    <bpmn:exclusiveGateway id="threshold" name="Stock reached threshold?" default="f-threshold-monitor" />
+    <bpmn:exclusiveGateway id="alert-type" name="Automated alert or manual check?" default="f-alert-type-manual-check" />
+    <bpmn:task id="manual-check" name="Perform manual stock check" />
+    <bpmn:task id="receive" name="Receive stock" />
+    <bpmn:task id="inspect" name="Inspect stock quality" />
+    <bpmn:task id="store" name="Place stock on shelves or in storage" />
+    <bpmn:task id="alert" name="Send automated alert" />
+    <bpmn:exclusiveGateway id="reorder" name="Reorder needed" />
+    <bpmn:task id="update-dates" name="Update inventory system with expected delivery dates" />
+    <bpmn:task id="record" name="Record stock in system" />
+    <bpmn:task id="update-levels" name="Update inventory levels" />
+    <bpmn:endEvent id="e" name="Restock complete, inventory levels updated" />
+    <bpmn:task id="order" name="Place order with suppliers">
+      <bpmn:documentation>Considers cost, delivery time and supplier reliability.</bpmn:documentation>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="f-s-monitor" sourceRef="s" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-monitor-threshold" sourceRef="monitor" targetRef="threshold" />
+    <bpmn:sequenceFlow id="f-threshold-monitor" name="no" sourceRef="threshold" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-threshold-alert-type" name="yes" sourceRef="threshold" targetRef="alert-type">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock_level &lt;= reorder_threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-alert-type-alert" name="automated" sourceRef="alert-type" targetRef="alert">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">automatic_alert = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-alert-type-manual-check" name="manual" sourceRef="alert-type" targetRef="manual-check" />
+    <bpmn:sequenceFlow id="f-alert-reorder" sourceRef="alert" targetRef="reorder" />
+    <bpmn:sequenceFlow id="f-manual-check-reorder" sourceRef="manual-check" targetRef="reorder" />
+    <bpmn:sequenceFlow id="f-reorder-order" sourceRef="reorder" targetRef="order" />
+    <bpmn:sequenceFlow id="f-order-update-dates" sourceRef="order" targetRef="update-dates" />
+    <bpmn:sequenceFlow id="f-update-dates-receive" sourceRef="update-dates" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-inspect" sourceRef="receive" targetRef="inspect" />
+    <bpmn:sequenceFlow id="f-inspect-record" sourceRef="inspect" targetRef="record" />
+    <bpmn:sequenceFlow id="f-record-store" sourceRef="record" targetRef="store" />
+    <bpmn:sequenceFlow id="f-store-update-levels" sourceRef="store" targetRef="update-levels" />
+    <bpmn:sequenceFlow id="f-update-levels-e" sourceRef="update-levels" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

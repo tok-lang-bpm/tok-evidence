@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Ticket booking and travel" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="co" name="Travel company" processRef="co-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="co-process" name="Ticket booking and travel" isExecutable="false">
+    <bpmn:laneSet id="co-lanes">
+      <bpmn:lane id="cust" name="Customer">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>search</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>journey</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fb-q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fb-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="Booking system">
+        <bpmn:flowNodeRef>generate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ch-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-travel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rem-q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>remind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rem-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="tc" name="Travel company">
+        <bpmn:flowNodeRef>inventory</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Customer searches for a ticket" />
+    <bpmn:task id="search" name="Search for flight, train or bus ticket" />
+    <bpmn:task id="select" name="Select route, date and time" />
+    <bpmn:task id="provide" name="Provide personal information and payment details" />
+    <bpmn:task id="journey" name="Complete journey" />
+    <bpmn:exclusiveGateway id="fb-q" name="Feedback or services?" default="f-fb-q-fb-merge" />
+    <bpmn:task id="feedback" name="Give post-travel feedback" />
+    <bpmn:exclusiveGateway id="fb-merge" />
+    <bpmn:endEvent id="e" name="Process concluded" />
+    <bpmn:task id="generate" name="Generate ticket" />
+    <bpmn:exclusiveGateway id="ch" name="Delivery channel?" default="f-ch-sms" />
+    <bpmn:task id="email" name="Send ticket by email" />
+    <bpmn:task id="sms" name="Send ticket by SMS" />
+    <bpmn:exclusiveGateway id="ch-merge" />
+    <bpmn:parallelGateway id="fork" />
+    <bpmn:intermediateCatchEvent id="wait-travel" name="Wait until before travel">
+      <bpmn:timerEventDefinition id="wait-travel-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="rem-q" name="Send reminders?" default="f-rem-q-rem-merge" />
+    <bpmn:task id="remind" name="Send reminders and check-in or boarding instructions" />
+    <bpmn:exclusiveGateway id="rem-merge" />
+    <bpmn:parallelGateway id="join" />
+    <bpmn:task id="inventory" name="Update seat inventory" />
+    <bpmn:sequenceFlow id="f-s-search" sourceRef="s" targetRef="search" />
+    <bpmn:sequenceFlow id="f-search-select" sourceRef="search" targetRef="select" />
+    <bpmn:sequenceFlow id="f-select-provide" sourceRef="select" targetRef="provide" />
+    <bpmn:sequenceFlow id="f-provide-generate" sourceRef="provide" targetRef="generate" />
+    <bpmn:sequenceFlow id="f-generate-ch" sourceRef="generate" targetRef="ch" />
+    <bpmn:sequenceFlow id="f-ch-email" name="email" sourceRef="ch" targetRef="email" />
+    <bpmn:sequenceFlow id="f-ch-sms" name="SMS" sourceRef="ch" targetRef="sms" />
+    <bpmn:sequenceFlow id="f-email-ch-merge" sourceRef="email" targetRef="ch-merge" />
+    <bpmn:sequenceFlow id="f-sms-ch-merge" sourceRef="sms" targetRef="ch-merge" />
+    <bpmn:sequenceFlow id="f-ch-merge-fork" sourceRef="ch-merge" targetRef="fork" />
+    <bpmn:sequenceFlow id="f-fork-inventory" sourceRef="fork" targetRef="inventory" />
+    <bpmn:sequenceFlow id="f-fork-wait-travel" sourceRef="fork" targetRef="wait-travel" />
+    <bpmn:sequenceFlow id="f-wait-travel-rem-q" sourceRef="wait-travel" targetRef="rem-q" />
+    <bpmn:sequenceFlow id="f-rem-q-remind" name="yes" sourceRef="rem-q" targetRef="remind" />
+    <bpmn:sequenceFlow id="f-rem-q-rem-merge" name="no" sourceRef="rem-q" targetRef="rem-merge" />
+    <bpmn:sequenceFlow id="f-remind-rem-merge" sourceRef="remind" targetRef="rem-merge" />
+    <bpmn:sequenceFlow id="f-rem-merge-join" sourceRef="rem-merge" targetRef="join" />
+    <bpmn:sequenceFlow id="f-inventory-join" sourceRef="inventory" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-journey" sourceRef="join" targetRef="journey" />
+    <bpmn:sequenceFlow id="f-journey-fb-q" sourceRef="journey" targetRef="fb-q" />
+    <bpmn:sequenceFlow id="f-fb-q-feedback" name="yes" sourceRef="fb-q" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f-fb-q-fb-merge" name="no" sourceRef="fb-q" targetRef="fb-merge" />
+    <bpmn:sequenceFlow id="f-feedback-fb-merge" sourceRef="feedback" targetRef="fb-merge" />
+    <bpmn:sequenceFlow id="f-fb-merge-e" sourceRef="fb-merge" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

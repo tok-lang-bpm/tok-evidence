@@ -1,0 +1,53 @@
+```tok
+tok 1.0 "Daily account defaulter check"
+
+pool org "Organisation"
+  lane ops "Account defaulter process"
+    start morning "Every weekday morning" timer=P1D
+    sub part1 "Detect and report defaulting accounts"
+      start s1 "Start checks"
+      task backup "Back up the database"
+      task checktbl "Check the Account Defaulter table for new records"
+      xor newrec "New records found?"
+      task checkcrm1 "Check the CRM system for new returns"
+      xor ret1 "New returns filed?"
+      task register "Register defaulting accounts and customers"
+      xor adv "Defaulting client codes previously advised?"
+      task produce "Produce table of defaulting accounts"
+      task sendmgmt "Send table to account management"
+      xor merge1
+      end e1 "Report completed"
+    boundary late1 "2:30 pm reached" on=part1 timer=PT6H30M noninterrupting
+    task alert "Send alert to the supervisor"
+    end alerted "Supervisor alerted"
+    sub part2 "Reconcile defaulters"
+      start s2 "Start reconciliation"
+      task checkcrm2 "Check the CRM system for new returns"
+      xor ret2 "New returns filed?"
+      task reconcile "Reconcile with the existing Account Defaulter table"
+      end e2 "Reconciled"
+      end e3 "No reconciliation needed"
+    boundary late2 "4:00 pm reached" on=part2 timer=PT8H noninterrupting
+    task msg "Send message to the supervisor"
+    end messaged "Supervisor messaged"
+    end finished "Process completed"
+
+flow morning -> part1 -> part2 -> finished
+flow s1 -> backup -> checktbl -> newrec
+flow newrec -> merge1 "yes"
+flow newrec -> checkcrm1 "no"
+flow checkcrm1 -> ret1
+flow ret1 -> register "yes"
+flow ret1 -> merge1 "no"
+flow register -> adv
+flow adv -> merge1 "yes"
+flow adv -> produce "no"
+flow produce -> sendmgmt -> merge1
+flow merge1 -> e1
+flow late1 -> alert -> alerted
+flow s2 -> checkcrm2 -> ret2
+flow ret2 -> reconcile "yes"
+flow ret2 -> e3 "no"
+flow reconcile -> e2
+flow late2 -> msg -> messaged
+```

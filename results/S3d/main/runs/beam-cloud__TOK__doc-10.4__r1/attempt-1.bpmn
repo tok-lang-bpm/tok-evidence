@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Equipment change process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Equipment change process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyIntentions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayRead</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>readFinalMpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayDismount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismountMpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>readInstalled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tellGO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>selfDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>announce</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyNo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeSelf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>readFinalMpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismountMpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeRead</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeDismount</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>notifyMsp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="notifyIntentions" name="Notify the MPOO about equipment change intentions" />
+    <bpmn:exclusiveGateway id="gatewayRead" name="Who performs the final reading?" default="f-gatewayRead-readFinalMpoo" />
+    <bpmn:task id="readFinalMpon" name="Perform the final reading" />
+    <bpmn:exclusiveGateway id="gatewayDismount" name="Who dismounts the old equipment?" default="f-gatewayDismount-dismountMpoo" />
+    <bpmn:task id="dismountMpon" name="Dismount the old equipment" />
+    <bpmn:task id="mount" name="Mount the new device" />
+    <bpmn:task id="readInstalled" name="Read the meter count from the installed meter" />
+    <bpmn:task id="sendFinal" name="Send the values of the final reading to the GO" />
+    <bpmn:task id="tellGO" name="Tell the GO about the device changes, the master data and the meter count at installation" />
+    <bpmn:exclusiveGateway id="selfDecision" name="Self dismounting?" default="f-selfDecision-notifyNo" />
+    <bpmn:task id="announce" name="Announce self dismounting to the MPON" />
+    <bpmn:task id="notifyNo" name="Notify the MPON about no self-dismounting of the MPOO" />
+    <bpmn:exclusiveGateway id="mergeSelf" />
+    <bpmn:task id="readFinalMpoo" name="Perform the final reading" />
+    <bpmn:task id="dismountMpoo" name="Dismount the old equipment" />
+    <bpmn:exclusiveGateway id="mergeRead" />
+    <bpmn:exclusiveGateway id="mergeDismount" />
+    <bpmn:task id="notifyMsp" name="Notify the MSP about the device changes, the master data, the meter count at dismounting, and the meter count at installation" />
+    <bpmn:endEvent id="finish" name="End" />
+    <bpmn:sequenceFlow id="f-start-notifyIntentions" sourceRef="start" targetRef="notifyIntentions" />
+    <bpmn:sequenceFlow id="f-notifyIntentions-selfDecision" sourceRef="notifyIntentions" targetRef="selfDecision" />
+    <bpmn:sequenceFlow id="f-selfDecision-announce" name="yes" sourceRef="selfDecision" targetRef="announce" />
+    <bpmn:sequenceFlow id="f-selfDecision-notifyNo" name="no" sourceRef="selfDecision" targetRef="notifyNo" />
+    <bpmn:sequenceFlow id="f-announce-mergeSelf" sourceRef="announce" targetRef="mergeSelf" />
+    <bpmn:sequenceFlow id="f-notifyNo-mergeSelf" sourceRef="notifyNo" targetRef="mergeSelf" />
+    <bpmn:sequenceFlow id="f-mergeSelf-gatewayRead" sourceRef="mergeSelf" targetRef="gatewayRead" />
+    <bpmn:sequenceFlow id="f-gatewayRead-readFinalMpon" name="MPON" sourceRef="gatewayRead" targetRef="readFinalMpon" />
+    <bpmn:sequenceFlow id="f-gatewayRead-readFinalMpoo" name="MPOO" sourceRef="gatewayRead" targetRef="readFinalMpoo" />
+    <bpmn:sequenceFlow id="f-readFinalMpon-mergeRead" sourceRef="readFinalMpon" targetRef="mergeRead" />
+    <bpmn:sequenceFlow id="f-readFinalMpoo-mergeRead" sourceRef="readFinalMpoo" targetRef="mergeRead" />
+    <bpmn:sequenceFlow id="f-mergeRead-gatewayDismount" sourceRef="mergeRead" targetRef="gatewayDismount" />
+    <bpmn:sequenceFlow id="f-gatewayDismount-dismountMpon" name="MPON" sourceRef="gatewayDismount" targetRef="dismountMpon" />
+    <bpmn:sequenceFlow id="f-gatewayDismount-dismountMpoo" name="MPOO" sourceRef="gatewayDismount" targetRef="dismountMpoo" />
+    <bpmn:sequenceFlow id="f-dismountMpon-mergeDismount" sourceRef="dismountMpon" targetRef="mergeDismount" />
+    <bpmn:sequenceFlow id="f-dismountMpoo-mergeDismount" sourceRef="dismountMpoo" targetRef="mergeDismount" />
+    <bpmn:sequenceFlow id="f-mergeDismount-mount" sourceRef="mergeDismount" targetRef="mount" />
+    <bpmn:sequenceFlow id="f-mount-readInstalled" sourceRef="mount" targetRef="readInstalled" />
+    <bpmn:sequenceFlow id="f-readInstalled-sendFinal" sourceRef="readInstalled" targetRef="sendFinal" />
+    <bpmn:sequenceFlow id="f-sendFinal-tellGO" sourceRef="sendFinal" targetRef="tellGO" />
+    <bpmn:sequenceFlow id="f-tellGO-notifyMsp" sourceRef="tellGO" targetRef="notifyMsp" />
+    <bpmn:sequenceFlow id="f-notifyMsp-finish" sourceRef="notifyMsp" targetRef="finish" />
+  </bpmn:process>
+</bpmn:definitions>

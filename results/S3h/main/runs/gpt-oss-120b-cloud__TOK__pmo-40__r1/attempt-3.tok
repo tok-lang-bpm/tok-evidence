@@ -1,0 +1,31 @@
+tok 1.0 "OEE"
+
+pool org "Organization"
+  lane machine "Machine"
+    start s "Start OEE Process"
+    task c "Collect relevant information from machine"
+    boundary disc "Machine disconnected" on=c
+    end disc_end "Process stopped due to machine disconnection"
+
+  lane system "System"
+    task calc "Calculate the Overall Equipment Efficiency (OEE)"
+    xor low "OEE below threshold?"
+    and paral "Parallel low‑OEE actions"
+    and join "Join low‑OEE actions"
+    task stop "Stop the machine"
+    task email "Send email to engineer"
+    task restart "Restart the machine"
+    end ok "OEE acceptable"
+
+flow s -> c
+flow disc -> disc_end
+flow c -> calc
+flow calc -> low
+flow low -> ok "no"
+flow low -> paral "yes"
+flow paral -> stop
+flow paral -> email
+flow stop -> join
+flow email -> join
+flow join -> restart
+flow restart -> c

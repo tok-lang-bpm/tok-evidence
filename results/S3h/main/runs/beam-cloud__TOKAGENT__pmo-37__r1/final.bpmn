@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Contract" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_parts_delivered" name="parts delivered" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="contract" name="Contract" processRef="contract-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="contract-process" name="Contract" isExecutable="false">
+    <bpmn:laneSet id="contract-lanes">
+      <bpmn:lane id="buyer" name="Buyer">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>f</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>om</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>first</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="shops" name="Web shops">
+        <bpmn:flowNodeRef>deliver</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start contract project" />
+    <bpmn:task id="q" name="Query all web shops" />
+    <bpmn:task id="f" name="Find out how much they can deliver, at which price, and how long it will take" />
+    <bpmn:task id="c" name="Create a list of parts that you order from each shop" />
+    <bpmn:exclusiveGateway id="g1" name="One shop has enough parts?" default="f-g1-om" />
+    <bpmn:task id="o1" name="Order from one shop" />
+    <bpmn:task id="om" name="Order from several shops" />
+    <bpmn:intermediateCatchEvent id="first" name="First parts arrive">
+      <bpmn:messageEventDefinition id="first-def" messageRef="Message_parts_delivered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="b" name="Start building" />
+    <bpmn:endEvent id="e1" name="End contract project" />
+    <bpmn:subProcess id="monitor" name="Stock monitoring" triggeredByEvent="true">
+      <bpmn:startEvent id="sm" name="Stock falls below 5">
+        <bpmn:conditionalEventDefinition id="sm-def">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">stock &lt; 5</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:task id="rcheap" name="Reorder (the cheapest)" />
+      <bpmn:exclusiveGateway id="g2" name="Stock below 3?" default="f-g2-e2" />
+      <bpmn:task id="rfast" name="Reorder again (the fastest)" />
+      <bpmn:exclusiveGateway id="g3" name="Stock is zero?" default="f-g3-e2" />
+      <bpmn:task id="mail" name="Write a mail to your friends, complaining about the webshops" />
+      <bpmn:endEvent id="e2" name="End reorder" />
+      <bpmn:sequenceFlow id="f-sm-rcheap" sourceRef="sm" targetRef="rcheap" />
+      <bpmn:sequenceFlow id="f-rcheap-g2" sourceRef="rcheap" targetRef="g2" />
+      <bpmn:sequenceFlow id="f-g2-rfast" name="yes" sourceRef="g2" targetRef="rfast">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 3</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-g2-e2" name="no" sourceRef="g2" targetRef="e2" />
+      <bpmn:sequenceFlow id="f-rfast-g3" sourceRef="rfast" targetRef="g3" />
+      <bpmn:sequenceFlow id="f-g3-mail" name="yes" sourceRef="g3" targetRef="mail">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-g3-e2" name="no" sourceRef="g3" targetRef="e2" />
+      <bpmn:sequenceFlow id="f-mail-e2" sourceRef="mail" targetRef="e2" />
+    </bpmn:subProcess>
+    <bpmn:task id="deliver" name="Deliver parts in batches" />
+    <bpmn:sequenceFlow id="f-s-q" sourceRef="s" targetRef="q" />
+    <bpmn:sequenceFlow id="f-q-f" sourceRef="q" targetRef="f" />
+    <bpmn:sequenceFlow id="f-f-c" sourceRef="f" targetRef="c" />
+    <bpmn:sequenceFlow id="f-c-g1" sourceRef="c" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-o1" name="yes" sourceRef="g1" targetRef="o1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oneShopHasEnough = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g1-om" name="no" sourceRef="g1" targetRef="om" />
+    <bpmn:sequenceFlow id="f-o1-deliver" sourceRef="o1" targetRef="deliver" />
+    <bpmn:sequenceFlow id="f-om-deliver" sourceRef="om" targetRef="deliver" />
+    <bpmn:sequenceFlow id="f-deliver-first" sourceRef="deliver" targetRef="first" />
+    <bpmn:sequenceFlow id="f-first-b" sourceRef="first" targetRef="b" />
+    <bpmn:sequenceFlow id="f-b-e1" sourceRef="b" targetRef="e1" />
+  </bpmn:process>
+</bpmn:definitions>

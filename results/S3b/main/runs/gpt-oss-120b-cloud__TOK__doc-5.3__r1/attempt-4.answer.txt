@@ -1,0 +1,49 @@
+```tok
+tok 1.0 "Office Supply Request Process"
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start_event "Office supply request submitted"
+    task submit_request "Submit office supply request"
+    task register_requirement "Register requirement"
+    task employee_review "Review change request"
+    end rejected "Request rejected"
+    end completed "Request completed"
+    flow start_event -> submit_request
+    flow submit_request -> register_requirement
+
+  lane supervisor "Supervisor"
+    task receive_request "Receive request"
+    xor sup_dec "Supervisor decision?"
+    task approve_request "Approve request"
+    task ask_change "Ask for change"
+    task reject_request "Reject request"
+    flow register_requirement -> receive_request -> sup_dec
+    flow sup_dec -> approve_request "approve"
+    flow sup_dec -> ask_change "change"
+    flow sup_dec -> reject_request "reject"
+
+  lane purchase "Purchase Department"
+    sub make_quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_valid_gw "Vendor valid?"
+    task choose_different_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+    task wait_delivery "Wait for product delivery and invoice receipt"
+    flow approve_request -> send_notification_approval
+    flow send_notification_approval -> make_quotations -> select_vendor -> vendor_valid_gw
+    flow vendor_valid_gw -> select_vendor "valid"
+    flow vendor_valid_gw -> choose_different_vendor "invalid"
+    flow choose_different_vendor -> select_vendor
+    flow select_vendor -> generate_po -> wait_delivery
+
+  lane system "System"
+    task send_notification_approval "Send approval notification"
+    task send_notification_rejection "Send rejection notification"
+    task send_notification_change "Send change request notification"
+    task send_notification_completion "Send completion notification"
+    flow reject_request -> send_notification_rejection -> rejected
+    flow ask_change -> send_notification_change -> employee_review
+    flow employee_review -> sup_dec
+    flow wait_delivery -> send_notification_completion -> completed
+```

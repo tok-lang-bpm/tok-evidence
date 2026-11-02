@@ -1,0 +1,55 @@
+```tok
+tok 1.0 "Defaulter Handling Process" [executable]
+
+pool org "Organization"
+  lane ops "Operations"
+    start morning "Weekday morning start"
+    task backup "Backup the database"
+    task checkNewRecords "Check Account Defaulter table for new records"
+    xor newRecords "New records found?"
+    # ----- branch: new records exist -----
+    end noAction "No further action (new records present)"
+    # ----- branch: no new records -----
+    task checkCRM1 "Check CRM system for new returns"
+    xor newReturns1 "New returns exist?"
+    task register "Register defaulting accounts and customers"
+    xor advised "Defaulting client codes previously advised?"
+    task produceTable "Produce table of defaulting accounts"
+    task sendToAM "Send table to account management"
+    xor deadline2 "Completed by 2:30 pm?"
+    task alertSupervisor2 "Send alert to supervisor (after 2:30 pm)"
+    task checkCRM2 "Check CRM system for new returns (post‑report)"
+    xor newReturns2 "New returns filed?"
+    task reconcile "Reconcile with existing account defaulters table"
+    xor deadline4 "Completed by 4:00 pm?"
+    task alertSupervisor4 "Send message to supervisor (after 4:00 pm)"
+    end done "Process completed"
+
+flow morning -> backup -> checkNewRecords -> newRecords
+flow newRecords -> noAction when="newRecords == true"
+flow newRecords -> checkCRM1 when="newRecords == false"
+
+flow checkCRM1 -> newReturns1
+flow newReturns1 -> register when="newReturns1 == true"
+flow newReturns1 -> deadline2 when="newReturns1 == false"
+
+flow register -> advised
+flow advised -> deadline2 when="advised == true"
+flow advised -> produceTable when="advised == false"
+
+flow produceTable -> sendToAM -> deadline2
+
+flow deadline2 -> checkCRM2 when="deadline2 == true"
+flow deadline2 -> alertSupervisor2 when="deadline2 == false"
+flow alertSupervisor2 -> checkCRM2
+
+flow checkCRM2 -> newReturns2
+flow newReturns2 -> reconcile when="newReturns2 == true"
+flow newReturns2 -> deadline4 when="newReturns2 == false"
+
+flow reconcile -> deadline4
+
+flow deadline4 -> done when="deadline4 == true"
+flow deadline4 -> alertSupervisor4 when="deadline4 == false"
+flow alertSupervisor4 -> done
+```

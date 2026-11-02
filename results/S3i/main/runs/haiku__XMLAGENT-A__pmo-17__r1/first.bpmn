@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msg_backorder" name="Back-order received" />
+  <bpmn:message id="msg_delivery" name="Delivery confirmed" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool_company" name="E-commerce company" processRef="order_fulfillment" />
+  </bpmn:collaboration>
+  <bpmn:process id="order_fulfillment" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_place</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catch_delivered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_issues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_system" name="Order system">
+        <bpmn:flowNodeRef>task_record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_notify_fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_check_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_backorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catch_backorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_merge_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_update_inv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_join_post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_refund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_return</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_warehouse" name="Warehouse">
+        <bpmn:flowNodeRef>task_pick</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_qc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_par_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_gift</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_gift</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_gift_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_pack</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_receive_returns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inspect</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_shipping" name="Shipping department">
+        <bpmn:flowNodeRef>task_docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_intl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_customs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_intl_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_join_pack</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_dispatch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_split_post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_return_label</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Customer wants to order" />
+    <bpmn:task id="task_place" name="Place order" />
+    <bpmn:task id="task_record" name="Record order details" />
+    <bpmn:task id="task_payment" name="Process payment" />
+    <bpmn:exclusiveGateway id="gw_payment" name="Payment successful?" />
+    <bpmn:task id="task_notify_fail" name="Notify customer of failed payment" />
+    <bpmn:endEvent id="end_fail" name="Order ended: payment failed" />
+    <bpmn:task id="task_check_stock" name="Check stock availability" />
+    <bpmn:exclusiveGateway id="gw_stock" name="Items in stock?" />
+    <bpmn:task id="task_backorder" name="Initiate back-order" />
+    <bpmn:task id="task_inform_delay" name="Inform customer of delay" />
+    <bpmn:intermediateCatchEvent id="catch_backorder" name="Back-order received">
+      <bpmn:messageEventDefinition id="md_backorder" messageRef="msg_backorder" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gw_merge_stock" name="All required items in stock" />
+    <bpmn:task id="task_pick" name="Pick items from warehouse" />
+    <bpmn:task id="task_qc" name="Perform quality control check" />
+    <bpmn:parallelGateway id="gw_par_split" name="Packaging and shipping preparation" />
+    <bpmn:exclusiveGateway id="gw_gift" name="Gift wrapping requested?" />
+    <bpmn:task id="task_gift" name="Gift-wrap items" />
+    <bpmn:exclusiveGateway id="gw_gift_merge" />
+    <bpmn:task id="task_pack" name="Pack order" />
+    <bpmn:task id="task_docs" name="Prepare shipping documents and labels" />
+    <bpmn:exclusiveGateway id="gw_intl" name="International order?" />
+    <bpmn:task id="task_customs" name="Prepare customs documentation" />
+    <bpmn:exclusiveGateway id="gw_intl_merge" />
+    <bpmn:parallelGateway id="gw_join_pack" name="Packaging and shipping documents ready" />
+    <bpmn:task id="task_dispatch" name="Dispatch order" />
+    <bpmn:parallelGateway id="gw_split_post" name="Dispatch follow-up" />
+    <bpmn:task id="task_confirm" name="Send shipping confirmation to customer" />
+    <bpmn:task id="task_update_inv" name="Update inventory levels" />
+    <bpmn:parallelGateway id="gw_join_post" />
+    <bpmn:intermediateCatchEvent id="catch_delivered" name="Delivery confirmed">
+      <bpmn:messageEventDefinition id="md_delivery" messageRef="msg_delivery" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gw_issues" name="Issues reported on delivery?" />
+    <bpmn:task id="task_feedback" name="Send feedback follow-up email" />
+    <bpmn:endEvent id="end_done" name="Order completed" />
+    <bpmn:task id="task_report" name="Report issues upon delivery" />
+    <bpmn:task id="task_return_label" name="Send return shipping label" />
+    <bpmn:task id="task_receive_returns" name="Receive returned items" />
+    <bpmn:task id="task_inspect" name="Inspect returned items" />
+    <bpmn:task id="task_refund" name="Process refund or replacement" />
+    <bpmn:endEvent id="end_return" name="Return handled" />
+
+    <bpmn:sequenceFlow id="f01" sourceRef="start" targetRef="task_place" />
+    <bpmn:sequenceFlow id="f02" sourceRef="task_place" targetRef="task_record" />
+    <bpmn:sequenceFlow id="f03" sourceRef="task_record" targetRef="task_payment" />
+    <bpmn:sequenceFlow id="f04" sourceRef="task_payment" targetRef="gw_payment" />
+    <bpmn:sequenceFlow id="f05" name="no" sourceRef="gw_payment" targetRef="task_notify_fail" />
+    <bpmn:sequenceFlow id="f06" sourceRef="task_notify_fail" targetRef="end_fail" />
+    <bpmn:sequenceFlow id="f07" name="yes" sourceRef="gw_payment" targetRef="task_check_stock" />
+    <bpmn:sequenceFlow id="f08" sourceRef="task_check_stock" targetRef="gw_stock" />
+    <bpmn:sequenceFlow id="f09" name="yes" sourceRef="gw_stock" targetRef="gw_merge_stock" />
+    <bpmn:sequenceFlow id="f10" name="no" sourceRef="gw_stock" targetRef="task_backorder" />
+    <bpmn:sequenceFlow id="f11" sourceRef="task_backorder" targetRef="task_inform_delay" />
+    <bpmn:sequenceFlow id="f12" sourceRef="task_inform_delay" targetRef="catch_backorder" />
+    <bpmn:sequenceFlow id="f13" sourceRef="catch_backorder" targetRef="gw_merge_stock" />
+    <bpmn:sequenceFlow id="f14" sourceRef="gw_merge_stock" targetRef="task_pick" />
+    <bpmn:sequenceFlow id="f15" sourceRef="task_pick" targetRef="task_qc" />
+    <bpmn:sequenceFlow id="f16" sourceRef="task_qc" targetRef="gw_par_split" />
+    <bpmn:sequenceFlow id="f17" sourceRef="gw_par_split" targetRef="gw_gift" />
+    <bpmn:sequenceFlow id="f18" sourceRef="gw_par_split" targetRef="task_docs" />
+    <bpmn:sequenceFlow id="f19" name="yes" sourceRef="gw_gift" targetRef="task_gift" />
+    <bpmn:sequenceFlow id="f20" name="no" sourceRef="gw_gift" targetRef="gw_gift_merge" />
+    <bpmn:sequenceFlow id="f21" sourceRef="task_gift" targetRef="gw_gift_merge" />
+    <bpmn:sequenceFlow id="f22" sourceRef="gw_gift_merge" targetRef="task_pack" />
+    <bpmn:sequenceFlow id="f23" sourceRef="task_pack" targetRef="gw_join_pack" />
+    <bpmn:sequenceFlow id="f24" sourceRef="task_docs" targetRef="gw_intl" />
+    <bpmn:sequenceFlow id="f25" name="yes" sourceRef="gw_intl" targetRef="task_customs" />
+    <bpmn:sequenceFlow id="f26" name="no" sourceRef="gw_intl" targetRef="gw_intl_merge" />
+    <bpmn:sequenceFlow id="f27" sourceRef="task_customs" targetRef="gw_intl_merge" />
+    <bpmn:sequenceFlow id="f28" sourceRef="gw_intl_merge" targetRef="gw_join_pack" />
+    <bpmn:sequenceFlow id="f29" sourceRef="gw_join_pack" targetRef="task_dispatch" />
+    <bpmn:sequenceFlow id="f30" sourceRef="task_dispatch" targetRef="gw_split_post" />
+    <bpmn:sequenceFlow id="f31" sourceRef="gw_split_post" targetRef="task_confirm" />
+    <bpmn:sequenceFlow id="f32" sourceRef="gw_split_post" targetRef="task_update_inv" />
+    <bpmn:sequenceFlow id="f33" sourceRef="task_confirm" targetRef="gw_join_post" />
+    <bpmn:sequenceFlow id="f34" sourceRef="task_update_inv" targetRef="gw_join_post" />
+    <bpmn:sequenceFlow id="f35" sourceRef="gw_join_post" targetRef="catch_delivered" />
+    <bpmn:sequenceFlow id="f36" sourceRef="catch_delivered" targetRef="gw_issues" />
+    <bpmn:sequenceFlow id="f37" name="no" sourceRef="gw_issues" targetRef="task_feedback" />
+    <bpmn:sequenceFlow id="f38" sourceRef="task_feedback" targetRef="end_done" />
+    <bpmn:sequenceFlow id="f39" name="yes" sourceRef="gw_issues" targetRef="task_report" />
+    <bpmn:sequenceFlow id="f40" sourceRef="task_report" targetRef="task_return_label" />
+    <bpmn:sequenceFlow id="f41" sourceRef="task_return_label" targetRef="task_receive_returns" />
+    <bpmn:sequenceFlow id="f42" sourceRef="task_receive_returns" targetRef="task_inspect" />
+    <bpmn:sequenceFlow id="f43" sourceRef="task_inspect" targetRef="task_refund" />
+    <bpmn:sequenceFlow id="f44" sourceRef="task_refund" targetRef="end_return" />
+  </bpmn:process>
+</bpmn:definitions>

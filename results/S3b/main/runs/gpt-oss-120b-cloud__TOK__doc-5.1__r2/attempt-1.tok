@@ -1,0 +1,28 @@
+tok 1.0 "Loan approval process"
+
+pool bank "Bank"
+  lane customer "Customer"
+    start receive "Receive customer request"
+    task receive_feedback "Customer receives feedback"
+    end completed "Process completed"
+
+  lane risk_service "Risk Assessment Service"
+    task invoke_risk_assessment "Invoke risk assessment Web service"
+    xor assess_decision "Assess decision?"
+    task approve_loan "Approve loan"
+    task deny_loan "Deny loan"
+
+  lane approver "Approver Service"
+    task send_to_approver "Send request to approver Web service"
+    task approver_approve "Approver approves loan"
+
+flow receive -> invoke_risk_assessment
+flow invoke_risk_assessment -> assess_decision
+flow assess_decision -> approve_loan "small & low risk"
+flow assess_decision -> deny_loan "high risk"
+flow assess_decision -> send_to_approver "needs review or amount ≥ 10000"
+flow approve_loan -> receive_feedback
+flow deny_loan -> receive_feedback
+flow send_to_approver -> approver_approve
+flow approver_approve -> receive_feedback
+flow receive_feedback -> completed

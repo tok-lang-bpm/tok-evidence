@@ -1,0 +1,81 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Every weekday morning, the database is backed up and then it is checked to see whether the Account Defaulter table has new records. If no new records are found, then the process should check the CRM system to see whether new returns have been filed. If new returns exist, then register all defaulting accounts and customers. If the defaulting client codes have not been previously advised, produce another table of defaulting accounts and send to account management. All of this must be completed by 2: 30 pm, if it is not, then an alert should be sent to the supervisor. Once the new defaulting account report has been completed, check the CRM system to see whether new returns have been filed. If new returns have been filed, reconcile with the existing account defaulters table. This must be completed by 4: 0 pm otherwise a supervisor should be sent a message.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Account defaulters processing"
+
+pool org "Organisation"
+  lane process "Process"
+    start morning "Every weekday morning"
+    sub initial "Initial processing"
+      start is "Start initial processing"
+      task backup "Back up the database"
+      task check_records "Check the Account Defaulter table for new records"
+      xor records "New records found?"
+      task check_crm1 "Check the CRM system for new returns"
+      xor new_returns "New returns exist?"
+      task register "Register all defaulting accounts and customers"
+      xor advised "Defaulting client codes previously advised?"
+      task produce "Produce another table of defaulting accounts"
+      task send_mgmt "Send to account management"
+      xor merge1 "Merge initial branches"
+      end ie "Initial processing completed"
+      flow is -> backup -> check_records -> records
+      flow records -> check_crm1 "no"
+      flow records -> merge1 "yes"
+      flow check_crm1 -> new_returns
+      flow new_returns -> register "yes"
+      flow new_returns -> merge1 "no"
+      flow register -> advised
+      flow advised -> produce "not previously advised"
+      flow advised -> merge1 "previously advised" default
+      flow produce -> send_mgmt
+      flow send_mgmt -> merge1
+      flow merge1 -> ie
+    boundary alert on=initial timer noninterrupting
+    sub second "Second processing"
+      start ss "Start second processing"
+      task check_crm2 "Check the CRM system for new returns"
+      xor new_returns2 "New returns filed?"
+      task reconcile "Reconcile with the existing account defaulters table"
+      xor merge2 "Merge second branches"
+      end se "Second processing completed"
+      flow ss -> check_crm2 -> new_returns2
+      flow new_returns2 -> reconcile "yes"
+      flow new_returns2 -> merge2 "no"
+      flow reconcile -> merge2
+      flow merge2 -> se
+    boundary msg on=second timer noninterrupting
+    task send_alert "Send an alert to the supervisor"
+    task send_msg "Send a message to the supervisor"
+    end done "Process completed"
+    end alert_done "Alert sent"
+    end msg_done "Message sent"
+    flow morning -> initial
+    flow initial -> second
+    flow second -> done
+    flow alert -> send_alert
+    flow send_alert -> alert_done
+    flow msg -> send_msg
+    flow send_msg -> msg_done
+```
+
+The tok checker reports these problems in it:
+
+- line 26: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-advised-produce)
+- line 31: warning W010: timer event without a time (alert)
+- line 44: warning W010: timer event without a time (msg)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

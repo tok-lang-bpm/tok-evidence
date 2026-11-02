@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Daily defaulter report" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Daily defaulter report" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="db" name="Database system">
+        <bpmn:flowNodeRef>daily</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>newRec</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>advised</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produce</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendAM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dead1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dead2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endDone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endLate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endNoRet</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="crm" name="CRM system">
+        <bpmn:flowNodeRef>checkCRM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ret1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ret2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="daily" name="Weekday morning">
+      <bpmn:timerEventDefinition id="daily-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:task id="backup" name="Back up the database" />
+    <bpmn:task id="checkTable" name="Check the Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="newRec" name="New records found?" />
+    <bpmn:exclusiveGateway id="merge1" />
+    <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="advised" name="Defaulting client codes previously advised?" />
+    <bpmn:task id="produce" name="Produce another table of defaulting accounts" />
+    <bpmn:task id="sendAM" name="Send the table to account management" />
+    <bpmn:exclusiveGateway id="merge2" />
+    <bpmn:exclusiveGateway id="merge3" />
+    <bpmn:exclusiveGateway id="dead1" name="Completed by 2:30 pm?" />
+    <bpmn:task id="alert" name="Send an alert to the supervisor" />
+    <bpmn:task id="reconcile" name="Reconcile with the Account Defaulter table" />
+    <bpmn:exclusiveGateway id="dead2" name="Completed by 4:00 pm?" />
+    <bpmn:task id="msg" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="endDone" name="Report completed" />
+    <bpmn:endEvent id="endLate" name="Supervisor informed of the late report" />
+    <bpmn:endEvent id="endNoRet" name="No new returns to reconcile" />
+    <bpmn:task id="checkCRM1" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="ret1" name="New returns filed?" />
+    <bpmn:task id="checkCRM2" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="ret2" name="New returns filed?" />
+    <bpmn:sequenceFlow id="f-daily-backup" sourceRef="daily" targetRef="backup" />
+    <bpmn:sequenceFlow id="f-backup-checkTable" sourceRef="backup" targetRef="checkTable" />
+    <bpmn:sequenceFlow id="f-checkTable-newRec" sourceRef="checkTable" targetRef="newRec" />
+    <bpmn:sequenceFlow id="f-newRec-checkCRM1" name="no" sourceRef="newRec" targetRef="checkCRM1" />
+    <bpmn:sequenceFlow id="f-newRec-merge1" name="yes" sourceRef="newRec" targetRef="merge1" />
+    <bpmn:sequenceFlow id="f-merge1-checkCRM1" sourceRef="merge1" targetRef="checkCRM1" />
+    <bpmn:sequenceFlow id="f-checkCRM1-ret1" sourceRef="checkCRM1" targetRef="ret1" />
+    <bpmn:sequenceFlow id="f-ret1-register" name="yes" sourceRef="ret1" targetRef="register" />
+    <bpmn:sequenceFlow id="f-ret1-merge3" name="no" sourceRef="ret1" targetRef="merge3" />
+    <bpmn:sequenceFlow id="f-register-advised" sourceRef="register" targetRef="advised" />
+    <bpmn:sequenceFlow id="f-advised-produce" name="no" sourceRef="advised" targetRef="produce" />
+    <bpmn:sequenceFlow id="f-advised-merge2" name="yes" sourceRef="advised" targetRef="merge2" />
+    <bpmn:sequenceFlow id="f-produce-sendAM" sourceRef="produce" targetRef="sendAM" />
+    <bpmn:sequenceFlow id="f-sendAM-merge2" sourceRef="sendAM" targetRef="merge2" />
+    <bpmn:sequenceFlow id="f-merge2-merge3" sourceRef="merge2" targetRef="merge3" />
+    <bpmn:sequenceFlow id="f-merge3-dead1" sourceRef="merge3" targetRef="dead1" />
+    <bpmn:sequenceFlow id="f-dead1-checkCRM2" name="yes" sourceRef="dead1" targetRef="checkCRM2" />
+    <bpmn:sequenceFlow id="f-dead1-alert" name="no" sourceRef="dead1" targetRef="alert" />
+    <bpmn:sequenceFlow id="f-alert-checkCRM2" sourceRef="alert" targetRef="checkCRM2" />
+    <bpmn:sequenceFlow id="f-checkCRM2-ret2" sourceRef="checkCRM2" targetRef="ret2" />
+    <bpmn:sequenceFlow id="f-ret2-reconcile" name="yes" sourceRef="ret2" targetRef="reconcile" />
+    <bpmn:sequenceFlow id="f-ret2-endNoRet" name="no" sourceRef="ret2" targetRef="endNoRet" />
+    <bpmn:sequenceFlow id="f-reconcile-dead2" sourceRef="reconcile" targetRef="dead2" />
+    <bpmn:sequenceFlow id="f-dead2-endDone" name="yes" sourceRef="dead2" targetRef="endDone" />
+    <bpmn:sequenceFlow id="f-dead2-msg" name="no" sourceRef="dead2" targetRef="msg" />
+    <bpmn:sequenceFlow id="f-msg-endLate" sourceRef="msg" targetRef="endLate" />
+  </bpmn:process>
+</bpmn:definitions>

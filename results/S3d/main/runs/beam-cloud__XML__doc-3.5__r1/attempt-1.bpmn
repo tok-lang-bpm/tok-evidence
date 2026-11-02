@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane-mail-processing-unit" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>start-event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect-mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distribute-mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-mail-clerk" name="Mail Clerk">
+        <bpmn:flowNodeRef>sort-unopened-mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-registry" name="Registry">
+        <bpmn:flowNodeRef>open-and-sort-mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register-mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-assistant-registry-manager" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>quality-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compliance-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compile-requisition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-back-to-party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture-matter-details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>put-in-envelope</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post-to-party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-processed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-cashier" name="Cashier">
+        <bpmn:flowNodeRef>take-fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture-party-details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print-court-file</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start-event" name="Mail to be processed" />
+    <bpmn:task id="collect-mail" name="Collect the mail" />
+    <bpmn:task id="sort-unopened-mail" name="Sort unopened mail into business areas" />
+    <bpmn:task id="distribute-mail" name="Distribute the mail" />
+    <bpmn:task id="open-and-sort-mail" name="Open and sort the mail into groups" />
+    <bpmn:task id="register-mail" name="Register in manual incoming Mail Register" />
+    <bpmn:task id="quality-check" name="Perform a quality check" />
+    <bpmn:exclusiveGateway id="compliance-gateway" name="Mail compliant?" default="flow-compliant" />
+    <bpmn:task id="compile-requisition" name="Compile list of requisition" />
+    <bpmn:task id="send-back-to-party" name="Send back to party" />
+    <bpmn:task id="capture-matter-details" name="Capture matter details" />
+    <bpmn:task id="take-fees" name="Take applicable fees" />
+    <bpmn:parallelGateway id="parallel-split" />
+    <bpmn:task id="put-in-envelope" name="Put receipt and copied documents into an envelope" />
+    <bpmn:task id="post-to-party" name="Post to party" />
+    <bpmn:task id="capture-party-details" name="Capture Party Details" />
+    <bpmn:task id="print-court-file" name="Print Physical Court File" />
+    <bpmn:parallelGateway id="parallel-join" />
+    <bpmn:endEvent id="end-processed" name="Mail processed" />
+    <bpmn:endEvent id="end-rejected" name="Mail rejected" />
+
+    <bpmn:sequenceFlow id="flow-start-collect" sourceRef="start-event" targetRef="collect-mail" />
+    <bpmn:sequenceFlow id="flow-collect-sort" sourceRef="collect-mail" targetRef="sort-unopened-mail" />
+    <bpmn:sequenceFlow id="flow-sort-distribute" sourceRef="sort-unopened-mail" targetRef="distribute-mail" />
+    <bpmn:sequenceFlow id="flow-distribute-open" sourceRef="distribute-mail" targetRef="open-and-sort-mail" />
+    <bpmn:sequenceFlow id="flow-open-register" sourceRef="open-and-sort-mail" targetRef="register-mail" />
+    <bpmn:sequenceFlow id="flow-register-quality" sourceRef="register-mail" targetRef="quality-check" />
+    <bpmn:sequenceFlow id="flow-quality-gateway" sourceRef="quality-check" targetRef="compliance-gateway" />
+    <bpmn:sequenceFlow id="flow-noncompliant" name="not compliant" sourceRef="compliance-gateway" targetRef="compile-requisition">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">not compliant</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-compliant" name="compliant" sourceRef="compliance-gateway" targetRef="capture-matter-details" />
+    <bpmn:sequenceFlow id="flow-compile-send" sourceRef="compile-requisition" targetRef="send-back-to-party" />
+    <bpmn:sequenceFlow id="flow-send-end" sourceRef="send-back-to-party" targetRef="end-rejected" />
+    <bpmn:sequenceFlow id="flow-capture-take" sourceRef="capture-matter-details" targetRef="take-fees" />
+    <bpmn:sequenceFlow id="flow-take-split" sourceRef="take-fees" targetRef="parallel-split" />
+    <bpmn:sequenceFlow id="flow-split-envelope" sourceRef="parallel-split" targetRef="put-in-envelope" />
+    <bpmn:sequenceFlow id="flow-split-capture" sourceRef="parallel-split" targetRef="capture-party-details" />
+    <bpmn:sequenceFlow id="flow-envelope-post" sourceRef="put-in-envelope" targetRef="post-to-party" />
+    <bpmn:sequenceFlow id="flow-post-join" sourceRef="post-to-party" targetRef="parallel-join" />
+    <bpmn:sequenceFlow id="flow-capture-print" sourceRef="capture-party-details" targetRef="print-court-file" />
+    <bpmn:sequenceFlow id="flow-print-join" sourceRef="print-court-file" targetRef="parallel-join" />
+    <bpmn:sequenceFlow id="flow-join-end" sourceRef="parallel-join" targetRef="end-processed" />
+  </bpmn:process>
+</bpmn:definitions>

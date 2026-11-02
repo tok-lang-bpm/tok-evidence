@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Instruct an artist to create a 3D model print it on a 3D printer" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="p" name="3D printing process" processRef="p-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="p-process" name="Instruct an artist to create a 3D model print it on a 3D printer" isExecutable="false">
+    <bpmn:laneSet id="p-lanes">
+      <bpmn:lane id="you" name="You">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>instruct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendSketches</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tellChanges</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>chooseColor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkAmount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAmount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shoppingList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderColor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwHavePlastic</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwPrepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generateGcode</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="artist" name="Artist">
+        <bpmn:flowNodeRef>createProject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendStl</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="printer" name="3D Printer">
+        <bpmn:flowNodeRef>turnOn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Crave custom 3D model" />
+    <bpmn:task id="instruct" name="Instruct artist to create a project" />
+    <bpmn:task id="sendSketches" name="Send several sketches" />
+    <bpmn:exclusiveGateway id="gwResult" name="Satisfied with result?" default="f-gwResult-sendStl" />
+    <bpmn:task id="tellChanges" name="Tell what to change" />
+    <bpmn:task id="chooseColor" name="Choose plastic color" />
+    <bpmn:exclusiveGateway id="gwStock" name="Color in stock?" default="f-gwStock-orderColor" />
+    <bpmn:task id="checkAmount" name="Check how much color is left" />
+    <bpmn:exclusiveGateway id="gwAmount" name="Under 100 grams?" default="f-gwAmount-gwHavePlastic" />
+    <bpmn:task id="shoppingList" name="Put color on shopping list" />
+    <bpmn:task id="orderColor" name="Order color" />
+    <bpmn:exclusiveGateway id="gwHavePlastic" name="Plastic available" />
+    <bpmn:parallelGateway id="gwPrepare" name="Prepare 3D print" />
+    <bpmn:task id="generateGcode" name="Generate gcode file" />
+    <bpmn:parallelGateway id="gwReady" name="Printer ready" />
+    <bpmn:endEvent id="e" name="Model printed" />
+    <bpmn:task id="createProject" name="Create 3D model project" />
+    <bpmn:task id="sendStl" name="Send STL file" />
+    <bpmn:task id="turnOn" name="Turn printer on and heat bed and extruder" />
+    <bpmn:task id="print" name="Print model" />
+    <bpmn:sequenceFlow id="f-s-instruct" sourceRef="s" targetRef="instruct" />
+    <bpmn:sequenceFlow id="f-instruct-sendSketches" sourceRef="instruct" targetRef="sendSketches" />
+    <bpmn:sequenceFlow id="f-sendSketches-createProject" sourceRef="sendSketches" targetRef="createProject" />
+    <bpmn:sequenceFlow id="f-createProject-gwResult" sourceRef="createProject" targetRef="gwResult" />
+    <bpmn:sequenceFlow id="f-gwResult-tellChanges" name="Not satisfied" sourceRef="gwResult" targetRef="tellChanges">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">satisfied = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-tellChanges-createProject" sourceRef="tellChanges" targetRef="createProject" />
+    <bpmn:sequenceFlow id="f-gwResult-sendStl" name="Satisfied" sourceRef="gwResult" targetRef="sendStl" />
+    <bpmn:sequenceFlow id="f-sendStl-chooseColor" sourceRef="sendStl" targetRef="chooseColor" />
+    <bpmn:sequenceFlow id="f-chooseColor-gwStock" sourceRef="chooseColor" targetRef="gwStock" />
+    <bpmn:sequenceFlow id="f-gwStock-checkAmount" name="In stock" sourceRef="gwStock" targetRef="checkAmount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">inStock = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwStock-orderColor" name="Not in stock" sourceRef="gwStock" targetRef="orderColor" />
+    <bpmn:sequenceFlow id="f-checkAmount-gwAmount" sourceRef="checkAmount" targetRef="gwAmount" />
+    <bpmn:sequenceFlow id="f-gwAmount-shoppingList" name="Under 100 grams" sourceRef="gwAmount" targetRef="shoppingList">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amountLeft &lt; 100</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwAmount-gwHavePlastic" name="100 grams or more" sourceRef="gwAmount" targetRef="gwHavePlastic" />
+    <bpmn:sequenceFlow id="f-shoppingList-gwHavePlastic" sourceRef="shoppingList" targetRef="gwHavePlastic" />
+    <bpmn:sequenceFlow id="f-orderColor-gwHavePlastic" sourceRef="orderColor" targetRef="gwHavePlastic" />
+    <bpmn:sequenceFlow id="f-gwHavePlastic-gwPrepare" sourceRef="gwHavePlastic" targetRef="gwPrepare" />
+    <bpmn:sequenceFlow id="f-gwPrepare-turnOn" sourceRef="gwPrepare" targetRef="turnOn" />
+    <bpmn:sequenceFlow id="f-gwPrepare-generateGcode" sourceRef="gwPrepare" targetRef="generateGcode" />
+    <bpmn:sequenceFlow id="f-turnOn-gwReady" sourceRef="turnOn" targetRef="gwReady" />
+    <bpmn:sequenceFlow id="f-generateGcode-gwReady" sourceRef="generateGcode" targetRef="gwReady" />
+    <bpmn:sequenceFlow id="f-gwReady-print" sourceRef="gwReady" targetRef="print" />
+    <bpmn:sequenceFlow id="f-print-e" sourceRef="print" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

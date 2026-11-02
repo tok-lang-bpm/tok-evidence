@@ -1,0 +1,179 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4156,
+  "output_tokens": 1074,
+  "seconds": 4.04672200002824,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create a BPMN model in tok language. Steps: one pool (organisation). Lanes for each actor (person, role, department, system). The text mentions \"parent\", \"social security\", \"company\". Also \"system\"? Probably we have lanes: Parent, Social Security, Company. Could also have a lane for \"System\" as the process orchestrator? But likely just three lanes. Activities become tasks with verb-object from text.\n\nList activities:\n\n- Fetch information about potential models (months duration, split between parents)\n- Let parent select\n- Collect relevant information\n- Notify Social Security, Company in time\n- Gather information from companies\n- At the end of the period let parent decide about extension.\n\nWe need to map each to tasks.\n\nWe need start event and end events per path.\n\nDecisions: Probably after fetching info, parent selects; maybe a decision gateway for selection. At end of period, decide about extension (exclusive gateway). Might have parallel activities? Probably not.\n\nWe could also have parallel gateway for notifying both Social Security and Company? The activity \"Notify Social Security, Company in time\" could be two parallel tasks: Notify Social Security, Notify Company. Use parallel gateway splitting and joining.\n\nAlso \"Gather information from companies\" could be in parallel with other tasks? Not clear.\n\nSimplify: Sequence: start -> Fetch info -> Let parent select -> Collect relevant info -> Split parallel: Notify Social Security and Notify Company (two tasks) -> Gather information from companies (maybe after notifications) -> At end of period decision: extension? Then end.\n\nWe can implement a parallel gateway: after Collect relevant info, split into two parallel branches: notify social security, notify company. Join after both done. Then Gather information from companies (maybe sequential after join). Then decision gateway for extension with two flows: extension needed (maybe a loop back?), and no extension (end). Could also model extension as loop back to earlier steps? Simpler: decision gateway leads to \"Extension\" task then end, or directly end.\n\nDefine tasks:\n\n- task fetch-info \"Fetch information about potential models (months duration, split between parents)\"\n- task parent-select \"Parent selects model\"\n- task collect-info \"Collect relevant information\"\n- task notify-ss \"Notify Social Security\"\n- task notify-company \"Notify Company\"\n- task gather-info \"Gather information from companies\"\n- task decide-extension \"Parent decides about extension\"\n\nAdd exclusive gateway after decide-extension: gateway ext-gw with flows \"yes\" (extension) leading to maybe a task \"Extend maternity leave\" then end; and default (no) go to end.\n\nBut we can just have decision leading to end directly: if extension, maybe we loop back to start? Not required.\n\nWe'll add a task \"Extend maternity leave\" optional.\n\nThus flow: decide-extension -> xor -> \"Extend maternity leave\" -> end; or default -> end.\n\nActors lanes: Parent lane includes parent-select, decide-extension, maybe extend-maternity. Social Security lane includes notify-ss. Company lane includes notify-company, gather-info.\n\nPool: Org.\n\nWrite tok.\n\nHeader: tok 1.0 (or 0.5). Use basic.\n\nSet pool: pool org \"Organization\" { lane parent \"Parent\"; lane ss \"Social Security\"; lane comp \"Company\"; }\n\nDefine tasks with lane attribute maybe: tasks are declared inside lane block? In tok, syntax: task ID \"Label\" lane=parent? Actually you can declare inside lane block: e.g., lane parent { task select \"Select model\" }. Let's use that.\n\nLet's write.\n\nCheck with tool.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "basic",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organization\" {\n  lane parent \"Parent\"\n  lane ss \"Social Security\"\n  lane comp \"Company\"\n}\n\ntask fetch-info \"Fetch information about potential models (months duration, split between parents)\"\ntask parent-select \"Parent selects model\"\ntask collect-info \"Collect relevant information\"\ntask notify-ss \"Notify Social Security\"\ntask notify-company \"Notify Company\"\ntask gather-info \"Gather information from companies\"\ntask decide-extension \"Parent decides about extension\"\ntask extend-leave \"Extend maternity leave\"\n\nstart start\nend end\n\nxor gateway1 \"Parent selection decision\"\n\nxor ext-gateway \"Extension decision\"\n\nand split1 \"Notify both\"\nand join1 \"Notifications done\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end\n"
+    },
+    "is_error": true,
+    "result": "argument 'class' must be one of descriptive, analytic, common-executable, full"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5295,
+  "output_tokens": 351,
+  "seconds": 1.7459466999862343,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Class should be one of those. Use descriptive maybe. Provide class \"descriptive\". Also need level? Use basic. Let's call level \"basic\". Provide path empty.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organization\" {\n  lane parent \"Parent\"\n  lane ss \"Social Security\"\n  lane comp \"Company\"\n}\n\ntask fetch-info \"Fetch information about potential models (months duration, split between parents)\"\ntask parent-select \"Parent selects model\"\ntask collect-info \"Collect relevant information\"\ntask notify-ss \"Notify Social Security\"\ntask notify-company \"Notify Company\"\ntask gather-info \"Gather information from companies\"\ntask decide-extension \"Parent decides about extension\"\ntask extend-leave \"Extend maternity leave\"\n\nstart start\nend end\n\nxor ext-gateway \"Extension decision\"\n\nand split1 \"Notify both\"\nand join1 \"Notifications done\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5720,
+  "output_tokens": 367,
+  "seconds": 2.018797100026859,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We passed both text and path? The API expects either path or text, not both. We gave path empty and text non-empty, that is okay. It still error because maybe both given counts as both? path empty counts as provided? Should omit path field.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organization\" {\n  lane parent \"Parent\"\n  lane ss \"Social Security\"\n  lane comp \"Company\"\n}\n\ntask fetch-info \"Fetch information about potential models (months duration, split between parents)\"\ntask parent-select \"Parent selects model\"\ntask collect-info \"Collect relevant information\"\ntask notify-ss \"Notify Social Security\"\ntask notify-company \"Notify Company\"\ntask gather-info \"Gather information from companies\"\ntask decide-extension \"Parent decides about extension\"\ntask extend-leave \"Extend maternity leave\"\n\nstart start\nend end\n\nxor ext-gateway \"Extension decision\"\n\nand split1 \"Notify both\"\nand join1 \"Notifications done\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error P004: 'lane' is not allowed inside top\nline 7: error T001: invalid token: unexpected character '}'\nline 9: error T003: indentation does not match any open block\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 6266,
+  "output_tokens": 120,
+  "seconds": 2.788292299985187,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We made syntax errors. Tok language for pool & lanes: syntax is \"pool ID \\\"Label\\\" { lane ID \\\"Label\\\" }\"? Need to check cheat sheet. Likely it's:\n\npool org \"Organization\" {\n  lane parent \"Parent\"\n  lane ss \"Social Security\"\n  lane comp \"Company\"\n}\n\nBut token errors at { and lane maybe because we need to declare lane with block? Actually lanes are declared inside pool without braces? Let's reference cheat sheet.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9093,
+  "output_tokens": 562,
+  "seconds": 2.632989199977601,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Now syntax: Use indentation for pool block. Inside pool block, lanes as statements with no braces. So:\n\npool org \"Organization\"\n  lane parent \"Parent\"\n  lane ss \"Social Security\"\n  lane comp \"Company\"\n\nAlso tasks go inside lanes? Actually you can declare tasks anywhere, but you can assign them with lane attribute? I think tasks inside lane block automatically assigned to that lane. So better:\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    task fetch-info ...\n    task parent-select ...\n    task collect-info ...\n    task decide-extension ...\n    task extend-leave ...\n  lane ss \"Social Security\"\n    task notify-ss ...\n  lane comp \"Company\"\n    task notify-company ...\n    task gather-info ...\n\nThus proper indentation.\n\nDefine start and end maybe inside a default lane? Or start belongs to pool without lane? Probably start in parent lane.\n\nAdd start start and end end statements.\n\nDefine gateways: xor for extension decision? Use xor ext-gateway.\n\nParallel gateway: and split1, and join1.\n\nNow flows: flow start -> fetch-info etc. Use identifiers.\n\nMake sure flow syntax correct: flow start -> fetch-info (no dash). Use arrow ->.\n\nLet's write.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start start\n    task fetch-info \"Fetch information about potential models (months duration, split between parents)\"\n    task parent-select \"Parent selects model\"\n    task collect-info \"Collect relevant information\"\n    task decide-extension \"Parent decides about extension\"\n    task extend-leave \"Extend maternity leave\"\n    end end\n  lane ss \"Social Security\"\n    task notify-ss \"Notify Social Security\"\n  lane comp \"Company\"\n    task notify-company \"Notify Company\"\n    task gather-info \"Gather information from companies\"\n\nxor ext-gateway \"Extension decision\"\nand split1 \"Notify both\"\nand join1 \"Notifications done\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end"
+    },
+    "is_error": false,
+    "result": "line 18: error R031: 'ext-gateway' is declared at top level, but the document has pools; move it into a pool\nline 19: error R031: 'split1' is declared at top level, but the document has pools; move it into a pool\nline 20: error R031: 'join1' is declared at top level, but the document has pools; move it into a pool\nline 25: error R021: sequence flow collect-info -> split1 crosses a process or sub-process boundary\nline 26: error R021: sequence flow split1 -> notify-ss crosses a process or sub-process boundary\nline 27: error R021: sequence flow split1 -> notify-company crosses a process or sub-process boundary\nline 28: error R021: sequence flow notify-ss -> join1 crosses a process or sub-process boundary\nline 29: error R021: sequence flow notify-company -> join1 crosses a process or sub-process boundary\nline 30: error R021: sequence flow join1 -> gather-info crosses a process or sub-process boundary\nline 32: error R021: sequence flow decide-extension -> ext-gateway crosses a process or sub-process boundary\nline 33: error R021: sequence flow ext-gateway -> extend-leave crosses a process or sub-process boundary\nline 34: error R021: sequence flow ext-gateway -> end crosses a process or sub-process boundary\n12 error(s), 12 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 10039,
+  "output_tokens": 649,
+  "seconds": 3.0983512999955565,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Issues: gateways must be inside the pool (inside its block) perhaps inside a lane or top-level of pool? Since pools act as process container, elements must be inside pool block, not top-level. So move gateways inside pool (maybe under parent lane or a generic lane). Since gateways are not specific to lane, we can declare them inside pool but not inside a lane. According to cheat sheet, after lane statements, you can put other elements inside pool without lane (they belong to pool?). It might require indentation same as lane level (i.e., one level under pool). So after lanes, we can add them with same indent as lane definitions (two spaces?). Actually pool block: indent one level. Lanes are indented same as other statements inside pool. So we can put gateways after lanes, still inside pool.\n\nAlso flows crossing boundaries: because tasks are in lanes, flow from fetch-info (in parent lane) to split1 (gateway) if gateway is in pool but not lane, still considered crossing? Probably gateway should be placed in a lane as well, maybe parent lane (since it's orchestrating). Flows within same lane avoid crossing. So place split1 and join1 and ext-gateway in parent lane (or a dedicated lane). Let's place them in parent lane after tasks.\n\nThus move gateways into parent lane block.\n\nUpdate.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start start\n    task fetch-info \"Fetch information about potential models (months duration, split between parents)\"\n    task parent-select \"Parent selects model\"\n    task collect-info \"Collect relevant information\"\n    and split1 \"Notify both\"\n    and join1 \"Notifications done\"\n    xor ext-gateway \"Extension decision\"\n    task decide-extension \"Parent decides about extension\"\n    task extend-leave \"Extend maternity leave\"\n    end end\n  lane ss \"Social Security\"\n    task notify-ss \"Notify Social Security\"\n  lane comp \"Company\"\n    task notify-company \"Notify Company\"\n    task gather-info \"Gather information from companies\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end"
+    },
+    "is_error": false,
+    "result": "line 11: note L020: name of a splitting gateway is not a question (ext-gateway)\n0 error(s), 1 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 10736,
+  "output_tokens": 461,
+  "seconds": 5.2264409000054,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Only warning: name of splitting gateway is not a question. For xor split, label should be a question. We can change label to \"Extend leave?\" or similar. ext-gateway is an xor, we named it xor ext-gateway (default label \"Extension decision\") but warning says label not a question. For exclusive gateway you should have a question. So change label to \"Extend leave?\" perhaps.\n\nUpdate.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start start\n    task fetch-info \"Fetch information about potential models (months duration, split between parents)\"\n    task parent-select \"Parent selects model\"\n    task collect-info \"Collect relevant information\"\n    and split1 \"Notify both\"\n    and join1 \"Notifications done\"\n    xor ext-gateway \"Extend leave?\"\n    task decide-extension \"Parent decides about extension\"\n    task extend-leave \"Extend maternity leave\"\n    end end\n  lane ss \"Social Security\"\n    task notify-ss \"Notify Social Security\"\n  lane comp \"Company\"\n    task notify-company \"Notify Company\"\n    task gather-info \"Gather information from companies\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 8,
+  "input_tokens": 11223,
+  "output_tokens": 280,
+  "seconds": 6.678764899988892,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "Here is the complete BPMN process model in **tok**:\n\n```tok\ntok 1.0\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start start\n    task fetch-info \"Fetch information about potential models (months duration, split between parents)\"\n    task parent-select \"Parent selects model\"\n    task collect-info \"Collect relevant information\"\n    and split1 \"Notify both\"\n    and join1 \"Notifications done\"\n    xor ext-gateway \"Extend leave?\"\n    task decide-extension \"Parent decides about extension\"\n    task extend-leave \"Extend maternity leave\"\n    end end\n  lane ss \"Social Security\"\n    task notify-ss \"Notify Social Security\"\n  lane comp \"Company\"\n    task notify-company \"Notify Company\"\n    task gather-info \"Gather information from companies\"\n\nflow start -> fetch-info\nflow fetch-info -> parent-select\nflow parent-select -> collect-info\nflow collect-info -> split1\nflow split1 -> notify-ss \"Notify SS\"\nflow split1 -> notify-company \"Notify Company\"\nflow notify-ss -> join1\nflow notify-company -> join1\nflow join1 -> gather-info\nflow gather-info -> decide-extension\nflow decide-extension -> ext-gateway\nflow ext-gateway -> extend-leave \"yes\"\nflow ext-gateway -> end \"no\"\nflow extend-leave -> end\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

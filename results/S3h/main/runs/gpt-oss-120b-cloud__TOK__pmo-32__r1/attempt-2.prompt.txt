@@ -1,0 +1,111 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Farming Bot
+
+Players want to create custom farming bots, that help them gather resources.
+First you have to find out which resources you want.
+Up to 10 resources in parallel can be collected, some resources are more urgently needed than others.
+Some resources are required to create tools that are needed to gather other resources (create a custom logic of the dependencies in your game).
+After all preferences are collected, your bot starts farming.
+Sometimes,  random natural disasters strike and set your bot back.
+Whenever some milestones are reached, you are notified.
+During farming it is possible to update the list of to be farmed materials (at all times).
+After the bot is finished, you should be able to brag to selected friends and/or send them materials.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Farming Bot" [executable]
+
+pool game "Game"
+  lane player "Player"
+    start start1 "Start"
+    task findResources "Find resources to farm"
+    xor needTool "Is a tool needed for a resource?"
+      task createTool "Create tool"
+      # no‑tool branch goes directly to next gateway
+    and collectStart
+    # end of player initial part
+
+  lane bot "Bot"
+    # Parallel collection of up to 10 resources
+    and collectParallel
+      task collectResource "Collect resource"
+    and collectDone
+
+    # Farming phase
+    and farmSplit
+      task farmResources "Farm resources"
+      task notifyMilestones "Notify when milestones are reached"
+    and farmJoin
+
+    xor disasterOccurred "Did a natural disaster occur?"
+      task handleDisaster "Handle disaster"
+      # loop back to farming split after handling
+
+    xor updateOccurred "Update resource list?"
+      task updatePreferences "Update list of farmed materials"
+      # loop back to farming split after update
+
+    # Finish farming
+    end finishFarming "Farming finished"
+
+    # Post‑farming actions (brag and/or send materials)
+    and bragSend
+      task bragFriends "Brag to selected friends"
+      task sendMaterials "Send materials to friends"
+    and bragSendDone
+    end endProcess "Process completed"
+
+# Flows (player lane)
+flow start1 -> findResources -> needTool
+flow needTool -> createTool -> collectStart
+flow needTool -> collectStart
+
+# Flows (transition to bot lane)
+flow collectStart -> collectParallel
+flow collectParallel -> collectResource -> collectDone
+flow collectDone -> farmSplit
+
+# Farming parallel split / join
+flow farmSplit -> farmResources -> farmJoin
+flow farmSplit -> notifyMilestones -> farmJoin
+
+# Disaster handling loop
+flow farmJoin -> disasterOccurred
+flow disasterOccurred -> handleDisaster -> farmSplit
+flow disasterOccurred -> farmJoin   # no disaster
+
+# Update preferences loop
+flow farmJoin -> updateOccurred
+flow updateOccurred -> updatePreferences -> farmSplit
+flow updateOccurred -> finishFarming   # no update, continue to finish
+
+# Finish and post‑farming
+flow finishFarming -> bragSend
+flow bragSend -> bragFriends -> bragSendDone
+flow bragSend -> sendMaterials -> bragSendDone
+flow bragSendDone -> endProcess
+```
+
+The tok checker reports these problems in it:
+
+- line 1: error T001: invalid token: unexpected character '['
+- line 3: error P005: the document must start with a header such as 'tok 1.0'
+- line 8: error P003: 'xor' cannot have an indented block
+- line 16: error P003: 'and' cannot have an indented block
+- line 21: error P003: 'and' cannot have an indented block
+- line 26: error P003: 'xor' cannot have an indented block
+- line 30: error P003: 'xor' cannot have an indented block
+- line 38: error P003: 'and' cannot have an indented block
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

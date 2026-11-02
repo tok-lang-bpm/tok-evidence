@@ -1,0 +1,37 @@
+tok 1.0 "Mail handling" executable
+
+pool org "Organization"
+  lane mail_unit "Mail Processing Unit"
+    start start_collect "Start"
+    task collect_mail "Collect mail from party"
+    task sort_unopened_mail "Sort unopened mail into business areas"
+    task distribute_mail "Distribute mail"
+
+  lane registry "Registry"
+    task receive_mail "Receive mail"
+    task open_and_sort_register "Open mail, sort into groups and register in manual incoming Mail Register"
+    task quality_check "Perform quality check"
+    xor check_compliant "Mail compliant?"
+    task compile_rejection "Compile rejection list"
+    task send_rejection "Send rejection to party"
+    task capture_matter "Capture matter details and provide to Cashier"
+    task envelope_post "Put receipt and documents into envelope and post to party"
+    end end_rejected "Process ended - Rejection"
+
+  lane cashier "Cashier"
+    task take_fees "Take applicable fees"
+    task capture_party "Capture Party Details"
+    task print_file "Print Physical Court File"
+    end end_success "Process ended - Completed"
+    and and_split "Parallel processing"
+    and and_join "Join parallel"
+
+flow start_collect -> collect_mail -> sort_unopened_mail -> distribute_mail -> receive_mail -> open_and_sort_register -> quality_check -> check_compliant
+flow check_compliant -> compile_rejection "no"
+flow compile_rejection -> send_rejection -> end_rejected
+flow check_compliant -> capture_matter "yes"
+flow capture_matter -> take_fees -> and_split
+flow and_split -> envelope_post
+flow and_split -> capture_party -> print_file -> and_join
+flow envelope_post -> and_join
+flow and_join -> end_success

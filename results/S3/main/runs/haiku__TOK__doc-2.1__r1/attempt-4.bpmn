@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Service degradation handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Problem_parameters" name="Problem parameters" />
+  <bpmn:message id="Message_Customer_report" name="Customer report" />
+  <bpmn:message id="Message_Detailed_problem_report" name="Detailed problem report" />
+  <bpmn:message id="Message_Status_report" name="Status report" />
+  <bpmn:message id="Message_Restoration_request" name="Restoration request" />
+  <bpmn:message id="Message_Trouble_shooting_report" name="Trouble-shooting report" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="customer" name="Customer" processRef="customer-process" />
+    <bpmn:participant id="teleco" name="TELECO" processRef="teleco-process" />
+    <bpmn:participant id="rp" name="Resource Provisioning" processRef="rp-process" />
+    <bpmn:messageFlow id="m-send_list-receive_list" name="Problem parameters" sourceRef="send_list" targetRef="receive_list" messageRef="Message_Problem_parameters" />
+    <bpmn:messageFlow id="m-send_customer_report-receive_report" name="Customer report" sourceRef="send_customer_report" targetRef="receive_report" messageRef="Message_Customer_report" />
+    <bpmn:messageFlow id="m-send_to_rp-receive_detailed_rp" name="Detailed problem report" sourceRef="send_to_rp" targetRef="receive_detailed_rp" messageRef="Message_Detailed_problem_report" />
+    <bpmn:messageFlow id="m-send_status-receive_status" name="Status report" sourceRef="send_status" targetRef="receive_status" messageRef="Message_Status_report" />
+    <bpmn:messageFlow id="m-send_restore-rp_restore_req" name="Restoration request" sourceRef="send_restore" targetRef="rp_restore_req" messageRef="Message_Restoration_request" />
+    <bpmn:messageFlow id="m-send_ts-receive_ts" name="Trouble-shooting report" sourceRef="send_ts" targetRef="receive_ts" messageRef="Message_Trouble_shooting_report" />
+  </bpmn:collaboration>
+  <bpmn:process id="customer-process" name="Customer" isExecutable="false">
+    <bpmn:startEvent id="degraded" name="Service degradation perceived" />
+    <bpmn:sendTask id="send_list" name="Send the list of problem parameters" messageRef="Message_Problem_parameters" />
+    <bpmn:receiveTask id="receive_report" name="Receive the service performance and problem resolution report" messageRef="Message_Customer_report" />
+    <bpmn:endEvent id="cust_done" name="Customer process ends" />
+    <bpmn:sequenceFlow id="f-degraded-send_list" sourceRef="degraded" targetRef="send_list" />
+    <bpmn:sequenceFlow id="f-send_list-receive_report" sourceRef="send_list" targetRef="receive_report" />
+    <bpmn:sequenceFlow id="f-receive_report-cust_done" sourceRef="receive_report" targetRef="cust_done" />
+  </bpmn:process>
+  <bpmn:process id="teleco-process" name="TELECO" isExecutable="false">
+    <bpmn:laneSet id="teleco-lanes">
+      <bpmn:lane id="cs" name="Customer Service">
+        <bpmn:flowNodeRef>receive_list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determine_cm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>premium</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>extra_fix</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>linked</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>significant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reprioritize</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sig_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_detailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_detailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_response</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_customer_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_customer_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report_rebate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="es" name="Electronic service">
+        <bpmn:flowNodeRef>determine_significance</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sm" name="Service Management">
+        <bpmn:flowNodeRef>receive_detailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>investigate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyzable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze_sm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>trouble_report_sm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sm_status_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_to_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_status</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prep_final</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determine_actions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>actions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_perf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>minor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restore_req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_restore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_ts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>res_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_resolution</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="billing" name="Billing &amp; Collections">
+        <bpmn:flowNodeRef>adjust_billing</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:receiveTask id="receive_list" name="Receive the list of problem parameters" messageRef="Message_Problem_parameters" />
+    <bpmn:task id="enter_report" name="Enter the problem report into system T" />
+    <bpmn:task id="compare" name="Compare the problem report with the customer SLA" />
+    <bpmn:task id="determine_cm" name="Determine the necessary counter measures and their priorities" />
+    <bpmn:exclusiveGateway id="premium" name="Customer premium?" />
+    <bpmn:task id="extra_fix" name="Link to the extra problem fix process" />
+    <bpmn:endEvent id="linked" name="Extra problem fix process linked" />
+    <bpmn:exclusiveGateway id="significant" name="Customer of certain significance?" />
+    <bpmn:task id="reprioritize" name="Re-prioritize the counter measures" />
+    <bpmn:exclusiveGateway id="sig_merge" />
+    <bpmn:task id="create_detailed" name="Create the detailed problem report" />
+    <bpmn:sendTask id="send_detailed" name="Send the detailed problem report to Service Management" />
+    <bpmn:exclusiveGateway id="cs_response" />
+    <bpmn:parallelGateway id="cs_fork" />
+    <bpmn:task id="create_customer_report" name="Create the report for the customer on service performance and problem resolution" />
+    <bpmn:sendTask id="send_customer_report" name="Send the report to the customer" messageRef="Message_Customer_report" />
+    <bpmn:task id="report_rebate" name="Report the SLA violation rebate to Billing &amp; Collections" />
+    <bpmn:parallelGateway id="cs_join" />
+    <bpmn:endEvent id="cs_done" name="Customer Service process ends" />
+    <bpmn:serviceTask id="determine_significance" name="Determine the significance of the customer" />
+    <bpmn:receiveTask id="receive_detailed" name="Receive the detailed problem report" />
+    <bpmn:task id="investigate" name="Investigate whether the problem is analyzable by Service Management" />
+    <bpmn:exclusiveGateway id="analyzable" name="Analyzable by Service Management?" />
+    <bpmn:task id="analyze_sm" name="Analyze the problem" />
+    <bpmn:task id="trouble_report_sm" name="Create the trouble report indicating the type of problem" />
+    <bpmn:exclusiveGateway id="sm_status_merge" />
+    <bpmn:sendTask id="send_to_rp" name="Send the detailed problem report to Resource Provisioning" messageRef="Message_Detailed_problem_report" />
+    <bpmn:receiveTask id="receive_status" name="Receive the status report from Resource Provisioning" messageRef="Message_Status_report" />
+    <bpmn:task id="prep_final" name="Prepare the final status report" />
+    <bpmn:task id="determine_actions" name="Determine the counter measures based on the final status report" />
+    <bpmn:exclusiveGateway id="actions" name="Counter measures required?" />
+    <bpmn:task id="send_perf" name="Send the actual service performance to Customer Service" />
+    <bpmn:task id="minor" name="Undertake the corrective actions" />
+    <bpmn:task id="restore_req" name="Create the request for automatic resource restoration" />
+    <bpmn:sendTask id="send_restore" name="Send the request for automatic resource restoration to Resource Provisioning" messageRef="Message_Restoration_request" />
+    <bpmn:receiveTask id="receive_ts" name="Receive the trouble-shooting report" messageRef="Message_Trouble_shooting_report" />
+    <bpmn:exclusiveGateway id="res_merge" />
+    <bpmn:task id="create_resolution" name="Create the problem resolution report" />
+    <bpmn:task id="send_resolution" name="Send the problem resolution report to Customer Service" />
+    <bpmn:task id="adjust_billing" name="Adjust the billing" />
+    <bpmn:sequenceFlow id="f-receive_list-enter_report" sourceRef="receive_list" targetRef="enter_report" />
+    <bpmn:sequenceFlow id="f-enter_report-compare" sourceRef="enter_report" targetRef="compare" />
+    <bpmn:sequenceFlow id="f-compare-determine_cm" sourceRef="compare" targetRef="determine_cm" />
+    <bpmn:sequenceFlow id="f-determine_cm-determine_significance" sourceRef="determine_cm" targetRef="determine_significance" />
+    <bpmn:sequenceFlow id="f-determine_significance-premium" sourceRef="determine_significance" targetRef="premium" />
+    <bpmn:sequenceFlow id="f-premium-extra_fix" name="yes" sourceRef="premium" targetRef="extra_fix" />
+    <bpmn:sequenceFlow id="f-extra_fix-linked" sourceRef="extra_fix" targetRef="linked" />
+    <bpmn:sequenceFlow id="f-premium-significant" name="no" sourceRef="premium" targetRef="significant" />
+    <bpmn:sequenceFlow id="f-significant-reprioritize" name="yes" sourceRef="significant" targetRef="reprioritize" />
+    <bpmn:sequenceFlow id="f-reprioritize-sig_merge" sourceRef="reprioritize" targetRef="sig_merge" />
+    <bpmn:sequenceFlow id="f-significant-sig_merge" name="no" sourceRef="significant" targetRef="sig_merge" />
+    <bpmn:sequenceFlow id="f-sig_merge-create_detailed" sourceRef="sig_merge" targetRef="create_detailed" />
+    <bpmn:sequenceFlow id="f-create_detailed-send_detailed" sourceRef="create_detailed" targetRef="send_detailed" />
+    <bpmn:sequenceFlow id="f-send_detailed-receive_detailed" sourceRef="send_detailed" targetRef="receive_detailed" />
+    <bpmn:sequenceFlow id="f-receive_detailed-investigate" sourceRef="receive_detailed" targetRef="investigate" />
+    <bpmn:sequenceFlow id="f-investigate-analyzable" sourceRef="investigate" targetRef="analyzable" />
+    <bpmn:sequenceFlow id="f-analyzable-analyze_sm" name="yes" sourceRef="analyzable" targetRef="analyze_sm" />
+    <bpmn:sequenceFlow id="f-analyze_sm-trouble_report_sm" sourceRef="analyze_sm" targetRef="trouble_report_sm" />
+    <bpmn:sequenceFlow id="f-trouble_report_sm-sm_status_merge" sourceRef="trouble_report_sm" targetRef="sm_status_merge" />
+    <bpmn:sequenceFlow id="f-analyzable-send_to_rp" name="no" sourceRef="analyzable" targetRef="send_to_rp" />
+    <bpmn:sequenceFlow id="f-send_to_rp-receive_status" sourceRef="send_to_rp" targetRef="receive_status" />
+    <bpmn:sequenceFlow id="f-receive_status-sm_status_merge" sourceRef="receive_status" targetRef="sm_status_merge" />
+    <bpmn:sequenceFlow id="f-sm_status_merge-prep_final" sourceRef="sm_status_merge" targetRef="prep_final" />
+    <bpmn:sequenceFlow id="f-prep_final-determine_actions" sourceRef="prep_final" targetRef="determine_actions" />
+    <bpmn:sequenceFlow id="f-determine_actions-actions" sourceRef="determine_actions" targetRef="actions" />
+    <bpmn:sequenceFlow id="f-actions-send_perf" name="no problem" sourceRef="actions" targetRef="send_perf" />
+    <bpmn:sequenceFlow id="f-send_perf-cs_response" sourceRef="send_perf" targetRef="cs_response" />
+    <bpmn:sequenceFlow id="f-actions-minor" name="minor corrective actions" sourceRef="actions" targetRef="minor" />
+    <bpmn:sequenceFlow id="f-minor-res_merge" sourceRef="minor" targetRef="res_merge" />
+    <bpmn:sequenceFlow id="f-actions-restore_req" name="automatic restoration" sourceRef="actions" targetRef="restore_req" />
+    <bpmn:sequenceFlow id="f-restore_req-send_restore" sourceRef="restore_req" targetRef="send_restore" />
+    <bpmn:sequenceFlow id="f-send_restore-receive_ts" sourceRef="send_restore" targetRef="receive_ts" />
+    <bpmn:sequenceFlow id="f-receive_ts-res_merge" sourceRef="receive_ts" targetRef="res_merge" />
+    <bpmn:sequenceFlow id="f-res_merge-create_resolution" sourceRef="res_merge" targetRef="create_resolution" />
+    <bpmn:sequenceFlow id="f-create_resolution-send_resolution" sourceRef="create_resolution" targetRef="send_resolution" />
+    <bpmn:sequenceFlow id="f-send_resolution-cs_response" sourceRef="send_resolution" targetRef="cs_response" />
+    <bpmn:sequenceFlow id="f-cs_response-cs_fork" sourceRef="cs_response" targetRef="cs_fork" />
+    <bpmn:sequenceFlow id="f-cs_fork-create_customer_report" sourceRef="cs_fork" targetRef="create_customer_report" />
+    <bpmn:sequenceFlow id="f-create_customer_report-send_customer_report" sourceRef="create_customer_report" targetRef="send_customer_report" />
+    <bpmn:sequenceFlow id="f-send_customer_report-cs_join" sourceRef="send_customer_report" targetRef="cs_join" />
+    <bpmn:sequenceFlow id="f-cs_fork-report_rebate" sourceRef="cs_fork" targetRef="report_rebate" />
+    <bpmn:sequenceFlow id="f-report_rebate-adjust_billing" sourceRef="report_rebate" targetRef="adjust_billing" />
+    <bpmn:sequenceFlow id="f-adjust_billing-cs_join" sourceRef="adjust_billing" targetRef="cs_join" />
+    <bpmn:sequenceFlow id="f-cs_join-cs_done" sourceRef="cs_join" targetRef="cs_done" />
+  </bpmn:process>
+  <bpmn:process id="rp-process" name="Resource Provisioning" isExecutable="false">
+    <bpmn:laneSet id="rp-lanes">
+      <bpmn:lane id="rp_lane" name="Resource Provisioning">
+        <bpmn:flowNodeRef>receive_detailed_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>problem_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>normal_notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>trouble_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rp_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>status_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_status</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_restore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rp_restore_req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rp_timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rp_terminated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>track_errors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>corrective_rp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ts_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_ts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rp_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:receiveTask id="receive_detailed_rp" name="Receive the detailed problem report" messageRef="Message_Detailed_problem_report" />
+    <bpmn:exclusiveGateway id="problem_check" name="Problem detected?" />
+    <bpmn:task id="normal_notice" name="Create the notification about normal service execution" />
+    <bpmn:task id="analyze_rp" name="Analyze the problem" />
+    <bpmn:task id="trouble_rp" name="Create the trouble report" />
+    <bpmn:exclusiveGateway id="rp_merge" />
+    <bpmn:task id="status_rp" name="Include the trouble report or the normal execution notification in the status report" />
+    <bpmn:sendTask id="send_status" name="Send the status report to Service Management" messageRef="Message_Status_report" />
+    <bpmn:eventBasedGateway id="wait_restore" name="Wait for the restoration request" />
+    <bpmn:intermediateCatchEvent id="rp_restore_req" name="Restoration request received">
+      <bpmn:messageEventDefinition id="rp_restore_req-def" messageRef="Message_Restoration_request" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="rp_timeout" name="Two days after the status report elapsed">
+      <bpmn:timerEventDefinition id="rp_timeout-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P2D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="rp_terminated" name="Resource Provisioning terminates the process" />
+    <bpmn:task id="track_errors" name="Track all possible errors" />
+    <bpmn:task id="corrective_rp" name="Undertake all necessary corrective actions" />
+    <bpmn:task id="ts_report" name="Create the trouble-shooting report" />
+    <bpmn:sendTask id="send_ts" name="Send the trouble-shooting report to Service Management" messageRef="Message_Trouble_shooting_report" />
+    <bpmn:endEvent id="rp_done" name="Resource Provisioning process ends" />
+    <bpmn:sequenceFlow id="f-receive_detailed_rp-problem_check" sourceRef="receive_detailed_rp" targetRef="problem_check" />
+    <bpmn:sequenceFlow id="f-problem_check-normal_notice" name="no" sourceRef="problem_check" targetRef="normal_notice" />
+    <bpmn:sequenceFlow id="f-normal_notice-rp_merge" sourceRef="normal_notice" targetRef="rp_merge" />
+    <bpmn:sequenceFlow id="f-problem_check-analyze_rp" name="yes" sourceRef="problem_check" targetRef="analyze_rp" />
+    <bpmn:sequenceFlow id="f-analyze_rp-trouble_rp" sourceRef="analyze_rp" targetRef="trouble_rp" />
+    <bpmn:sequenceFlow id="f-trouble_rp-rp_merge" sourceRef="trouble_rp" targetRef="rp_merge" />
+    <bpmn:sequenceFlow id="f-rp_merge-status_rp" sourceRef="rp_merge" targetRef="status_rp" />
+    <bpmn:sequenceFlow id="f-status_rp-send_status" sourceRef="status_rp" targetRef="send_status" />
+    <bpmn:sequenceFlow id="f-send_status-wait_restore" sourceRef="send_status" targetRef="wait_restore" />
+    <bpmn:sequenceFlow id="f-wait_restore-rp_restore_req" sourceRef="wait_restore" targetRef="rp_restore_req" />
+    <bpmn:sequenceFlow id="f-rp_restore_req-track_errors" sourceRef="rp_restore_req" targetRef="track_errors" />
+    <bpmn:sequenceFlow id="f-track_errors-corrective_rp" sourceRef="track_errors" targetRef="corrective_rp" />
+    <bpmn:sequenceFlow id="f-corrective_rp-ts_report" sourceRef="corrective_rp" targetRef="ts_report" />
+    <bpmn:sequenceFlow id="f-ts_report-send_ts" sourceRef="ts_report" targetRef="send_ts" />
+    <bpmn:sequenceFlow id="f-send_ts-rp_done" sourceRef="send_ts" targetRef="rp_done" />
+    <bpmn:sequenceFlow id="f-wait_restore-rp_timeout" sourceRef="wait_restore" targetRef="rp_timeout" />
+    <bpmn:sequenceFlow id="f-rp_timeout-rp_terminated" sourceRef="rp_timeout" targetRef="rp_terminated" />
+  </bpmn:process>
+</bpmn:definitions>

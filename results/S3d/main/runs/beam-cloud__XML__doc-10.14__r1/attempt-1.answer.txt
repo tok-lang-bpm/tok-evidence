@@ -1,0 +1,98 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_mppoo" name="MPOO">
+        <bpmn:flowNodeRef>send_temp_ops</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_equip</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_mspos" name="MSPO">
+        <bpmn:flowNodeRef>send_temp_meas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_add_readings</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_go" name="GO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bill_kind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examiner</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_examine_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_bill_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>final_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_mpon" name="MPON">
+        <bpmn:flowNodeRef>examine_bill_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mpon_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mpon_merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" />
+
+    <bpmn:exclusiveGateway id="bill_kind" name="Which bill?" />
+
+    <bpmn:task id="send_temp_ops" name="Send the bill for the temporary continuation of the metering point operations to the GO" />
+    <bpmn:task id="send_temp_meas" name="Send the bill for the temporary continuation of the measurement to the GO" />
+    <bpmn:task id="send_add_readings" name="Send the bill for additional readings to the GO" />
+    <bpmn:task id="send_equip" name="Send the bill for the equipment acquisition to the MPON or the GO" />
+
+    <bpmn:exclusiveGateway id="examiner" name="Who examines?" />
+
+    <bpmn:exclusiveGateway id="go_examine_merge" name="GO examines" />
+    <bpmn:task id="examine_bill_go" name="Examine the bill" />
+
+    <bpmn:exclusiveGateway id="go_decision" name="Confirm or reject?" />
+    <bpmn:task id="confirm_go" name="Confirm the invoice with payment advice to the MPOO or the MSPO" />
+    <bpmn:task id="reject_go" name="Reject the invoice of the MPOO or the MSPO" />
+    <bpmn:exclusiveGateway id="go_merge" />
+
+    <bpmn:task id="examine_bill_mpon" name="Examine the bill" />
+    <bpmn:exclusiveGateway id="mpon_decision" name="Confirm or reject?" />
+    <bpmn:task id="confirm_mpon" name="Confirm the invoice with payment advice to the MPOO or the MSPO" />
+    <bpmn:task id="reject_mpon" name="Reject the invoice of the MPOO or the MSPO" />
+    <bpmn:exclusiveGateway id="mpon_merge" />
+
+    <bpmn:exclusiveGateway id="final_merge" />
+    <bpmn:endEvent id="end" />
+
+    <bpmn:sequenceFlow id="f_start" sourceRef="start" targetRef="bill_kind" />
+    <bpmn:sequenceFlow id="f_kind_ops" name="MPOO temporary continuation of metering point operations" sourceRef="bill_kind" targetRef="send_temp_ops" />
+    <bpmn:sequenceFlow id="f_kind_meas" name="MSPO temporary continuation of measurement" sourceRef="bill_kind" targetRef="send_temp_meas" />
+    <bpmn:sequenceFlow id="f_kind_readings" name="MSPO additional readings" sourceRef="bill_kind" targetRef="send_add_readings" />
+    <bpmn:sequenceFlow id="f_kind_equip" name="MPOO equipment acquisition" sourceRef="bill_kind" targetRef="send_equip" />
+
+    <bpmn:sequenceFlow id="f_ops_to_go" sourceRef="send_temp_ops" targetRef="go_examine_merge" />
+    <bpmn:sequenceFlow id="f_meas_to_go" sourceRef="send_temp_meas" targetRef="go_examine_merge" />
+    <bpmn:sequenceFlow id="f_readings_to_go" sourceRef="send_add_readings" targetRef="go_examine_merge" />
+    <bpmn:sequenceFlow id="f_equip_to_examiner" sourceRef="send_equip" targetRef="examiner" />
+    <bpmn:sequenceFlow id="f_examiner_go" name="GO examines" sourceRef="examiner" targetRef="go_examine_merge" />
+    <bpmn:sequenceFlow id="f_examiner_mpon" name="MPON examines" sourceRef="examiner" targetRef="examine_bill_mpon" />
+
+    <bpmn:sequenceFlow id="f_go_examine_merge" sourceRef="go_examine_merge" targetRef="examine_bill_go" />
+    <bpmn:sequenceFlow id="f_go_examined" sourceRef="examine_bill_go" targetRef="go_decision" />
+    <bpmn:sequenceFlow id="f_go_confirm" name="Confirm" sourceRef="go_decision" targetRef="confirm_go" />
+    <bpmn:sequenceFlow id="f_go_reject" name="Reject" sourceRef="go_decision" targetRef="reject_go" />
+    <bpmn:sequenceFlow id="f_go_confirm_merge" sourceRef="confirm_go" targetRef="go_merge" />
+    <bpmn:sequenceFlow id="f_go_reject_merge" sourceRef="reject_go" targetRef="go_merge" />
+    <bpmn:sequenceFlow id="f_go_to_final" sourceRef="go_merge" targetRef="final_merge" />
+
+    <bpmn:sequenceFlow id="f_mpon_examined" sourceRef="examine_bill_mpon" targetRef="mpon_decision" />
+    <bpmn:sequenceFlow id="f_mpon_confirm" name="Confirm" sourceRef="mpon_decision" targetRef="confirm_mpon" />
+    <bpmn:sequenceFlow id="f_mpon_reject" name="Reject" sourceRef="mpon_decision" targetRef="reject_mpon" />
+    <bpmn:sequenceFlow id="f_mpon_confirm_merge" sourceRef="confirm_mpon" targetRef="mpon_merge" />
+    <bpmn:sequenceFlow id="f_mpon_reject_merge" sourceRef="reject_mpon" targetRef="mpon_merge" />
+    <bpmn:sequenceFlow id="f_mpon_to_final" sourceRef="mpon_merge" targetRef="final_merge" />
+
+    <bpmn:sequenceFlow id="f_final_end" sourceRef="final_merge" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```

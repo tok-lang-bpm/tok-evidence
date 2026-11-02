@@ -1,0 +1,86 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+If the MPOO sends the bill for the temporary continuation of the metering point operations to the GO, the GO examines the bill. If the MSPO sends the bill for the temporary continuation of the measurement to the GO, the GO examines the bill. If the MSPO sends the bill for additional readings to the GO, the GO examines the bill. If the MPOO sends the bill for the equipment acquisition to the MPON or the GO, the MPON or the GO examines the bill. The GO or the MPON confirms the invoice with payment advice to the MPOO or the MSPO, or the GO or the MPON rejects the invoice of the MPOO or the MSPO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Bill handling"
+
+pool org "Organisation"
+  lane mpoo "MPOO"
+    start s "Bill sent"
+    task send_temp_ops "Send the bill for the temporary continuation of the metering point operations to the GO"
+    task send_equip "Send the bill for the equipment acquisition to the MPON or the GO"
+    xor recipient "MPON or GO?"
+  lane go "GO"
+    xor which "Which bill?"
+    task exam_go_ops "Examine the bill"
+    task exam_go_meas "Examine the bill"
+    task exam_go_read "Examine the bill"
+    task exam_go_equip "Examine the bill"
+    xor decide_go "Confirm or reject?"
+    task confirm_go "Confirm the invoice with payment advice"
+    task reject_go "Reject the invoice"
+    end conf_go "Invoice confirmed"
+    end rej_go "Invoice rejected"
+  lane ms "MSPO"
+    task send_temp_meas "Send the bill for the temporary continuation of the measurement to the GO"
+    task send_add "Send the bill for additional readings to the GO"
+  lane mpon "MPON"
+    task exam_mp_equip "Examine the bill"
+    xor decide_mp "Confirm or reject?"
+    task confirm_mp "Confirm the invoice with payment advice"
+    task reject_mp "Reject the invoice"
+    end conf_mp "Invoice confirmed"
+    end rej_mp "Invoice rejected"
+
+flow s -> which
+flow which -> send_temp_ops
+flow which -> send_temp_meas
+flow which -> send_add
+flow which -> send_equip
+
+flow send_temp_ops -> exam_go_ops
+flow send_temp_meas -> exam_go_meas
+flow send_add -> exam_go_read
+flow send_equip -> recipient
+flow recipient -> exam_mp_equip "MPON"
+flow recipient -> exam_go_equip "GO"
+
+flow exam_go_ops -> decide_go
+flow exam_go_meas -> decide_go
+flow exam_go_read -> decide_go
+flow exam_go_equip -> decide_go
+flow exam_mp_equip -> decide_mp
+
+flow decide_go -> confirm_go "Confirm"
+flow decide_go -> reject_go "Reject" default
+flow confirm_go -> conf_go
+flow reject_go -> rej_go
+
+flow decide_mp -> confirm_mp "Confirm"
+flow decide_mp -> reject_mp "Reject" default
+flow confirm_mp -> conf_mp
+flow reject_mp -> rej_mp
+```
+
+The tok checker reports these problems in it:
+
+- line 32: warning W021: branch of an XOR/OR split without label, condition or default status (f-which-send_temp_ops)
+- line 33: warning W021: branch of an XOR/OR split without label, condition or default status (f-which-send_temp_meas)
+- line 34: warning W021: branch of an XOR/OR split without label, condition or default status (f-which-send_add)
+- line 35: warning W021: branch of an XOR/OR split without label, condition or default status (f-which-send_equip)
+- line 50: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-decide_go-confirm_go)
+- line 55: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-decide_mp-confirm_mp)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

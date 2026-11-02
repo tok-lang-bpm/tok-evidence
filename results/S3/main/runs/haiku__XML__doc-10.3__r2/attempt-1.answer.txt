@@ -1,0 +1,88 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="go-pool" name="GO" processRef="deregistration-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="deregistration-process" isExecutable="false">
+    <bpmn:laneSet id="deregistration-lanes">
+      <bpmn:lane id="mpoo-lane" name="MPOO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deregister</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmContinuation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go-lane" name="GO">
+        <bpmn:flowNodeRef>verify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>preliminaryConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareReadmission</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>obligeOptional</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>obligeGateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>obligeMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equipmentSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acquisition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>changes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>equipmentMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informMpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informMspo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informSp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endRejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAssigned</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Deregistration started" />
+    <bpmn:task id="deregister" name="Deregister at the GO" />
+    <bpmn:task id="verify" name="Verify the deregistration" />
+    <bpmn:exclusiveGateway id="accepted" name="Deregistration accepted?" />
+    <bpmn:task id="reject" name="Reject the deregistration of the MPOO" />
+    <bpmn:task id="preliminaryConfirm" name="Preliminarily confirm the deregistration of the MPOO" />
+    <bpmn:task id="prepareReadmission" name="Prepare the readmission of the measuring point" />
+    <bpmn:exclusiveGateway id="obligeGateway" name="Continuation obliged?" />
+    <bpmn:task id="obligeOptional" name="Oblige the MPOO to continue the operations" />
+    <bpmn:task id="confirmContinuation" name="Confirm the continuation to the MPOO" />
+    <bpmn:exclusiveGateway id="obligeMerge" />
+    <bpmn:inclusiveGateway id="equipmentSplit" name="Equipment acquisition and/or changes?" />
+    <bpmn:task id="acquisition" name="Perform the equipment acquisition" />
+    <bpmn:task id="changes" name="Perform the equipment changes" />
+    <bpmn:inclusiveGateway id="equipmentMerge" />
+    <bpmn:task id="assign" name="Assign the GO as MPO" />
+    <bpmn:task id="informMpoo" name="Inform the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO" />
+    <bpmn:task id="informMspo" name="Inform the MSPO about the assignment of the GO" />
+    <bpmn:task id="informSp" name="Inform the SP about the assignment of the GO" />
+    <bpmn:endEvent id="endRejected" name="Deregistration rejected" />
+    <bpmn:endEvent id="endAssigned" name="Assignment of the GO completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="deregister" />
+    <bpmn:sequenceFlow id="f2" sourceRef="deregister" targetRef="verify" />
+    <bpmn:sequenceFlow id="f3" sourceRef="verify" targetRef="accepted" />
+    <bpmn:sequenceFlow id="f4" name="no" sourceRef="accepted" targetRef="reject" />
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="accepted" targetRef="preliminaryConfirm" />
+    <bpmn:sequenceFlow id="f6" sourceRef="reject" targetRef="endRejected" />
+    <bpmn:sequenceFlow id="f7" sourceRef="preliminaryConfirm" targetRef="prepareReadmission" />
+    <bpmn:sequenceFlow id="f8" sourceRef="prepareReadmission" targetRef="obligeGateway" />
+    <bpmn:sequenceFlow id="f9" name="yes" sourceRef="obligeGateway" targetRef="obligeOptional" />
+    <bpmn:sequenceFlow id="f10" name="no" sourceRef="obligeGateway" targetRef="obligeMerge" />
+    <bpmn:sequenceFlow id="f11" sourceRef="obligeOptional" targetRef="confirmContinuation" />
+    <bpmn:sequenceFlow id="f12" sourceRef="confirmContinuation" targetRef="obligeMerge" />
+    <bpmn:sequenceFlow id="f13" sourceRef="obligeMerge" targetRef="equipmentSplit" />
+    <bpmn:sequenceFlow id="f14" name="acquisition" sourceRef="equipmentSplit" targetRef="acquisition">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">acquisition = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f15" name="changes" sourceRef="equipmentSplit" targetRef="changes">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">changes = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f16" sourceRef="acquisition" targetRef="equipmentMerge" />
+    <bpmn:sequenceFlow id="f17" sourceRef="changes" targetRef="equipmentMerge" />
+    <bpmn:sequenceFlow id="f18" sourceRef="equipmentMerge" targetRef="assign" />
+    <bpmn:sequenceFlow id="f19" sourceRef="assign" targetRef="informMpoo" />
+    <bpmn:sequenceFlow id="f20" sourceRef="informMpoo" targetRef="informMspo" />
+    <bpmn:sequenceFlow id="f21" sourceRef="informMspo" targetRef="informSp" />
+    <bpmn:sequenceFlow id="f22" sourceRef="informSp" targetRef="endAssigned" />
+  </bpmn:process>
+</bpmn:definitions>
+```

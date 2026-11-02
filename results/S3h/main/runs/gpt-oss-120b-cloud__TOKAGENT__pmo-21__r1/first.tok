@@ -1,0 +1,39 @@
+tok 1.0 "Shipping Process"
+  pool org "Organisation"
+    lane sec "Secretary"
+      start s "Start"
+      xor shipDecision "Goods shall be shipped?"
+      task clarify sec "Secretary clarifies who will do the shipping"
+      and splitParallel "Parallel activities"
+      xor amountDecision "Large amounts?"
+      task invite sec "Secretary invites three logistic companies"
+      task select sec "Secretary selects a logistic company"
+      xor mergeLargeSmall "Merge shipping types"
+      task label sec "Secretary writes package label"
+      xor insDecision "Parcel insurance needed?"
+      task insure loghead "Logistics Dept Head takes parcel insurance"
+      and joinAll "Join parallel activities"
+      task prepare sec "Prepare packaged goods for pickup"
+      end e "End"
+    lane loghead "Logistics Dept Head"
+    lane wh "Warehousemen"
+      task package wh "Warehousemen package goods"
+    # flows
+    flow s -> shipDecision
+    flow shipDecision -> clarify "yes" when="shipped"
+    flow shipDecision -> e "no" default
+    flow clarify -> splitParallel
+    flow splitParallel -> amountDecision
+    flow splitParallel -> package
+    flow amountDecision -> invite "large" when="large"
+    flow amountDecision -> mergeLargeSmall "small" default
+    flow invite -> select
+    flow select -> mergeLargeSmall
+    flow mergeLargeSmall -> label
+    flow label -> insDecision
+    flow insDecision -> insure "yes" when="insurance"
+    flow insDecision -> joinAll "no" default
+    flow insure -> joinAll
+    flow package -> joinAll
+    flow joinAll -> prepare
+    flow prepare -> e

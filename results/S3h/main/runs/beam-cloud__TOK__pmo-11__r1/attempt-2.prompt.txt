@@ -1,0 +1,81 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+This process begins when a customer signs up for a subscription service, entering personal and payment information.
+The system generates an account, assigns access, and triggers automated billing cycles.
+Throughout the subscription, the customer receives regular updates, product enhancements, or renewal notifications.
+If the customer decides to cancel, they submit a cancellation request, which the support team processes.
+Depending on the terms, any refunds or charges are applied.
+The process concludes when the subscription is deactivated by the support team and the final account balance is settled.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Subscription handling"
+
+pool organisation "Organisation"
+  lane customer "Customer"
+    start signup "Customer signs up"
+    task enter "Enter personal and payment information"
+    xor notification_split "Notification type?"
+    task receive_updates "Receive regular updates"
+    task receive_enhancements "Receive product enhancements"
+    task receive_renewals "Receive renewal notifications"
+    xor notification_join "Notifications completed"
+    xor cancel_split "Customer decides to cancel?"
+    task submit_cancel "Submit cancellation request"
+  lane system "System"
+    task generate "Generate account"
+    task access "Assign access"
+    task billing "Trigger automated billing cycles"
+  lane support "Support team"
+    task process_cancel "Process cancellation request"
+    xor terms_split "Refunds or charges?"
+    task apply_refund "Apply refunds"
+    task apply_charge "Apply charges"
+    xor terms_join "Terms applied"
+    and close_split "Close subscription"
+    task deactivate "Deactivate subscription"
+    task settle "Settle final account balance"
+    and close_join "Subscription closed"
+    end completed "Subscription deactivated"
+
+flow signup -> enter -> generate -> access -> billing -> notification_split
+flow notification_split -> receive_updates
+flow notification_split -> receive_enhancements
+flow notification_split -> receive_renewals
+flow receive_updates -> notification_join
+flow receive_enhancements -> notification_join
+flow receive_renewals -> notification_join
+flow notification_join -> cancel_split
+flow cancel_split -> submit_cancel "yes"
+flow cancel_split -> notification_split "no"
+flow submit_cancel -> process_cancel
+flow process_cancel -> terms_split
+flow terms_split -> apply_refund "refunds"
+flow terms_split -> apply_charge "charges"
+flow apply_refund -> terms_join
+flow apply_charge -> terms_join
+flow terms_join -> close_split
+flow close_split -> deactivate
+flow close_split -> settle
+flow deactivate -> close_join
+flow settle -> close_join
+flow close_join -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 31: warning W021: branch of an XOR/OR split without label, condition or default status (f-notification_split-receive_updates)
+- line 32: warning W021: branch of an XOR/OR split without label, condition or default status (f-notification_split-receive_enhancements)
+- line 33: warning W021: branch of an XOR/OR split without label, condition or default status (f-notification_split-receive_renewals)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

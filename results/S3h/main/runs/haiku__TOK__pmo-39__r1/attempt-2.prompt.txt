@@ -1,0 +1,79 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: DIY Repair of a Broken Smartphone Screen
+
+A nifty online tool helps you with repairing your Smartphone on your own.
+You start by entering the model and what is broken.
+The tool gives you the list of materials, the list of tools, and (for each part) several ordering choices.
+Some stuff you already have (e.g. some tools, screws).
+The tool also lets you contact friends if you can borrow / buy something for cheap from them.
+The rest you buy.
+Afterwards you receive instructions how to fix your phone.
+If it worked, send a review and/or video of you fixing it.
+If it hasn't worked out, you can send it to an expert.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "DIY Repair of a Broken Smartphone Screen"
+
+pool org "Online repair tool"
+  lane customer "Customer"
+    start started "Repair started"
+    task enter "Enter the phone model and the damage"
+    task checkOwned "Check which materials and tools you already have"
+    task contact "Contact friends about borrowing or buying items"
+    xor friendOffers "Friend offers an item cheaply?"
+    xor itemsReady "Items for the repair available?"
+    task buyRest "Buy the remaining materials and tools"
+    task fix "Repair the screen yourself"
+    xor worked "Repair successful?"
+    or reviewGw "Send a review and/or video?"
+    task review "Send a review of the repair"
+    task video "Send a video of the repair"
+    or reviewJoin "Review and/or video sent"
+    end done "Repair completed"
+    task sendExpert "Send the phone to an expert"
+  lane tool "Repair tool"
+    task listMaterials "Provide the list of materials and tools"
+    task orderChoices "Offer ordering choices for each part"
+    task instructions "Provide instructions how to fix the phone"
+  lane friend "Friend"
+    task offer "Offer the item cheaply"
+  lane expert "Expert"
+    task expertRepair "Repair the phone"
+    end expertDone "Phone repaired by expert"
+
+flow started -> enter -> listMaterials -> orderChoices -> checkOwned -> contact -> friendOffers
+flow friendOffers -> offer "tak"
+flow friendOffers -> itemsReady "nie" default
+flow offer -> itemsReady
+flow itemsReady -> buyRest -> instructions -> fix -> worked
+flow worked -> reviewGw "tak"
+flow worked -> sendExpert "nie" default
+flow reviewGw -> review
+flow reviewGw -> video
+flow review -> reviewJoin
+flow video -> reviewJoin
+flow reviewJoin -> done
+flow sendExpert -> expertRepair -> expertDone
+```
+
+The tok checker reports these problems in it:
+
+- line 14: warning W050: OR split without a default flow (reviewGw)
+- line 31: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-friendOffers-offer)
+- line 35: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-worked-reviewGw)
+- line 37: warning W021: branch of an XOR/OR split without label, condition or default status (f-reviewGw-review)
+- line 38: warning W021: branch of an XOR/OR split without label, condition or default status (f-reviewGw-video)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

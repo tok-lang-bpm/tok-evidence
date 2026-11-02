@@ -1,0 +1,65 @@
+tok 1.0 "Meter operation registration"
+
+pool org "Market organisation"
+  lane mpon "MPON"
+    start s "Start"
+    task report "Report the meter operation to the GO"
+    task acq1 "Perform the equipment acquisition and / or equipment changes"
+    boundary dl "Maximum time limit" on=acq1 timer=P30D
+    xor res "Result of the entire process?"
+    task inffail "Inform the GO about the failure of the entire process"
+    task infok "Inform the GO about the successful completion of the entire process"
+  lane go "GO"
+    task exam "Examine the application of the MPON"
+    xor dec "Application confirmed?"
+    task rej "Reject the application of the MPON"
+    end e1 "Application rejected"
+    task conf "Confirm the application of the MPON"
+    and sp1 "Inform"
+    task inf1 "Inform the MPOO about the registration confirmation of the MPON"
+    task inf2 "Inform the MSPO about the registration confirmation of the MPON"
+    and jn1 "Informed"
+    and sp0 "Start equipment work"
+    and jn0 "Equipment work done"
+    task late "Inform the MPON about the failure of the overall transaction by deadline"
+    end e2 "Failed by deadline"
+    task cfail "Confirm the failure of the assignment to the MPON"
+    and sp2 "Inform"
+    task f1 "Inform the MPOO about the failure of the assignment of the MPON"
+    task f2 "Inform the MSPO about the failure of the assignment of the MPON"
+    and jn2 "Informed"
+    end e3 "Assignment failed"
+    task assign "Assign the MPON"
+    task cass "Confirm the assignment to the MPON"
+    and sp3 "Inform"
+    task a1 "Inform the MPOO about the assignment of the MPON"
+    task a2 "Inform the MSPO about the assignment of the MPON"
+    task a3 "Inform the SP about the assignment of the MPON"
+    and jn3 "Informed"
+    end e4 "Assignment completed"
+  lane mpoo "MPOO"
+    task acq2 "Perform the equipment acquisition and / or equipment changes"
+
+flow s -> report -> exam -> dec
+flow dec -> rej "no" default
+flow dec -> conf "yes" when="confirmed = true"
+flow rej -> e1
+flow conf -> sp1
+flow sp1 -> inf1 -> jn1
+flow sp1 -> inf2 -> jn1
+flow jn1 -> sp0
+flow sp0 -> acq1 -> jn0
+flow sp0 -> acq2 -> jn0
+flow jn0 -> res
+flow dl -> late -> e2
+flow res -> inffail "failure" default
+flow res -> infok "success" when="success = true"
+flow inffail -> cfail -> sp2
+flow sp2 -> f1 -> jn2
+flow sp2 -> f2 -> jn2
+flow jn2 -> e3
+flow infok -> assign -> cass -> sp3
+flow sp3 -> a1 -> jn3
+flow sp3 -> a2 -> jn3
+flow sp3 -> a3 -> jn3
+flow jn3 -> e4

@@ -1,0 +1,119 @@
+```tok
+tok 1.0 "Intake workflow"
+
+pool org "Mental Health Care Institute"
+  lane family_doctor "Family Doctor"
+    start s1 "Notice by telephone"
+    task t1 "Give notice by telephone"
+
+  lane secretarial "Secretarial Office"
+    task t2 "Inquire patient name and residence"
+    task t3 "Connect to nursing officer"
+    task t6 "Store information in information system"
+    task t7 "Print registration form"
+    task t8 "Store registration form and print in patient file"
+    task t9 "Produce first registration card"
+    task t10 "Produce second registration card"
+    task t11 "Add patient to new notices list"
+    task t12 "Hold staff meeting (Wednesday)"
+    task t13 "Distribute registration cards to intakers"
+    task t14 "Store assignment in information system"
+    task t15 "Prepare and send letter to family doctor"
+    task t16 "Inform second intaker of received medical file"
+    task t17 "Add medical file copy to patient file"
+    task t18 "Type dictaphone notes"
+    task t19 "Add typed notes to patient file"
+    task t20 "Put patient on status list"
+    task t21 "Provide status list to team leader"
+
+  lane nursing_officer "Nursing Officer"
+    task t4 "Conduct full inquiry and record on registration form"
+    task t5 "Hand registration form to secretarial office"
+
+  lane team_leader "Team Leader"
+    xor g1 "Is new patient?"
+    task t22 "Create patient file"
+    and a1 "Produce registration cards"
+    and a2 "Cards produced"
+    task t23 "Assign new patients to intakers"
+    task t24 "Record assignment list"
+    xor g2 "Medical file required?"
+    task t25 "Formulate treatment plan"
+
+  lane first_intaker "First Intaker"
+    task f1 "Plan meeting with patient"
+    task f2 "Conduct first meeting and complete checklist"
+    task f3 "Register additional observations"
+    task f4 "Store notes and checklist in patient file"
+
+  lane second_intaker "Second Intaker"
+    task s1 "Plan meeting with patient"
+    task s2 "Conduct second meeting"
+    task s3 "Record observations with dictaphone"
+
+  lane psychiatrist "Psychiatrist"
+    # No separate tasks; participates in treatment plan formulation
+
+# Flows
+flow s1 -> t1
+flow t1 -> t2
+flow t2 -> t3
+flow t3 -> t4
+flow t4 -> t5
+flow t5 -> t6
+flow t6 -> t7
+flow t7 -> g1
+
+# New patient branch
+flow g1 -> t22                 # yes
+flow t22 -> t8
+flow t8 -> a1
+flow a1 -> t9
+flow a1 -> t10
+flow a1 -> a2
+flow a2 -> t11
+
+# Existing patient branch
+flow g1 -> t11                # no (direct to add to list)
+
+flow t11 -> t12
+flow t12 -> t23
+flow t23 -> t24
+flow t24 -> t13
+flow t13 -> g2
+
+# Medical file required branch
+flow g2 -> t15                # yes
+flow t15 -> catch_medical_copy
+catch catch_medical_copy "Receive medical file copy"
+flow catch_medical_copy -> t16
+flow catch_medical_copy -> t17
+flow t16 -> a3
+flow t17 -> a3
+and a3 "Copy handling complete"
+
+# No medical file needed branch
+flow g2 -> a3                # no, directly to next step
+
+# After copy handling
+flow a3 -> f1
+flow f1 -> f2
+flow f2 -> f3
+flow f3 -> f4
+
+flow a3 -> s1
+flow s1 -> s2
+flow s2 -> s3
+flow s3 -> t18
+flow t18 -> t19
+
+# Synchronize first and second intaker outcomes
+and sync_intake "Intake meetings completed"
+flow f4 -> sync_intake
+flow t19 -> sync_intake
+
+flow sync_intake -> t20
+flow t20 -> t21
+flow t21 -> t25
+flow t25 -> end e "Intake procedure completed"
+```

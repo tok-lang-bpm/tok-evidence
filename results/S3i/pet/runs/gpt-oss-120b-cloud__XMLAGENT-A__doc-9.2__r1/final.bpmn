@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <bpmn:collaboration id="Collaboration_Org">
+    <bpmn:participant id="Participant_Org" name="Organisation" processRef="Process_MortgageOffer" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_MortgageOffer" isExecutable="false">
+    <!-- Lane set -->
+    <bpmn:laneSet id="LaneSet_Org">
+      <bpmn:lane id="Lane_CSR" name="Customer Service Representative">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_WaitReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ReplyType</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_UpdateDetails_Decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Archive_Decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_Wait2Weeks</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_UpdateDetails_NoAnswer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Archive_NoAnswer</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Admin" name="Administration">
+        <bpmn:flowNodeRef>Task_MoveToAdmin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_1" name="Start mortgage offer process" />
+
+    <bpmn:task id="Task_SendOffer" name="Send Mortgage offer to the customer" />
+    <bpmn:task id="Task_WaitReply" name="Wait for reply" />
+
+    <bpmn:exclusiveGateway id="Gateway_ReplyType" name="Customer reply type?" />
+
+    <!-- Decline path -->
+    <bpmn:task id="Task_UpdateDetails_Decline" name="Update case details" />
+    <bpmn:task id="Task_Archive_Decline" name="Archive case prior to cancellation" />
+    <bpmn:endEvent id="End_Decline" name="Case cancelled (decline)" />
+
+    <!-- Provide documents path -->
+    <bpmn:exclusiveGateway id="Gateway_DocCheck" name="All prerequisite documents provided?" />
+
+    <!-- Yes – move to administration -->
+    <bpmn:task id="Task_MoveToAdmin" name="Move case to administration for completion" />
+    <bpmn:endEvent id="End_Admin" name="Case handed to administration" />
+
+    <!-- No – request missing documents -->
+    <bpmn:task id="Task_RequestDocs" name="Generate message requesting outstanding documents" />
+    <bpmn:intermediateCatchEvent id="Timer_Wait2Weeks" name="Wait 2 weeks for answer">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT336H</bpmn:timeDuration> <!-- 2 weeks -->
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_UpdateDetails_NoAnswer" name="Update case details" />
+    <bpmn:task id="Task_Archive_NoAnswer" name="Archive case prior to cancellation" />
+    <bpmn:endEvent id="End_NoAnswer" name="Case cancelled (no answer)" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_SendOffer" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_SendOffer" targetRef="Task_WaitReply" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_WaitReply" targetRef="Gateway_ReplyType" />
+
+    <!-- Decline branch -->
+    <bpmn:sequenceFlow id="Flow_4" name="decline" sourceRef="Gateway_ReplyType" targetRef="Task_UpdateDetails_Decline" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_UpdateDetails_Decline" targetRef="Task_Archive_Decline" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_Archive_Decline" targetRef="End_Decline" />
+
+    <!-- Documents provided branch -->
+    <bpmn:sequenceFlow id="Flow_7" name="documents provided" sourceRef="Gateway_ReplyType" targetRef="Gateway_DocCheck" />
+    <bpmn:sequenceFlow id="Flow_8" name="yes" sourceRef="Gateway_DocCheck" targetRef="Task_MoveToAdmin" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_MoveToAdmin" targetRef="End_Admin" />
+
+    <!-- Missing documents branch -->
+    <bpmn:sequenceFlow id="Flow_10" name="no" sourceRef="Gateway_DocCheck" targetRef="Task_RequestDocs" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_RequestDocs" targetRef="Timer_Wait2Weeks" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Timer_Wait2Weeks" targetRef="Task_UpdateDetails_NoAnswer" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_UpdateDetails_NoAnswer" targetRef="Task_Archive_NoAnswer" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_Archive_NoAnswer" targetRef="End_NoAnswer" />
+  </bpmn:process>
+</bpmn:definitions>

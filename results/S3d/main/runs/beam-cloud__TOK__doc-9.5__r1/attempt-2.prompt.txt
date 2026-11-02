@@ -1,0 +1,74 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+After the Expense Report is received, a new account must be created if the employee does not already have one. The report is then reviewed for automatic approval. Amounts under $200 are automatically approved, whereas amounts equal to or over $200 require approval of the supervisor. In case of rejection, the employee must receive a rejection notice by email. Otherwise, the reimbursement goes to the employees direct deposit bank account. If the request is not completed in 7 days, then the employee must receive an approval in progress email. If the request is not finished within 30 days, then the process is stopped and the employee receives an email cancellation notice and must re-submit the expense report.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Expense report processing"
+
+pool organisation "Organisation"
+  lane employee "Employee"
+    task resubmit "Re-submit expense report"
+    end resubmitted "Expense report re-submitted"
+  lane supervisor "Supervisor"
+  lane system "System"
+    sub handle "Handle expense report"
+      start received "Expense report received"
+      xor has_account "Employee has account?"
+      task create_account "Create new account"
+      task review "Review expense report for automatic approval"
+      xor amount "Amount under $200?"
+      task auto_approve "Automatically approve expense report"
+      task approve "Approve expense report"
+      xor approved "Expense report approved?"
+      task reject "Send rejection notice by email"
+      task reimburse "Send reimbursement to direct deposit bank account"
+      end completed "Expense report completed"
+      end rejected "Expense report rejected"
+      end reimbursed "Expense report reimbursed"
+
+      flow received -> has_account
+      flow has_account -> create_account "No" when="hasAccount = false"
+      flow has_account -> review "Yes" default
+      flow create_account -> review
+      flow review -> amount
+      flow amount -> auto_approve "Yes" when="amount < 200"
+      flow amount -> approve "No" default
+      flow auto_approve -> reimburse
+      flow approve -> approved
+      flow approved -> reimburse "Yes" when="approved = true"
+      flow approved -> reject "No" default
+      flow reimburse -> reimbursed
+      flow reject -> rejected
+
+    boundary progress "Approval in progress" on=handle timer=P7D noninterrupting
+    boundary cancelled "Expense report cancelled" on=handle timer=P30D
+
+    task notify_progress "Send approval in progress email"
+    end progress_sent "Approval in progress notice sent"
+    task notify_cancellation "Send cancellation notice by email"
+    end cancellation_completed "Expense report cancellation completed"
+
+    flow progress -> notify_progress
+    flow notify_progress -> progress_sent
+    flow cancelled -> notify_cancellation
+    flow notify_cancellation -> resubmit
+    flow resubmit -> cancellation_completed
+```
+
+The tok checker reports these problems in it:
+
+- line 0: warning W040: process without a start or end event (organisation-process)
+- line 20: warning W041: element not reachable from a start event (completed)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

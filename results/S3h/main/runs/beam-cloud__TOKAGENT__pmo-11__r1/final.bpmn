@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Subscription service" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Subscription service" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>signup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submitCancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gCancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>gSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>genAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assignAccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>triggerBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="support" name="Support team">
+        <bpmn:flowNodeRef>processCancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gTerms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>refund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>charge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gTermsJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deactivate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>settle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Customer signs up" />
+    <bpmn:task id="signup" name="Sign up for subscription" />
+    <bpmn:task id="receive" name="Receive regular updates, product enhancements, or renewal notifications" />
+    <bpmn:task id="submitCancel" name="Submit cancellation request" />
+    <bpmn:exclusiveGateway id="gCancel" name="Customer decides to cancel?" default="f-gCancel-receive" />
+    <bpmn:parallelGateway id="gSplit" name="Generate account, assign access, and trigger billing" />
+    <bpmn:task id="genAccount" name="Generate account" />
+    <bpmn:task id="assignAccess" name="Assign access" />
+    <bpmn:task id="triggerBilling" name="Trigger automated billing cycles" />
+    <bpmn:parallelGateway id="gJoin" name="Account, access and billing ready" />
+    <bpmn:task id="processCancel" name="Process cancellation request" />
+    <bpmn:exclusiveGateway id="gTerms" name="Refund or charge?" default="f-gTerms-charge" />
+    <bpmn:task id="refund" name="Apply refund" />
+    <bpmn:task id="charge" name="Apply charge" />
+    <bpmn:exclusiveGateway id="gTermsJoin" name="Refunds and charges applied" />
+    <bpmn:task id="deactivate" name="Deactivate subscription" />
+    <bpmn:task id="settle" name="Settle final account balance" />
+    <bpmn:endEvent id="e" name="Subscription deactivated and final balance settled" />
+    <bpmn:sequenceFlow id="f-s-signup" sourceRef="s" targetRef="signup" />
+    <bpmn:sequenceFlow id="f-signup-gSplit" sourceRef="signup" targetRef="gSplit" />
+    <bpmn:sequenceFlow id="f-gSplit-genAccount" sourceRef="gSplit" targetRef="genAccount" />
+    <bpmn:sequenceFlow id="f-gSplit-assignAccess" sourceRef="gSplit" targetRef="assignAccess" />
+    <bpmn:sequenceFlow id="f-gSplit-triggerBilling" sourceRef="gSplit" targetRef="triggerBilling" />
+    <bpmn:sequenceFlow id="f-genAccount-gJoin" sourceRef="genAccount" targetRef="gJoin" />
+    <bpmn:sequenceFlow id="f-assignAccess-gJoin" sourceRef="assignAccess" targetRef="gJoin" />
+    <bpmn:sequenceFlow id="f-triggerBilling-gJoin" sourceRef="triggerBilling" targetRef="gJoin" />
+    <bpmn:sequenceFlow id="f-gJoin-receive" sourceRef="gJoin" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-gCancel" sourceRef="receive" targetRef="gCancel" />
+    <bpmn:sequenceFlow id="f-gCancel-submitCancel" name="Yes" sourceRef="gCancel" targetRef="submitCancel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">cancel = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gCancel-receive" name="No" sourceRef="gCancel" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-submitCancel-processCancel" sourceRef="submitCancel" targetRef="processCancel" />
+    <bpmn:sequenceFlow id="f-processCancel-gTerms" sourceRef="processCancel" targetRef="gTerms" />
+    <bpmn:sequenceFlow id="f-gTerms-refund" name="Refund" sourceRef="gTerms" targetRef="refund">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">terms = "refund"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gTerms-charge" name="Charge" sourceRef="gTerms" targetRef="charge" />
+    <bpmn:sequenceFlow id="f-refund-gTermsJoin" sourceRef="refund" targetRef="gTermsJoin" />
+    <bpmn:sequenceFlow id="f-charge-gTermsJoin" sourceRef="charge" targetRef="gTermsJoin" />
+    <bpmn:sequenceFlow id="f-gTermsJoin-deactivate" sourceRef="gTermsJoin" targetRef="deactivate" />
+    <bpmn:sequenceFlow id="f-deactivate-settle" sourceRef="deactivate" targetRef="settle" />
+    <bpmn:sequenceFlow id="f-settle-e" sourceRef="settle" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

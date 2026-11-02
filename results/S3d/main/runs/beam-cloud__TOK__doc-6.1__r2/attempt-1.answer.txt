@@ -1,0 +1,62 @@
+```tok
+tok 1.0 "Invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received"
+    task receive "Receive invoice"
+    task inspect "Visually inspect invoice"
+    task forward "Forward invoice to accounting"
+  lane accounting "Accounting employee"
+    task identify "Identify charging supplier"
+    task create "Create invoice instance"
+    task check "Check invoice items"
+    task note "Note cost center and cost center managers on docket"
+    task send_first "Send docket and invoice copy to first cost center manager"
+    task clarify "Proceed with clarification with vendor"
+    xor consult_gate "Consult cost center managers?"
+    task consult "Consult cost center managers"
+    task send_again "Send invoice copy to cost center managers again"
+    task forward_cm "Forward invoice copy to commercial manager"
+    task resolve "Resolve complaint with supplier"
+    task pay "Give payment instructions"
+    task close "Close invoice instance"
+    end done "Invoice processed"
+  lane costmanager "Cost center manager"
+    task review "Review content for accuracy"
+    xor order "Everything in order?"
+    task note_ap "Note accurate position on docket"
+    task return_internal "Return invoice copy to internal mail"
+    xor all "All items marked correct?"
+    task reject "Reject accurate position with note"
+  lane commercial "Commercial manager"
+    task audit "Make commercial audit"
+    xor complaint "Complaint during audit?"
+    task approve "Issue approval for payment"
+    xor amount "Bill amount exceeds EUR 20?"
+  lane board "Board"
+    task board_check "Check invoice"
+
+flow received -> receive -> inspect -> forward -> identify -> create -> check -> note -> send_first -> review
+flow review -> order
+flow order -> note_ap "yes" when="accurate"
+flow order -> reject "no" default
+flow note_ap -> return_internal -> all
+flow all -> forward_cm "yes" when="allItemsCorrect"
+flow all -> review "no" default
+flow reject -> clarify
+flow clarify -> consult_gate
+flow consult_gate -> consult "yes" when="consultNeeded"
+flow consult_gate -> send_again "no" default
+flow consult -> send_again
+flow send_again -> review
+flow forward_cm -> audit
+flow audit -> complaint
+flow complaint -> resolve "yes" when="complaint"
+flow complaint -> approve "no" default
+flow resolve -> audit
+flow approve -> amount
+flow amount -> board_check "yes" when="amount > 20"
+flow amount -> pay "no" default
+flow board_check -> pay -> close -> done
+```

@@ -1,0 +1,79 @@
+```tok
+tok 1.0 "Work Accident"
+
+pool organisation "Organisation"
+  lane employee "Employee"
+    start discovered "Work accident or incident discovered"
+    task inform_employer "Inform the employer immediately"
+
+  lane employer "Employer"
+    task gather "Gather information about the work accident"
+    xor event_type "What is reported?"
+    task record_work_accident "Record the work accident"
+    task record_near_miss "Record the near-miss incident"
+    task record_risk "Record the serious and immediate risk"
+    task record_defect "Record the defect in protection systems"
+    xor reporter "Who reports the accident?"
+    xor immediate "Fatal or serious injury not reported to emergency services?"
+    task report_labour "Report the work accident to the Labour Inspectorate"
+    xor merge_immediate "Immediate report handled"
+    xor insured_check "Is the insured person killed or unable to work for three days?"
+    task report_provider_employer "Report the work accident to the accident insurance provider within five days"
+    xor merge_insured "Provider report handled"
+
+  lane self_employed "Self-employed person"
+    task report_self "Report accidents involving employees and yourself to the accident insurance provider in good time"
+
+  lane student "Student or schoolchild"
+    task report_directorate "Report the accident to the competent directorate"
+
+  lane school "School, educational facility or university"
+    task report_school "Report every work accident to the accident insurance provider in triplicate within five days"
+
+  lane insured "Insured party"
+    task report_written "Report the accident in writing immediately"
+    xor private_fatality "Is there a fatality?"
+    task report_fatality_three "Report the fatality within three days"
+
+  lane ends "End states"
+    end near_miss_end "Near-miss recorded"
+    end risk_end "Risk recorded"
+    end defect_end "Defect recorded"
+    end work_end "Work accident reported"
+    end self_end "Self-employed accident reported"
+    end student_end "Student accident reported"
+    end school_end "School accident reported"
+    end private_end "Private insurance accident reported"
+
+flow discovered -> inform_employer
+flow inform_employer -> gather
+flow gather -> event_type
+flow event_type -> record_work_accident "Work accident" when="is_work_accident"
+flow event_type -> record_near_miss "Near-miss" when="is_near_miss"
+flow event_type -> record_risk "Serious risk" when="is_serious_risk"
+flow event_type -> record_defect "Defect in protection systems" default
+flow record_near_miss -> near_miss_end
+flow record_risk -> risk_end
+flow record_defect -> defect_end
+flow record_work_accident -> reporter
+flow reporter -> immediate "Employer reports" when="report_by_employer"
+flow reporter -> report_self "Self-employed person reports" when="report_by_self_employed"
+flow reporter -> report_directorate "Student or schoolchild reports" when="report_by_student"
+flow reporter -> report_school "School or university reports" when="report_by_school"
+flow reporter -> report_written "Insured party reports (private insurance)" default
+flow immediate -> report_labour "Yes" when="immediate_report_required"
+flow immediate -> merge_immediate "No" default
+flow report_labour -> merge_immediate
+flow merge_immediate -> insured_check
+flow insured_check -> report_provider_employer "Yes" when="provider_report_required"
+flow insured_check -> merge_insured "No" default
+flow report_provider_employer -> merge_insured
+flow merge_insured -> work_end
+flow report_self -> self_end
+flow report_directorate -> student_end
+flow report_school -> school_end
+flow report_written -> private_fatality
+flow private_fatality -> report_fatality_three "Fatality" when="has_fatality"
+flow private_fatality -> private_end "No fatality" default
+flow report_fatality_three -> private_end
+```

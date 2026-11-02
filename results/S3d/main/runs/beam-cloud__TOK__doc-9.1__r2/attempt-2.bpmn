@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Account defaulters processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Account defaulters processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="process" name="Process">
+        <bpmn:flowNodeRef>morning</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>initial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>second</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>msg_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="morning" name="Every weekday morning" />
+    <bpmn:subProcess id="initial" name="Initial processing">
+      <bpmn:startEvent id="is" name="Start initial processing" />
+      <bpmn:task id="backup" name="Back up the database" />
+      <bpmn:task id="check_records" name="Check the Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="records" name="New records found?" />
+      <bpmn:task id="check_crm1" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="new_returns" name="New returns exist?" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="advised" name="Defaulting client codes previously advised?" default="f-advised-merge1" />
+      <bpmn:task id="produce" name="Produce another table of defaulting accounts" />
+      <bpmn:task id="send_mgmt" name="Send to account management" />
+      <bpmn:exclusiveGateway id="merge1" name="Merge initial branches" />
+      <bpmn:endEvent id="ie" name="Initial processing completed" />
+      <bpmn:sequenceFlow id="f-is-backup" sourceRef="is" targetRef="backup" />
+      <bpmn:sequenceFlow id="f-backup-check_records" sourceRef="backup" targetRef="check_records" />
+      <bpmn:sequenceFlow id="f-check_records-records" sourceRef="check_records" targetRef="records" />
+      <bpmn:sequenceFlow id="f-records-check_crm1" name="no" sourceRef="records" targetRef="check_crm1" />
+      <bpmn:sequenceFlow id="f-records-merge1" name="yes" sourceRef="records" targetRef="merge1" />
+      <bpmn:sequenceFlow id="f-check_crm1-new_returns" sourceRef="check_crm1" targetRef="new_returns" />
+      <bpmn:sequenceFlow id="f-new_returns-register" name="yes" sourceRef="new_returns" targetRef="register" />
+      <bpmn:sequenceFlow id="f-new_returns-merge1" name="no" sourceRef="new_returns" targetRef="merge1" />
+      <bpmn:sequenceFlow id="f-register-advised" sourceRef="register" targetRef="advised" />
+      <bpmn:sequenceFlow id="f-advised-produce" name="not previously advised" sourceRef="advised" targetRef="produce">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">notPreviouslyAdvised</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-advised-merge1" name="previously advised" sourceRef="advised" targetRef="merge1" />
+      <bpmn:sequenceFlow id="f-produce-send_mgmt" sourceRef="produce" targetRef="send_mgmt" />
+      <bpmn:sequenceFlow id="f-send_mgmt-merge1" sourceRef="send_mgmt" targetRef="merge1" />
+      <bpmn:sequenceFlow id="f-merge1-ie" sourceRef="merge1" targetRef="ie" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="alert" attachedToRef="initial" cancelActivity="false">
+      <bpmn:timerEventDefinition id="alert-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:subProcess id="second" name="Second processing">
+      <bpmn:startEvent id="ss" name="Start second processing" />
+      <bpmn:task id="check_crm2" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="new_returns2" name="New returns filed?" />
+      <bpmn:task id="reconcile" name="Reconcile with the existing account defaulters table" />
+      <bpmn:exclusiveGateway id="merge2" name="Merge second branches" />
+      <bpmn:endEvent id="se" name="Second processing completed" />
+      <bpmn:sequenceFlow id="f-ss-check_crm2" sourceRef="ss" targetRef="check_crm2" />
+      <bpmn:sequenceFlow id="f-check_crm2-new_returns2" sourceRef="check_crm2" targetRef="new_returns2" />
+      <bpmn:sequenceFlow id="f-new_returns2-reconcile" name="yes" sourceRef="new_returns2" targetRef="reconcile" />
+      <bpmn:sequenceFlow id="f-new_returns2-merge2" name="no" sourceRef="new_returns2" targetRef="merge2" />
+      <bpmn:sequenceFlow id="f-reconcile-merge2" sourceRef="reconcile" targetRef="merge2" />
+      <bpmn:sequenceFlow id="f-merge2-se" sourceRef="merge2" targetRef="se" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="msg" attachedToRef="second" cancelActivity="false">
+      <bpmn:timerEventDefinition id="msg-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="send_alert" name="Send an alert to the supervisor" />
+    <bpmn:task id="send_msg" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="done" name="Process completed" />
+    <bpmn:endEvent id="alert_done" name="Alert sent" />
+    <bpmn:endEvent id="msg_done" name="Message sent" />
+    <bpmn:sequenceFlow id="f-morning-initial" sourceRef="morning" targetRef="initial" />
+    <bpmn:sequenceFlow id="f-initial-second" sourceRef="initial" targetRef="second" />
+    <bpmn:sequenceFlow id="f-second-done" sourceRef="second" targetRef="done" />
+    <bpmn:sequenceFlow id="f-alert-send_alert" sourceRef="alert" targetRef="send_alert" />
+    <bpmn:sequenceFlow id="f-send_alert-alert_done" sourceRef="send_alert" targetRef="alert_done" />
+    <bpmn:sequenceFlow id="f-msg-send_msg" sourceRef="msg" targetRef="send_msg" />
+    <bpmn:sequenceFlow id="f-send_msg-msg_done" sourceRef="send_msg" targetRef="msg_done" />
+  </bpmn:process>
+</bpmn:definitions>

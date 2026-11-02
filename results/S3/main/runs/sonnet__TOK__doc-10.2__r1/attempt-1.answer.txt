@@ -1,0 +1,54 @@
+```tok
+tok 1.0 "Meter operation registration"
+
+pool org "Organisation"
+  lane mpon "MPON"
+    start begin "Meter operation to be reported"
+    task report "Report the meter operation to the GO"
+    task equipN "Perform the equipment acquisition and / or equipment changes (MPON)"
+  lane go "GO"
+    task examine "Examine the application of the MPON"
+    xor accepted "Application accepted?"
+    task reject "Reject the application of the MPON"
+    task confirm "Confirm the application of the MPON"
+    task informOO "Inform the MPOO about the registration confirmation of the MPON"
+    task informSO "Inform the MSPO about the registration confirmation of the MPON"
+    and split
+    and joined
+    eventgw outcome
+    catch failMsg "Failure of the entire process reported by the MPON" message="Failure of the entire process"
+    catch okMsg "Successful completion of the entire process reported by the MPON" message="Successful completion of the entire process"
+    catch deadline "Maximum time limit passed" timer=P30D
+    task confirmFail "Confirm the failure of the assignment to the MPON"
+    task failOO "Inform the MPOO about the failure of the assignment of the MPON"
+    task failSO "Inform the MSPO about the failure of the assignment of the MPON"
+    task assign "Assign the MPON"
+    task confirmAssign "Confirm the assignment to the MPON"
+    task assignOO "Inform the MPOO about the assignment of the MPON"
+    task assignSO "Inform the MSPO about the assignment of the MPON"
+    task informSP "Inform the SP about the assignment of the MPON"
+    task informDeadline "Inform the MPON about the failure of the overall transaction by deadline"
+    end rejected "Application rejected"
+    end failed "Assignment failed"
+    end assigned "MPON assigned"
+    end timedOut "Transaction failed by deadline"
+  lane mpoo "MPOO"
+    task equipO "Perform the equipment acquisition and / or equipment changes (MPOO)"
+
+flow begin -> report -> examine -> accepted
+flow accepted -> reject "no"
+flow accepted -> confirm "yes"
+flow reject -> rejected
+flow confirm -> informOO -> informSO -> split
+flow split -> equipN
+flow split -> equipO
+flow equipN -> joined
+flow equipO -> joined
+flow joined -> outcome
+flow outcome -> failMsg
+flow outcome -> okMsg
+flow outcome -> deadline
+flow failMsg -> confirmFail -> failOO -> failSO -> failed
+flow okMsg -> assign -> confirmAssign -> assignOO -> assignSO -> informSP -> assigned
+flow deadline -> informDeadline -> timedOut
+```

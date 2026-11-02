@@ -1,0 +1,129 @@
+tok 1.0 "Service degradation process"
+
+pool org "Organisation"
+  lane customer "Customer"
+    start c_start "Start"
+    task c_perceive "Perceive service degradation"
+    task c_send_params "Send list of problem parameters"
+    task c_recv_final "Receive report about service performance and problem resolution"
+    end c_end "Process ends at customer"
+  lane customer_service "Customer Service"
+    task cs_enter "Enter problem report into system T"
+    task cs_compare "Compare problem report to customer SLA"
+    task cs_determine "Determine necessary counter measures"
+    task cs_create_detail "Create detailed problem report"
+    task cs_send_detail "Send detailed problem report to Service Management"
+    task cs_recv_perf "Receive actual service performance"
+    task cs_recv_prr "Receive problem resolution report"
+    xor cs_recv_join "Report received?"
+    and cs_par_split "Trigger concurrent activities"
+    task cs_create_cust_report "Create report for customer"
+    task cs_send_cust_report "Send report to customer"
+    task cs_report_rebate "Report SLA violation rebate to Billing & Collections"
+    and cs_par_join "All activities completed?"
+    end cs_end "Process ends in Customer Service"
+  lane electronic_service "Electronic Service"
+    task es_determine "Determine significance of customer"
+    task es_extra "Link to extra problem fix process"
+    xor es_premium "Customer premium?"
+    xor es_significance "Customer significance affects counter measures?"
+  lane service_management "Service Management"
+    task sm_recv_detail "Receive detailed problem report"
+    task sm_investigate "Investigate problem analyzability"
+    xor sm_analyzable "Problem analyzable by Service Management?"
+    task sm_send_detail_rp "Send detailed problem report to Resource Provisioning"
+    task sm_analyze "Perform analysis"
+    task sm_create_trouble "Create trouble report"
+    xor sm_status_join "Status ready?"
+    task sm_recv_status "Receive status report from Resource Provisioning"
+    task sm_prepare_final "Prepare final status report"
+    xor sm_cm "Counter measures decision?"
+    task sm_send_perf "Send actual service performance to Customer Service"
+    task sm_correct_minor "Undertake corrective actions"
+    task sm_create_prr "Create problem resolution report"
+    task sm_send_prr "Send problem resolution report to Customer Service"
+    task sm_create_restreq "Create request for automatic resource restoration"
+    task sm_send_restreq "Send restoration request to Resource Provisioning"
+    task sm_recv_ts "Receive trouble-shooting report"
+    end sm_end_no "End after sending actual service performance"
+    end sm_end_prr "End after sending problem resolution report"
+  lane resource_provisioning "Resource Provisioning"
+    task rp_recv_detail "Receive detailed problem report"
+    task rp_check "Check for possible problems"
+    xor rp_problems "Problems detected?"
+    task rp_notify_normal "Create notification about normal service execution"
+    task rp_analyze "Analyze problem"
+    task rp_create_trouble "Create trouble report"
+    task rp_create_status "Create status report"
+    task rp_send_status "Send status report to Service Management"
+    task rp_wait "Wait for restoration request"
+    boundary rt on=rp_wait timer=P2D
+    task rp_track "Track all possible errors"
+    task rp_correct "Undertake corrective actions"
+    task rp_create_ts "Create trouble-shooting report"
+    task rp_send_ts "Send trouble-shooting report to Service Management"
+    end rp_end_timeout "Resource Provisioning terminates process"
+    end rp_end "End after sending trouble-shooting report"
+  lane billing "Billing & Collections"
+    task b_adjust "Adjust billing"
+
+flow c_start -> c_perceive -> c_send_params
+flow c_send_params -> cs_enter
+flow cs_enter -> cs_compare -> cs_determine
+flow cs_determine -> es_determine
+flow es_determine -> es_premium
+flow es_premium -> es_extra "premium" when="customer is premium"
+flow es_premium -> es_significance "not premium" default
+flow es_extra -> es_significance
+flow es_significance -> cs_determine "affects counter measures" when="significance affects counter measures"
+flow es_significance -> cs_create_detail "does not affect" default
+flow cs_create_detail -> cs_send_detail
+flow cs_send_detail -> sm_recv_detail
+flow sm_recv_detail -> sm_investigate
+flow sm_investigate -> sm_analyzable
+flow sm_analyzable -> sm_send_detail_rp "not analyzable" when="not analyzable"
+flow sm_analyzable -> sm_analyze "analyzable" default
+flow sm_analyze -> sm_create_trouble
+flow sm_send_detail_rp -> rp_recv_detail
+flow rp_recv_detail -> rp_check
+flow rp_check -> rp_problems
+flow rp_problems -> rp_notify_normal "no problems" default
+flow rp_problems -> rp_analyze "problems detected" when="problems detected"
+flow rp_analyze -> rp_create_trouble
+flow rp_notify_normal -> rp_create_status
+flow rp_create_trouble -> rp_create_status
+flow rp_create_status -> rp_send_status
+flow rp_send_status -> sm_recv_status
+flow sm_create_trouble -> sm_status_join
+flow sm_recv_status -> sm_status_join
+flow sm_status_join -> sm_prepare_final
+flow sm_prepare_final -> sm_cm
+flow sm_cm -> sm_send_perf "no problem detected" when="no problem detected"
+flow sm_cm -> sm_correct_minor "minor corrective actions" when="minor corrective actions"
+flow sm_cm -> sm_create_restreq "automatic resource restoration" default
+flow sm_correct_minor -> sm_create_prr
+flow sm_create_restreq -> sm_send_restreq
+flow sm_send_restreq -> rp_wait
+flow rp_wait -> rp_track "restoration request received" default
+flow rp_track -> rp_correct -> rp_create_ts -> rp_send_ts
+flow rp_send_ts -> sm_recv_ts
+flow sm_recv_ts -> sm_create_prr
+flow sm_create_prr -> sm_send_prr
+flow sm_send_perf -> cs_recv_perf
+flow sm_send_prr -> cs_recv_prr
+flow cs_recv_perf -> cs_recv_join
+flow cs_recv_prr -> cs_recv_join
+flow cs_recv_join -> cs_par_split
+flow cs_par_split -> cs_create_cust_report
+flow cs_par_split -> cs_report_rebate
+flow cs_create_cust_report -> cs_send_cust_report
+flow cs_send_cust_report -> cs_par_join
+flow cs_report_rebate -> b_adjust
+flow b_adjust -> cs_par_join
+flow cs_par_join -> cs_end
+flow sm_send_perf -> sm_end_no
+flow sm_send_prr -> sm_end_prr
+flow rp_send_ts -> rp_end
+flow rt -> rp_end_timeout
+message cs_send_cust_report -> c_recv_final "Report to customer"
+flow c_recv_final -> c_end

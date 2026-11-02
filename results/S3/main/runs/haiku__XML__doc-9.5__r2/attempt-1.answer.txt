@@ -1,0 +1,117 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="expense-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="expense-process" isExecutable="false">
+    <bpmn:laneSet id="expense-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>submitted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="finance" name="Finance System">
+        <bpmn:flowNodeRef>process-report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress-email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress-end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel-email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-account-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>auto-approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-approved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected-end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transfer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>supervisor-approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-decision</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="submitted" name="Expense report submitted" />
+    <bpmn:task id="resubmit" name="Re-submit the expense report" />
+    <bpmn:endEvent id="cancelled-end" name="Expense report cancelled" />
+
+    <bpmn:subProcess id="process-report" name="Process the expense report">
+      <bpmn:startEvent id="report-received" name="Expense report received" />
+      <bpmn:exclusiveGateway id="gw-account" name="Employee has an account?" />
+      <bpmn:task id="create-account" name="Create a new account" />
+      <bpmn:exclusiveGateway id="gw-account-merge" />
+      <bpmn:task id="review" name="Review the expense report for automatic approval" />
+      <bpmn:exclusiveGateway id="gw-amount" name="Amount under $200?" />
+      <bpmn:task id="auto-approve" name="Automatically approve the expense report" />
+      <bpmn:task id="supervisor-approve" name="Approve the expense report" />
+      <bpmn:exclusiveGateway id="gw-decision" name="Report approved?" />
+      <bpmn:exclusiveGateway id="gw-approved" />
+      <bpmn:task id="reject" name="Send a rejection notice by email to the employee" />
+      <bpmn:endEvent id="rejected-end" name="Expense report rejected" />
+      <bpmn:task id="transfer" name="Transfer the reimbursement to the employee's direct deposit bank account" />
+      <bpmn:endEvent id="paid-end" name="Reimbursement paid" />
+
+      <bpmn:sequenceFlow id="p1" sourceRef="report-received" targetRef="gw-account" />
+      <bpmn:sequenceFlow id="p2" name="no" sourceRef="gw-account" targetRef="create-account">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">has_account = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p3" name="yes" sourceRef="gw-account" targetRef="gw-account-merge">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">has_account = true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p4" sourceRef="create-account" targetRef="gw-account-merge" />
+      <bpmn:sequenceFlow id="p5" sourceRef="gw-account-merge" targetRef="review" />
+      <bpmn:sequenceFlow id="p6" sourceRef="review" targetRef="gw-amount" />
+      <bpmn:sequenceFlow id="p7" name="yes" sourceRef="gw-amount" targetRef="auto-approve">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p8" name="no" sourceRef="gw-amount" targetRef="supervisor-approve">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &gt;= 200</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p9" sourceRef="auto-approve" targetRef="gw-approved" />
+      <bpmn:sequenceFlow id="p10" sourceRef="supervisor-approve" targetRef="gw-decision" />
+      <bpmn:sequenceFlow id="p11" name="yes" sourceRef="gw-decision" targetRef="gw-approved">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p12" name="no" sourceRef="gw-decision" targetRef="reject">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="p13" sourceRef="reject" targetRef="rejected-end" />
+      <bpmn:sequenceFlow id="p14" sourceRef="gw-approved" targetRef="transfer" />
+      <bpmn:sequenceFlow id="p15" sourceRef="transfer" targetRef="paid-end" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="timer-7" name="7 days" attachedToRef="process-report" cancelActivity="false">
+      <bpmn:timerEventDefinition id="timer-7-def">
+        <bpmn:timeDuration>P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="timer-30" name="30 days" attachedToRef="process-report" cancelActivity="true">
+      <bpmn:timerEventDefinition id="timer-30-def">
+        <bpmn:timeDuration>P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+
+    <bpmn:task id="progress-email" name="Send an approval in progress email" />
+    <bpmn:endEvent id="progress-end" name="Approval in progress email sent" />
+    <bpmn:task id="cancel-email" name="Stop the process and send an email cancellation notice" />
+    <bpmn:endEvent id="processed" name="Expense report processed" />
+
+    <bpmn:sequenceFlow id="s1" sourceRef="submitted" targetRef="process-report" />
+    <bpmn:sequenceFlow id="s2" sourceRef="process-report" targetRef="processed" />
+    <bpmn:sequenceFlow id="s3" sourceRef="timer-7" targetRef="progress-email" />
+    <bpmn:sequenceFlow id="s4" sourceRef="progress-email" targetRef="progress-end" />
+    <bpmn:sequenceFlow id="s5" sourceRef="timer-30" targetRef="cancel-email" />
+    <bpmn:sequenceFlow id="s6" sourceRef="cancel-email" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="s7" sourceRef="resubmit" targetRef="cancelled-end" />
+  </bpmn:process>
+</bpmn:definitions>
+```

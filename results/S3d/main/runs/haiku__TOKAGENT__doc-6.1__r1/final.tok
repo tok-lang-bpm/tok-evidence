@@ -1,0 +1,68 @@
+tok 1.0 "Invoice processing at ACME AG"
+
+pool acme "ACME AG"
+  lane sec "Secretariat"
+    start s "Invoice received on paper or by fax"
+    task receive "Receive invoice in central inbox"
+    task inspect "Inspect invoice visually"
+    task forward "Forward invoice to accounting employee"
+  lane acc "Accounting employee"
+    task create "Create invoice instance in ACME Financial Accounting"
+    task identify "Identify charging suppliers"
+    task check-items "Check invoice items"
+    task note-cc "Note cost center and cost center managers for each position on docket"
+    task send-first "Send docket and invoice copy to cost center managers"
+    xor all-ap "All positions marked AP?"
+    task forward-comm "Forward invoice copy to commercial manager"
+    task clarify "Clarify inconsistencies with vendor"
+    xor consult "Consult cost center managers needed?"
+    task consult-cc "Consult cost center managers by telephone or e-mail"
+    xor merge-consult
+    xor resolved "All inconsistencies resolved?"
+    task resolve-complaint "Resolve complaint with supplier"
+    task pay "Give payment instructions"
+    task close "Close instance in ACME Financial Accounting"
+    end e-end "Invoice processed"
+  lane cc "Cost center manager"
+    task review "Review invoice copy for accuracy"
+    xor accurate "Position accurate?"
+    task mark-ap "Mark position AP on docket"
+    task return-mail "Return invoice copy to internal mail"
+    xor more "Further cost center managers on docket?"
+    task pass-next "Pass invoice copy to next cost center manager"
+    task reject "Reject position with note and explanation on docket"
+    task return-acc "Return invoice copy to accounting"
+  lane comm "Commercial manager"
+    task audit "Perform commercial audit"
+    xor complaint "Complaint during commercial audit?"
+    task approve "Issue approval for payment"
+    xor amount "Bill amount exceeds EUR 20?"
+    xor amt-merge
+    task sig "Return invoice copy and docket in signature file to accounting employee"
+  lane board "Board"
+    task board-check "Check invoice again (four-eyes principle)"
+
+flow s -> receive -> inspect -> forward -> create -> identify -> check-items -> note-cc -> send-first -> review -> accurate
+flow accurate -> mark-ap "yes"
+flow accurate -> reject "no"
+flow mark-ap -> return-mail -> more
+flow more -> pass-next "yes"
+flow pass-next -> review
+flow more -> return-acc "no"
+flow reject -> return-acc -> all-ap
+flow all-ap -> forward-comm "yes"
+flow all-ap -> clarify "no"
+flow clarify -> consult
+flow consult -> consult-cc "yes"
+flow consult -> merge-consult "no"
+flow consult-cc -> merge-consult -> resolved
+flow resolved -> clarify "no"
+flow resolved -> send-first "yes"
+flow forward-comm -> audit -> complaint
+flow complaint -> resolve-complaint "yes"
+flow resolve-complaint -> audit
+flow complaint -> approve "no"
+flow approve -> amount
+flow amount -> board-check "yes"
+flow amount -> amt-merge "no"
+flow board-check -> amt-merge -> sig -> pay -> close -> e-end

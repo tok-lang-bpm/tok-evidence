@@ -1,0 +1,71 @@
+tok 1.0 "Farming Bot" [executable]
+
+pool game "Game"
+  lane player "Player"
+    start start1 "Start"
+    task findResources "Find resources to farm"
+    xor needTool "Is a tool needed for a resource?"
+      task createTool "Create tool"
+      # no‑tool branch goes directly to next gateway
+    and collectStart
+    # end of player initial part
+
+  lane bot "Bot"
+    # Parallel collection of up to 10 resources
+    and collectParallel
+      task collectResource "Collect resource"
+    and collectDone
+
+    # Farming phase
+    and farmSplit
+      task farmResources "Farm resources"
+      task notifyMilestones "Notify when milestones are reached"
+    and farmJoin
+
+    xor disasterOccurred "Did a natural disaster occur?"
+      task handleDisaster "Handle disaster"
+      # loop back to farming split after handling
+
+    xor updateOccurred "Update resource list?"
+      task updatePreferences "Update list of farmed materials"
+      # loop back to farming split after update
+
+    # Finish farming
+    end finishFarming "Farming finished"
+
+    # Post‑farming actions (brag and/or send materials)
+    and bragSend
+      task bragFriends "Brag to selected friends"
+      task sendMaterials "Send materials to friends"
+    and bragSendDone
+    end endProcess "Process completed"
+
+# Flows (player lane)
+flow start1 -> findResources -> needTool
+flow needTool -> createTool -> collectStart
+flow needTool -> collectStart
+
+# Flows (transition to bot lane)
+flow collectStart -> collectParallel
+flow collectParallel -> collectResource -> collectDone
+flow collectDone -> farmSplit
+
+# Farming parallel split / join
+flow farmSplit -> farmResources -> farmJoin
+flow farmSplit -> notifyMilestones -> farmJoin
+
+# Disaster handling loop
+flow farmJoin -> disasterOccurred
+flow disasterOccurred -> handleDisaster -> farmSplit
+flow disasterOccurred -> farmJoin   # no disaster
+
+# Update preferences loop
+flow farmJoin -> updateOccurred
+flow updateOccurred -> updatePreferences -> farmSplit
+flow updateOccurred -> finishFarming   # no update, continue to finish
+
+# Finish and post‑farming
+flow finishFarming -> bragSend
+flow bragSend -> bragFriends -> bragSendDone
+flow bragSend -> sendMaterials -> bragSendDone
+flow bragSendDone -> endProcess

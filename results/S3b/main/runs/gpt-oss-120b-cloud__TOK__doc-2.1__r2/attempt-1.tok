@@ -1,0 +1,134 @@
+tok 1.0 "Service Degradation Handling Process"
+
+pool TELECO "Teleco Organization"
+  lane customer "Customer"
+    start ev_start "Service degradation perceived"
+    task send_params "Send problem parameters list to Customer Service"
+  lane customer_service "Customer Service"
+    task enter_report "Enter problem report into system T"
+    task compare_sla "Compare problem report to customer SLA"
+    task determine_measures "Determine counter measures and priorities"
+    task determine_significance "Determine customer significance"
+    xor is_premium "Is customer premium?"
+    task link_extra_fix "Link to extra problem fix process"
+    xor significance_affects "Significance affects measures?"
+    task reprioritize_measures "Re-prioritize counter measures"
+    task create_detailed_report "Create detailed problem report"
+    task send_to_sm "Send detailed problem report to Service Management"
+  lane service_management "Service Management"
+    task receive_detailed_report "Receive detailed problem report"
+    xor can_analyze "Can Service Management analyze?"
+    task analyze_problem "Analyze problem"
+    task create_trouble_report_sm "Create trouble report"
+    task send_to_rp "Send detailed problem report to Resource Provisioning"
+    task receive_status_report "Receive status report"
+    task prepare_final_status "Prepare final status report"
+    xor final_decision "Final status decision"
+    task send_actual_performance "Send actual service performance to Customer Service"
+    task undertake_corrections "Undertake corrective actions"
+    task create_resolution_report_sm "Create problem resolution report"
+    task send_resolution_report "Send problem resolution report to Customer Service"
+    task create_restoration_request "Create request for automatic resource restoration"
+    task send_restoration_request "Send restoration request to Resource Provisioning"
+    task receive_troubleshooting_report "Receive trouble‑shooting report"
+  lane resource_provisioning "Resource Provisioning"
+    task receive_detailed_report_rp "Receive detailed problem report"
+    xor problem_detected "Problem detected?"
+    task create_normal_notification "Create normal execution notification"
+    task analyze_problem_rp "Analyze problem"
+    task create_trouble_report_rp "Create trouble report"
+    task include_in_status "Include in status report and send to Service Management"
+    task wait_for_restoration "Wait for restoration request (max 2 days)"
+    task track_errors "Track all possible errors"
+    task undertake_corrections_rp "Undertake necessary corrective actions"
+    task create_troubleshooting_report "Create trouble‑shooting report"
+    task send_troubleshooting_report "Send trouble‑shooting report to Service Management"
+  lane billing_collections "Billing & Collections"
+    task report_rebate "Report SLA violation rebate"
+    task adjust_billing "Adjust billing"
+
+  # Flows
+  flow ev_start -> send_params
+  flow send_params -> enter_report
+  flow enter_report -> compare_sla
+  flow compare_sla -> determine_measures
+  flow determine_measures -> determine_significance
+  flow determine_significance -> is_premium
+  flow is_premium -> link_extra_fix  when="yes"
+  flow is_premium -> significance_affects  when="no"
+  flow link_extra_fix -> significance_affects
+  flow significance_affects -> reprioritize_measures  when="yes"
+  flow significance_affects -> create_detailed_report  when="no"
+  flow reprioritize_measures -> determine_measures
+  flow create_detailed_report -> send_to_sm
+  flow send_to_sm -> receive_detailed_report
+
+  flow receive_detailed_report -> can_analyze
+  flow can_analyze -> analyze_problem  when="yes"
+  flow can_analyze -> send_to_rp  when="no"
+
+  flow analyze_problem -> create_trouble_report_sm
+  flow create_trouble_report_sm -> receive_status_report
+
+  flow send_to_rp -> receive_detailed_report_rp
+
+  flow receive_detailed_report_rp -> problem_detected
+  flow problem_detected -> create_normal_notification  when="no"
+  flow problem_detected -> analyze_problem_rp  when="yes"
+  flow analyze_problem_rp -> create_trouble_report_rp
+  flow create_trouble_report_rp -> include_in_status
+  flow create_normal_notification -> include_in_status
+  flow include_in_status -> receive_status_report
+
+  flow receive_status_report -> prepare_final_status
+  flow prepare_final_status -> final_decision
+
+  flow final_decision -> send_actual_performance  when="no problem"
+  flow final_decision -> undertake_corrections  when="minor corrective"
+  flow final_decision -> create_restoration_request  when="automatic restoration"
+
+  flow undertake_corrections -> create_resolution_report_sm
+  flow create_resolution_report_sm -> send_resolution_report
+
+  flow send_actual_performance -> receive_actual_performance_cs
+  flow send_resolution_report -> receive_resolution_report_cs
+
+  flow create_restoration_request -> send_restoration_request
+  flow send_restoration_request -> wait_for_restoration
+  flow wait_for_restoration -> send_troubleshooting_report
+  flow send_troubleshooting_report -> receive_troubleshooting_report
+  flow receive_troubleshooting_report -> create_resolution_report_sm
+
+  # Resource Provisioning continuation after waiting
+  flow wait_for_restoration -> track_errors
+  flow track_errors -> undertake_corrections_rp
+  flow undertake_corrections_rp -> create_troubleshooting_report
+
+  # Customer Service handling of received items
+  lane customer_service {
+    # placeholders for receipt events
+    task receive_actual_performance_cs "Receive actual service performance"
+    task receive_resolution_report_cs "Receive problem resolution report"
+  }
+
+  flow receive_actual_performance_cs -> parallel_split_cs
+  flow receive_resolution_report_cs -> parallel_split_cs
+
+  # Parallel activities in Customer Service
+  and parallel_split_cs
+  task create_customer_report "Create customer report"
+  task report_rebate "Report SLA violation rebate"
+  flow parallel_split_cs -> create_customer_report
+  flow parallel_split_cs -> report_rebate
+  flow create_customer_report -> send_customer_report
+  flow report_rebate -> adjust_billing
+  flow adjust_billing -> parallel_join_cs
+  flow send_customer_report -> parallel_join_cs
+  and parallel_join_cs
+
+  task send_customer_report "Send customer report to Customer"
+  flow parallel_join_cs -> send_customer_report
+
+  end ev_end_cs "Process ends in Customer Service"
+  flow send_customer_report -> ev_end_cs
+  flow ev_end_cs -> end ev_end_overall "Overall process end"

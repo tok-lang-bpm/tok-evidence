@@ -1,0 +1,43 @@
+tok 1.0 "Instruct artist to create 3D model and print it"
+
+pool org "3D Model Process"
+  lane you "You"
+    start start1 "Start"
+    task instruct "Instruct artist to create project"
+    task send_sketches "Send sketches to artist"
+    task tell_changes "Tell artist changes"
+    xor satisfied "Result satisfied?"
+    task choose_color "Choose plastic color"
+    xor in_stock "Color in stock?"
+    task check_amount "Check color amount"
+    xor amount_low "Amount under 100g?"
+    task put_on_list "Put color on shopping list"
+    task order_color "Order plastic color"
+    and join_before_parallel "Ready for parallel split"
+    and parallel_split "Prepare printing"
+    task turn_on "Turn printer on and heat up"
+    task generate_gcode "Generate gcode file"
+    and parallel_join "Ready to print"
+    task print_model "Print the model"
+    end end1 "Process completed"
+  lane artist "Artist"
+    task create_model "Create 3D model"
+
+flow start1 -> instruct -> send_sketches -> tell_changes -> satisfied
+flow satisfied -> tell_changes "no"
+flow satisfied -> create_model "yes"
+flow create_model -> choose_color
+flow choose_color -> in_stock
+flow in_stock -> check_amount "yes"
+flow in_stock -> order_color "no"
+flow check_amount -> amount_low
+flow amount_low -> put_on_list "yes"
+flow amount_low -> join_before_parallel "no"
+flow order_color -> join_before_parallel
+flow put_on_list -> join_before_parallel
+flow join_before_parallel -> parallel_split
+flow parallel_split -> turn_on
+flow parallel_split -> generate_gcode
+flow turn_on -> parallel_join
+flow generate_gcode -> parallel_join
+flow parallel_join -> print_model -> end1

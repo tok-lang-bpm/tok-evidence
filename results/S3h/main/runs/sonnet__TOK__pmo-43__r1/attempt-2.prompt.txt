@@ -1,0 +1,69 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Car Service
+
+The police has a new app to remind you of your car service.
+The process is started after a successful service.
+When a service is necessary, the system checks if your car is still registered.
+If it is registered, you are notified.
+If you do not go to the service, you are fined after 30 days.
+At the car service facility the mechanic enters the problems of your car for reference.
+While you wait (can take several days), you get status updates via email.
+You can pay through the app, when the repair is done.
+The mechanic enters that the repair was successful and you got your "Pickerl".
+The mechanic enters the time for you next service.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Car Service"
+
+pool police "Police"
+  lane system "System"
+    start serviced "Service successfully completed"
+    task check "Check if the car is still registered"
+    xor registered "Car still registered?"
+    task notify "Notify the car owner"
+    task fine "Fine the car owner"
+    task status "Send status updates via email"
+    end unregistered "Process ended, car not registered"
+    end fined "Car owner fined"
+  lane owner "Car owner"
+    task go "Go to the car service"
+    boundary late "30 days passed" on=go timer=P30D
+    task pay "Pay through the app"
+  lane mechanic "Mechanic"
+    task enter "Enter the problems of the car"
+    and split
+    task repair "Repair the car"
+    and join
+    task confirm "Enter that the repair was successful and the Pickerl was issued"
+    task next "Enter the time for the next service"
+    end done "Car service completed"
+
+flow serviced -> check -> registered
+flow registered -> notify "yes"
+flow registered -> unregistered "no" default
+flow notify -> go -> enter -> split
+flow late -> fine -> fined
+flow split -> repair
+flow split -> status
+flow repair -> join
+flow status -> join
+flow join -> pay -> confirm -> next -> done
+```
+
+The tok checker reports these problems in it:
+
+- line 27: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-registered-notify)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

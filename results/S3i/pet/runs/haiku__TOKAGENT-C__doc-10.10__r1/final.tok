@@ -1,0 +1,43 @@
+tok 1.0 "Fault handling"
+
+pool org "Organisation"
+  lane detector "Fault detector"
+    start reported "Failure reported"
+    task report "Report the failure to the MPO"
+  lane mpo "MPO"
+    start suspected "Suspicion of own fault"
+    xor merged
+    task examine "Examine the failure"
+    xor confirmed "Failure confirmed?"
+    task reject "Reject the failure of the fault detector"
+    end rejected "Failure rejected"
+    task confirm "Confirm the failure of the fault detector"
+    and split1
+    task informGO "Inform the GO about the failure"
+    task informMSP "Inform the MSP about the failure"
+    and join1
+    task fix "Fix the fault at the measuring device"
+    task share "Share the results of the repairs with the fault detector"
+    and split2
+    task resolveGO "Inform the GO about the resolution of the interference"
+    task resolveMSP "Inform the MSP about the resolution of the interference"
+    and join2
+    end resolved "Interference resolved"
+
+flow reported -> report -> merged
+flow suspected -> merged
+flow merged -> examine -> confirmed
+flow confirmed -> reject "no"
+flow reject -> rejected
+flow confirmed -> confirm "yes"
+flow confirm -> split1
+flow split1 -> informGO
+flow split1 -> informMSP
+flow informGO -> join1
+flow informMSP -> join1
+flow join1 -> fix -> share -> split2
+flow split2 -> resolveGO
+flow split2 -> resolveMSP
+flow resolveGO -> join2
+flow resolveMSP -> join2
+flow join2 -> resolved

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Messages -->
+  <bpmn:message id="msgVisaSubmission" name="Visa application submission"/>
+
+  <!-- Collaboration with two pools: the organisation (internal) and the representation office (external) -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="OrgPool" name="Organisation" processRef="OrgProcess"/>
+    <bpmn:participant id="RepOffice" name="Representation Office"/>
+    <bpmn:messageFlow id="MF_VisaSubmission"
+                      sourceRef="SubmitVisaApplication"
+                      targetRef="RepOffice"
+                      messageRef="msgVisaSubmission"/>
+  </bpmn:collaboration>
+
+  <!-- Internal process -->
+  <bpmn:process id="OrgProcess" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Applicant" name="Applicant">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>OrganizeAccommodation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>PrepareVisaDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>DecideMainDestination</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SelectRepresentationOffice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubmitVisaApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_Bank" name="Bank">
+        <!-- No dedicated tasks in this simplified model; the bank activity is implicit in “Organize accommodation and open bank account”. -->
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="Start" name="Start process"/>
+    
+    <bpmn:task id="OrganizeAccommodation"
+               name="Organize accommodation and open bank account"/>
+    
+    <bpmn:task id="PrepareVisaDocs"
+               name="Prepare visa application documents"/>
+    
+    <bpmn:exclusiveGateway id="DecideMainDestination"
+                            name="Determine main travel destination?"/>
+    
+    <bpmn:task id="SelectRepresentationOffice"
+               name="Select appropriate representation office"/>
+    
+    <bpmn:task id="SubmitVisaApplication"
+               name="Submit visa application to representation office"/>
+    
+    <bpmn:endEvent id="End" name="Process completed"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="F_Start_To_Organize"
+                        sourceRef="Start"
+                        targetRef="OrganizeAccommodation"/>
+    
+    <bpmn:sequenceFlow id="F_Organize_To_Prepare"
+                        sourceRef="OrganizeAccommodation"
+                        targetRef="PrepareVisaDocs"/>
+    
+    <bpmn:sequenceFlow id="F_Prepare_To_Decide"
+                        sourceRef="PrepareVisaDocs"
+                        targetRef="DecideMainDestination"/>
+    
+    <!-- Gateway outgoing flows -->
+    <bpmn:sequenceFlow id="F_Decide_Yes"
+                        name="Main destination known"
+                        sourceRef="DecideMainDestination"
+                        targetRef="SelectRepresentationOffice"/>
+    
+    <bpmn:sequenceFlow id="F_Decide_No"
+                        name="No main destination"
+                        sourceRef="DecideMainDestination"
+                        targetRef="SelectRepresentationOffice"/>
+    
+    <bpmn:sequenceFlow id="F_Select_To_Submit"
+                        sourceRef="SelectRepresentationOffice"
+                        targetRef="SubmitVisaApplication"/>
+    
+    <bpmn:sequenceFlow id="F_Submit_To_End"
+                        sourceRef="SubmitVisaApplication"
+                        targetRef="End"/>
+
+  </bpmn:process>
+</bpmn:definitions>

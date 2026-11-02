@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANESET">
+      <bpmn:lane id="LANE_DB" name="Database">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backupDB</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkNewRecords</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_CRM" name="CRM System">
+        <bpmn:flowNodeRef>checkCRM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_AM" name="Account Management">
+        <bpmn:flowNodeRef>registerDefaults</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produceTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_SUP" name="Supervisor">
+        <bpmn:flowNodeRef>alert2_30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert4_00</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Weekday morning start" />
+    <bpmn:task id="backupDB" name="Backup the database" />
+    <bpmn:task id="checkNewRecords" name="Check Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="gw_newRecords" name="New records?" />
+    <bpmn:task id="checkCRM1" name="Check CRM system for new returns (first)" />
+    <bpmn:exclusiveGateway id="gw_crmFirst" name="New returns?" />
+    <bpmn:task id="registerDefaults" name="Register all defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="gw_clientAdvised" name="Client codes previously advised?" />
+    <bpmn:task id="produceTable" name="Produce table of defaulting accounts and send to account management" />
+    <bpmn:exclusiveGateway id="gw_deadline_2_30" name="Completed by 2:30 pm?" />
+    <bpmn:task id="alert2_30" name="Send alert to supervisor (after 2:30 pm)" />
+    <bpmn:task id="checkCRM2" name="Check CRM system for new returns (after report)" />
+    <bpmn:exclusiveGateway id="gw_crmSecond" name="New returns after report?" />
+    <bpmn:task id="reconcile" name="Reconcile with existing account defaulters table" />
+    <bpmn:exclusiveGateway id="gw_deadline_4_00" name="Completed by 4:00 pm?" />
+    <bpmn:task id="alert4_00" name="Send message to supervisor (after 4:00 pm)" />
+    <bpmn:endEvent id="end_success" name="Process completed successfully" />
+    <bpmn:endEvent id="end_noNewReturns1" name="No new returns (first check) - end" />
+    <bpmn:endEvent id="end_noNewReturns2" name="No new returns (second check) - end" />
+    <bpmn:endEvent id="end_noNewRecords" name="No new records and no returns - end" />
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_backup" sourceRef="start" targetRef="backupDB" />
+    <bpmn:sequenceFlow id="f_backup_check" sourceRef="backupDB" targetRef="checkNewRecords" />
+    <bpmn:sequenceFlow id="f_check_gw" sourceRef="checkNewRecords" targetRef="gw_newRecords" />
+    <bpmn:sequenceFlow id="f_new_yes" name="yes" sourceRef="gw_newRecords" targetRef="registerDefaults" />
+    <bpmn:sequenceFlow id="f_new_no" name="no" sourceRef="gw_newRecords" targetRef="checkCRM1" />
+    <bpmn:sequenceFlow id="f_crm1_gw" sourceRef="checkCRM1" targetRef="gw_crmFirst" />
+    <bpmn:sequenceFlow id="f_crm1_yes" name="yes" sourceRef="gw_crmFirst" targetRef="registerDefaults" />
+    <bpmn:sequenceFlow id="f_crm1_no" name="no" sourceRef="gw_crmFirst" targetRef="end_noNewReturns1" />
+    <bpmn:sequenceFlow id="f_register_advised" sourceRef="registerDefaults" targetRef="gw_clientAdvised" />
+    <bpmn:sequenceFlow id="f_advised_yes" name="yes" sourceRef="gw_clientAdvised" targetRef="gw_deadline_2_30" />
+    <bpmn:sequenceFlow id="f_advised_no" name="no" sourceRef="gw_clientAdvised" targetRef="produceTable" />
+    <bpmn:sequenceFlow id="f_produce_deadline" sourceRef="produceTable" targetRef="gw_deadline_2_30" />
+    <bpmn:sequenceFlow id="f_deadline_yes" name="yes" sourceRef="gw_deadline_2_30" targetRef="checkCRM2" />
+    <bpmn:sequenceFlow id="f_deadline_no" name="no" sourceRef="gw_deadline_2_30" targetRef="alert2_30" />
+    <bpmn:sequenceFlow id="f_alert2_end" sourceRef="alert2_30" targetRef="end_success" />
+    <bpmn:sequenceFlow id="f_checkCRM2_gw" sourceRef="checkCRM2" targetRef="gw_crmSecond" />
+    <bpmn:sequenceFlow id="f_crm2_yes" name="yes" sourceRef="gw_crmSecond" targetRef="reconcile" />
+    <bpmn:sequenceFlow id="f_crm2_no" name="no" sourceRef="gw_crmSecond" targetRef="end_noNewReturns2" />
+    <bpmn:sequenceFlow id="f_reconcile_deadline" sourceRef="reconcile" targetRef="gw_deadline_4_00" />
+    <bpmn:sequenceFlow id="f_deadline4_yes" name="yes" sourceRef="gw_deadline_4_00" targetRef="end_success" />
+    <bpmn:sequenceFlow id="f_deadline4_no" name="no" sourceRef="gw_deadline_4_00" targetRef="alert4_00" />
+    <bpmn:sequenceFlow id="f_alert4_end" sourceRef="alert4_00" targetRef="end_success" />
+    <bpmn:sequenceFlow id="f_new_no_end" sourceRef="gw_newRecords" targetRef="end_noNewRecords" />
+  </bpmn:process>
+</bpmn:definitions>

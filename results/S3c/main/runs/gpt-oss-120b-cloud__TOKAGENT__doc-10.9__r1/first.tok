@@ -1,0 +1,60 @@
+tok 1.0 "Change Request Process"
+
+pool org "Organisation" {
+  lane sp "SP/PU/GO"
+  lane mpo "MPO"
+}
+
+start s "Start"
+
+xor g1 "Initiator"
+flow s -> g1
+
+# SP/PU/GO initiates request
+task req "request changes to MPO"    # in lane sp
+flow g1 -> req "SP initiates"
+
+# MPO initiates itself
+task cause "MPO causes change"         # in lane mpo
+flow g1 -> cause "MPO initiates"
+
+# Review by MPO
+task review "MPO reviews the change request"    # in lane mpo
+flow req -> review
+flow cause -> review
+
+xor g2 "Reject or confirm"
+flow review -> g2
+
+# Reject path
+task reject "MPO rejects the change"   # in lane mpo
+flow g2 -> reject "reject"
+
+# Notify failure after reject
+task notify_fail1 "notify SP/PU/GO about the failure of the changes"   # in lane mpo
+flow reject -> notify_fail1
+
+# Confirm path
+task confirm "MPO confirms the request"   # in lane mpo
+flow g2 -> confirm "confirm"
+
+# Perform change
+task change "MPO performs the measuring point change"   # in lane mpo
+flow confirm -> change
+
+xor g3 "Report outcome"
+flow change -> g3
+
+# Success report
+task report_success "MPO reports the implementation to SP/PU/GO"   # in lane mpo
+flow g3 -> report_success "success"
+
+# Failure after change
+task notify_fail2 "notify SP/PU/GO about the failure of the changes"   # in lane mpo
+flow g3 -> notify_fail2 "failure"
+
+# End events
+end e1 "End"
+flow notify_fail1 -> e1
+flow notify_fail2 -> e1
+flow report_success -> e1

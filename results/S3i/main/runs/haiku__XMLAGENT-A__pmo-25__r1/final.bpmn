@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool" name="Find a Job" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_applicant" name="Job applicant">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>write_application</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report_companies</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interview_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>negotiate_interview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interview_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete_probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rating_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate_company</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rating_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>after_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>permanent_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>low_rating_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>search_ended</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_company" name="Company">
+        <bpmn:flowNodeRef>confirm_receipt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate_application</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hire_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offer_job</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate_applicant</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_platform" name="Job platform">
+        <bpmn:flowNodeRef>send_offers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>one_year</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>publish_reviews</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviews_visible</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>continue_offers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offers_continue</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Job search started" />
+    <bpmn:task id="write_application" name="Write job application" />
+    <bpmn:task id="confirm_receipt" name="Confirm receipt of application" />
+    <bpmn:task id="rate_application" name="Rate application" />
+    <bpmn:task id="report_companies" name="Report companies applied to" />
+    <bpmn:task id="send_offers" name="Send potential job offers" />
+    <bpmn:exclusiveGateway id="interview_gw" name="Interview negotiated?" />
+    <bpmn:task id="negotiate_interview" name="Negotiate job interview" />
+    <bpmn:exclusiveGateway id="interview_merge" />
+    <bpmn:exclusiveGateway id="hire_gw" name="Company wants to hire you?" />
+    <bpmn:task id="offer_job" name="Offer job" />
+    <bpmn:task id="enter_probation" name="Enter probation phase" />
+    <bpmn:task id="complete_probation" name="Complete probation phase" />
+    <bpmn:parallelGateway id="rating_split" />
+    <bpmn:task id="rate_company" name="Rate company" />
+    <bpmn:task id="rate_applicant" name="Rate applicant" />
+    <bpmn:parallelGateway id="rating_join" />
+    <bpmn:parallelGateway id="after_split" />
+    <bpmn:intermediateCatchEvent id="one_year" name="One year after ratings">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P1Y</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="publish_reviews" name="Publish company reviews to job applicants" />
+    <bpmn:endEvent id="reviews_visible" name="Reviews visible to job applicants" />
+    <bpmn:exclusiveGateway id="permanent_gw" name="Job becomes permanent?" />
+    <bpmn:exclusiveGateway id="low_rating_gw" name="Company rated C or less?" />
+    <bpmn:task id="continue_offers" name="Continue sending job offers" />
+    <bpmn:endEvent id="offers_continue" name="Job offers continue without reporting" />
+    <bpmn:endEvent id="search_ended" name="Job search ended" />
+
+    <bpmn:sequenceFlow id="f01" sourceRef="start" targetRef="write_application" />
+    <bpmn:sequenceFlow id="f02" sourceRef="write_application" targetRef="confirm_receipt" />
+    <bpmn:sequenceFlow id="f03" sourceRef="confirm_receipt" targetRef="rate_application" />
+    <bpmn:sequenceFlow id="f04" sourceRef="rate_application" targetRef="report_companies" />
+    <bpmn:sequenceFlow id="f05" sourceRef="report_companies" targetRef="send_offers" />
+    <bpmn:sequenceFlow id="f06" sourceRef="send_offers" targetRef="interview_gw" />
+    <bpmn:sequenceFlow id="f07" name="yes" sourceRef="interview_gw" targetRef="negotiate_interview" />
+    <bpmn:sequenceFlow id="f08" name="no" sourceRef="interview_gw" targetRef="interview_merge" />
+    <bpmn:sequenceFlow id="f09" sourceRef="negotiate_interview" targetRef="interview_merge" />
+    <bpmn:sequenceFlow id="f10" sourceRef="interview_merge" targetRef="hire_gw" />
+    <bpmn:sequenceFlow id="f11" name="yes" sourceRef="hire_gw" targetRef="offer_job" />
+    <bpmn:sequenceFlow id="f12" name="no" sourceRef="hire_gw" targetRef="search_ended" />
+    <bpmn:sequenceFlow id="f13" sourceRef="offer_job" targetRef="enter_probation" />
+    <bpmn:sequenceFlow id="f14" sourceRef="enter_probation" targetRef="complete_probation" />
+    <bpmn:sequenceFlow id="f15" sourceRef="complete_probation" targetRef="rating_split" />
+    <bpmn:sequenceFlow id="f16" sourceRef="rating_split" targetRef="rate_company" />
+    <bpmn:sequenceFlow id="f17" sourceRef="rating_split" targetRef="rate_applicant" />
+    <bpmn:sequenceFlow id="f18" sourceRef="rate_company" targetRef="rating_join" />
+    <bpmn:sequenceFlow id="f19" sourceRef="rate_applicant" targetRef="rating_join" />
+    <bpmn:sequenceFlow id="f20" sourceRef="rating_join" targetRef="after_split" />
+    <bpmn:sequenceFlow id="f21" sourceRef="after_split" targetRef="one_year" />
+    <bpmn:sequenceFlow id="f22" sourceRef="one_year" targetRef="publish_reviews" />
+    <bpmn:sequenceFlow id="f23" sourceRef="publish_reviews" targetRef="reviews_visible" />
+    <bpmn:sequenceFlow id="f24" sourceRef="after_split" targetRef="permanent_gw" />
+    <bpmn:sequenceFlow id="f25" name="yes" sourceRef="permanent_gw" targetRef="low_rating_gw" />
+    <bpmn:sequenceFlow id="f26" name="no" sourceRef="permanent_gw" targetRef="search_ended" />
+    <bpmn:sequenceFlow id="f27" name="yes" sourceRef="low_rating_gw" targetRef="continue_offers" />
+    <bpmn:sequenceFlow id="f28" name="no" sourceRef="low_rating_gw" targetRef="search_ended" />
+    <bpmn:sequenceFlow id="f29" sourceRef="continue_offers" targetRef="offers_continue" />
+  </bpmn:process>
+</bpmn:definitions>

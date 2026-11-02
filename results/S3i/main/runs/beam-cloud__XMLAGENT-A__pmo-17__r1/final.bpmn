@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msg_backorder" name="Back-order received" />
+  <bpmn:message id="msg_delivery" name="Delivery confirmed" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="E-commerce company" processRef="order-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="order-process" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processPay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwPay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyPayFail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endFail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informDelay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendShipConf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateInv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFollowup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwIssues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>refundReplace</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endReturns</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="inventory" name="Inventory / Warehouse">
+        <bpmn:flowNodeRef>checkStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>initiateBackorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchBackorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pick</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>qc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwParallel1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>package</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwGift</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>giftwrap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwGiftMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwParallel2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveReturns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspectReturns</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="shipping" name="Shipping department">
+        <bpmn:flowNodeRef>prepDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwIntl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwIntlMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dispatch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendReturnLabel</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Order placed" />
+    <bpmn:task id="record" name="Record order details" />
+    <bpmn:task id="processPay" name="Process payment" />
+    <bpmn:exclusiveGateway id="gwPay" name="Payment successful?" />
+    <bpmn:task id="notifyPayFail" name="Notify customer of payment failure" />
+    <bpmn:endEvent id="endFail" name="Payment failed" />
+
+    <bpmn:task id="checkStock" name="Check stock availability" />
+    <bpmn:exclusiveGateway id="gwStock" name="Items in stock?" />
+    <bpmn:task id="initiateBackorder" name="Initiate back-order" />
+    <bpmn:task id="informDelay" name="Inform customer about delay" />
+    <bpmn:intermediateCatchEvent id="catchBackorder" name="Back-order received">
+      <bpmn:messageEventDefinition messageRef="msg_backorder" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="mergeStock" name="Stock available" />
+    <bpmn:task id="pick" name="Pick in-stock items from warehouse" />
+    <bpmn:task id="qc" name="Perform quality control checks" />
+    <bpmn:parallelGateway id="gwParallel1" />
+    <bpmn:task id="package" name="Package order" />
+    <bpmn:exclusiveGateway id="gwGift" name="Gift wrapping requested?" />
+    <bpmn:task id="giftwrap" name="Gift wrap order" />
+    <bpmn:exclusiveGateway id="gwGiftMerge" />
+    <bpmn:task id="prepDocs" name="Prepare shipping documents and labels" />
+    <bpmn:exclusiveGateway id="gwIntl" name="International order?" />
+    <bpmn:task id="customs" name="Prepare customs documentation" />
+    <bpmn:exclusiveGateway id="gwIntlMerge" />
+    <bpmn:parallelGateway id="gwParallel2" />
+    <bpmn:task id="dispatch" name="Dispatch order" />
+    <bpmn:task id="sendShipConf" name="Send shipping confirmation to customer" />
+    <bpmn:task id="updateInv" name="Update inventory levels" />
+    <bpmn:intermediateCatchEvent id="catchDelivery" name="Delivery confirmed">
+      <bpmn:messageEventDefinition messageRef="msg_delivery" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="sendFollowup" name="Send follow-up email for feedback" />
+    <bpmn:exclusiveGateway id="gwIssues" name="Issues reported on delivery?" />
+    <bpmn:task id="sendReturnLabel" name="Send return shipping label" />
+    <bpmn:task id="receiveReturns" name="Receive returned items" />
+    <bpmn:task id="inspectReturns" name="Inspect returned items" />
+    <bpmn:task id="refundReplace" name="Process refund or replacement" />
+    <bpmn:endEvent id="endSuccess" name="Order completed" />
+    <bpmn:endEvent id="endReturns" name="Returns completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="record" />
+    <bpmn:sequenceFlow id="f2" sourceRef="record" targetRef="processPay" />
+    <bpmn:sequenceFlow id="f3" sourceRef="processPay" targetRef="gwPay" />
+    <bpmn:sequenceFlow id="f4" name="Payment failed" sourceRef="gwPay" targetRef="notifyPayFail" />
+    <bpmn:sequenceFlow id="f5" sourceRef="notifyPayFail" targetRef="endFail" />
+    <bpmn:sequenceFlow id="f6" name="Payment successful" sourceRef="gwPay" targetRef="checkStock" />
+    <bpmn:sequenceFlow id="f7" sourceRef="checkStock" targetRef="gwStock" />
+    <bpmn:sequenceFlow id="f8" name="In stock" sourceRef="gwStock" targetRef="mergeStock" />
+    <bpmn:sequenceFlow id="f9" name="Out of stock" sourceRef="gwStock" targetRef="initiateBackorder" />
+    <bpmn:sequenceFlow id="f10" sourceRef="initiateBackorder" targetRef="informDelay" />
+    <bpmn:sequenceFlow id="f11" sourceRef="informDelay" targetRef="catchBackorder" />
+    <bpmn:sequenceFlow id="f12" sourceRef="catchBackorder" targetRef="mergeStock" />
+    <bpmn:sequenceFlow id="f13" sourceRef="mergeStock" targetRef="pick" />
+    <bpmn:sequenceFlow id="f14" sourceRef="pick" targetRef="qc" />
+    <bpmn:sequenceFlow id="f15" sourceRef="qc" targetRef="gwParallel1" />
+    <bpmn:sequenceFlow id="f16" sourceRef="gwParallel1" targetRef="package" />
+    <bpmn:sequenceFlow id="f17" sourceRef="gwParallel1" targetRef="prepDocs" />
+    <bpmn:sequenceFlow id="f18" sourceRef="package" targetRef="gwGift" />
+    <bpmn:sequenceFlow id="f19" name="Yes" sourceRef="gwGift" targetRef="giftwrap" />
+    <bpmn:sequenceFlow id="f20" name="No" sourceRef="gwGift" targetRef="gwGiftMerge" />
+    <bpmn:sequenceFlow id="f21" sourceRef="giftwrap" targetRef="gwGiftMerge" />
+    <bpmn:sequenceFlow id="f22" sourceRef="prepDocs" targetRef="gwIntl" />
+    <bpmn:sequenceFlow id="f23" name="Yes" sourceRef="gwIntl" targetRef="customs" />
+    <bpmn:sequenceFlow id="f24" name="No" sourceRef="gwIntl" targetRef="gwIntlMerge" />
+    <bpmn:sequenceFlow id="f25" sourceRef="customs" targetRef="gwIntlMerge" />
+    <bpmn:sequenceFlow id="f26" sourceRef="gwGiftMerge" targetRef="gwParallel2" />
+    <bpmn:sequenceFlow id="f27" sourceRef="gwIntlMerge" targetRef="gwParallel2" />
+    <bpmn:sequenceFlow id="f28" sourceRef="gwParallel2" targetRef="dispatch" />
+    <bpmn:sequenceFlow id="f29" sourceRef="dispatch" targetRef="sendShipConf" />
+    <bpmn:sequenceFlow id="f30" sourceRef="sendShipConf" targetRef="updateInv" />
+    <bpmn:sequenceFlow id="f31" sourceRef="updateInv" targetRef="catchDelivery" />
+    <bpmn:sequenceFlow id="f32" sourceRef="catchDelivery" targetRef="sendFollowup" />
+    <bpmn:sequenceFlow id="f33" sourceRef="sendFollowup" targetRef="gwIssues" />
+    <bpmn:sequenceFlow id="f34" name="No issues" sourceRef="gwIssues" targetRef="endSuccess" />
+    <bpmn:sequenceFlow id="f35" name="Issues reported" sourceRef="gwIssues" targetRef="sendReturnLabel" />
+    <bpmn:sequenceFlow id="f36" sourceRef="sendReturnLabel" targetRef="receiveReturns" />
+    <bpmn:sequenceFlow id="f37" sourceRef="receiveReturns" targetRef="inspectReturns" />
+    <bpmn:sequenceFlow id="f38" sourceRef="inspectReturns" targetRef="refundReplace" />
+    <bpmn:sequenceFlow id="f39" sourceRef="refundReplace" targetRef="endReturns" />
+  </bpmn:process>
+</bpmn:definitions>

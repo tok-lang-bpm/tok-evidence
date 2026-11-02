@@ -1,0 +1,58 @@
+tok 1.0 "Customer acquisition"
+
+pool sales "Sales organisation"
+  lane marketing "Marketing staff"
+    start s "Contact details needed"
+    xor g-source "Way to get contact details?"
+    task buy-details "Buy details for cold calls"
+    task exhibition "Participate in exhibitions"
+    task referral "Note contact of an interested acquaintance"
+    xor g-source-join
+  lane call "Call center staff"
+    task call-customer "Call the customer"
+    task determine "Determine contact person and budget"
+    task ask-interest "Ask whether customer is generally interested"
+    xor g-interest "Customer generally interested?"
+    xor g-budget "Potential project budget huge?"
+    end leave "Leave customer alone"
+  lane dev "Head of development"
+    task acquire "Acquire customer personally"
+  lane presales "Pre-sales employee"
+    task pres-tech "Give detailed online presentation (technical)"
+  lane rep "Sales representative"
+    xor g-final-join
+    xor g-final "Customer interested in the end?"
+    end not-interested "Customer not interested"
+    xor g-tech "Technical presentation needed?"
+    task pres-sales "Give detailed online presentation"
+    xor g-pres-join
+    eventgw wait "Wait for customer to come back"
+    catch came-back "Customer contacts us" message="Customer contacts us"
+    catch timer-2w "2 weeks without contact" timer=P14D
+    task call-again "Call the customer"
+    xor g-contact
+    task quote "Create quotation"
+    end done "Quotation created"
+
+flow s -> g-source
+flow g-source -> buy-details "Cold calls"
+flow g-source -> exhibition "Exhibition"
+flow g-source -> referral "Acquaintance"
+flow buy-details -> g-source-join
+flow exhibition -> g-source-join
+flow referral -> g-source-join -> call-customer -> determine -> ask-interest -> g-interest
+flow g-interest -> g-final-join "Yes"
+flow g-interest -> g-budget "No"
+flow g-budget -> acquire "Yes"
+flow g-budget -> leave "No"
+flow acquire -> g-final-join -> g-final
+flow g-final -> g-tech "Yes"
+flow g-final -> not-interested "No"
+flow g-tech -> pres-tech "Yes"
+flow g-tech -> pres-sales "No"
+flow pres-tech -> g-pres-join
+flow pres-sales -> g-pres-join -> wait
+flow wait -> came-back
+flow wait -> timer-2w
+flow came-back -> g-contact
+flow timer-2w -> call-again -> g-contact -> quote -> done

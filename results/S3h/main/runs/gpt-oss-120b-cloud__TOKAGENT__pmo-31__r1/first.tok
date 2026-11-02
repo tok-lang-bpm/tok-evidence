@@ -1,0 +1,59 @@
+tok 1.0
+pool blizzard "Blizzard Online Character Generator" {
+  lane player "Player"
+  lane system "System"
+}
+
+start s "Start"
+and gw_split "Parallel split"
+flow s -> gw_split
+
+# Branch A: Account setup
+task check_battlenet "Check battle.net account" lane=system
+xor g_have_battlenet "Have battle.net account?"
+flow gw_split -> check_battlenet
+flow check_battlenet -> g_have_battlenet
+task enter_account_info "Enter account information and click confirmation link" lane=player
+flow g_have_battlenet -> enter_account_info when="no"
+flow g_have_battlenet -> check_subscription when="yes"
+flow enter_account_info -> check_subscription
+
+task check_subscription "Check active WoW subscription" lane=system
+xor g_have_subscription "Active WoW subscription?"
+flow check_subscription -> g_have_subscription
+task select_payment "Select payment method" lane=player
+flow g_have_subscription -> select_payment when="no"
+flow g_have_subscription -> login_select when="yes"
+
+xor g_payment_method "Payment method?"
+flow select_payment -> g_payment_method
+task enter_credit_card "Enter credit card information" lane=player
+task enter_bank "Enter IBAN and BIC numbers" lane=player
+flow g_payment_method -> enter_credit_card when="credit card"
+flow g_payment_method -> enter_bank when="bank"
+flow enter_credit_card -> login_select
+flow enter_bank -> login_select
+
+task login_select "Log into the game and select realm, race and class" lane=system
+
+# Branch B: Name selection
+task think_names "Think of character names" lane=player
+flow gw_split -> think_names
+task enter_name "Enter character name and check availability" lane=player
+flow think_names -> enter_name
+xor g_name_available "Name available?"
+flow enter_name -> g_name_available
+flow g_name_available -> confirm_name when="yes"
+flow g_name_available -> enter_name when="no"
+
+task confirm_name "Receive confirmation and character selfies" lane=system
+flow g_name_available -> confirm_name when="yes"
+task expansion_message "Receive expansion release message" lane=system
+flow confirm_name -> expansion_message
+
+# Parallel join and end
+and gw_join "Parallel join"
+flow login_select -> gw_join
+flow expansion_message -> gw_join
+end e "End"
+flow gw_join -> e

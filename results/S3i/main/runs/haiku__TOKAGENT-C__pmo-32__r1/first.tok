@@ -1,0 +1,40 @@
+tok 1.0 "Farming Bot"
+
+pool bot "Farming Bot"
+  lane player "Player"
+    start wants "Player wants a custom farming bot"
+    task choose "Choose the resources you want"
+    and prefs
+    task urgency "Set how urgently each resource is needed"
+    task deps "Define the tool dependencies between resources"
+    and collected
+    or orsplit
+    task brag "Brag to selected friends"
+    task send "Send materials to selected friends"
+    or orjoin
+    end done "Bot finished"
+  lane bot "Farming bot"
+    task startfarm "Start farming"
+    and farmfork
+    task farm "Farm the resources"
+    xor disaster "Natural disaster strikes?"
+    task setback "Set the bot back"
+    task notify "Notify the player when milestones are reached"
+    and farmdone
+    eventsub updates "Update the list of materials to farm"
+      start updreq "Update requested" message="Update materials list"
+      task upd "Update the list of materials to farm"
+      end updated "List updated"
+
+flow wants -> choose -> prefs
+flow prefs -> urgency -> collected
+flow prefs -> deps -> collected
+flow collected -> startfarm -> farmfork
+flow farmfork -> farm -> disaster
+flow farmfork -> notify -> farmdone
+flow disaster -> setback "yes" -> farm
+flow disaster -> farmdone "no"
+flow farmdone -> orsplit
+flow orsplit -> brag -> orjoin
+flow orsplit -> send -> orjoin
+flow orjoin -> done

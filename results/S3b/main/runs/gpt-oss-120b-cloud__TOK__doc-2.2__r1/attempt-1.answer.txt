@@ -1,0 +1,73 @@
+```tok
+tok 1.0 "Switch‑over Process"
+
+pool org "Organization"
+  lane customer "Customer"
+    start start1 "Switch‑over request"
+    task t1 "Transmit data to Customer Service"
+    task t14 "Customer checks contract details"
+    xor xor_withdraw "Customer withdraws?"
+    end end_withdraw "Process ends (withdrawal)"
+
+  lane customer_service "Customer Service"
+    task t2 "Enter customer data into CRM"
+    task t3 "Compare data with internal database and check completeness"
+    xor xor_err "Data errors?"
+    task t4 "Correct errors based on error list"
+    xor xor_exists "Customer exists in database?"
+    task t5 "Create new customer object"
+    task t6 "Prepare contract documents"
+    task t9 "Send confirmation document to customer"
+    task t10 "Send switch request to Grid Operator"
+    task t13 "Create CIS contract"
+    task t20 "Customer service imports meter data to systems"
+
+  lane cis "CIS System"
+    task t7 "Automated check of contract documents in CIS"
+    xor xor_contract_ok "Contract documents correct?"
+    task t8 "Analyze and resolve issues"
+
+  lane grid_operator "Grid Operator"
+    task t11 "Check supplier concurrence"
+    xor xor_conc "Supplier concurrence?"
+    task t12 "Inform suppliers and resolve conflict"
+    task t17 "Transmit meter data to Customer Service and Old Supplier"
+    task t18 "Send final billing to Old Supplier"
+
+  lane old_supplier "Old Supplier"
+    task t19 "Send final billing to Customer"
+
+  and and1          # split after contract check (positive branch)
+  and and2          # join after sending confirmation & request
+  and and3          # join after supplier concurrence handling / CIS contract
+  and and4          # split to meter‑data & billing branches
+  and and5          # join before final end
+
+  # process flow
+  flow start1 -> t1 -> t2 -> t3 -> xor_err
+  flow xor_err -> t4 -> t3                # error correction loop
+  flow xor_err -> xor_exists
+  flow xor_exists -> t5                   # customer does not exist
+  flow xor_exists -> t6                   # customer exists
+  flow t5 -> t6
+  flow t6 -> t7 -> xor_contract_ok
+  flow xor_contract_ok -> and1           # contract OK path
+  flow xor_contract_ok -> t8 -> t7       # contract NOT OK loop
+  flow and1 -> t9
+  flow and1 -> t10
+  flow and1 -> and2
+  flow and2 -> t11
+  flow t11 -> xor_conc
+  flow xor_conc -> t12
+  flow xor_conc -> t13
+  flow t12 -> and3
+  flow t13 -> t14 -> xor_withdraw
+  flow xor_withdraw -> end_withdraw      # withdrawal ends process
+  flow xor_withdraw -> and3               # no withdrawal, continue
+  flow and3 -> and4
+  flow and4 -> t17
+  flow and4 -> t18
+  flow t17 -> t20 -> and5
+  flow t18 -> t19 -> and5
+  flow and5 -> end end_finish "Process ends"
+```

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense Report Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Expense_report" name="Expense report" />
+  <bpmn:message id="Message_Rejection" name="Rejection" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Expense Report Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="emp" name="Employee">
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sup" name="Supervisor">
+        <bpmn:flowNodeRef>appr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b30</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="fin" name="Finance">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gacct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createacct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gacctj</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gamount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gsup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendprogress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendcancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-notified</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="resubmit" name="Re-submit expense report" />
+    <bpmn:userTask id="appr" name="Approve expense report" />
+    <bpmn:boundaryEvent id="b7" attachedToRef="appr" cancelActivity="false">
+      <bpmn:timerEventDefinition id="b7-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="b30" attachedToRef="appr">
+      <bpmn:timerEventDefinition id="b30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:startEvent id="s" name="Expense report received">
+      <bpmn:messageEventDefinition id="s-def" messageRef="Message_Expense_report" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="gacct" name="Employee has account?" default="f-gacct-gacctj" />
+    <bpmn:task id="createacct" name="Create new account" />
+    <bpmn:exclusiveGateway id="gacctj" name="Account ready" />
+    <bpmn:exclusiveGateway id="gamount" name="Amount under $200?" default="f-gamount-appr" />
+    <bpmn:exclusiveGateway id="gsup" name="Approved?" default="f-gsup-reject" />
+    <bpmn:task id="review" name="Review for automatic approval" />
+    <bpmn:task id="reimburse" name="Reimburse to direct deposit" />
+    <bpmn:sendTask id="reject" name="Send rejection notice" messageRef="Message_Rejection" />
+    <bpmn:task id="sendprogress" name="Send approval in progress email" />
+    <bpmn:task id="sendcancel" name="Send cancellation notice" />
+    <bpmn:endEvent id="e-completed" name="Completed" />
+    <bpmn:endEvent id="e-rejected" name="Rejected" />
+    <bpmn:endEvent id="e-notified" name="Notified" />
+    <bpmn:endEvent id="e-cancelled" name="Cancelled" />
+    <bpmn:sequenceFlow id="f-s-gacct" sourceRef="s" targetRef="gacct" />
+    <bpmn:sequenceFlow id="f-gacct-createacct" name="no" sourceRef="gacct" targetRef="createacct">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gacct-gacctj" name="yes" sourceRef="gacct" targetRef="gacctj" />
+    <bpmn:sequenceFlow id="f-createacct-gacctj" sourceRef="createacct" targetRef="gacctj" />
+    <bpmn:sequenceFlow id="f-gacctj-review" sourceRef="gacctj" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-gamount" sourceRef="review" targetRef="gamount" />
+    <bpmn:sequenceFlow id="f-gamount-reimburse" name="under $200" sourceRef="gamount" targetRef="reimburse">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gamount-appr" name="equals or over $200" sourceRef="gamount" targetRef="appr" />
+    <bpmn:sequenceFlow id="f-appr-gsup" sourceRef="appr" targetRef="gsup" />
+    <bpmn:sequenceFlow id="f-gsup-reimburse" name="approved" sourceRef="gsup" targetRef="reimburse">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gsup-reject" name="rejected" sourceRef="gsup" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-reimburse-e-completed" sourceRef="reimburse" targetRef="e-completed" />
+    <bpmn:sequenceFlow id="f-reject-e-rejected" sourceRef="reject" targetRef="e-rejected" />
+    <bpmn:sequenceFlow id="f-b7-sendprogress" sourceRef="b7" targetRef="sendprogress" />
+    <bpmn:sequenceFlow id="f-sendprogress-e-notified" sourceRef="sendprogress" targetRef="e-notified" />
+    <bpmn:sequenceFlow id="f-b30-sendcancel" sourceRef="b30" targetRef="sendcancel" />
+    <bpmn:sequenceFlow id="f-sendcancel-resubmit" sourceRef="sendcancel" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="f-resubmit-e-cancelled" sourceRef="resubmit" targetRef="e-cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

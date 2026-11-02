@@ -1,0 +1,36 @@
+tok 1.0 "Claims Notification"
+
+pool org "Insurance organization"
+  lane l "Claims handling"
+    start s "Claim received"
+    task chk "Check whether claimant is insured"
+    xor g1 "Claimant insured?"
+    task rej "Inform claimant that claim must be rejected"
+    end e1 "Claim rejected"
+    task sev "Evaluate severity of claim"
+    xor g2 "Claim simple or complex?"
+    task fs "Send forms for simple claim"
+    task fc "Send forms for complex claim"
+    xor m1
+    receive rf "Receive returned forms" message="Forms"
+    task cf "Check forms for completeness"
+    xor g3 "Forms complete?"
+    task reg "Register claim in Claims Management system"
+    end e2 "Claim registered"
+    task upd "Inform claimant to update forms"
+    receive ru "Receive updated forms" message="Updated forms"
+
+flow s -> chk -> g1
+flow g1 -> rej "no"
+flow g1 -> sev "yes"
+flow rej -> e1
+flow sev -> g2
+flow g2 -> fs "simple"
+flow g2 -> fc "complex"
+flow fs -> m1
+flow fc -> m1
+flow m1 -> rf -> cf -> g3
+flow g3 -> reg "yes"
+flow g3 -> upd "no"
+flow reg -> e2
+flow upd -> ru -> cf

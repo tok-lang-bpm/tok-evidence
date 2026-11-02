@@ -1,0 +1,39 @@
+tok 1.0 "Farming Bot"
+
+pool game "Farming bot service"
+  lane player "Player"
+    start s-wants "Player wants a farming bot"
+    user select-res "Select resources to farm"
+    user set-urgency "Set urgency of resources"
+    user confirm "Confirm preferences"
+    user update-list "Update list of materials to farm"
+    user brag "Brag to selected friends"
+    xor send-q "Send materials to friends?"
+    user send-mat "Send materials to friends"
+    xor done-m "Friends handled"
+    end e-done "Bot task complete"
+    end e-update "Materials list updated"
+  lane bot "Farming bot"
+    task check-deps "Check resource dependencies"
+    xor tool-q "Tool needed for resource?"
+    task create-tool "Create required tool"
+    xor tool-m "Tool ready"
+    task collect "Collect resources" parallel
+    boundary dist on=collect signal="Natural disaster"
+    task recover "Recover bot from disaster"
+    boundary milestone noninterrupting on=collect signal="Milestone reached"
+    send notify-ms "Notify player of milestone"
+    end e-ms "Milestone notified"
+    boundary upd noninterrupting on=collect signal="Update materials list"
+    send notify-done "Notify player that farming is finished"
+
+flow s-wants -> select-res -> set-urgency -> confirm -> check-deps -> tool-q
+flow tool-q -> create-tool "yes" when="toolNeeded = true"
+flow tool-q -> tool-m "no" default
+flow create-tool -> tool-m -> collect -> notify-done -> brag -> send-q
+flow send-q -> send-mat "yes" when="sendMaterials = true"
+flow send-q -> done-m "no" default
+flow send-mat -> done-m -> e-done
+flow dist -> recover -> collect
+flow milestone -> notify-ms -> e-ms
+flow upd -> update-list -> e-update

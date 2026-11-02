@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Invoice Processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="acme" name="ACME AG" processRef="acme-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="acme-process" name="Invoice Processing" isExecutable="false">
+    <bpmn:laneSet id="acme-lanes">
+      <bpmn:lane id="secretariat" name="Secretariat">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forward_invoice</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="accounting" name="Accounting Employee">
+        <bpmn:flowNodeRef>identify_supplier</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_items</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forward_to_commercial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>payment_instructions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_event</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="internalmail" name="Internal Mail">
+        <bpmn:flowNodeRef>send_to_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="manager" name="Cost Center Manager">
+        <bpmn:flowNodeRef>manager_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ap_gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>all_ap_gateway</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="commercial" name="Commercial Manager">
+        <bpmn:flowNodeRef>commercial_audit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resolve_complaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complaint_gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount_gateway</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="board" name="Board">
+        <bpmn:flowNodeRef>board_check</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="receive_invoice" name="Receive invoice on paper or fax" />
+    <bpmn:task id="forward_invoice" name="Forward invoice after visual inspection" />
+    <bpmn:task id="identify_supplier" name="Identify charging suppliers and create new invoice instance" />
+    <bpmn:task id="check_items" name="Check invoice items and note cost centre managers on docket" />
+    <bpmn:task id="clarify" name="Clarify with vendor and possibly consult cost centre managers" />
+    <bpmn:task id="forward_to_commercial" name="Forward copy of invoice to commercial manager" />
+    <bpmn:task id="payment_instructions" name="Give payment instructions and close the instance" />
+    <bpmn:endEvent id="end_event" name="End" />
+    <bpmn:task id="send_to_mail" name="Send docket and copy of invoice to internal mail" />
+    <bpmn:task id="manager_review" name="Review invoice for accuracy" />
+    <bpmn:exclusiveGateway id="ap_gateway" name="Is position accurate?" default="f-ap_gateway-all_ap_gateway" />
+    <bpmn:exclusiveGateway id="all_ap_gateway" name="All items accurate?" default="f-all_ap_gateway-forward_to_commercial" />
+    <bpmn:task id="commercial_audit" name="Perform commercial audit and issue approval for payment" />
+    <bpmn:task id="resolve_complaint" name="Resolve complaint with supplier" />
+    <bpmn:exclusiveGateway id="complaint_gateway" name="Any complaint during commercial audit?" default="f-complaint_gateway-amount_gateway" />
+    <bpmn:exclusiveGateway id="amount_gateway" name="Invoice amount exceeds EUR 20?" default="f-amount_gateway-payment_instructions" />
+    <bpmn:task id="board_check" name="Board checks invoice (4‑eyes principle)" />
+    <bpmn:sequenceFlow id="f-start-receive_invoice" sourceRef="start" targetRef="receive_invoice" />
+    <bpmn:sequenceFlow id="f-receive_invoice-forward_invoice" sourceRef="receive_invoice" targetRef="forward_invoice" />
+    <bpmn:sequenceFlow id="f-forward_invoice-identify_supplier" sourceRef="forward_invoice" targetRef="identify_supplier" />
+    <bpmn:sequenceFlow id="f-identify_supplier-check_items" sourceRef="identify_supplier" targetRef="check_items" />
+    <bpmn:sequenceFlow id="f-check_items-send_to_mail" sourceRef="check_items" targetRef="send_to_mail" />
+    <bpmn:sequenceFlow id="f-payment_instructions-end_event" sourceRef="payment_instructions" targetRef="end_event" />
+    <bpmn:sequenceFlow id="f-send_to_mail-manager_review" sourceRef="send_to_mail" targetRef="manager_review" />
+    <bpmn:sequenceFlow id="f-manager_review-ap_gateway" sourceRef="manager_review" targetRef="ap_gateway" />
+    <bpmn:sequenceFlow id="f-ap_gateway-all_ap_gateway" sourceRef="ap_gateway" targetRef="all_ap_gateway" />
+    <bpmn:sequenceFlow id="f-ap_gateway-clarify" name="Reject" sourceRef="ap_gateway" targetRef="clarify">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">inconsistent</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-all_ap_gateway-manager_review" name="more managers" sourceRef="all_ap_gateway" targetRef="manager_review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">more</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-all_ap_gateway-forward_to_commercial" sourceRef="all_ap_gateway" targetRef="forward_to_commercial" />
+    <bpmn:sequenceFlow id="f-clarify-manager_review" sourceRef="clarify" targetRef="manager_review" />
+    <bpmn:sequenceFlow id="f-forward_to_commercial-commercial_audit" sourceRef="forward_to_commercial" targetRef="commercial_audit" />
+    <bpmn:sequenceFlow id="f-commercial_audit-complaint_gateway" sourceRef="commercial_audit" targetRef="complaint_gateway" />
+    <bpmn:sequenceFlow id="f-complaint_gateway-resolve_complaint" name="yes" sourceRef="complaint_gateway" targetRef="resolve_complaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">complaint</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-complaint_gateway-amount_gateway" sourceRef="complaint_gateway" targetRef="amount_gateway" />
+    <bpmn:sequenceFlow id="f-resolve_complaint-amount_gateway" sourceRef="resolve_complaint" targetRef="amount_gateway" />
+    <bpmn:sequenceFlow id="f-amount_gateway-board_check" name="yes" sourceRef="amount_gateway" targetRef="board_check">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &gt; 20</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-amount_gateway-payment_instructions" sourceRef="amount_gateway" targetRef="payment_instructions" />
+    <bpmn:sequenceFlow id="f-board_check-payment_instructions" sourceRef="board_check" targetRef="payment_instructions" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,80 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+A small company manufactures customized bicycles. Whenever the sales department receives an order, a new process instance is created. A member of the sales department can then reject or accept the order for a customized bike. In the former case, the process instance is finished. In the latter case, the storehouse and the engineering department are informed. The storehouse immediately processes the part list of the order and checks the required quantity of each part. If the part is available in-house, it is reserved. If it is not available, it is back-ordered. This procedure is repeated for each item on the part list. In the meantime, the engineering department prepares everything for the assembling of the ordered bicycle. If the storehouse has successfully reserved or back-ordered every item of the part list and the preparation activity has finished, the engineering department assembles the bicycle. Afterwards, the sales department ships the bicycle to the customer and finishes the process instance.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Custom Bicycle Manufacturing"
+
+pool org "Custom Bicycle Company"
+  lane sales "Sales Department"
+    start start "Receive order"
+    xor decision "Order accepted?"
+    task reject "Reject order"
+    end rejected "Order rejected"
+    task accept "Accept order"
+    task inform_storehouse "Inform storehouse"
+    task inform_engineering "Inform engineering"
+    and split
+    task ship "Ship bicycle"
+    end completed "Process completed"
+
+  lane storehouse "Storehouse"
+    task process_part_list "Process part list"
+    task check_quantity "Check required quantity"
+    xor part_available "Part available?"
+    task reserve "Reserve part"
+    task back_order "Back-order part"
+    task part_done "Part processing completed"
+    and join
+
+  lane engineering "Engineering Department"
+    task prepare_assembly "Prepare assembling"
+    task assemble "Assemble bicycle"
+    and join
+
+# Sequence flows
+flow start -> decision
+flow decision -> reject "Reject"
+flow decision -> accept "Accept"
+flow reject -> rejected
+flow accept -> inform_storehouse
+flow inform_storehouse -> inform_engineering
+flow inform_engineering -> split
+flow split -> process_part_list
+flow split -> prepare_assembly
+
+# Storehouse processing
+flow process_part_list -> check_quantity
+flow check_quantity -> part_available when="moreItems"
+flow check_quantity -> part_done default
+flow part_available -> reserve "yes"
+flow part_available -> back_order "no"
+flow reserve -> check_quantity
+flow back_order -> check_quantity
+flow part_done -> join
+
+# Engineering preparation
+flow prepare_assembly -> join
+
+# After both storehouse and engineering ready
+flow join -> assemble
+flow assemble -> ship
+flow ship -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 28: error R001: identifier 'join' is already used on line 23
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_updateList" name="updateList" />
+  <bpmn:message id="Message_naturalDisaster" name="naturalDisaster" />
+  <bpmn:signal id="Signal_milestone" name="milestone" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Farming Bot Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_bot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find_resources</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_materials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>process_finished</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming Bot">
+        <bpmn:flowNodeRef>collect_parallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect_resource</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resources_collected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_tools</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>farm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share_results</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sharing_completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="create_bot" name="Create custom farming bot" />
+    <bpmn:task id="find_resources" name="Find out which resources you want" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="send_materials" name="Send materials to friends" />
+    <bpmn:endEvent id="process_finished" name="Process finished" />
+    <bpmn:parallelGateway id="collect_parallel" name="Collect up to 10 resources in parallel" />
+    <bpmn:task id="collect_resource" name="Collect resource" />
+    <bpmn:parallelGateway id="resources_collected" name="Resources collected" />
+    <bpmn:task id="create_tools" name="Create tools needed to gather resources" />
+    <bpmn:subProcess id="farm" name="Farming">
+      <bpmn:startEvent id="farming_started" name="Farming started" />
+      <bpmn:task id="farm_resources" name="Farm resources" />
+      <bpmn:endEvent id="farming_finished" name="Farming finished" />
+      <bpmn:subProcess id="update_list" name="Update list during farming" triggeredByEvent="true">
+        <bpmn:startEvent id="update_requested" name="Update requested">
+          <bpmn:messageEventDefinition id="update_requested-def" messageRef="Message_updateList" />
+        </bpmn:startEvent>
+        <bpmn:task id="update_list_task" name="Update list of to be farmed materials" />
+        <bpmn:endEvent id="list_updated" name="List updated" />
+        <bpmn:sequenceFlow id="f-update_requested-update_list_task" sourceRef="update_requested" targetRef="update_list_task" />
+        <bpmn:sequenceFlow id="f-update_list_task-list_updated" sourceRef="update_list_task" targetRef="list_updated" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="milestone" name="Milestone reached" triggeredByEvent="true">
+        <bpmn:startEvent id="milestone_reached" name="Milestone reached">
+          <bpmn:signalEventDefinition id="milestone_reached-def" signalRef="Signal_milestone" />
+        </bpmn:startEvent>
+        <bpmn:task id="notify_milestone" name="Notify milestone reached" />
+        <bpmn:endEvent id="milestone_notified" name="Milestone notified" />
+        <bpmn:sequenceFlow id="f-milestone_reached-notify_milestone" sourceRef="milestone_reached" targetRef="notify_milestone" />
+        <bpmn:sequenceFlow id="f-notify_milestone-milestone_notified" sourceRef="notify_milestone" targetRef="milestone_notified" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="disaster" attachedToRef="farm_resources">
+        <bpmn:messageEventDefinition id="disaster-def" messageRef="Message_naturalDisaster" />
+      </bpmn:boundaryEvent>
+      <bpmn:task id="recover_bot" name="Recover from natural disaster" />
+      <bpmn:sequenceFlow id="f-farming_started-farm_resources" sourceRef="farming_started" targetRef="farm_resources" />
+      <bpmn:sequenceFlow id="f-farm_resources-farming_finished" sourceRef="farm_resources" targetRef="farming_finished" />
+      <bpmn:sequenceFlow id="f-disaster-recover_bot" sourceRef="disaster" targetRef="recover_bot" />
+      <bpmn:sequenceFlow id="f-recover_bot-farm_resources" sourceRef="recover_bot" targetRef="farm_resources" />
+    </bpmn:subProcess>
+    <bpmn:inclusiveGateway id="share_results" name="Share farming results?" />
+    <bpmn:inclusiveGateway id="sharing_completed" name="Sharing completed" />
+    <bpmn:sequenceFlow id="f-start-create_bot" sourceRef="start" targetRef="create_bot" />
+    <bpmn:sequenceFlow id="f-create_bot-find_resources" sourceRef="create_bot" targetRef="find_resources" />
+    <bpmn:sequenceFlow id="f-find_resources-collect_parallel" sourceRef="find_resources" targetRef="collect_parallel" />
+    <bpmn:sequenceFlow id="f-collect_parallel-collect_resource" sourceRef="collect_parallel" targetRef="collect_resource" />
+    <bpmn:sequenceFlow id="f-collect_resource-resources_collected" sourceRef="collect_resource" targetRef="resources_collected" />
+    <bpmn:sequenceFlow id="f-resources_collected-create_tools" sourceRef="resources_collected" targetRef="create_tools" />
+    <bpmn:sequenceFlow id="f-create_tools-farm" sourceRef="create_tools" targetRef="farm" />
+    <bpmn:sequenceFlow id="f-farm-sharing_completed" sourceRef="farm" targetRef="sharing_completed" />
+    <bpmn:sequenceFlow id="f-farm-share_results" sourceRef="farm" targetRef="share_results" />
+    <bpmn:sequenceFlow id="f-share_results-brag" sourceRef="share_results" targetRef="brag" />
+    <bpmn:sequenceFlow id="f-share_results-send_materials" sourceRef="share_results" targetRef="send_materials" />
+    <bpmn:sequenceFlow id="f-brag-sharing_completed" sourceRef="brag" targetRef="sharing_completed" />
+    <bpmn:sequenceFlow id="f-send_materials-sharing_completed" sourceRef="send_materials" targetRef="sharing_completed" />
+    <bpmn:sequenceFlow id="f-sharing_completed-process_finished" sourceRef="sharing_completed" targetRef="process_finished" />
+  </bpmn:process>
+</bpmn:definitions>

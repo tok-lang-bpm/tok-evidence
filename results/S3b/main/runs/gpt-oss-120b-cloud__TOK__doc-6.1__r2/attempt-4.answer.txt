@@ -1,0 +1,54 @@
+```tok
+tok 1.0 "Invoice Processing" executable
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start start_evt "Invoice received (paper or fax)"
+    task receive_invoice "Receive invoice on paper or fax"
+    task forward_invoice "Forward invoice after visual inspection"
+  lane accounting "Accounting Employee"
+    task identify_create "Identify suppliers and create invoice instance"
+    task check_items "Check invoice items and note cost centers on docket"
+    task send_internal_mail "Send docket and copy of invoice to internal mail"
+    task clarify_vendor "Clarify with vendor and consult cost centre managers"
+    task forward_to_commercial "Forward copy of invoice to commercial manager"
+    task give_payment "Give payment instructions and close invoice"
+    end end_evt "Process completed"
+  lane manager "Cost Centre Manager"
+    task receive_copy "Receive copy of invoice and docket"
+    xor acc_gate "Is position accurate?"
+    task mark_ap "Mark position as accurate (AP) on docket"
+    task reject_ap "Reject AP with note on docket"
+    xor all_acc_gate "All positions marked accurate?"
+    task return_to_accounting_all "Return copy to accounting (all accurate)"
+    task pass_to_next_manager "Pass copy to next cost centre manager"
+  lane commercial "Commercial Manager"
+    task perform_audit "Perform commercial audit"
+    xor amount_gate "Invoice amount > EUR 20?"
+    task board_check "Board checks invoice"
+    xor complaint_gate "Complaint during commercial audit?"
+    task resolve_complaint "Resolve complaint with supplier"
+  lane board "Board"
+    task board_review "Review invoice"
+
+  # Sequence flows
+  flow start_evt -> receive_invoice -> forward_invoice -> identify_create -> check_items -> send_internal_mail -> receive_copy
+  flow receive_copy -> acc_gate
+  flow acc_gate -> mark_ap
+  flow acc_gate -> reject_ap
+  flow mark_ap -> all_acc_gate
+  flow reject_ap -> clarify_vendor -> send_internal_mail -> receive_copy
+  flow all_acc_gate -> return_to_accounting_all
+  flow all_acc_gate -> pass_to_next_manager
+  flow return_to_accounting_all -> forward_to_commercial
+  flow pass_to_next_manager -> receive_copy
+  flow forward_to_commercial -> perform_audit
+  flow perform_audit -> amount_gate
+  flow amount_gate -> board_check
+  flow amount_gate -> complaint_gate
+  flow board_check -> board_review -> complaint_gate
+  flow complaint_gate -> resolve_complaint
+  flow complaint_gate -> give_payment
+  flow resolve_complaint -> perform_audit
+  flow give_payment -> end_evt
+```

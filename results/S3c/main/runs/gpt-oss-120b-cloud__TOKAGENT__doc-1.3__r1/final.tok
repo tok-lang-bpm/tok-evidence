@@ -1,0 +1,38 @@
+tok 1.0
+
+pool evanstonian "The Evanstonian"
+  lane manager "Room-service manager"
+    start start "Guest calls room service"
+    task take_down_order "Take down order"
+    task submit_order_to_kitchen "Submit order ticket to kitchen"
+    task give_order_to_sommelier "Give order to sommelier"
+    task assign_order_to_waiter "Assign order to waiter"
+    and after_assign "Parallel split after assign"
+    xor wine_decision "Alcoholic beverage?"
+    and join_ready "Parallel join"
+    end end_process "End"
+  lane kitchen "Kitchen"
+    task prepare_food "Prepare food"
+  lane sommelier "Sommelier"
+    task fetch_wine "Fetch wine and prepare alcoholic beverages"
+  lane waiter "Waiter"
+    task ready_cart_and_drinks "Ready cart and prepare nonalcoholic drinks"
+    task deliver_order "Deliver order to guest room"
+    task debit_account "Debit guest account"
+  # flows inside the pool
+  flow start -> take_down_order
+  flow take_down_order -> submit_order_to_kitchen
+  flow submit_order_to_kitchen -> give_order_to_sommelier
+  flow give_order_to_sommelier -> assign_order_to_waiter
+  flow assign_order_to_waiter -> after_assign
+  flow after_assign -> prepare_food
+  flow after_assign -> ready_cart_and_drinks
+  flow after_assign -> wine_decision
+  flow wine_decision -> fetch_wine when="includes_alcoholic = true"
+  flow wine_decision -> join_ready default
+  flow prepare_food -> join_ready
+  flow ready_cart_and_drinks -> join_ready
+  flow fetch_wine -> join_ready
+  flow join_ready -> deliver_order
+  flow deliver_order -> debit_account
+  flow debit_account -> end_process

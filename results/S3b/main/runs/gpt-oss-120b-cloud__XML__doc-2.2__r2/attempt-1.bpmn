@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneCustomer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customerCheckContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endWithdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endProcess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCustomerService" name="Customer Service">
+        <bpmn:flowNodeRef>receiveData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correctErrors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>importMeterData</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCRM" name="CRM System">
+        <bpmn:flowNodeRef>enterCRM</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneDatabase" name="Internal Database">
+        <bpmn:flowNodeRef>compareData</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCIS" name="CIS">
+        <bpmn:flowNodeRef>automatedCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyzeIssues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generateContractAgain</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRequestToGrid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createCISContract</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGridOperator" name="Grid Operator">
+        <bpmn:flowNodeRef>gridCheckConcurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informSuppliersAndResolve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFinalBillingToOldSupplier</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneOldSupplier" name="Old Supplier">
+        <bpmn:flowNodeRef>sendFinalBillingToCustomer</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Switch‑over request received" />
+    <bpmn:task id="transmitData" name="Transmit data to Customer Service" />
+    <bpmn:task id="receiveData" name="Receive customer data" />
+    <bpmn:task id="enterCRM" name="Enter customer data into CRM" />
+    <bpmn:task id="compareData" name="Compare data with internal database" />
+    <bpmn:exclusiveGateway id="gwErrors" name="Data errors?" />
+    <bpmn:task id="correctErrors" name="Correct errors using error list" />
+    <bpmn:exclusiveGateway id="gwCustomerExists" name="Customer exists?" />
+    <bpmn:task id="createCustomer" name="Create new customer object" />
+    <bpmn:task id="prepareContract" name="Prepare contract documents" />
+    <bpmn:task id="automatedCheck" name="Automated contract check" />
+    <bpmn:exclusiveGateway id="gwCheckPositive" name="Contract check positive?" />
+    <bpmn:task id="analyzeIssues" name="Analyze and resolve causing issues" />
+    <bpmn:task id="generateContractAgain" name="Generate contract documents again" />
+    <bpmn:task id="sendConfirmation" name="Send confirmation document to customer" />
+    <bpmn:task id="sendRequestToGrid" name="Send request to Grid Operator" />
+    <bpmn:task id="gridCheckConcurrence" name="Check supplier concurrence" />
+    <bpmn:exclusiveGateway id="gwConcurrence" name="Supplier concurrence?" />
+    <bpmn:task id="informSuppliersAndResolve" name="Inform suppliers and resolve conflict" />
+    <bpmn:task id="createCISContract" name="Create CIS contract" />
+    <bpmn:task id="customerCheckContract" name="Customer checks contract details" />
+    <bpmn:exclusiveGateway id="gwCustomerDecision" name="Customer withdraws?" />
+    <bpmn:endEvent id="endWithdraw" name="Process ends (withdrawal)" />
+    <bpmn:parallelGateway id="pgSplit" />
+    <bpmn:task id="transmitMeterData" name="Transmit meter data to Customer Service and Old Supplier" />
+    <bpmn:task id="importMeterData" name="Import meter data to systems" />
+    <bpmn:task id="sendFinalBillingToOldSupplier" name="Send final billing to Old Supplier" />
+    <bpmn:task id="sendFinalBillingToCustomer" name="Send final billing to Customer" />
+    <bpmn:parallelGateway id="pgJoin" />
+    <bpmn:endEvent id="endProcess" name="Process ends (successful switch)" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="sf1" sourceRef="start" targetRef="transmitData" />
+    <bpmn:sequenceFlow id="sf2" sourceRef="transmitData" targetRef="receiveData" />
+    <bpmn:sequenceFlow id="sf3" sourceRef="receiveData" targetRef="enterCRM" />
+    <bpmn:sequenceFlow id="sf4" sourceRef="enterCRM" targetRef="compareData" />
+    <bpmn:sequenceFlow id="sf5" sourceRef="compareData" targetRef="gwErrors" />
+    <bpmn:sequenceFlow id="sf6" sourceRef="gwErrors" targetRef="correctErrors">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf7" sourceRef="correctErrors" targetRef="compareData" />
+    <bpmn:sequenceFlow id="sf8" sourceRef="gwErrors" targetRef="gwCustomerExists">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf9" sourceRef="gwCustomerExists" targetRef="createCustomer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf10" sourceRef="gwCustomerExists" targetRef="prepareContract">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf11" sourceRef="createCustomer" targetRef="prepareContract" />
+    <bpmn:sequenceFlow id="sf12" sourceRef="prepareContract" targetRef="automatedCheck" />
+    <bpmn:sequenceFlow id="sf13" sourceRef="automatedCheck" targetRef="gwCheckPositive" />
+    <bpmn:sequenceFlow id="sf14" sourceRef="gwCheckPositive" targetRef="analyzeIssues">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf15" sourceRef="analyzeIssues" targetRef="generateContractAgain" />
+    <bpmn:sequenceFlow id="sf16" sourceRef="generateContractAgain" targetRef="automatedCheck" />
+    <bpmn:sequenceFlow id="sf17" sourceRef="gwCheckPositive" targetRef="sendConfirmation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf18" sourceRef="sendConfirmation" targetRef="sendRequestToGrid" />
+    <bpmn:sequenceFlow id="sf19" sourceRef="sendRequestToGrid" targetRef="gridCheckConcurrence" />
+    <bpmn:sequenceFlow id="sf20" sourceRef="gridCheckConcurrence" targetRef="gwConcurrence" />
+    <bpmn:sequenceFlow id="sf21" sourceRef="gwConcurrence" targetRef="informSuppliersAndResolve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf22" sourceRef="gwConcurrence" targetRef="createCISContract">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf23" sourceRef="informSuppliersAndResolve" targetRef="customerCheckContract" />
+    <bpmn:sequenceFlow id="sf24" sourceRef="createCISContract" targetRef="customerCheckContract" />
+    <bpmn:sequenceFlow id="sf25" sourceRef="customerCheckContract" targetRef="gwCustomerDecision" />
+    <bpmn:sequenceFlow id="sf26" sourceRef="gwCustomerDecision" targetRef="endWithdraw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">withdraw</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf27" sourceRef="gwCustomerDecision" targetRef="pgSplit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">accept</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Parallel processing after acceptance -->
+    <bpmn:sequenceFlow id="sf28" sourceRef="pgSplit" targetRef="importMeterData" />
+    <bpmn:sequenceFlow id="sf29" sourceRef="pgSplit" targetRef="transmitMeterData" />
+    <bpmn:sequenceFlow id="sf30" sourceRef="transmitMeterData" targetRef="sendFinalBillingToOldSupplier" />
+    <bpmn:sequenceFlow id="sf31" sourceRef="sendFinalBillingToOldSupplier" targetRef="sendFinalBillingToCustomer" />
+    <bpmn:sequenceFlow id="sf32" sourceRef="importMeterData" targetRef="pgJoin" />
+    <bpmn:sequenceFlow id="sf33" sourceRef="sendFinalBillingToCustomer" targetRef="pgJoin" />
+    <bpmn:sequenceFlow id="sf34" sourceRef="pgJoin" targetRef="endProcess" />
+  </bpmn:process>
+</bpmn:definitions>

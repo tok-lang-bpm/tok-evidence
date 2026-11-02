@@ -1,0 +1,70 @@
+tok 1.0
+
+pool org "Organization" {
+  lane employee "Employee"
+  lane selfEmp "Self-Employed"
+  lane employer "Employer"
+  lane insurance "Accident Insurance Provider"
+  lane inspector "Labour Inspectorate"
+  lane student "Student"
+  lane school "School"
+}
+
+start start "Start" employee
+
+task inform "Inform employer of accident" employee
+
+gateway split and "Parallel Split" employee
+
+flow start -> inform
+flow inform -> split
+
+# Parallel branches from split
+# Employee/self-employed branch
+
+gateway reporter xor "Reporter type" employer
+flow split -> reporter "Employee" when="reporter='employee'"
+flow split -> self_report "Self-Employed" when="reporter='self'"
+
+# Employee path continues
+
+task emp_process "Employer processes report" employer
+flow reporter -> emp_process
+
+# Fatality decision
+
+gateway fatal xor "Fatality or serious injury?" employer
+flow emp_process -> fatal
+
+# Yes branch
+
+task report_inspector "Report to Labour Inspectorate" employer
+flow fatal -> report_inspector "Yes" when="fatal=true"
+
+task report_insurance_emp "Report to Accident Insurance Provider" employer
+flow report_inspector -> report_insurance_emp
+
+# No branch directly to insurance report
+flow fatal -> report_insurance_emp "No" when="fatal=false"
+
+# Self-employed report
+
+task self_report "Self-employed reports accident to insurance" selfEmp
+
+# Student branch
+
+task student_report "Student reports accident to School Directorate" student
+flow split -> student_report
+
+task school_report "School reports accident to Accident Insurance Provider" school
+flow student_report -> school_report
+
+# Join parallel branches
+
+gateway join and "Parallel Join" employer
+flow report_insurance_emp -> join
+flow self_report -> join
+flow school_report -> join
+
+end end "End" employer
+flow join -> end

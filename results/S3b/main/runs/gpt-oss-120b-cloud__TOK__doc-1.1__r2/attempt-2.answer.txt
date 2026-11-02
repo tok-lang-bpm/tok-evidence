@@ -1,0 +1,51 @@
+```tok
+tok 1.0 "Custom Bicycle Manufacturing" [executable] [process-name="Custom Bicycle Process"]
+    pool company "Small Company"
+        lane sales "Sales Department"
+            start start_order "Order received"
+            task review_order "Review the order"
+            xor decision_accept "Order accepted?"
+            task reject_order "Reject order"
+            end rejected "Order rejected"
+            task accept_order "Accept order"
+            and split "Parallel split"
+            task ship_bicycle "Ship bicycle"
+            end completed "Process completed"
+
+        lane storehouse "Storehouse"
+            sub process_part_list "Process part list"
+                start part_start "Start part processing"
+                xor part_available "Part available?"
+                task reserve_part "Reserve part"
+                task backorder_part "Back-order part"
+                xor more_items "More items?"
+                end part_end "Part list processed"
+                flow part_start -> part_available
+                flow part_available -> reserve_part "yes"
+                flow part_available -> backorder_part "no"
+                flow reserve_part -> more_items
+                flow backorder_part -> more_items
+                flow more_items -> part_available "yes"
+                flow more_items -> part_end "no"
+
+        lane engineering "Engineering Department"
+            task inform_engineering "Inform engineering"
+            task prepare_assembly "Prepare assembly"
+
+        and join_all "Parallel join"
+
+        # Global flows
+        flow start_order -> review_order -> decision_accept
+        flow decision_accept -> reject_order "no"
+        flow reject_order -> rejected
+        flow decision_accept -> accept_order "yes"
+        flow accept_order -> split
+        flow split -> process_part_list
+        flow split -> inform_engineering
+        flow inform_engineering -> prepare_assembly
+        flow prepare_assembly -> join_all
+        flow part_end -> join_all
+        flow join_all -> assemble_bicycle
+        flow assemble_bicycle -> ship_bicycle
+        flow ship_bicycle -> completed
+```

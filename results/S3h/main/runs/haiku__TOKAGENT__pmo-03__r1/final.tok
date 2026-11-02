@@ -1,0 +1,29 @@
+tok 1.0 "Inventory restock"
+
+pool org "Organisation"
+  lane wh "Warehouse staff"
+    start s "Inventory monitoring begins"
+    task monitor "Monitor inventory levels"
+    xor threshold "Stock reached threshold?"
+    xor alert-type "Automated alert or manual check?"
+    task manual-check "Perform manual stock check"
+    task receive "Receive stock"
+    task inspect "Inspect stock quality"
+    task store "Place stock on shelves or in storage"
+  lane sys "Inventory system"
+    task alert "Send automated alert"
+    xor reorder "Reorder needed"
+    task update-dates "Update inventory system with expected delivery dates"
+    task record "Record stock in system"
+    task update-levels "Update inventory levels"
+    end e "Restock complete, inventory levels updated"
+  lane proc "Procurement team"
+    task order "Place order with suppliers" doc="Considers cost, delivery time and supplier reliability."
+
+flow s -> monitor -> threshold
+flow threshold -> monitor "no" default
+flow threshold -> alert-type "yes" when="stock_level <= reorder_threshold"
+flow alert-type -> alert "automated" when="automatic_alert = true"
+flow alert-type -> manual-check "manual" default
+flow alert -> reorder
+flow manual-check -> reorder -> order -> update-dates -> receive -> inspect -> record -> store -> update-levels -> e

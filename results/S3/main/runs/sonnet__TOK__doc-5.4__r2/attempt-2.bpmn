@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Payment_confirmation" name="Payment confirmation" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Expense report handling" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>purchase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>edit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="treasurer" name="Treasurer">
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accept</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="payment" name="Payment system">
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Product or service required" />
+    <bpmn:task id="purchase" name="Purchase the product or service" />
+    <bpmn:task id="submit" name="Submit the expense report" />
+    <bpmn:task id="edit" name="Edit the expense report" />
+    <bpmn:task id="review" name="Review the expense report" />
+    <bpmn:exclusiveGateway id="approved" name="Report approved?" default="f-approved-edit" />
+    <bpmn:task id="check" name="Check the receipts against the items" />
+    <bpmn:exclusiveGateway id="order" name="All in order?" default="f-order-edit" />
+    <bpmn:task id="accept" name="Accept the expenses for processing" />
+    <bpmn:serviceTask id="pay" name="Link to the payment system" />
+    <bpmn:intermediateCatchEvent id="confirmed" name="Payment confirmation received">
+      <bpmn:messageEventDefinition id="confirmed-def" messageRef="Message_Payment_confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="done" name="Expense report processed" />
+    <bpmn:sequenceFlow id="f-needed-purchase" sourceRef="needed" targetRef="purchase" />
+    <bpmn:sequenceFlow id="f-purchase-submit" sourceRef="purchase" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-review" sourceRef="submit" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-approved" sourceRef="review" targetRef="approved" />
+    <bpmn:sequenceFlow id="f-approved-check" name="yes" sourceRef="approved" targetRef="check">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-approved-edit" name="no" sourceRef="approved" targetRef="edit" />
+    <bpmn:sequenceFlow id="f-edit-review" sourceRef="edit" targetRef="review" />
+    <bpmn:sequenceFlow id="f-check-order" sourceRef="check" targetRef="order" />
+    <bpmn:sequenceFlow id="f-order-accept" name="yes" sourceRef="order" targetRef="accept">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">inOrder = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-order-edit" name="no" sourceRef="order" targetRef="edit" />
+    <bpmn:sequenceFlow id="f-accept-pay" sourceRef="accept" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-confirmed" sourceRef="pay" targetRef="confirmed" />
+    <bpmn:sequenceFlow id="f-confirmed-done" sourceRef="confirmed" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,68 @@
+tok 1.0 "Intake workflow of the mental health care institute"
+
+pool inst "Mental health care institute"
+  lane fd "Family doctor"
+    start notice "Patient in need of mental treatment"
+    task notify "Give notice by telephone"
+  lane sec "Secretarial office"
+    task inquire "Inquire after the name and residence of the patient"
+    task connect "Put the family doctor through to the nursing officer"
+    task store_info "Store the information from the form in the information system"
+    task print_info "Print the information from the information system"
+    xor new_patient "New patient?"
+    task create_file "Create a patient file"
+    xor merge_file
+    task file_form "Store the registration form and the print in the patient file"
+    task cards "Produce two registration cards"
+    task add_notice "Add the new patient to the list of new notices"
+    task store_assign "Store the assignment of each patient in the information system"
+    task pass_cards "Pass the registration cards to the first and second intaker"
+    and split_cards
+    xor med_req "Medical file required?"
+    task letter "Prepare and send a letter requesting a copy of the medical file"
+    catch copy_rec "Copy of the medical file received" message="Medical file copy"
+    task inform2 "Inform the second intaker"
+    task add_copy "Add the copy to the patient file"
+    xor merge_med
+    task type_tapes "Type out the dictaphone tapes"
+    task add_tape "Add the information from the tapes to the patient file"
+    and join_meet
+    task status_list "Put the patient on the list of patients that reach this status"
+    task provide "Provide the team-leader with a list of these patients"
+  lane nurse "Nursing officer"
+    task inquiry "Make a full inquiry into the mental, health and social state of the patient"
+    task record "Record the information on the registration form"
+    task hand_in "Hand in the registration form at the secretarial office"
+  lane tl "Team-leader"
+    task meeting "Hold the staff meeting of the medical team on Wednesday"
+    task assign "Assign the new patients to members of the team"
+    task determine "Determine whether the medical file is required"
+    task record_assign "Record the assignments on the assignment list"
+    task hand_list "Hand the assignment list to the secretarial office"
+    task treatment "Formulate the treatment plan" doc="Together with the first and second intaker and the attending psychiatrist"
+    end done "Intake procedure completed"
+  lane fi "First intaker (social-medical worker)"
+    task plan1 "Plan a meeting with the patient as soon as possible"
+    task meet1 "Hold the first meeting with the patient"
+    task exam1 "Examine the patient using the standard checklist"
+    task fill1 "Fill out the standard checklist"
+    task notebook "Register additional observations in a personal notebook"
+    task notes_file "Put a copy of the notes in the patient file"
+    task checklist_file "Add the standard checklist to the patient file"
+  lane si "Second intaker (physician)"
+    task plan2 "Plan the first meeting with the patient"
+    task meet2 "Hold the first meeting with the patient"
+    task dict "Record observations on a dictaphone"
+
+flow notice -> notify -> inquire -> connect -> inquiry -> record -> hand_in -> store_info -> print_info -> new_patient
+flow new_patient -> create_file "yes"
+flow create_file -> merge_file
+flow new_patient -> merge_file "no"
+flow merge_file -> file_form -> cards -> add_notice -> meeting -> assign -> determine -> record_assign -> hand_list -> store_assign -> pass_cards -> split_cards
+flow split_cards -> plan1 -> meet1 -> exam1 -> fill1 -> notebook -> notes_file -> checklist_file -> join_meet
+flow split_cards -> med_req
+flow med_req -> letter "yes"
+flow letter -> copy_rec -> inform2 -> add_copy -> merge_med
+flow med_req -> merge_med "no"
+flow merge_med -> plan2 -> meet2 -> dict -> type_tapes -> add_tape -> join_meet
+flow join_meet -> status_list -> provide -> treatment -> done

@@ -1,0 +1,41 @@
+tok 1.0
+
+pool org "Organization"
+  lane internal "Internal"
+    start start "Claim received"
+    flow start -> check_insurance
+    task check_insurance "Check whether claimant is insured"
+    flow check_insurance -> insured
+    xor insured "Insured?"
+    flow insured -> inform_reject "Reject claim" when="not(insured)"
+    task inform_reject "Inform claimant that claim must be rejected"
+    flow inform_reject -> end_reject
+    end end_reject
+    flow insured -> evaluate_severity "Proceed" when="insured = true"
+    task evaluate_severity "Evaluate severity of claim"
+    flow evaluate_severity -> severity
+    xor severity "Severity simple or complex?"
+    flow severity -> send_simple "Send simple forms" when='severity = "simple"'
+    flow severity -> send_complex "Send complex forms" default
+    task send_simple "Send simple forms to claimant"
+    task send_complex "Send complex forms to claimant"
+    xor forms_sent "Forms sent"
+    flow send_simple -> forms_sent
+    flow send_complex -> forms_sent
+    flow forms_sent -> receive_forms
+    xor complete "Forms complete?"
+    flow receive_forms -> check_completeness
+    task check_completeness "Check forms for completeness"
+    flow check_completeness -> complete
+    flow complete -> register_claim "Forms complete" when="complete = true"
+    flow complete -> inform_update "Forms incomplete" default
+    task inform_update "Inform claimant to update forms"
+    flow inform_update -> receive_updated
+    flow receive_updated -> check_completeness
+  lane claimant "Claimant"
+    receive receive_forms "Receive returned forms"
+    receive receive_updated "Receive updated forms"
+  lane cms "Claims Management System"
+    task register_claim "Register claim in Claims Management system"
+    flow register_claim -> end_complete
+    end end_complete

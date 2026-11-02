@@ -1,0 +1,49 @@
+```tok
+tok 1.0 "Credit scoring process"
+
+pool bank "Bank"
+  lane clerk "Clerk"
+    start start_clerk "Clerk initiates credit scoring"
+    task display_delay "Display delay message to clerk"
+    task display_result "Display scoring result to clerk"
+    end end_clerk "Scoring process completed"
+  lane system "Banking System"
+    send send_request "Send scoring request to agency" message="Scoring request"
+    xor wait_choice "Wait for agency response"
+    receive receive_immediate "Receive immediate scoring result" message="Scoring result"
+    receive receive_delay "Receive scoring delay notification" message="Scoring delay"
+    receive receive_final "Receive final scoring result" message="Scoring result"
+
+    flow start_clerk -> send_request
+    flow send_request -> wait_choice
+    flow wait_choice -> receive_immediate
+    flow wait_choice -> receive_delay
+    flow receive_immediate -> display_result
+    flow receive_delay -> display_delay
+    flow display_delay -> receive_final
+    flow receive_final -> display_result
+    flow display_result -> end_clerk
+
+pool agency "Agency"
+  lane agency_lane "Agency"
+    start start_agency "Scoring request received"
+    service level1_scoring "Perform level 1 quick scoring"
+    xor immediate_gateway "Immediate result?"
+    send send_result "Send scoring result to banking system" message="Scoring result"
+    send inform_delay "Inform banking system of delay" message="Scoring delay"
+    service level2_scoring "Perform level 2 scoring"
+    end end_agency "Agency process completed"
+
+    flow start_agency -> level1_scoring
+    flow level1_scoring -> immediate_gateway
+    flow immediate_gateway -> send_result "yes"
+    flow immediate_gateway -> inform_delay "no"
+    flow inform_delay -> level2_scoring
+    flow level2_scoring -> send_result
+    flow send_result -> end_agency
+
+message send_request -> start_agency "Scoring request" id=request_msg
+message send_result -> receive_immediate "Scoring result" id=result_immediate_msg
+message send_result -> receive_final "Scoring result" id=result_final_msg
+message inform_delay -> receive_delay "Scoring delay" id=delay_msg
+```

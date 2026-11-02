@@ -1,0 +1,52 @@
+tok 1.0 "Invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start invoice_received "Invoice received"
+    task visual_inspection "Perform visual inspection"
+    task forward_accounting "Forward invoice to accounting"
+  lane accounting "Accounting Employee"
+    task identify_suppliers "Identify charging suppliers and create invoice"
+    task check_items "Check invoice items and note cost centers on docket"
+    task send_first_ccm "Send docket and invoice copy to first cost center manager"
+    task clarify_vendor "Proceed with clarification with vendor"
+    xor g_consult "Consult cost center managers?"
+    task consult_ccms "Consult cost center managers by telephone or e-mail"
+    task resend_ccms "Send invoice copy to cost center managers again"
+    task forward_commercial "Forward invoice copy to commercial manager"
+    task resolve_complaint "Resolve complaint with supplier"
+    task file_signature "File invoice in appropriate signature file"
+    task pay_close "Give payment instructions and close invoice instance"
+    end invoice_closed "Invoice instance closed"
+  lane cost_center_manager "Cost Center Manager"
+    task review_copy "Review invoice copy for accuracy"
+    xor g_quality "Are the reviewed items accurate?"
+    task note_ap "Note AP on docket"
+    xor g_all_ap "Are all invoice items marked correct?"
+    task reject_ap "Reject AP with note and explanatory statement"
+  lane commercial_manager "Commercial Manager"
+    task commercial_audit "Perform commercial audit"
+    xor g_complaint "Is there a complaint during the commercial audit?"
+    task issue_approval "Issue approval for payment"
+    xor g_amount "Does bill amount exceed EUR 20?"
+  lane board "Board"
+    task board_check "Perform 4-eyes check"
+
+flow invoice_received -> visual_inspection -> forward_accounting -> identify_suppliers -> check_items -> send_first_ccm -> review_copy
+flow g_quality -> note_ap "Yes" when="accurate"
+flow g_quality -> reject_ap "No" default
+flow review_copy -> g_quality
+flow note_ap -> g_all_ap
+flow g_all_ap -> forward_commercial "Yes" when="allMarked"
+flow g_all_ap -> review_copy "No" default
+flow reject_ap -> clarify_vendor -> g_consult
+flow g_consult -> consult_ccms "Yes" when="consultationNeeded"
+flow g_consult -> resend_ccms "No" default
+flow consult_ccms -> resend_ccms -> review_copy
+flow forward_commercial -> commercial_audit -> g_complaint
+flow g_complaint -> resolve_complaint "Yes" when="complaint"
+flow g_complaint -> issue_approval "No" default
+flow resolve_complaint -> issue_approval -> g_amount
+flow g_amount -> board_check "Yes" when="amount > 20"
+flow g_amount -> pay_close "No" default
+flow board_check -> file_signature -> pay_close -> invoice_closed

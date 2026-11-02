@@ -1,0 +1,36 @@
+tok 1.0 "Measurement Request Process"
+
+pool organisation "Organisation"
+  lane GO "GO"
+    start S "Start"
+    task REQ "GO requests the measurements to the MSP"
+    task PROC "GO processes the measured values"
+    task SEND "GO sends the changed values to the MSP"
+    task TRAN "GO transmits the readings to the SP"
+    end END_FAIL "Process ended after failure"
+    end END_SUCCESS "Process ended after success"
+  lane MSP "MSP"
+    task CHK "MSP checks the received request"
+    xor DEC1 "Request denied?"
+    task DENY "MSP denies the request of the GO"
+    task MEAS "MSP performs the measurement"
+    xor DEC2 "Measurement failure?"
+    task FAIL "MSP informs the GO about the failure of the reading"
+    task TRANS "MSP transmits the measured values to the GO"
+  lane SP "SP"
+    # No tasks; SP only receives the readings from GO
+  # Sequence flows
+flow S -> REQ
+flow REQ -> CHK
+flow CHK -> DEC1
+flow DEC1 -> DENY "deny"
+flow DEC1 -> MEAS "perform"
+flow DENY -> FAIL
+flow MEAS -> DEC2
+flow DEC2 -> FAIL "failure"
+flow DEC2 -> TRANS "success"
+flow TRANS -> PROC
+flow PROC -> SEND
+flow SEND -> TRAN
+flow TRAN -> END_SUCCESS
+flow FAIL -> END_FAIL

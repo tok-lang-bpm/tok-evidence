@@ -1,0 +1,37 @@
+```tok
+tok 1.0 "Loan approval process"
+
+pool org "Loan approval process"
+  lane customer "Customer"
+    start s_start "Customer request received"
+    task t_receive "Receive customer request"
+    task t_feedback "Customer receives feedback"
+    end e_end "Process complete"
+
+  lane risk "Risk assessment"
+    task t_assess "Invoke risk assessment Web service"
+    xor g_decision "Assessment decision"
+    task t_approve "Approve loan"
+    task t_deny "Deny loan"
+    xor g_merge "Merge decision"
+
+  lane approver "Approver"
+    task t_sendApprover "Send request to approver Web service"
+    task t_approverDecision "Approver provides decision"
+
+flow s_start -> t_receive
+flow t_receive -> t_assess
+flow t_assess -> g_decision
+
+flow g_decision -> t_approve "Approve" when="loanAmount < 10000 and risk = \"low\""
+flow g_decision -> t_deny "Deny" when="risk = \"high\""
+flow g_decision -> t_sendApprover "Review" when="needsReview = true or loanAmount >= 10000"
+
+flow t_approve -> g_merge
+flow t_deny -> g_merge
+flow t_sendApprover -> t_approverDecision
+flow t_approverDecision -> g_merge
+
+flow g_merge -> t_feedback
+flow t_feedback -> e_end
+```

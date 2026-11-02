@@ -1,0 +1,60 @@
+tok 1.0 "Invoice Processing"
+
+pool org "Organisation"
+  lane start "Start"
+    start s "Start"
+    xor bill_type "Bill type?"
+  lane MPOO "MPOO"
+    task send_mpoo_temp_cont "Send bill for temporary continuation of metering point operations"
+    task send_mpoo_equip "Send bill for equipment acquisition"
+  lane MSPO "MSPO"
+    task send_mspo_temp_cont "Send bill for temporary continuation of measurement"
+    task send_mspo_add_read "Send bill for additional readings"
+  lane decision "Decision"
+    xor equip_recipient "Recipient of equipment acquisition bill?"
+  lane GO "GO"
+    task examine_go "Examine bill"
+    xor decision_go "Confirm invoice?"
+    task confirm_go "Confirm invoice with payment advice"
+    task reject_go "Reject invoice"
+  lane MPON "MPON"
+    task examine_mpon "Examine bill"
+    xor decision_mpon "Confirm invoice?"
+    task confirm_mpon "Confirm invoice with payment advice"
+    task reject_mpon "Reject invoice"
+  lane end_lane "End"
+    end end_confirm "Invoice confirmed"
+    end end_reject "Invoice rejected"
+
+# Start to decision on bill type
+flow s -> bill_type
+
+# Bill type branches
+flow bill_type -> send_mpoo_temp_cont "MPOO temp continuation"
+flow bill_type -> send_mspo_temp_cont "MSPO temp continuation"
+flow bill_type -> send_mspo_add_read "MSPO additional readings"
+flow bill_type -> send_mpoo_equip "MPOO equipment acquisition"
+
+# Sending bills to GO for examination
+flow send_mpoo_temp_cont -> examine_go
+flow send_mspo_temp_cont -> examine_go
+flow send_mspo_add_read -> examine_go
+
+# Equipment acquisition bill recipient decision
+flow send_mpoo_equip -> equip_recipient
+flow equip_recipient -> examine_go "to GO"
+flow equip_recipient -> examine_mpon "to MPON"
+
+# GO examination decision
+flow examine_go -> decision_go
+flow decision_go -> confirm_go "confirm"
+flow confirm_go -> end_confirm
+flow decision_go -> reject_go "reject"
+flow reject_go -> end_reject
+
+# MPON examination decision
+flow examine_mpon -> decision_mpon
+flow decision_mpon -> confirm_mpon "confirm"
+flow confirm_mpon -> end_confirm
+flow decision_mpon -> reject_mpon "reject"
+flow reject_mpon -> end_reject

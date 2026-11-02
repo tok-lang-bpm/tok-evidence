@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mortgage offer process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Decline" name="Decline" />
+  <bpmn:message id="Message_Completed_offer_documents" name="Completed offer documents" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mortgage offer process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-offer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>no-answer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive-decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel-decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move-admin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request-docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive-timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel-timeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:sendTask id="send-offer" name="send Mortgage offer" />
+    <bpmn:eventBasedGateway id="wait" name="wait for reply" />
+    <bpmn:intermediateCatchEvent id="decline" name="Customer declines mortgage">
+      <bpmn:messageEventDefinition id="decline-def" messageRef="Message_Decline" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="completed" name="Completed offer documents received">
+      <bpmn:messageEventDefinition id="completed-def" messageRef="Message_Completed_offer_documents" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="no-answer" name="No answer received">
+      <bpmn:timerEventDefinition id="no-answer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="check-docs" name="All prerequisite documents provided?" default="f-check-docs-request-docs" />
+    <bpmn:task id="update-decline" name="update case details" />
+    <bpmn:task id="archive-decline" name="archive work" />
+    <bpmn:endEvent id="cancel-decline" name="Case cancelled" />
+    <bpmn:task id="move-admin" name="move case to administration for completion" />
+    <bpmn:endEvent id="complete" name="Case completed" />
+    <bpmn:task id="request-docs" name="generate message requesting outstanding documents" />
+    <bpmn:task id="update-timeout" name="update case details" />
+    <bpmn:task id="archive-timeout" name="archive work" />
+    <bpmn:endEvent id="cancel-timeout" name="Case cancelled" />
+    <bpmn:sequenceFlow id="f-s-send-offer" sourceRef="s" targetRef="send-offer" />
+    <bpmn:sequenceFlow id="f-send-offer-wait" sourceRef="send-offer" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-decline" sourceRef="wait" targetRef="decline" />
+    <bpmn:sequenceFlow id="f-wait-completed" sourceRef="wait" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-wait-no-answer" sourceRef="wait" targetRef="no-answer" />
+    <bpmn:sequenceFlow id="f-decline-update-decline" sourceRef="decline" targetRef="update-decline" />
+    <bpmn:sequenceFlow id="f-update-decline-archive-decline" sourceRef="update-decline" targetRef="archive-decline" />
+    <bpmn:sequenceFlow id="f-archive-decline-cancel-decline" sourceRef="archive-decline" targetRef="cancel-decline" />
+    <bpmn:sequenceFlow id="f-completed-check-docs" sourceRef="completed" targetRef="check-docs" />
+    <bpmn:sequenceFlow id="f-check-docs-move-admin" name="yes" sourceRef="check-docs" targetRef="move-admin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">allPrerequisiteDocuments = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-check-docs-request-docs" name="no" sourceRef="check-docs" targetRef="request-docs" />
+    <bpmn:sequenceFlow id="f-move-admin-complete" sourceRef="move-admin" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-request-docs-wait" sourceRef="request-docs" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-no-answer-update-timeout" sourceRef="no-answer" targetRef="update-timeout" />
+    <bpmn:sequenceFlow id="f-update-timeout-archive-timeout" sourceRef="update-timeout" targetRef="archive-timeout" />
+    <bpmn:sequenceFlow id="f-archive-timeout-cancel-timeout" sourceRef="archive-timeout" targetRef="cancel-timeout" />
+  </bpmn:process>
+</bpmn:definitions>

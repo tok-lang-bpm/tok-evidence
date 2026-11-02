@@ -1,0 +1,58 @@
+```tok
+tok 1.0 "Defaulting accounts daily check"
+
+pool org "Organisation"
+  lane ops "Operations"
+    start begin "Weekday morning"
+    sub part1 "Process defaulting accounts"
+      start s1 "Start of check"
+      task backup "Back up the database"
+      task checktable "Check the Account Defaulter table for new records"
+      xor newrec "New records found?"
+      task checkcrm1 "Check the CRM system for new returns"
+      xor ret1 "New returns exist?"
+      task register "Register all defaulting accounts and customers"
+      xor advised "Defaulting client codes previously advised?"
+      task produce "Produce another table of defaulting accounts"
+      task sendmgmt "Send the table to account management"
+      xor m2
+      xor m1
+      end e1 "Defaulting accounts processed"
+    boundary late1 "2:30 pm passed" on=part1 timer=PT6H30M noninterrupting doc="Deadline 2:30 pm"
+    task alert "Send an alert to the supervisor"
+    end alerted "Supervisor alerted"
+    sub part2 "Reconcile defaulters"
+      start s2 "Start of reconciliation"
+      task checkcrm2 "Check the CRM system for new returns"
+      xor ret2 "New returns filed?"
+      task reconcile "Reconcile with the existing Account Defaulter table"
+      xor m3
+      end e2 "Reconciliation completed"
+    boundary late2 "4:00 pm passed" on=part2 timer=PT8H noninterrupting doc="Deadline 4:00 pm"
+    task msg "Send a message to the supervisor"
+    end messaged "Supervisor informed"
+    end done "Process completed"
+
+flow begin -> part1 -> part2 -> done
+flow late1 -> alert -> alerted
+flow late2 -> msg -> messaged
+
+flow s1 -> backup -> checktable -> newrec
+flow newrec -> m1 "yes"
+flow newrec -> checkcrm1 "no"
+flow checkcrm1 -> ret1
+flow ret1 -> register "yes"
+flow ret1 -> m1 "no"
+flow register -> advised
+flow advised -> produce "no"
+flow advised -> m2 "yes"
+flow produce -> sendmgmt -> m2
+flow m2 -> m1
+flow m1 -> e1
+
+flow s2 -> checkcrm2 -> ret2
+flow ret2 -> reconcile "yes"
+flow ret2 -> m3 "no"
+flow reconcile -> m3
+flow m3 -> e2
+```

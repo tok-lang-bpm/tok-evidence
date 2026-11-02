@@ -1,0 +1,57 @@
+tok 1.0 "Office Supply Request"
+
+pool office "Office"
+  lane employee "Employee"
+    start needed "Office supply request needed"
+    task submit "Submit office supply request"
+    task review_comments "Review change comments"
+  lane supervisor "Supervisor"
+    task receive "Receive request"
+    xor decision "Approve, change or reject?"
+    task approve "Approve request"
+    task ask_change "Ask for change"
+    task reject "Reject request"
+  lane purchase "Purchase department"
+    sub quotations "Make quotations"
+      start q_start "Quotation started"
+      task make_quotations "Make quotations"
+      end q_end "Quotation completed"
+      flow q_start -> make_quotations -> q_end
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different "Choose a different vendor"
+  lane system "System"
+    task register "Register requirement"
+    task generate_po "Generate and send purchase order"
+    and fork "Wait for delivery and invoice"
+    task receive_product "Receive product"
+    task receive_invoice "Receive invoice"
+    and join "Delivery and invoice received"
+    xor merge "All cases completed?"
+    task send_notification "Send notification"
+    end completed "Process completed"
+
+flow needed -> submit
+flow submit -> register
+flow register -> receive
+flow receive -> decision
+flow decision -> approve "Approved"
+flow decision -> ask_change "Change required"
+flow decision -> reject "Rejected"
+flow approve -> quotations
+flow quotations -> select_vendor
+flow select_vendor -> vendor_valid
+flow vendor_valid -> generate_po "Yes"
+flow vendor_valid -> choose_different "No"
+flow choose_different -> select_vendor
+flow generate_po -> fork
+flow fork -> receive_product
+flow fork -> receive_invoice
+flow receive_product -> join
+flow receive_invoice -> join
+flow join -> merge
+flow ask_change -> review_comments
+flow review_comments -> merge
+flow reject -> merge
+flow merge -> send_notification
+flow send_notification -> completed

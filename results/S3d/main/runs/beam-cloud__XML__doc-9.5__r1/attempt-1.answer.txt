@@ -1,0 +1,103 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="expense-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="expense-process" isExecutable="false">
+    <bpmn:laneSet id="expense-lanes">
+      <bpmn:lane id="system-lane" name="System">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-processed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="employee-lane" name="Employee">
+        <bpmn:flowNodeRef>receive-progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Expense Report received" />
+    <bpmn:subProcess id="handle" name="Handle expense report">
+      <bpmn:laneSet id="handle-lanes">
+        <bpmn:lane id="handle-system" name="System">
+          <bpmn:flowNodeRef>sub-start</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>gateway-account</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>gateway-account-merge</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>gateway-amount</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>auto-approve</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>gateway-approved</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>sub-end</bpmn:flowNodeRef>
+        </bpmn:lane>
+        <bpmn:lane id="handle-supervisor" name="Supervisor">
+          <bpmn:flowNodeRef>approve-report</bpmn:flowNodeRef>
+        </bpmn:lane>
+        <bpmn:lane id="handle-employee" name="Employee">
+          <bpmn:flowNodeRef>receive-rejection</bpmn:flowNodeRef>
+        </bpmn:lane>
+      </bpmn:laneSet>
+      <bpmn:startEvent id="sub-start" name="Handling started" />
+      <bpmn:exclusiveGateway id="gateway-account" name="Employee has account?" default="flow-account-yes" />
+      <bpmn:task id="create-account" name="Create a new account" />
+      <bpmn:exclusiveGateway id="gateway-account-merge" name="Account ready" />
+      <bpmn:task id="review" name="Review report for automatic approval" />
+      <bpmn:exclusiveGateway id="gateway-amount" name="Amount under $200?" default="flow-amount-supervisor" />
+      <bpmn:task id="auto-approve" name="Automatically approve report" />
+      <bpmn:task id="approve-report" name="Approve expense report" />
+      <bpmn:exclusiveGateway id="gateway-approved" name="Approved?" default="flow-rejected" />
+      <bpmn:task id="receive-rejection" name="Receive rejection notice by email" />
+      <bpmn:task id="reimburse" name="Reimburse to direct deposit bank account" />
+      <bpmn:endEvent id="sub-end" name="Expense report handled" />
+      <bpmn:sequenceFlow id="sub-flow-start" sourceRef="sub-start" targetRef="gateway-account" />
+      <bpmn:sequenceFlow id="flow-account-no" name="no" sourceRef="gateway-account" targetRef="create-account">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount == false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flow-account-yes" name="yes" sourceRef="gateway-account" targetRef="gateway-account-merge" />
+      <bpmn:sequenceFlow id="flow-account-created" sourceRef="create-account" targetRef="gateway-account-merge" />
+      <bpmn:sequenceFlow id="flow-review" sourceRef="gateway-account-merge" targetRef="review" />
+      <bpmn:sequenceFlow id="flow-amount-check" sourceRef="review" targetRef="gateway-amount" />
+      <bpmn:sequenceFlow id="flow-amount-auto" name="yes" sourceRef="gateway-amount" targetRef="auto-approve">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flow-amount-supervisor" name="no" sourceRef="gateway-amount" targetRef="approve-report" />
+      <bpmn:sequenceFlow id="flow-auto-reimburse" sourceRef="auto-approve" targetRef="reimburse" />
+      <bpmn:sequenceFlow id="flow-supervisor-decision" sourceRef="approve-report" targetRef="gateway-approved" />
+      <bpmn:sequenceFlow id="flow-approved" name="approved" sourceRef="gateway-approved" targetRef="reimburse">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved == true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flow-rejected" name="rejected" sourceRef="gateway-approved" targetRef="receive-rejection" />
+      <bpmn:sequenceFlow id="flow-rejection-end" sourceRef="receive-rejection" targetRef="sub-end" />
+      <bpmn:sequenceFlow id="flow-reimburse-end" sourceRef="reimburse" targetRef="sub-end" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="timer7" name="7 days" attachedToRef="handle" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="timer30" name="30 days" attachedToRef="handle" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="receive-progress" name="Receive approval in progress email" />
+    <bpmn:endEvent id="end-progress" name="Approval in progress notice received" />
+    <bpmn:task id="receive-cancellation" name="Receive cancellation notice by email" />
+    <bpmn:task id="resubmit" name="Re-submit expense report" />
+    <bpmn:endEvent id="end-cancelled" name="Expense report cancelled" />
+    <bpmn:endEvent id="end-processed" name="Expense report processed" />
+    <bpmn:sequenceFlow id="flow-start-handle" sourceRef="start" targetRef="handle" />
+    <bpmn:sequenceFlow id="flow-handle-end" sourceRef="handle" targetRef="end-processed" />
+    <bpmn:sequenceFlow id="flow-timer7-progress" sourceRef="timer7" targetRef="receive-progress" />
+    <bpmn:sequenceFlow id="flow-progress-end" sourceRef="receive-progress" targetRef="end-progress" />
+    <bpmn:sequenceFlow id="flow-timer30-cancellation" sourceRef="timer30" targetRef="receive-cancellation" />
+    <bpmn:sequenceFlow id="flow-cancellation-resubmit" sourceRef="receive-cancellation" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="flow-resubmit-end" sourceRef="resubmit" targetRef="end-cancelled" />
+  </bpmn:process>
+</bpmn:definitions>
+```

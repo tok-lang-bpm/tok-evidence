@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Power supplier switch" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_withdrawal" name="withdrawal" />
+  <bpmn:message id="Message_confirmation" name="confirmation" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Power supplier switch" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkdetails</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="service" name="Customer service">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createcust</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkdocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>regenerate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendconf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendreq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createcis</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>import</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>withdrawn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>err</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>exists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>withdrawal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>par</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="grid" name="Grid operator">
+        <bpmn:flowNodeRef>checkconc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitmeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>computebill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conflict</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gridend</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="oldsup" name="Old supplier">
+        <bpmn:flowNodeRef>finalbill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oldend</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="req" name="Switch-over request" />
+    <bpmn:task id="transmit" name="Transmit customer data" />
+    <bpmn:task id="checkdetails" name="Check contract details" />
+    <bpmn:task id="receive" name="Receive customer data" />
+    <bpmn:task id="enter" name="Enter customer data into CRM system" />
+    <bpmn:task id="compare" name="Compare customer data with internal customer data base and check completeness and plausibility" />
+    <bpmn:task id="correct" name="Correct errors based on error list" />
+    <bpmn:task id="createcust" name="Create new customer object" />
+    <bpmn:task id="prepare" name="Prepare contract documents for the power supplier switch" />
+    <bpmn:task id="checkdocs" name="Check contract documents in CIS" />
+    <bpmn:task id="analyze" name="Analyze and resolve issues" />
+    <bpmn:task id="regenerate" name="Regenerate contract documents" />
+    <bpmn:task id="sendconf" name="Send confirmation document to customer" />
+    <bpmn:task id="sendreq" name="Send request to grid operator" />
+    <bpmn:task id="createcis" name="Create CIS contract" />
+    <bpmn:task id="import" name="Import meter data to systems" />
+    <bpmn:endEvent id="withdrawn" name="Contract withdrawn" />
+    <bpmn:endEvent id="success" name="Winning a new customer ends" />
+    <bpmn:exclusiveGateway id="err" name="Errors found?" default="f-err-exists" />
+    <bpmn:exclusiveGateway id="exists" name="Customer exists in database?" default="f-exists-prepare" />
+    <bpmn:exclusiveGateway id="docs" name="Contract documents generated successfully?" default="f-docs-sendconf" />
+    <bpmn:exclusiveGateway id="conc" name="Supplier concurrence?" default="f-conc-createcis" />
+    <bpmn:eventBasedGateway id="resp" name="Customer response or 7 days?" />
+    <bpmn:intermediateCatchEvent id="withdrawal" name="Withdrawal received">
+      <bpmn:messageEventDefinition id="withdrawal-def" messageRef="Message_withdrawal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="confirmation" name="Confirmation received">
+      <bpmn:messageEventDefinition id="confirmation-def" messageRef="Message_confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timer7" name="7 days elapsed">
+      <bpmn:timerEventDefinition id="timer7-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="par" />
+    <bpmn:task id="checkconc" name="Check switch-over request for supplier concurrence" />
+    <bpmn:task id="inform" name="Inform all involved suppliers and demand resolution" />
+    <bpmn:task id="terminate" name="Carry out termination of sales agreement" />
+    <bpmn:task id="transmitmeter" name="Transmit power meter data to customer service and old supplier" />
+    <bpmn:task id="computebill" name="Compute final billing based on meter data and send to old supplier" />
+    <bpmn:endEvent id="conflict" name="Supplier concurrence" />
+    <bpmn:endEvent id="gridend" name="Grid operator process ends" />
+    <bpmn:task id="finalbill" name="Create and send final billing to customer" />
+    <bpmn:endEvent id="oldend" name="Old supplier process ends" />
+    <bpmn:sequenceFlow id="f-req-transmit" sourceRef="req" targetRef="transmit" />
+    <bpmn:sequenceFlow id="f-transmit-receive" sourceRef="transmit" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-enter" sourceRef="receive" targetRef="enter" />
+    <bpmn:sequenceFlow id="f-enter-compare" sourceRef="enter" targetRef="compare" />
+    <bpmn:sequenceFlow id="f-compare-err" sourceRef="compare" targetRef="err" />
+    <bpmn:sequenceFlow id="f-err-correct" name="errors" sourceRef="err" targetRef="correct" />
+    <bpmn:sequenceFlow id="f-err-exists" name="no errors" sourceRef="err" targetRef="exists" />
+    <bpmn:sequenceFlow id="f-correct-exists" sourceRef="correct" targetRef="exists" />
+    <bpmn:sequenceFlow id="f-exists-createcust" name="not exists" sourceRef="exists" targetRef="createcust" />
+    <bpmn:sequenceFlow id="f-exists-prepare" name="exists" sourceRef="exists" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-createcust-prepare" sourceRef="createcust" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-prepare-checkdocs" sourceRef="prepare" targetRef="checkdocs" />
+    <bpmn:sequenceFlow id="f-checkdocs-docs" sourceRef="checkdocs" targetRef="docs" />
+    <bpmn:sequenceFlow id="f-docs-analyze" name="no" sourceRef="docs" targetRef="analyze" />
+    <bpmn:sequenceFlow id="f-analyze-regenerate" sourceRef="analyze" targetRef="regenerate" />
+    <bpmn:sequenceFlow id="f-regenerate-checkdocs" sourceRef="regenerate" targetRef="checkdocs" />
+    <bpmn:sequenceFlow id="f-docs-sendconf" name="yes" sourceRef="docs" targetRef="sendconf" />
+    <bpmn:sequenceFlow id="f-sendconf-sendreq" sourceRef="sendconf" targetRef="sendreq" />
+    <bpmn:sequenceFlow id="f-sendreq-checkconc" sourceRef="sendreq" targetRef="checkconc" />
+    <bpmn:sequenceFlow id="f-checkconc-conc" sourceRef="checkconc" targetRef="conc" />
+    <bpmn:sequenceFlow id="f-conc-inform" name="concurrence" sourceRef="conc" targetRef="inform" />
+    <bpmn:sequenceFlow id="f-inform-terminate" sourceRef="inform" targetRef="terminate" />
+    <bpmn:sequenceFlow id="f-terminate-conflict" sourceRef="terminate" targetRef="conflict" />
+    <bpmn:sequenceFlow id="f-conc-createcis" name="no concurrence" sourceRef="conc" targetRef="createcis" />
+    <bpmn:sequenceFlow id="f-createcis-checkdetails" sourceRef="createcis" targetRef="checkdetails" />
+    <bpmn:sequenceFlow id="f-checkdetails-resp" sourceRef="checkdetails" targetRef="resp" />
+    <bpmn:sequenceFlow id="f-resp-withdrawal" sourceRef="resp" targetRef="withdrawal" />
+    <bpmn:sequenceFlow id="f-resp-confirmation" sourceRef="resp" targetRef="confirmation" />
+    <bpmn:sequenceFlow id="f-resp-timer7" sourceRef="resp" targetRef="timer7" />
+    <bpmn:sequenceFlow id="f-withdrawal-withdrawn" sourceRef="withdrawal" targetRef="withdrawn" />
+    <bpmn:sequenceFlow id="f-confirmation-transmitmeter" sourceRef="confirmation" targetRef="transmitmeter" />
+    <bpmn:sequenceFlow id="f-timer7-transmitmeter" sourceRef="timer7" targetRef="transmitmeter" />
+    <bpmn:sequenceFlow id="f-transmitmeter-par" sourceRef="transmitmeter" targetRef="par" />
+    <bpmn:sequenceFlow id="f-par-computebill" sourceRef="par" targetRef="computebill" />
+    <bpmn:sequenceFlow id="f-par-finalbill" sourceRef="par" targetRef="finalbill" />
+    <bpmn:sequenceFlow id="f-par-import" sourceRef="par" targetRef="import" />
+    <bpmn:sequenceFlow id="f-computebill-gridend" sourceRef="computebill" targetRef="gridend" />
+    <bpmn:sequenceFlow id="f-finalbill-oldend" sourceRef="finalbill" targetRef="oldend" />
+    <bpmn:sequenceFlow id="f-import-success" sourceRef="import" targetRef="success" />
+  </bpmn:process>
+</bpmn:definitions>

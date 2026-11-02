@@ -1,0 +1,86 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The first step is to determine contact details of potential customers. This can be achieved in several ways. Sometimes, we buy details for cold calls, sometimes, our marketing staff participates in exhibitions and sometimes, you just happen to know somebody, who is interested in the product. Then we start calling the customer. That is done by the call center staff. They are determining the contact person and the budget which would be available for the project. Of course, asking the customer whether he is generally interested is also important. If this is not the case, we leave him alone, except if the potential project budget is huge. Then the head of development personally tries to acquire the customer. If the customer is interested in the end, the next step is a detailed online presentation. It is given either by a sales representative or by a pre-sales employee in case of a more technical presentation. Afterwards we are waiting for the customer to come back to us. If we are not contacted within 2 weeks, a sales representative is calling the customer. The last phase is the creation of a quotation.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Customer acquisition"
+
+pool organisation "Organisation"
+  lane marketing "Marketing"
+    start start_event "Start"
+    xor contact_details "How to determine contact details?"
+    task buy_details "Buy details for cold calls"
+    task participate "Participate in exhibitions"
+    task know_person "Know an interested customer"
+    xor contact_details_done "Contact details determined"
+  lane call_center "Call Center"
+    task call_customer "Call the customer"
+    task determine_contact_person "Determine contact person"
+    task determine_budget "Determine project budget"
+    task ask_interest "Ask customer if interested"
+    xor interested "Customer interested?"
+    xor budget_huge "Potential project budget huge?"
+    end left_alone "Customer left alone"
+  lane development "Development"
+    task acquire_customer "Acquire customer"
+    xor interested_end "Customer interested in the end?"
+  lane sales "Sales"
+    xor presentation_type "More technical presentation?"
+    task present_sales "Give online presentation"
+    xor presentation_done "Presentation given"
+    task wait_customer "Wait for customer to come back"
+    boundary timeout "Two weeks elapsed" on=wait_customer timer=P14D
+    task call_back "Call the customer"
+    task create_quotation "Create quotation"
+    end completed "Quotation created"
+  lane pre_sales "Pre-Sales"
+    task present_presales "Give online presentation"
+
+flow start_event -> contact_details
+flow contact_details -> buy_details
+flow contact_details -> participate
+flow contact_details -> know_person
+flow buy_details -> contact_details_done
+flow participate -> contact_details_done
+flow know_person -> contact_details_done
+flow contact_details_done -> call_customer
+flow call_customer -> determine_contact_person
+flow determine_contact_person -> determine_budget
+flow determine_budget -> ask_interest
+flow ask_interest -> interested
+flow interested -> presentation_type "yes"
+flow interested -> budget_huge "no"
+flow budget_huge -> acquire_customer "yes"
+flow budget_huge -> left_alone "no"
+flow acquire_customer -> interested_end
+flow interested_end -> presentation_type "yes"
+flow interested_end -> left_alone "no"
+flow presentation_type -> present_sales "standard"
+flow presentation_type -> present_presales "technical"
+flow present_sales -> presentation_done
+flow present_presales -> presentation_done
+flow presentation_done -> wait_customer
+flow wait_customer -> create_quotation
+flow timeout -> call_back
+flow call_back -> create_quotation
+flow create_quotation -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 35: warning W021: branch of an XOR/OR split without label, condition or default status (f-contact_details-buy_details)
+- line 36: warning W021: branch of an XOR/OR split without label, condition or default status (f-contact_details-participate)
+- line 37: warning W021: branch of an XOR/OR split without label, condition or default status (f-contact_details-know_person)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,46 @@
+```tok
+tok 1.0 "Room service at The Evanstonian"
+
+pool hotel "The Evanstonian"
+  lane guest "Guest"
+    start wants "Guest wants room service"
+    task call "Call room service"
+  lane manager "Room-service manager"
+    task take "Take down the order"
+    task ticket "Submit the order ticket to the kitchen"
+    task toSommelier "Give the order to the sommelier"
+    task assign "Assign the order to the waiter"
+    and prepare
+  lane kitchen "Kitchen"
+    task food "Prepare the food"
+  lane sommelier "Sommelier"
+    xor alcohol "Order includes alcohol?"
+    task wine "Fetch wine from the cellar"
+    task otherAlc "Prepare other alcoholic beverages"
+    xor alcMerge
+  lane waiter "Waiter"
+    task cart "Ready the cart"
+    task drinks "Prepare nonalcoholic drinks"
+    and ready
+    task deliver "Deliver the food, wine and cart to the guest's room"
+    task return "Return to the room-service station"
+    xor billing "Another order to prepare or deliver?"
+    task postpone "Postpone the billing"
+    task debit "Debit the guest's account"
+    end done "Order delivered and billed"
+
+flow wants -> call -> take -> ticket -> toSommelier -> assign -> prepare
+flow prepare -> food -> ready
+flow prepare -> drinks -> ready
+flow prepare -> cart -> ready
+flow prepare -> alcohol
+flow alcohol -> wine "yes" when="order_has_alcohol"
+flow alcohol -> alcMerge "no" default
+flow wine -> otherAlc -> alcMerge
+flow alcMerge -> ready
+flow ready -> deliver -> return -> billing
+flow billing -> postpone "yes" when="another_order_pending"
+flow postpone -> billing
+flow billing -> debit "no" default
+flow debit -> done
+```

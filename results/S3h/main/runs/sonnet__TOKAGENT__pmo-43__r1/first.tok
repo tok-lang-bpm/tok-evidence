@@ -1,0 +1,39 @@
+tok 1.0 "Car Service"
+
+pool police "Police"
+  lane sys "App system"
+    start s "Service successful"
+    task chk "Check car registration"
+    xor reg "Car still registered?"
+    task notify "Notify car owner"
+    eventgw wait
+    catch timeout "30 days passed" timer=P30D
+    task fine "Fine car owner"
+    end e1 "Car not registered"
+    end e2 "Car owner fined"
+    and par
+    task status "Send status updates via email"
+    and join
+    end e3 "Service completed"
+  lane owner "Car owner"
+    catch visit "Owner goes to service" message="Owner arrives"
+    task pay "Pay through app"
+  lane mech "Mechanic"
+    task prob "Enter problems of car"
+    task repair "Repair car"
+    task done "Enter successful repair and Pickerl"
+    task next "Enter time for next service"
+
+flow s -> chk -> reg
+flow reg -> notify "yes"
+flow reg -> e1 "no"
+flow notify -> wait
+flow wait -> visit
+flow wait -> timeout
+flow timeout -> fine -> e2
+flow visit -> prob -> par
+flow par -> status
+flow par -> repair
+flow status -> join
+flow repair -> join
+flow join -> pay -> done -> next -> e3

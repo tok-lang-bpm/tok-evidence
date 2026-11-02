@@ -1,0 +1,43 @@
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online shop"
+  lane customer "Customer"
+    start arrive "Customer logs in"
+    task login "Log in to the E-Shop"
+    task waitLogin "Wait for the login confirmation"
+    xor loginOk "Login successful?"
+    end stopped "Shopping experience stops"
+    xor selectMerge
+    task select "Select a product"
+    task addCart "Add the product to the shopping cart"
+    task saveProduct "Save the product"
+    xor allSelected "All products selected?"
+    task enterPayment "Enter the payment data"
+    task waitPayment "Wait for the payment confirmation"
+    task shipAddr "Enter the shipping address"
+    xor billing "Billing address differs from shipping address?"
+    task enterBilling "Enter the independent billing address"
+    xor billingMerge
+  lane system "E-Shop system"
+    task checkCreds "Check the credentials"
+    task finishOrder "Finish the order"
+    and forkPar
+    and joinPar
+    task completeOrder "Complete the order"
+    end done "Order finished"
+  lane bank "Bank"
+    task confirmPayment "Confirm the payment"
+
+flow arrive -> login -> checkCreds -> waitLogin -> loginOk
+flow loginOk -> stopped "no"
+flow loginOk -> selectMerge "yes"
+flow selectMerge -> select -> addCart -> saveProduct -> allSelected
+flow allSelected -> selectMerge "no"
+flow allSelected -> finishOrder "yes"
+flow finishOrder -> forkPar
+flow forkPar -> enterPayment -> confirmPayment -> waitPayment -> joinPar
+flow forkPar -> shipAddr -> billing
+flow billing -> enterBilling "yes"
+flow billing -> billingMerge "no"
+flow enterBilling -> billingMerge -> joinPar
+flow joinPar -> completeOrder -> done

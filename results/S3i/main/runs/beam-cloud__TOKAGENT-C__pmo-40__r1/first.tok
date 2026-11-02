@@ -1,0 +1,26 @@
+tok 1.0 "OEE"
+
+pool org "Organisation"
+  lane main "Main"
+    start s "Start"
+    task collect "Collect relevant information from the machine"
+    task calc "Calculate the Overall Equipment Efficiency (OEE)"
+    xor below "OEE below threshold?"
+    and split "Stop and notify"
+    task stopm "Stop the machine"
+    task email "Send an email to an engineer"
+    and join "Stopped and notified"
+    catch restarted "Machine restarted" message="Restarted"
+    eventsub disconnected "Machine disconnected"
+      start disc "Machine disconnected" message="Disconnected"
+      end stop "Stop the process" terminate
+
+flow s -> collect -> calc -> below
+flow below -> split "yes" when="oee < threshold"
+flow below -> collect "no" default
+flow split -> stopm
+flow split -> email
+flow stopm -> join
+flow email -> join
+flow join -> restarted
+flow restarted -> collect

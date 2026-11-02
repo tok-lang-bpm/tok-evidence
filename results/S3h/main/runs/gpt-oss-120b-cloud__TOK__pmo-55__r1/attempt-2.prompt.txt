@@ -1,0 +1,140 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+First, the implements are prepared, the hands are washed, and the doctor gets in sterile clothes.
+The doctor cleans the puncture area, and drapes the puncture zone.
+The doctor configures the ultrasound, and puts gel in the probe.
+Then, the doctor covers the probe and puts the sterile gel.
+The doctor positions the probe and positions the patient.
+The vein is identified using an anatomic identification, a doppler identification, or a compression identification.
+The patient is anesthetize and punctured.
+The blood return is checked.
+If the blood return is not correct, the doctor goes back to the puncture step.
+If the blood return is correct, the probe is dropped and the syringe is removed.
+The guidewire is installed, and the trocar is removed.
+Then the wire is checked using a check of the wire in the long axis, or a check of the wire in the short axis.
+Then, the doctor checks if the wire is in good position.
+If the wire is not in the good position, the doctor goes back to the puncture step.
+If the wire is in the good position, the pathway is widen, the catheter is advanced, and the guirewire is removed.
+Finally, the doctor verifies the flow and the reflow, and the catheter position is checked.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Central Venous Catheter Insertion"
+
+pool hospital "Hospital"
+  lane doctor "Doctor"
+    start s "Start"
+    and start_and                     # split for preparation tasks
+    task prep_impl "Prepare implements"
+    task wash_hands "Wash hands"
+    task get_sterile_clothes "Get in sterile clothes"
+    and after_prep                    # join after preparation
+
+    task clean_puncture_area "Clean puncture area"
+    task drape_puncture_zone "Drape puncture zone"
+    task configure_ultrasound "Configure ultrasound"
+    task put_gel_probe "Put gel in probe"
+    task cover_probe "Cover probe"
+    task put_sterile_gel "Put sterile gel"
+
+    and position_and                  # split for positioning tasks
+    task position_probe "Position probe"
+    task position_patient "Position patient"
+    and after_position                # join after positioning
+
+    xor identify_vein "Identify vein method"
+      task anatomic_identification "Anatomic identification"
+      task doppler_identification "Doppler identification"
+      task compression_identification "Compression identification"
+    and after_identify                # join after identification
+
+    task anesthetize_patient "Anesthetize patient"
+    task puncture_patient "Puncture patient"
+    task check_blood_return "Check blood return"
+
+    xor blood_return_ok "Blood return correct?"
+      # yes branch continues, no branch loops back
+    and after_blood_return            # join after decision
+
+    task drop_probe "Drop probe"
+    task remove_syringe "Remove syringe"
+    task install_guidewire "Install guidewire"
+    task remove_trocar "Remove trocar"
+
+    xor wire_check_method "Wire check method"
+      task check_long_axis "Check wire long axis"
+      task check_short_axis "Check wire short axis"
+    and after_wire_check              # join after wire check
+
+    xor wire_position_good "Wire in good position?"
+      # yes branch continues, no branch loops back
+    and after_wire_position           # join after decision
+
+    task widen_pathway "Widen pathway"
+    task advance_catheter "Advance catheter"
+    task remove_guidewire "Remove guidewire"
+
+    task verify_flow "Verify flow"
+    task verify_reflow "Verify reflow"
+    task check_catheter_position "Check catheter position"
+
+    end e "End"
+
+    # ---- flows ----
+    flow s -> start_and
+
+    flow start_and -> prep_impl
+    flow prep_impl -> wash_hands
+    flow wash_hands -> get_sterile_clothes
+    flow get_sterile_clothes -> after_prep
+
+    flow after_prep -> clean_puncture_area -> drape_puncture_zone -> configure_ultrasound -> put_gel_probe -> cover_probe -> put_sterile_gel -> position_and
+
+    flow position_and -> position_probe -> position_patient -> after_position
+
+    flow after_position -> identify_vein
+    flow identify_vein -> anatomic_identification
+    flow identify_vein -> doppler_identification
+    flow identify_vein -> compression_identification
+    flow anatomic_identification -> after_identify
+    flow doppler_identification -> after_identify
+    flow compression_identification -> after_identify
+
+    flow after_identify -> anesthetize_patient -> puncture_patient -> check_blood_return -> blood_return_ok
+
+    flow blood_return_ok -> drop_probe [when="blood_return = 'correct'"]
+    flow blood_return_ok -> puncture_patient [when="blood_return != 'correct'"]
+    flow drop_probe -> remove_syringe -> install_guidewire -> remove_trocar -> wire_check_method
+
+    flow wire_check_method -> check_long_axis
+    flow wire_check_method -> check_short_axis
+    flow check_long_axis -> after_wire_check
+    flow check_short_axis -> after_wire_check
+
+    flow after_wire_check -> wire_position_good
+
+    flow wire_position_good -> widen_pathway [when="wire_position = 'good'"]
+    flow wire_position_good -> puncture_patient [when="wire_position != 'good'"]
+    flow widen_pathway -> advance_catheter -> remove_guidewire -> verify_flow -> verify_reflow -> check_catheter_position -> e
+```
+
+The tok checker reports these problems in it:
+
+- line 25: error P003: 'xor' cannot have an indented block
+- line 44: error P003: 'xor' cannot have an indented block
+- line 84: error T001: invalid token: unexpected character '['
+- line 85: error T001: invalid token: unexpected character '['
+- line 95: error T001: invalid token: unexpected character '['
+- line 96: error T001: invalid token: unexpected character '['
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

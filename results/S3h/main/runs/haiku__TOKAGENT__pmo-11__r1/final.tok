@@ -1,0 +1,44 @@
+tok 1.0 "Subscription lifecycle"
+
+pool org "Subscription service"
+  lane cust "Customer"
+    start s "Process begins"
+    user sign "Sign up for subscription service"
+    user info "Enter personal and payment information"
+    user cancel-req "Submit cancellation request"
+    xor cancel-q "Customer cancels?"
+  lane sys "System"
+    task gen "Generate account"
+    task access "Assign access"
+    task bill "Trigger automated billing cycles"
+    xor m-bill
+    xor upd-q "Which update?"
+    task upd "Send regular update"
+    task enh "Send product enhancement"
+    task ren "Send renewal notification"
+    xor m-upd
+  lane sup "Support team"
+    task proc "Process cancellation request"
+    xor terms-q "Refund or charge due?"
+    task refund "Apply refund"
+    task charge "Apply charge"
+    xor m-terms
+    task deact "Deactivate subscription"
+    task settle "Settle final account balance"
+    end e "Subscription ended"
+
+flow s -> sign -> info -> gen -> access -> bill -> m-bill -> upd-q
+flow upd-q -> upd "regular" when=""
+flow upd-q -> enh "enhancement" when=""
+flow upd-q -> ren "renewal" when=""
+flow upd -> m-upd
+flow enh -> m-upd
+flow ren -> m-upd -> cancel-q
+flow cancel-q -> cancel-req "yes" when=""
+flow cancel-q -> m-bill "no" default
+flow cancel-req -> proc -> terms-q
+flow terms-q -> refund "refund" when=""
+flow terms-q -> charge "charge" when=""
+flow terms-q -> m-terms "none" default
+flow refund -> m-terms
+flow charge -> m-terms -> deact -> settle -> e

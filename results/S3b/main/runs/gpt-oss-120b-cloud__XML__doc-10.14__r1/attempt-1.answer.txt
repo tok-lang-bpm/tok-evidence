@@ -1,0 +1,82 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneMPOO" name="MPOO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_temp_cont_mpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_eq_acq_mpoo</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneMSPO" name="MSPO">
+        <bpmn:flowNodeRef>send_temp_cont_mspo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_add_readings_mspo</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGO" name="GO">
+        <bpmn:flowNodeRef>examine_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_invoice</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneMPON" name="MPON">
+        <bpmn:flowNodeRef>examine_mpon</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:exclusiveGateway id="gw_send_choice" name="Which bill is sent?" />
+    
+    <bpmn:task id="send_temp_cont_mpoo"
+               name="MPOO sends the bill for the temporary continuation of the metering point operations to the GO" />
+    <bpmn:task id="send_temp_cont_mspo"
+               name="MSPO sends the bill for the temporary continuation of the measurement to the GO" />
+    <bpmn:task id="send_add_readings_mspo"
+               name="MSPO sends the bill for additional readings to the GO" />
+    <bpmn:task id="send_eq_acq_mpoo"
+               name="MPOO sends the bill for equipment acquisition to the MPON or the GO" />
+    
+    <bpmn:exclusiveGateway id="gw_examiner" name="Who examines the equipment‑acquisition bill?" />
+    <bpmn:task id="examine_go" name="GO examines the bill" />
+    <bpmn:task id="examine_mpon" name="MPON examines the bill" />
+    
+    <bpmn:exclusiveGateway id="gw_decision" name="Invoice decision" />
+    <bpmn:task id="confirm_invoice"
+               name="GO confirms the invoice with payment advice to the MPOO or MSPO" />
+    <bpmn:task id="reject_invoice"
+               name="GO rejects the invoice of the MPOO or MSPO" />
+    
+    <bpmn:endEvent id="end_confirm" name="Invoice confirmed" />
+    <bpmn:endEvent id="end_reject" name="Invoice rejected" />
+    
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_to_choice" sourceRef="start" targetRef="gw_send_choice" />
+    
+    <bpmn:sequenceFlow id="f_choice_to_mpoo_temp" sourceRef="gw_send_choice" targetRef="send_temp_cont_mpoo" />
+    <bpmn:sequenceFlow id="f_choice_to_mspo_temp" sourceRef="gw_send_choice" targetRef="send_temp_cont_mspo" />
+    <bpmn:sequenceFlow id="f_choice_to_mspo_add" sourceRef="gw_send_choice" targetRef="send_add_readings_mspo" />
+    <bpmn:sequenceFlow id="f_choice_to_eq_acq" sourceRef="gw_send_choice" targetRef="send_eq_acq_mpoo" />
+    
+    <bpmn:sequenceFlow id="f_mpoo_temp_to_examine" sourceRef="send_temp_cont_mpoo" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f_mspo_temp_to_examine" sourceRef="send_temp_cont_mspo" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f_mspo_add_to_examine" sourceRef="send_add_readings_mspo" targetRef="examine_go" />
+    
+    <bpmn:sequenceFlow id="f_eq_acq_to_examiner" sourceRef="send_eq_acq_mpoo" targetRef="gw_examiner" />
+    <bpmn:sequenceFlow id="f_examiner_to_go" sourceRef="gw_examiner" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f_examiner_to_mpon" sourceRef="gw_examiner" targetRef="examine_mpon" />
+    
+    <!-- After any examination, go to decision -->
+    <bpmn:sequenceFlow id="f_examine_go_to_decision" sourceRef="examine_go" targetRef="gw_decision" />
+    <bpmn:sequenceFlow id="f_examine_mpon_to_decision" sourceRef="examine_mpon" targetRef="gw_decision" />
+    
+    <bpmn:sequenceFlow id="f_decision_to_confirm" name="confirm" sourceRef="gw_decision" targetRef="confirm_invoice" />
+    <bpmn:sequenceFlow id="f_decision_to_reject" name="reject" sourceRef="gw_decision" targetRef="reject_invoice" />
+    
+    <bpmn:sequenceFlow id="f_confirm_to_end" sourceRef="confirm_invoice" targetRef="end_confirm" />
+    <bpmn:sequenceFlow id="f_reject_to_end" sourceRef="reject_invoice" targetRef="end_reject" />
+    
+  </bpmn:process>
+</bpmn:definitions>
+```

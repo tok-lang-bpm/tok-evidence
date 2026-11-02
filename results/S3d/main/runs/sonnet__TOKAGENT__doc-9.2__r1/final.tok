@@ -1,0 +1,31 @@
+tok 1.0 "Mortgage offer"
+
+pool org "Bank"
+  lane csr "Customer Service Representative"
+    start s "Mortgage offer to be sent"
+    task send "Send mortgage offer"
+    eventgw wait "Reply?"
+    catch decl "Customer declines mortgage" message="Decline"
+    catch docs "Customer returns offer documents" message="Offer documents"
+    catch late "No answer after 2 weeks" timer=P14D
+    xor complete "All prerequisite documents attached?"
+    task req "Generate message requesting outstanding documents"
+    task admin "Move case to administration"
+    end done "Case moved to administration"
+    xor merge
+    task upd "Update case details"
+    task arch "Archive work"
+    end canc "Case cancelled"
+
+flow s -> send -> wait
+flow wait -> decl
+flow wait -> docs
+flow wait -> late
+flow decl -> merge
+flow late -> merge
+flow merge -> upd -> arch -> canc
+flow docs -> complete
+flow complete -> admin "yes"
+flow complete -> req "no"
+flow admin -> done
+flow req -> wait

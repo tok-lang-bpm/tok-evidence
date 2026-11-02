@@ -1,0 +1,47 @@
+tok 1.0 "Ticket booking and travel"
+
+pool co "Travel company"
+  lane cust "Customer"
+    start s "Customer searches for a ticket"
+    task search "Search for flight, train or bus ticket"
+    task select "Select route, date and time"
+    task provide "Provide personal information and payment details"
+    task journey "Complete journey"
+    xor fb-q "Feedback or services?"
+    task feedback "Give post-travel feedback"
+    xor fb-merge
+    end e "Process concluded"
+  lane sys "Booking system"
+    task generate "Generate ticket"
+    xor ch "Delivery channel?"
+    task email "Send ticket by email"
+    task sms "Send ticket by SMS"
+    xor ch-merge
+    and fork
+    catch wait-travel "Wait until before travel" timer=P1D
+    xor rem-q "Send reminders?"
+    task remind "Send reminders and check-in or boarding instructions"
+    xor rem-merge
+    and join
+  lane tc "Travel company"
+    task inventory "Update seat inventory"
+
+flow s -> search -> select -> provide -> generate -> ch
+flow ch -> email "email"
+flow ch -> sms "SMS" default
+flow email -> ch-merge
+flow sms -> ch-merge
+flow ch-merge -> fork
+flow fork -> inventory
+flow fork -> wait-travel
+flow wait-travel -> rem-q
+flow rem-q -> remind "yes"
+flow rem-q -> rem-merge "no" default
+flow remind -> rem-merge
+flow rem-merge -> join
+flow inventory -> join
+flow join -> journey -> fb-q
+flow fb-q -> feedback "yes"
+flow fb-q -> fb-merge "no" default
+flow feedback -> fb-merge
+flow fb-merge -> e

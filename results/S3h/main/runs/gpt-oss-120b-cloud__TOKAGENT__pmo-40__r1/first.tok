@@ -1,0 +1,33 @@
+tok 1.0
+
+pool org "Organization" {
+  lane machine "Machine"
+  lane engineer "Engineer"
+}
+
+start "Start" lane=machine
+end "End" lane=machine
+
+task collect-info "collect information from machine" lane=machine
+task calculate-ooe "calculate OEE" lane=machine
+xor gw-conn "machine connected?" lane=machine
+xor gw-ooe "OEE below threshold?" lane=machine
+and pg-split "handle OEE breach" lane=machine
+and pg-join "after OEE breach handling" lane=machine
+task stop-machine "stop machine" lane=machine
+task send-email "send email to engineer" lane=engineer
+task restart-machine "restart machine" lane=machine
+
+flow start -> collect-info
+flow collect-info -> gw-conn
+flow gw-conn -> calculate-ooe when="connected"
+flow gw-conn -> end default
+flow calculate-ooe -> gw-ooe
+flow gw-ooe -> pg-split when="OEE < threshold"
+flow gw-ooe -> collect-info default
+flow pg-split -> stop-machine
+flow pg-split -> send-email
+flow stop-machine -> pg-join
+flow send-email -> pg-join
+flow pg-join -> restart-machine
+flow restart-machine -> collect-info

@@ -1,0 +1,89 @@
+tok 1.0 "University Enrollment Process"
+    pool university "University"
+      lane applicant "Applicant"
+        start s "Start"
+        task submit_app "Submit application online"
+        task provide_missing "Provide missing documents"
+        task confirm_enroll "Confirm enrollment"
+        task cancel_app "Cancel application"
+        task orientation "Receive orientation materials"
+        task obtain_id "Obtain student ID card"
+        task select_courses "Select courses"
+        task resolve_conflicts "Resolve any schedule conflicts"
+        task attend_classes "Begin attending classes"
+        task add_drop_courses "Add or drop courses"
+        task review_grades "Review grades online"
+        task submit_appeal "Submit appeal form"
+        end end_process "Process completed"
+      lane admissions_office "Admissions Office"
+        task review_app "Review application and supporting documents"
+        task notify_missing "Notify applicant to provide missing items"
+        task send_accept "Send acceptance letter"
+        task send_reject "Send rejection letter"
+      lane admissions_committee "Admissions Committee"
+        task evaluate_app "Evaluate application"
+      lane finance "Finance Department"
+        task process_fees "Process application fees or waivers"
+      lane it "IT Department"
+        task setup_accounts "Set up student accounts"
+        task post_grades "Post grades"
+      lane international_office "International Student Office"
+        task visa_process "Assist with visa processing"
+      lane advisor "Academic Advisor"
+        task meet_advisor "Meet with academic advisor"
+      lane appeals_committee "Appeals Committee"
+        task meet_appeals "Meet with appeals committee"
+        task await_decision "Await decision"
+      # Gateways (outside lanes but inside pool)
+      xor missing_docs "Documents missing?"
+      and parallel_process "Parallel processing"
+      and join_parallel "Join parallel"
+      xor acceptance "Application accepted?"
+      xor confirm "Student confirms enrollment?"
+      and post_accept_parallel "Post-acceptance activities"
+      xor international "International student?"
+      xor add_drop "Add or drop courses?"
+      xor grievance "Student has grievances?"
+    # Flows
+    flow s -> submit_app
+    flow submit_app -> review_app
+    flow review_app -> missing_docs
+    flow missing_docs -> notify_missing "yes"
+    flow missing_docs -> evaluate_app "no"
+    flow notify_missing -> provide_missing
+    flow provide_missing -> review_app
+    flow evaluate_app -> parallel_process
+    flow process_fees -> parallel_process
+    flow parallel_process -> join_parallel
+    flow join_parallel -> acceptance
+    flow acceptance -> send_accept "yes"
+    flow acceptance -> send_reject "no"
+    flow send_accept -> confirm
+    flow send_reject -> end_process
+    flow confirm -> confirm_enroll "yes"
+    flow confirm -> cancel_app "no"
+    flow cancel_app -> end_process
+    flow confirm_enroll -> post_accept_parallel
+    flow post_accept_parallel -> orientation
+    flow post_accept_parallel -> setup_accounts
+    flow orientation -> after_parallel
+    flow setup_accounts -> after_parallel
+    flow after_parallel -> international
+    flow international -> visa_process "yes"
+    flow international -> obtain_id "no"
+    flow visa_process -> obtain_id
+    flow obtain_id -> meet_advisor
+    flow meet_advisor -> select_courses
+    flow select_courses -> resolve_conflicts
+    flow resolve_conflicts -> attend_classes
+    flow attend_classes -> add_drop
+    flow add_drop -> add_drop_courses "yes"
+    flow add_drop -> post_grades "no"
+    flow add_drop_courses -> attend_classes
+    flow post_grades -> review_grades
+    flow review_grades -> grievance
+    flow grievance -> submit_appeal "yes"
+    flow grievance -> end_process "no"
+    flow submit_appeal -> meet_appeals
+    flow meet_appeals -> await_decision
+    flow await_decision -> add_drop

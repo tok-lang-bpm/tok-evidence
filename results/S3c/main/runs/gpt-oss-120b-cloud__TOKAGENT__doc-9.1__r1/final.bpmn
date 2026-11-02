@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organization" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="db" name="Database">
+        <bpmn:flowNodeRef>backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkDef</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="crm" name="CRM System">
+        <bpmn:flowNodeRef>checkReturns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkReturns2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="am" name="Account Management">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produceTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sup" name="Supervisor">
+        <bpmn:flowNodeRef>alertSup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSup2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="proc" name="Process Flow">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deadline1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deadline2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reportDone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>afterFirst</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finalEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="backup" name="Backup Database" />
+    <bpmn:task id="checkDef" name="Check Account Defaulter Table for New Records" />
+    <bpmn:exclusiveGateway id="g1" name="New records found?" />
+    <bpmn:task id="checkReturns" name="Check CRM System for New Returns" />
+    <bpmn:task id="checkReturns2" name="Check CRM System for New Returns (Second Check)" />
+    <bpmn:task id="register" name="Register Defaulting Accounts and Customers" />
+    <bpmn:task id="produceTable" name="Produce Table of Defaulting Accounts" />
+    <bpmn:task id="send" name="Send Table to Account Management" />
+    <bpmn:task id="reconcile" name="Reconcile with Existing Account Defaulters Table" />
+    <bpmn:task id="alertSup" name="Send Alert to Supervisor (2:30 deadline)" />
+    <bpmn:task id="alertSup2" name="Send Alert to Supervisor (4:00 deadline)" />
+    <bpmn:startEvent id="s" name="Weekday Morning" />
+    <bpmn:exclusiveGateway id="g2" name="Defaulting client codes previously advised?" default="f-g2-reportDone" />
+    <bpmn:exclusiveGateway id="deadline1" name="Completed by 2:30 pm?" default="f-deadline1-afterFirst" />
+    <bpmn:exclusiveGateway id="g3" name="New returns filed?" default="f-g3-deadline2" />
+    <bpmn:exclusiveGateway id="deadline2" name="Completed by 4:00 pm?" default="f-deadline2-finalEnd" />
+    <bpmn:task id="reportDone" name="First Report Completed" />
+    <bpmn:task id="afterFirst" name="After First Report" />
+    <bpmn:endEvent id="finalEnd" name="Process End" />
+    <bpmn:sequenceFlow id="f-s-backup" sourceRef="s" targetRef="backup" />
+    <bpmn:sequenceFlow id="f-backup-checkDef" sourceRef="backup" targetRef="checkDef" />
+    <bpmn:sequenceFlow id="f-checkDef-g1" sourceRef="checkDef" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-checkReturns" name="no" sourceRef="g1" targetRef="checkReturns">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">records = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g1-register" name="yes" sourceRef="g1" targetRef="register">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">records = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-checkReturns-register" sourceRef="checkReturns" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-g2" sourceRef="register" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-g2-produceTable" name="no" sourceRef="g2" targetRef="produceTable">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">advised = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g2-reportDone" name="yes" sourceRef="g2" targetRef="reportDone" />
+    <bpmn:sequenceFlow id="f-produceTable-send" sourceRef="produceTable" targetRef="send" />
+    <bpmn:sequenceFlow id="f-send-reportDone" sourceRef="send" targetRef="reportDone" />
+    <bpmn:sequenceFlow id="f-reportDone-deadline1" sourceRef="reportDone" targetRef="deadline1" />
+    <bpmn:sequenceFlow id="f-deadline1-alertSup" name="no" sourceRef="deadline1" targetRef="alertSup">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">missed2_30 = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-deadline1-afterFirst" name="yes" sourceRef="deadline1" targetRef="afterFirst" />
+    <bpmn:sequenceFlow id="f-alertSup-afterFirst" sourceRef="alertSup" targetRef="afterFirst" />
+    <bpmn:sequenceFlow id="f-afterFirst-checkReturns2" sourceRef="afterFirst" targetRef="checkReturns2" />
+    <bpmn:sequenceFlow id="f-checkReturns2-g3" sourceRef="checkReturns2" targetRef="g3" />
+    <bpmn:sequenceFlow id="f-g3-reconcile" name="yes" sourceRef="g3" targetRef="reconcile">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturns = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g3-deadline2" name="no" sourceRef="g3" targetRef="deadline2" />
+    <bpmn:sequenceFlow id="f-reconcile-deadline2" sourceRef="reconcile" targetRef="deadline2" />
+    <bpmn:sequenceFlow id="f-deadline2-alertSup2" name="no" sourceRef="deadline2" targetRef="alertSup2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">missed4_00 = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-deadline2-finalEnd" name="yes" sourceRef="deadline2" targetRef="finalEnd" />
+    <bpmn:sequenceFlow id="f-alertSup2-finalEnd" sourceRef="alertSup2" targetRef="finalEnd" />
+  </bpmn:process>
+</bpmn:definitions>

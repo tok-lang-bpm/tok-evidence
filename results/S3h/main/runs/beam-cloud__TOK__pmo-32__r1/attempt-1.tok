@@ -1,0 +1,43 @@
+tok 1.0 "Farming Bot"
+
+pool organisation "Farming Bot Organisation"
+  lane player "Player"
+    start start "Start"
+    task create_bot "Create custom farming bot"
+    task find_resources "Find out which resources you want"
+    task update_task "Update list of to be farmed materials"
+    task brag "Brag to selected friends"
+    task send_materials "Send materials to friends"
+    end process_finished "Process finished"
+  lane bot "Farming Bot"
+    and collect_parallel "Collect up to 10 resources in parallel"
+    task collect_resource "Collect resource"
+    and resources_collected "Resources collected"
+    task create_tools "Create tools needed to gather resources"
+    sub farm "Farming"
+      start farming_started "Farming started"
+      task farm_resources "Farm resources"
+      end farming_finished "Farming finished"
+      eventsub update_list "Update list during farming"
+        start update_requested "Update requested" message="updateList"
+        task update_list_task "Update list of to be farmed materials"
+        end list_updated "List updated"
+      eventsub milestone "Milestone reached"
+        start milestone_reached "Milestone reached" signal="milestone"
+        task notify_milestone "Notify milestone reached"
+        end milestone_notified "Milestone notified"
+      boundary disaster on=farm_resources message="naturalDisaster"
+      task recover_bot "Recover from natural disaster"
+    or share_results "Share farming results?"
+    or sharing_completed "Sharing completed"
+
+flow start -> create_bot -> find_resources -> collect_parallel
+flow collect_parallel -> collect_resource -> resources_collected -> create_tools -> farm
+flow farm -> sharing_completed? 
+flow farm -> share_results
+flow share_results -> brag
+flow share_results -> send_materials
+flow brag -> sharing_completed
+flow send_materials -> sharing_completed
+flow sharing_completed -> process_finished
+flow disaster -> recover_bot -> farm_resources

@@ -1,0 +1,59 @@
+tok 1.0
+pool blizzard "Blizzard Online Character Generator"
+  lane player "Player"
+    start s "Start"
+    and gw_split "Parallel split"
+    flow s -> gw_split
+
+    # Branch A (player tasks)
+    task enter_account_info "Enter account information and click confirmation link"
+    task select_payment "Select payment method"
+    task enter_credit_card "Enter credit card information"
+    task enter_bank "Enter IBAN and BIC numbers"
+    task login_select "Log into the game and select realm, race and class"
+
+    # Branch B (player tasks)
+    task think_names "Think of character names"
+    task enter_name "Enter character name and check availability"
+
+    # Gateways (in player lane)
+    xor g_have_battlenet "Have battle.net account?"
+    xor g_have_subscription "Active WoW subscription?"
+    xor g_payment_method "Payment method?"
+    xor g_name_available "Name available?"
+    and gw_join "Parallel join"
+    end e "End"
+
+    # Flows for account setup
+    flow gw_split -> check_battlenet
+    flow check_battlenet -> g_have_battlenet
+    flow g_have_battlenet -> check_subscription "yes" when="true"
+    flow g_have_battlenet -> enter_account_info "no" default
+    flow enter_account_info -> check_subscription
+    flow check_subscription -> g_have_subscription
+    flow g_have_subscription -> login_select "yes" when="true"
+    flow g_have_subscription -> select_payment "no" default
+    flow select_payment -> g_payment_method
+    flow g_payment_method -> enter_credit_card "credit card" when="true"
+    flow g_payment_method -> enter_bank "bank" default
+    flow enter_credit_card -> login_select
+    flow enter_bank -> login_select
+
+    # Flows for name selection
+    flow gw_split -> think_names
+    flow think_names -> enter_name
+    flow enter_name -> g_name_available
+    flow g_name_available -> confirm_name "yes" when="true"
+    flow g_name_available -> enter_name "no" default
+    flow confirm_name -> expansion_message
+
+    # Join and end
+    flow login_select -> gw_join
+    flow expansion_message -> gw_join
+    flow gw_join -> e
+
+  lane system "System"
+    task check_battlenet "Check battle.net account"
+    task check_subscription "Check active WoW subscription"
+    task confirm_name "Receive confirmation and character selfies"
+    task expansion_message "Receive expansion release message"

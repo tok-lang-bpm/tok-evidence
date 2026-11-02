@@ -1,0 +1,167 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+At the beginning the customer perceives that her subscribed service has degraded. A list with all the problem parameters is then sent to the Customer Service department of TELECO. At the customer service an employee enters (based on the received data) a problem report into system T.. Then the problem report is compared to the customer SLA to identify what the extent and the details of the service degradation are. Based on this, the necessary counter measures are determined including their respective priorities. An electronic service then determines the significance of the customer based on information that has been collected during the history of the contractual relationship. In case the customer is premium, the process will link to an extra problem fix process (this process will not be detailed here). In case the customer is of certain significance which would affect the counter measures previously decided upon, the process goes back to re-prioritize these measures otherwise the process continues. Taking together the information (i.e. contract commitment data + prioritized actions) a detailed problem report is created. The detailed problem report is then sent to Service Management. Service Management deals on a first level with violations of quality in services that are provided to customers. After receiving the detailed problem report, Service management investigates whether the problem is analyzable at the level of their department or whether the problem may be located at Resource Provisioning. In case Service Management assesses the problem to be not analyzable by themselves, the detailed problem report is sent out to Resource Provisioning. If Service Management is sure they can analyze it, they perform the analysis and based on the outcome they create a trouble report that indicates the type of problem. After Resource Provisioning receives the detailed problem report, it is checked whether there are any possible problems. If no problems are detected, a notification about the normal service execution is created. If a problem is detected this will be analyzed by Resource Provisioning and a trouble report is created. Either trouble report or the normal execution notification will be included in a status report and sent back to Service Management. Service Management then prepares the final status report based on the received information. Subsequently it has to be determined what counter measures should be taken depending on the information in the final status report. Three alternative process paths may be taken. For the case that no problem was detected at all, the actual service performance is sent back to the Customer Service. For the case that minor corrective actions are required, Service Management will undertake corrective actions by themselves. Subsequently, the problem resolution report is created and then sent out to Customer Service. After sending, this process path of Service Management ends. For the case that automatic resource restoration from Resource Provisioning is required, Service Management must create a request for automatic resource restoration. This message is then sent to Resource Provisioning. Resource Provisioning has been on-hold and waiting for a restoration request but this must happen within 2 days after the status report was sent out, otherwise Resource Provisioning terminates the process. After the restoration request is received, all possible errors are tracked. Based on the tracked errors, all necessary corrective actions are undertaken by Resource Provisioning. Then a trouble-shooting report is created. This report is sent out to Service Management; then the process ends. The trouble-shooting report is received by Service Management and this information goes then into the creation of the problem resolution report just as described for ii). Customer Service either receives the actual service performance (if there was no problem) or the problem resolution report. Then, two concurrent activities are triggered, i.e. i) a report is created for the customer which details the current service performance and the resolution of the problem, and ii) an SLA violation rebate is reported to Billing & Collections who will adjust the billing. The report for the customer is sent out to her. After all three activities are completed the process ends within Customer Service. After the customer then receives the report about service performance and problem resolution from Customer Service, the process flow at the customer also ends.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Service Degradation Handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start s0 "Service degradation perceived"
+    end e_customer "Customer process ends"
+
+  lane customer_service "Customer Service"
+    task cs_send_params "send problem parameters list"
+    task cs_enter_report "enter problem report into system T"
+    task cs_compare_sla "compare problem report to SLA"
+    task cs_determine_measures "determine counter measures and priorities"
+    task cs_determine_significance "determine customer significance"
+    xor g_premium "Customer premium?"
+    task cs_link_extra_fix "link to extra problem fix process"
+    xor g_signif "Significance affects counter measures?"
+    task cs_reprioritize "re‑prioritize counter measures"
+    task cs_create_detailed "create detailed problem report"
+    task cs_send_to_sm "send detailed problem report to Service Management"
+    task cs_receive_performance "receive actual service performance"
+    task cs_receive_resolution "receive problem resolution report"
+    and and_start "Parallel start"
+    task cs_create_cust_report "create report for the customer"
+    task bc_adjust_billing "adjust billing"
+    task cs_send_cust_report "send customer report to Customer"
+    end e_cs_end "Customer Service process ends"
+
+  lane service_management "Service Management"
+    task sm_receive_detailed "receive detailed problem report"
+    xor g_analyzable "Problem analyzable by Service Management?"
+    task sm_analyze "analyze problem"
+    task sm_create_trouble_sm "create trouble report (SM)"
+    task sm_send_to_rp "send detailed problem report to Resource Provisioning"
+    task sm_receive_status "receive status report from Resource Provisioning"
+    task sm_prepare_final "prepare final status report"
+    xor g_counter_path "Determine counter‑measure path"
+    task sm_send_performance "send actual service performance to Customer Service"
+    task sm_undertake_minor "undertake minor corrective actions"
+    task sm_create_resolution "create problem resolution report"
+    task sm_send_resolution "send problem resolution report to Customer Service"
+    task sm_create_rest_req "create request for automatic resource restoration"
+    task sm_send_rest_req "send restoration request to Resource Provisioning"
+    task sm_receive_troubleshoot "receive trouble‑shooting report"
+    task sm_create_resolution2 "create problem resolution report"
+    task sm_send_resolution2 "send problem resolution report to Customer Service"
+    end e_sm_end "Service Management process ends"
+
+  lane resource_provisioning "Resource Provisioning"
+    task rp_receive_detailed "receive detailed problem report"
+    xor g_any_problem "Any problems detected?"
+    task rp_create_normal_notify "create normal execution notification"
+    task rp_analyze "analyze problem"
+    task rp_create_trouble_rp "create trouble report (RP)"
+    task rp_include_status_send "include report in status report and send to Service Management"
+    task rp_receive_rest_req "receive restoration request"
+    xor g_within_2days "Restoration request within 2 days?"
+    task rp_track_errors "track all possible errors"
+    task rp_undertake_corr "undertake necessary corrective actions"
+    task rp_create_troubleshoot_report "create trouble‑shooting report"
+    task rp_send_troubleshoot_report "send trouble‑shooting report to Service Management"
+    end e_rp_termination "Process terminated (timeout)"
+
+  lane billing_collections "Billing & Collections"
+    task bc_adjust_billing "adjust billing"
+    end e_bc_end "Billing process ends"
+
+# -----------------------------------------------------------------
+# Sequence flows
+flow s0 -> cs_send_params
+flow cs_send_params -> cs_enter_report
+flow cs_enter_report -> cs_compare_sla
+flow cs_compare_sla -> cs_determine_measures
+flow cs_determine_measures -> cs_determine_significance
+flow cs_determine_significance -> g_premium
+
+flow g_premium -> cs_link_extra_fix
+flow g_premium -> g_signif
+
+flow cs_link_extra_fix -> e_customer          # premium path ends
+
+flow g_signif -> cs_reprioritize
+flow g_signif -> cs_create_detailed
+
+flow cs_reprioritize -> cs_determine_measures   # loop back to re‑prioritise
+flow cs_create_detailed -> cs_send_to_sm
+
+flow cs_send_to_sm -> sm_receive_detailed
+
+flow sm_receive_detailed -> g_analyzable
+
+flow g_analyzable -> sm_analyze
+flow g_analyzable -> sm_send_to_rp
+
+flow sm_analyze -> sm_create_trouble_sm -> sm_send_to_rp
+
+flow sm_send_to_rp -> rp_receive_detailed
+
+flow rp_receive_detailed -> g_any_problem
+
+flow g_any_problem -> rp_create_normal_notify
+flow g_any_problem -> rp_analyze
+
+flow rp_create_normal_notify -> rp_include_status_send
+flow rp_analyze -> rp_create_trouble_rp -> rp_include_status_send
+
+flow rp_include_status_send -> sm_receive_status
+
+flow sm_receive_status -> sm_prepare_final -> g_counter_path
+
+# Counter‑measure path A: No problem detected
+flow g_counter_path -> sm_send_performance
+flow sm_send_performance -> cs_receive_performance
+
+# Counter‑measure path B: Minor corrective actions
+flow g_counter_path -> sm_undertake_minor
+flow sm_undertake_minor -> sm_create_resolution -> sm_send_resolution
+flow sm_send_resolution -> cs_receive_resolution
+
+# Counter‑measure path C: Automatic resource restoration
+flow g_counter_path -> sm_create_rest_req -> sm_send_rest_req
+flow sm_send_rest_req -> rp_receive_rest_req
+
+flow rp_receive_rest_req -> g_within_2days
+
+flow g_within_2days -> rp_track_errors
+flow g_within_2days -> e_rp_termination
+
+flow rp_track_errors -> rp_undertake_corr -> rp_create_troubleshoot_report -> rp_send_troubleshoot_report -> sm_receive_troubleshoot
+
+flow sm_receive_troubleshoot -> sm_create_resolution2 -> sm_send_resolution2
+flow sm_send_resolution2 -> cs_receive_resolution
+
+# Parallel activities after CS receives a report
+flow cs_receive_performance -> and_start
+flow cs_receive_resolution -> and_start
+
+flow and_start -> cs_create_cust_report
+flow and_start -> bc_adjust_billing
+
+flow cs_create_cust_report -> cs_send_cust_report
+flow bc_adjust_billing -> e_bc_end
+
+flow cs_send_cust_report -> e_cs_end
+flow e_cs_end -> e_customer
+```
+
+The tok checker reports these problems in it:
+
+- line 64: error R001: identifier 'bc_adjust_billing' is already used on line 24
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

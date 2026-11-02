@@ -1,0 +1,37 @@
+```tok
+tok 1.0 "Warrant Possession Process"
+
+pool org "Organisation"
+  lane party "Party"
+    start s1 "Warrant possession request sent"
+    task t_send "Send warrant possession request"
+
+  lane backoffice "Client Service Back Office"
+    task t_receive "Receive request and retrieve SCT file"
+    task t_forward "Forward SCT Warrant Possession to Queensland Police"
+    and split1 "Parallel split"
+    task t_store_wait "Store SCT physical file awaiting report"
+    task t_receive_report "Receive report from Police"
+    task t_retrieve "Retrieve SCT file"
+    task t_attach_store "Attach new SCT document and store expanded SCT physical file"
+    end e_done "Process completed"
+
+  lane police "Queensland Police"
+    task t_pol_receive "Receive SCT Warrant Possession"
+    task t_pol_send_report "Send report to Back Office"
+
+flow s1 -> t_send
+flow t_send -> t_receive
+flow t_receive -> t_forward
+flow t_forward -> split1
+flow split1 -> t_store_wait
+flow split1 -> t_pol_receive
+flow t_pol_receive -> t_pol_send_report
+flow t_pol_send_report -> split1   # join using same gateway as parallel join
+flow t_store_wait -> split1        # join uses the same gateway (parallel join)
+
+flow split1 -> t_receive_report
+flow t_receive_report -> t_retrieve
+flow t_retrieve -> t_attach_store
+flow t_attach_store -> e_done
+```

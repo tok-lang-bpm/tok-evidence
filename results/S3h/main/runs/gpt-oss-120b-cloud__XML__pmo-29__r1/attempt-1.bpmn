@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="Applicant" name="Applicant">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkReq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pgSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accommodation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pgJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>contactRep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determineRep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submitApp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAdditional</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>addDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveVisa</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveRefusal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endFailure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="RepresentationOffice" name="Representation Office">
+        <bpmn:flowNodeRef>assessApp</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Events -->
+    <bpmn:startEvent id="start" name="Start Work &amp; Live Process" />
+    <bpmn:endEvent id="endSuccess" name="Process Completed Successfully" />
+    <bpmn:endEvent id="endFailure" name="Process Ended – Visa Refused" />
+
+    <!-- Tasks -->
+    <bpmn:task id="checkReq" name="Check requirements for working and living in Austria" />
+    <bpmn:parallelGateway id="pgSplit" name="Parallel Split" />
+    <bpmn:task id="accommodation" name="Organize accommodation and bank account (negotiation)" />
+    <bpmn:task id="prepareDocs" name="Prepare visa documents" />
+    <bpmn:parallelGateway id="pgJoin" name="Parallel Join" />
+    <bpmn:task id="contactRep" name="Contact representation for information" />
+    <bpmn:task id="determineRep" name="Determine appropriate representation office" />
+    <bpmn:task id="submitApp" name="Submit visa application" />
+    <bpmn:task id="assessApp" name="Assess visa application" />
+    <bpmn:exclusiveGateway id="gwAdditional" name="Additional documents required?" />
+    <bpmn:task id="addDocs" name="Provide additional documents" />
+    <bpmn:exclusiveGateway id="gwApproval" name="Visa approved?" />
+    <bpmn:task id="receiveVisa" name="Receive visa" />
+    <bpmn:task id="receiveRefusal" name="Receive refusal" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="checkReq" />
+    <bpmn:sequenceFlow id="f2" sourceRef="checkReq" targetRef="pgSplit" />
+    <bpmn:sequenceFlow id="f3" sourceRef="pgSplit" targetRef="accommodation" />
+    <bpmn:sequenceFlow id="f4" sourceRef="pgSplit" targetRef="prepareDocs" />
+    <bpmn:sequenceFlow id="f5" sourceRef="accommodation" targetRef="pgJoin" />
+    <bpmn:sequenceFlow id="f6" sourceRef="prepareDocs" targetRef="pgJoin" />
+    <bpmn:sequenceFlow id="f7" sourceRef="pgJoin" targetRef="contactRep" />
+    <bpmn:sequenceFlow id="f8" sourceRef="contactRep" targetRef="determineRep" />
+    <bpmn:sequenceFlow id="f9" sourceRef="determineRep" targetRef="submitApp" />
+    <bpmn:sequenceFlow id="f10" sourceRef="submitApp" targetRef="assessApp" />
+    <bpmn:sequenceFlow id="f11" sourceRef="assessApp" targetRef="gwAdditional" />
+    <bpmn:sequenceFlow id="f12" name="yes" sourceRef="gwAdditional" targetRef="addDocs">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">additionalNeeded</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f13" name="no" sourceRef="gwAdditional" targetRef="gwApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">noAdditional</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f14" sourceRef="addDocs" targetRef="assessApp" />
+    <bpmn:sequenceFlow id="f15" name="yes" sourceRef="gwApproval" targetRef="receiveVisa">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f16" sourceRef="receiveVisa" targetRef="endSuccess" />
+    <bpmn:sequenceFlow id="f17" name="no" sourceRef="gwApproval" targetRef="receiveRefusal">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">notApproved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f18" sourceRef="receiveRefusal" targetRef="endFailure" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Bicycle manufacturer" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="Lane_Sales" name="Sales department">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Shipped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Store" name="Storehouse">
+        <bpmn:flowNodeRef>Sub_Parts</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Eng" name="Engineering department">
+        <bpmn:flowNodeRef>Task_Prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Assemble</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_1" name="Order received" />
+    <bpmn:task id="Task_Decide" name="Reject or accept order" />
+    <bpmn:exclusiveGateway id="Gw_Accepted" name="Order accepted?" default="F_no" />
+    <bpmn:endEvent id="End_Rejected" name="Order rejected" />
+    <bpmn:task id="Task_Inform" name="Inform storehouse and engineering department" />
+    <bpmn:parallelGateway id="Gw_Split" />
+    <bpmn:subProcess id="Sub_Parts" name="Process part list">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+      <bpmn:startEvent id="S_Start" />
+      <bpmn:task id="S_Check" name="Check required quantity of part" />
+      <bpmn:exclusiveGateway id="S_Gw" name="Part available in-house?" default="S_F_no" />
+      <bpmn:task id="S_Reserve" name="Reserve part" />
+      <bpmn:task id="S_Back" name="Back-order part" />
+      <bpmn:exclusiveGateway id="S_Merge" />
+      <bpmn:endEvent id="S_End" />
+      <bpmn:sequenceFlow id="S_F1" sourceRef="S_Start" targetRef="S_Check" />
+      <bpmn:sequenceFlow id="S_F2" sourceRef="S_Check" targetRef="S_Gw" />
+      <bpmn:sequenceFlow id="S_F_yes" name="yes" sourceRef="S_Gw" targetRef="S_Reserve" />
+      <bpmn:sequenceFlow id="S_F_no" name="no" sourceRef="S_Gw" targetRef="S_Back" />
+      <bpmn:sequenceFlow id="S_F5" sourceRef="S_Reserve" targetRef="S_Merge" />
+      <bpmn:sequenceFlow id="S_F6" sourceRef="S_Back" targetRef="S_Merge" />
+      <bpmn:sequenceFlow id="S_F7" sourceRef="S_Merge" targetRef="S_End" />
+    </bpmn:subProcess>
+    <bpmn:task id="Task_Prepare" name="Prepare assembling of bicycle" />
+    <bpmn:parallelGateway id="Gw_Join" />
+    <bpmn:task id="Task_Assemble" name="Assemble bicycle" />
+    <bpmn:task id="Task_Ship" name="Ship bicycle to customer" />
+    <bpmn:endEvent id="End_Shipped" name="Process finished" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_1" targetRef="Task_Decide" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Task_Decide" targetRef="Gw_Accepted" />
+    <bpmn:sequenceFlow id="F_no" name="no" sourceRef="Gw_Accepted" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F_yes" name="yes" sourceRef="Gw_Accepted" targetRef="Task_Inform" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Task_Inform" targetRef="Gw_Split" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Gw_Split" targetRef="Sub_Parts" />
+    <bpmn:sequenceFlow id="F7" sourceRef="Gw_Split" targetRef="Task_Prepare" />
+    <bpmn:sequenceFlow id="F8" sourceRef="Sub_Parts" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F9" sourceRef="Task_Prepare" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Gw_Join" targetRef="Task_Assemble" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Task_Assemble" targetRef="Task_Ship" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Task_Ship" targetRef="End_Shipped" />
+  </bpmn:process>
+</bpmn:definitions>

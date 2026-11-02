@@ -1,0 +1,48 @@
+tok 1.0 "Expense Report Processing"
+
+pool organisation "Organisation"
+  lane employee "Employee"
+    task reSubmit "Re-submit the expense report"
+    end resubmitted "Expense report re-submitted"
+  lane supervisor "Supervisor"
+    task supervisorApprove "Approve the expense report"
+    xor approvalResult "Supervisor approved?"
+    boundary b7 "7 days in progress" on=supervisorApprove timer=P7D noninterrupting
+    boundary b30 "30 days cancelled" on=supervisorApprove timer=P30D
+  lane system "System"
+    start received "Expense Report received"
+    xor hasAccount "Employee has account?"
+    task createAccount "Create new account"
+    xor accountJoin "Account ready"
+    task review "Review the expense report for automatic approval"
+    xor amount "Amount under $200?"
+    task autoApprove "Automatically approve the expense report"
+    xor approved "Approval granted"
+    task reimburse "Reimburse to direct deposit bank account"
+    task sendRejection "Send rejection notice by email"
+    task sendProgress "Send approval in progress email"
+    task sendCancellation "Send email cancellation notice"
+    end completed "Expense report completed"
+    end rejected "Expense report rejected"
+    end progressed "Approval in progress noticed"
+
+flow received -> hasAccount
+flow hasAccount -> createAccount "No" when="hasAccount = false"
+flow hasAccount -> accountJoin "Yes" default
+flow createAccount -> accountJoin
+flow accountJoin -> review
+flow review -> amount
+flow amount -> autoApprove "Yes, under $200" when="amount < 200"
+flow amount -> supervisorApprove "No, $200 or more" default
+flow autoApprove -> approved
+flow supervisorApprove -> approvalResult
+flow approvalResult -> approved "Approved" when="approved"
+flow approvalResult -> sendRejection "Rejected" default
+flow approved -> reimburse
+flow reimburse -> completed
+flow sendRejection -> rejected
+flow b7 -> sendProgress
+flow sendProgress -> progressed
+flow b30 -> sendCancellation
+flow sendCancellation -> reSubmit
+flow reSubmit -> resubmitted

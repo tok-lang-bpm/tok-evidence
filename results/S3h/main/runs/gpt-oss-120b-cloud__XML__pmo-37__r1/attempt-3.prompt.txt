@@ -1,0 +1,150 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+Title: Contract
+
+For your contract project you need parts from several web shops.
+In order to find out which web shop has the right parts, you have to query them all, and find out how much they can deliver, at which price, and how long it will take.
+Create a list of parts that you order from each shop.
+If one shop has not enough  parts, order from several shops.
+Always use the cheapest parts.
+The parts arrive in batches in a random order, typically they are +/- 2 days earlier/later.
+When the first parts arrive you start building.
+Sometimes you have to reorder parts.
+If your stock (for a single part) falls below 5, you reorder (the cheapest), if it falls below 3 you reorder again (the fastest).
+If it is zero, you write a mail to your friends, complaining about the webshops.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="contract-process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="contract-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="team" name="Project Team">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayShop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderSingle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderMultiple</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveBatch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stockCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorderCheap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorderFast</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start contract project" />
+
+    <bpmn:task id="query" name="Query all web shops" />
+    <bpmn:task id="createList" name="Create list of parts to order from each shop" />
+
+    <bpmn:exclusiveGateway id="gatewayShop" name="Shop can deliver required parts?" />
+
+    <bpmn:task id="orderSingle" name="Order parts from shop" />
+    <bpmn:task id="orderMultiple" name="Order parts from multiple shops" />
+
+    <bpmn:task id="receiveBatch" name="Receive parts batch" />
+
+    <bpmn:parallelGateway id="fork" name="Parallel split after first batch" />
+
+    <bpmn:task id="build" name="Start building" />
+    <bpmn:task id="monitor" name="Monitor stock" />
+
+    <bpmn:exclusiveGateway id="stockCheck" name="Stock level?" default="f_stock_ok" />
+
+    <bpmn:task id="complaint" name="Write complaint mail" />
+    <bpmn:task id="reorderCheap" name="Reorder parts (cheapest)" />
+    <bpmn:task id="reorderFast" name="Reorder parts (fastest)" />
+
+    <bpmn:parallelGateway id="join" name="Parallel join" />
+
+    <bpmn:endEvent id="end" name="Process completed">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_query" sourceRef="start" targetRef="query" />
+    <bpmn:sequenceFlow id="f_query_create" sourceRef="query" targetRef="createList" />
+    <bpmn:sequenceFlow id="f_create_gateway" sourceRef="createList" targetRef="gatewayShop" />
+    <bpmn:sequenceFlow id="f_yes_orderSingle" name="yes" sourceRef="gatewayShop" targetRef="orderSingle" />
+    <bpmn:sequenceFlow id="f_no_orderMultiple" name="no" sourceRef="gatewayShop" targetRef="orderMultiple" />
+    <bpmn:sequenceFlow id="f_orderSingle_receive" sourceRef="orderSingle" targetRef="receiveBatch" />
+    <bpmn:sequenceFlow id="f_orderMultiple_receive" sourceRef="orderMultiple" targetRef="receiveBatch" />
+    <bpmn:sequenceFlow id="f_receive_fork" sourceRef="receiveBatch" targetRef="fork" />
+
+    <!-- Parallel branches -->
+    <bpmn:sequenceFlow id="f_fork_build" sourceRef="fork" targetRef="build" />
+    <bpmn:sequenceFlow id="f_fork_monitor" sourceRef="fork" targetRef="monitor" />
+
+    <bpmn:sequenceFlow id="f_build_join" sourceRef="build" targetRef="join" />
+    <bpmn:sequenceFlow id="f_monitor_stock" sourceRef="monitor" targetRef="stockCheck" />
+
+    <!-- Stock decision branches -->
+    <bpmn:sequenceFlow id="f_stock_zero"
+        name="zero"
+        sourceRef="stockCheck"
+        targetRef="complaint">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock == 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="f_stock_less3"
+        name="<3"
+        sourceRef="stockCheck"
+        targetRef="reorderFast">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="f_stock_less5"
+        name="<5"
+        sourceRef="stockCheck"
+        targetRef="reorderCheap">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Default path when stock sufficient -->
+    <bpmn:sequenceFlow id="f_stock_ok" sourceRef="stockCheck" targetRef="join" />
+
+    <!-- Reorder loops back to receiving new batch -->
+    <bpmn:sequenceFlow id="f_reorderCheap_receive" sourceRef="reorderCheap" targetRef="receiveBatch" />
+    <bpmn:sequenceFlow id="f_reorderFast_receive" sourceRef="reorderFast" targetRef="receiveBatch" />
+
+    <!-- Complaint ends the process -->
+    <bpmn:sequenceFlow id="f_complaint_end" sourceRef="complaint" targetRef="end" />
+
+    <!-- Join to final end -->
+    <bpmn:sequenceFlow id="f_join_end" sourceRef="join" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- not well-formed XML: Unescaped '<' not allowed in attributes values, line 88, column 15 (<string>, line 88)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

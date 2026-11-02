@@ -1,0 +1,100 @@
+```tok
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start perceived "Service degradation perceived"
+    task sendlist "Send list of problem parameters"
+    task receiverep "Receive report on service performance and problem resolution"
+    end custdone "Customer process ended"
+  lane cs "Customer Service"
+    task enter "Enter problem report into system T"
+    task compare "Compare problem report to customer SLA"
+    task measures "Determine counter measures and priorities"
+    xor premium "Customer premium?"
+    task fixproc "Link to extra problem fix process"
+    xor pmerge
+    xor signif "Significance affects counter measures?"
+    task detailed "Create detailed problem report"
+    task senddetailed "Send detailed problem report to Service Management"
+    xor m2
+    and csplit
+    task custreport "Create report for customer"
+    task sendcust "Send report to customer"
+    task rebate "Report SLA violation rebate to Billing & Collections"
+    and cjoin
+  lane system "Electronic service"
+    task significance "Determine significance of customer"
+  lane sm "Service Management"
+    task investigate "Investigate whether problem is analyzable"
+    xor analyzable "Analyzable by Service Management?"
+    task smanalyze "Analyze problem"
+    task smtrouble "Create trouble report"
+    task sendrp "Send detailed problem report to Resource Provisioning"
+    xor m1
+    task finalrep "Prepare final status report"
+    task decide "Determine counter measures from final status report"
+    xor outcome "Which path is required?"
+    task sendperf "Send actual service performance to Customer Service"
+    task minor "Undertake corrective actions"
+    xor mres
+    task resolution "Create problem resolution report"
+    task sendres "Send problem resolution report to Customer Service"
+    task createreq "Create request for automatic resource restoration"
+    throw sigreq "Send restoration request" signal="Restoration request"
+    end reqsent "Request sent"
+  lane rp "Resource Provisioning"
+    task check "Check for possible problems"
+    xor detected "Problem detected?"
+    task normal "Create notification about normal service execution"
+    task rpanalyze "Analyze problem"
+    task rptrouble "Create trouble report"
+    xor mrp
+    task statusrep "Include report in status report"
+    task sendstatus "Send status report to Service Management"
+    and rpsplit
+    eventgw wait
+    catch reqrcv "Restoration request received" signal="Restoration request"
+    catch tmo "2 days passed" timer=P2D
+    end terminated "Process terminated" terminate
+    task track "Track all possible errors"
+    task rpfix "Undertake necessary corrective actions"
+    task shoot "Create trouble-shooting report"
+    task sendshoot "Send trouble-shooting report to Service Management"
+  lane billing "Billing & Collections"
+    task adjust "Adjust billing"
+
+flow perceived -> sendlist -> enter -> compare -> measures -> significance -> premium
+flow premium -> fixproc "yes"
+flow premium -> pmerge "no"
+flow fixproc -> pmerge
+flow pmerge -> signif
+flow signif -> measures "yes"
+flow signif -> detailed "no"
+flow detailed -> senddetailed -> investigate -> analyzable
+flow analyzable -> smanalyze "yes"
+flow analyzable -> sendrp "no"
+flow smanalyze -> smtrouble -> m1
+flow sendrp -> check -> detected
+flow detected -> normal "no"
+flow detected -> rpanalyze "yes"
+flow rpanalyze -> rptrouble -> mrp
+flow normal -> mrp
+flow mrp -> statusrep -> sendstatus -> rpsplit
+flow rpsplit -> m1
+flow rpsplit -> wait
+flow wait -> reqrcv -> track -> rpfix -> shoot -> sendshoot -> mres
+flow wait -> tmo -> terminated
+flow m1 -> finalrep -> decide -> outcome
+flow outcome -> sendperf "no problem detected"
+flow outcome -> minor "minor corrective actions"
+flow outcome -> createreq "automatic restoration required"
+flow minor -> mres
+flow mres -> resolution -> sendres -> m2
+flow sendperf -> m2
+flow createreq -> sigreq -> reqsent
+flow m2 -> csplit
+flow csplit -> custreport -> sendcust -> cjoin
+flow csplit -> rebate -> adjust -> cjoin
+flow cjoin -> receiverep -> custdone
+```

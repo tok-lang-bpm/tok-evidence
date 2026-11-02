@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Loan Approval Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Loan Approval Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="cust" name="Customer">
+        <bpmn:flowNodeRef>s1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_receive</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk" name="Risk Assessment Service">
+        <bpmn:flowNodeRef>t_risk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>xor1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_approver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s1" name="Loan request received" />
+    <bpmn:task id="t_receive" name="Receive loan request" />
+    <bpmn:task id="t_risk" name="Invoke risk assessment Web service" />
+    <bpmn:exclusiveGateway id="xor1" name="Risk assessment outcome?" />
+    <bpmn:task id="t_approve" name="Approve loan" />
+    <bpmn:task id="t_deny" name="Deny loan" />
+    <bpmn:task id="t_approver" name="Invoke approver Web service" />
+    <bpmn:task id="t_feedback" name="Send feedback to customer" />
+    <bpmn:endEvent id="e_end" name="Process completed" />
+    <bpmn:sequenceFlow id="f-s1-t_receive" sourceRef="s1" targetRef="t_receive" />
+    <bpmn:sequenceFlow id="f-t_receive-t_risk" sourceRef="t_receive" targetRef="t_risk" />
+    <bpmn:sequenceFlow id="f-t_risk-xor1" sourceRef="t_risk" targetRef="xor1" />
+    <bpmn:sequenceFlow id="f-xor1-t_approve" name="approve" sourceRef="xor1" targetRef="t_approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">loanAmount &lt; 10000 and risk = "low"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-xor1-t_deny" name="deny" sourceRef="xor1" targetRef="t_deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">risk = "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-xor1-t_approver" name="review" sourceRef="xor1" targetRef="t_approver">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reviewNeeded or loanAmount &gt;= 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-t_approve-t_feedback" sourceRef="t_approve" targetRef="t_feedback" />
+    <bpmn:sequenceFlow id="f-t_deny-t_feedback" sourceRef="t_deny" targetRef="t_feedback" />
+    <bpmn:sequenceFlow id="f-t_approver-t_feedback" sourceRef="t_approver" targetRef="t_feedback" />
+    <bpmn:sequenceFlow id="f-t_feedback-e_end" sourceRef="t_feedback" targetRef="e_end" />
+  </bpmn:process>
+</bpmn:definitions>

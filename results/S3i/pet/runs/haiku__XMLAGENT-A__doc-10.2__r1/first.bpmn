@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_MPON_Report" name="Report of the MPON" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Org" name="Meter point operation" processRef="Process_MPON" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_MPON" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_MPON" name="MPON">
+        <bpmn:flowNodeRef>Start_MeterOperation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportMeterOperation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PerformMPON</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_EntireProcessFailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_MergeReport</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_GO" name="GO">
+        <bpmn:flowNodeRef>Task_ExamineApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ApplicationAccepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ConfirmApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Split_Registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMPOO_Registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMSPO_Registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Join_Registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveMPONMessage</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_DeadlineExceeded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMPONDeadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_DeadlineFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_FailureReported</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ConfirmFailureAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMPOO_FailedAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMSPO_FailedAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AssignmentFailed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AssignMPON</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ConfirmAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Split_Assignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMPOO_Assignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformMSPO_Assignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformSP_Assignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Join_Assignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AssignmentCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_MPOO" name="MPOO">
+        <bpmn:flowNodeRef>Task_PerformMPOO</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_MeterOperation" name="Meter operation" />
+    <bpmn:task id="Task_ReportMeterOperation" name="Report the meter operation to the GO" />
+    <bpmn:task id="Task_ExamineApplication" name="Examine the application of the MPON" />
+    <bpmn:exclusiveGateway id="Gw_ApplicationAccepted" name="Application accepted?" />
+    <bpmn:task id="Task_RejectApplication" name="Reject the application of the MPON" />
+    <bpmn:endEvent id="End_Rejected" name="Application rejected" />
+    <bpmn:task id="Task_ConfirmApplication" name="Confirm the application of the MPON" />
+
+    <bpmn:parallelGateway id="Gw_Split_Registration" name="Split: registration confirmed" />
+    <bpmn:task id="Task_InformMPOO_Registration" name="Inform the MPOO about the registration confirmation of the MPON" />
+    <bpmn:task id="Task_InformMSPO_Registration" name="Inform the MSPO about the registration confirmation of the MPON" />
+    <bpmn:task id="Task_PerformMPON" name="Perform the equipment acquisition and / or equipment changes (MPON)" />
+    <bpmn:task id="Task_PerformMPOO" name="Perform the equipment acquisition and / or equipment changes (MPOO)" />
+    <bpmn:parallelGateway id="Gw_Join_Registration" name="Join: registration branches" />
+
+    <bpmn:exclusiveGateway id="Gw_EntireProcessFailed" name="Entire process failed?" />
+    <bpmn:task id="Task_InformFailure" name="Inform the GO about the failure of the entire process" />
+    <bpmn:task id="Task_InformSuccess" name="Inform the GO about the successful completion of the entire process" />
+    <bpmn:exclusiveGateway id="Gw_MergeReport" name="Report received" />
+
+    <bpmn:receiveTask id="Task_ReceiveMPONMessage" name="Receive the message of the MPON about the entire process" messageRef="Msg_MPON_Report" />
+    <bpmn:boundaryEvent id="Event_DeadlineExceeded" name="Maximum time limit exceeded" attachedToRef="Task_ReceiveMPONMessage" cancelActivity="true">
+      <bpmn:timerEventDefinition id="TimerDef_Deadline">
+        <bpmn:timeDuration xsi:type="bpmn:tExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Task_InformMPONDeadline" name="Inform the MPON about the failure of the overall transaction by deadline" />
+    <bpmn:endEvent id="End_DeadlineFailure" name="Transaction failed by deadline" />
+
+    <bpmn:exclusiveGateway id="Gw_FailureReported" name="Failure reported?" />
+    <bpmn:task id="Task_ConfirmFailureAssignment" name="Confirm the failure of the assignment to the MPON" />
+    <bpmn:task id="Task_InformMPOO_FailedAssignment" name="Inform the MPOO about the failure of the assignment of the MPON" />
+    <bpmn:task id="Task_InformMSPO_FailedAssignment" name="Inform the MSPO about the failure of the assignment of the MPON" />
+    <bpmn:endEvent id="End_AssignmentFailed" name="Assignment failed" />
+
+    <bpmn:task id="Task_AssignMPON" name="Assign the MPON" />
+    <bpmn:task id="Task_ConfirmAssignment" name="Confirm the assignment to the MPON" />
+    <bpmn:parallelGateway id="Gw_Split_Assignment" name="Split: assignment informs" />
+    <bpmn:task id="Task_InformMPOO_Assignment" name="Inform the MPOO about the assignment of the MPON" />
+    <bpmn:task id="Task_InformMSPO_Assignment" name="Inform the MSPO about the assignment of the MPON" />
+    <bpmn:task id="Task_InformSP_Assignment" name="Inform the SP about the assignment of the MPON" />
+    <bpmn:parallelGateway id="Gw_Join_Assignment" name="Join: assignment informs" />
+    <bpmn:endEvent id="End_AssignmentCompleted" name="Assignment completed" />
+
+    <bpmn:task id="Task_PerformMPOO_placeholder" name="unused" />
+
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="Start_MeterOperation" targetRef="Task_ReportMeterOperation" />
+    <bpmn:sequenceFlow id="Flow_02" sourceRef="Task_ReportMeterOperation" targetRef="Task_ExamineApplication" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_ExamineApplication" targetRef="Gw_ApplicationAccepted" />
+    <bpmn:sequenceFlow id="Flow_04" name="no" sourceRef="Gw_ApplicationAccepted" targetRef="Task_RejectApplication" />
+    <bpmn:sequenceFlow id="Flow_05" sourceRef="Task_RejectApplication" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_06" name="yes" sourceRef="Gw_ApplicationAccepted" targetRef="Task_ConfirmApplication" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_ConfirmApplication" targetRef="Gw_Split_Registration" />
+    <bpmn:sequenceFlow id="Flow_08" sourceRef="Gw_Split_Registration" targetRef="Task_InformMPOO_Registration" />
+    <bpmn:sequenceFlow id="Flow_09" sourceRef="Gw_Split_Registration" targetRef="Task_InformMSPO_Registration" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Gw_Split_Registration" targetRef="Task_PerformMPON" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Gw_Split_Registration" targetRef="Task_PerformMPOO" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_InformMPOO_Registration" targetRef="Gw_Join_Registration" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_InformMSPO_Registration" targetRef="Gw_Join_Registration" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_PerformMPON" targetRef="Gw_Join_Registration" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_PerformMPOO" targetRef="Gw_Join_Registration" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Gw_Join_Registration" targetRef="Gw_EntireProcessFailed" />
+    <bpmn:sequenceFlow id="Flow_17" name="yes" sourceRef="Gw_EntireProcessFailed" targetRef="Task_InformFailure" />
+    <bpmn:sequenceFlow id="Flow_18" name="no" sourceRef="Gw_EntireProcessFailed" targetRef="Task_InformSuccess" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Task_InformFailure" targetRef="Gw_MergeReport" />
+    <bpmn:sequenceFlow id="Flow_20" sourceRef="Task_InformSuccess" targetRef="Gw_MergeReport" />
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="Gw_MergeReport" targetRef="Task_ReceiveMPONMessage" />
+    <bpmn:sequenceFlow id="Flow_22" sourceRef="Task_ReceiveMPONMessage" targetRef="Gw_FailureReported" />
+    <bpmn:sequenceFlow id="Flow_23" name="yes" sourceRef="Gw_FailureReported" targetRef="Task_ConfirmFailureAssignment" />
+    <bpmn:sequenceFlow id="Flow_24" sourceRef="Task_ConfirmFailureAssignment" targetRef="Task_InformMPOO_FailedAssignment" />
+    <bpmn:sequenceFlow id="Flow_25" sourceRef="Task_InformMPOO_FailedAssignment" targetRef="Task_InformMSPO_FailedAssignment" />
+    <bpmn:sequenceFlow id="Flow_26" sourceRef="Task_InformMSPO_FailedAssignment" targetRef="End_AssignmentFailed" />
+    <bpmn:sequenceFlow id="Flow_27" name="no" sourceRef="Gw_FailureReported" targetRef="Task_AssignMPON" />
+    <bpmn:sequenceFlow id="Flow_28" sourceRef="Task_AssignMPON" targetRef="Task_ConfirmAssignment" />
+    <bpmn:sequenceFlow id="Flow_29" sourceRef="Task_ConfirmAssignment" targetRef="Gw_Split_Assignment" />
+    <bpmn:sequenceFlow id="Flow_30" sourceRef="Gw_Split_Assignment" targetRef="Task_InformMPOO_Assignment" />
+    <bpmn:sequenceFlow id="Flow_31" sourceRef="Gw_Split_Assignment" targetRef="Task_InformMSPO_Assignment" />
+    <bpmn:sequenceFlow id="Flow_32" sourceRef="Gw_Split_Assignment" targetRef="Task_InformSP_Assignment" />
+    <bpmn:sequenceFlow id="Flow_33" sourceRef="Task_InformMPOO_Assignment" targetRef="Gw_Join_Assignment" />
+    <bpmn:sequenceFlow id="Flow_34" sourceRef="Task_InformMSPO_Assignment" targetRef="Gw_Join_Assignment" />
+    <bpmn:sequenceFlow id="Flow_35" sourceRef="Task_InformSP_Assignment" targetRef="Gw_Join_Assignment" />
+    <bpmn:sequenceFlow id="Flow_36" sourceRef="Gw_Join_Assignment" targetRef="End_AssignmentCompleted" />
+    <bpmn:sequenceFlow id="Flow_37" sourceRef="Event_DeadlineExceeded" targetRef="Task_InformMPONDeadline" />
+    <bpmn:sequenceFlow id="Flow_38" sourceRef="Task_InformMPONDeadline" targetRef="End_DeadlineFailure" />
+  </bpmn:process>
+</bpmn:definitions>

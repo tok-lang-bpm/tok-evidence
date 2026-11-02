@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_UpdateList" name="UpdateList" />
+  <bpmn:signal id="Signal_Disaster" name="Disaster" />
+  <bpmn:signal id="Signal_Milestone" name="Milestone" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="game" name="Farming game" processRef="game-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="game-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="game-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prio</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>og</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oj</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Bot">
+        <bpmn:flowNodeRef>farm</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Player wants a farming bot" />
+    <bpmn:task id="find" name="Find out wanted resources" />
+    <bpmn:task id="prio" name="Set urgency of resources" />
+    <bpmn:task id="deps" name="Define resource dependencies" />
+    <bpmn:task id="sel" name="Select friends" />
+    <bpmn:inclusiveGateway id="og" name="Brag, send materials or both?" />
+    <bpmn:task id="brag" name="Brag to friends" />
+    <bpmn:task id="send" name="Send materials to friends" />
+    <bpmn:inclusiveGateway id="oj" />
+    <bpmn:endEvent id="e" name="Friends informed" />
+    <bpmn:subProcess id="farm" name="Farm resources">
+      <bpmn:startEvent id="fs" name="Farming starts" />
+      <bpmn:task id="gather" name="Gather resources" />
+      <bpmn:endEvent id="fe" name="Farming finished" />
+      <bpmn:subProcess id="dis" name="Natural disaster" triggeredByEvent="true">
+        <bpmn:startEvent id="ds" name="Disaster strikes">
+          <bpmn:signalEventDefinition id="ds-def" signalRef="Signal_Disaster" />
+        </bpmn:startEvent>
+        <bpmn:task id="setback" name="Handle setback" />
+        <bpmn:endEvent id="de" name="Setback handled" />
+        <bpmn:sequenceFlow id="f-ds-setback" sourceRef="ds" targetRef="setback" />
+        <bpmn:sequenceFlow id="f-setback-de" sourceRef="setback" targetRef="de" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="mil" name="Milestone" triggeredByEvent="true">
+        <bpmn:startEvent id="ms" name="Milestone reached">
+          <bpmn:signalEventDefinition id="ms-def" signalRef="Signal_Milestone" />
+        </bpmn:startEvent>
+        <bpmn:task id="notify" name="Notify player" />
+        <bpmn:endEvent id="me" name="Player notified" />
+        <bpmn:sequenceFlow id="f-ms-notify" sourceRef="ms" targetRef="notify" />
+        <bpmn:sequenceFlow id="f-notify-me" sourceRef="notify" targetRef="me" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="upd" name="Update list" triggeredByEvent="true">
+        <bpmn:startEvent id="us" name="List update requested">
+          <bpmn:messageEventDefinition id="us-def" messageRef="Message_UpdateList" />
+        </bpmn:startEvent>
+        <bpmn:task id="upl" name="Update list of materials to farm" />
+        <bpmn:endEvent id="ue" name="List updated" />
+        <bpmn:sequenceFlow id="f-us-upl" sourceRef="us" targetRef="upl" />
+        <bpmn:sequenceFlow id="f-upl-ue" sourceRef="upl" targetRef="ue" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="f-fs-gather" sourceRef="fs" targetRef="gather" />
+      <bpmn:sequenceFlow id="f-gather-fe" sourceRef="gather" targetRef="fe" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="f-s-find" sourceRef="s" targetRef="find" />
+    <bpmn:sequenceFlow id="f-find-prio" sourceRef="find" targetRef="prio" />
+    <bpmn:sequenceFlow id="f-prio-deps" sourceRef="prio" targetRef="deps" />
+    <bpmn:sequenceFlow id="f-deps-farm" sourceRef="deps" targetRef="farm" />
+    <bpmn:sequenceFlow id="f-farm-sel" sourceRef="farm" targetRef="sel" />
+    <bpmn:sequenceFlow id="f-sel-og" sourceRef="sel" targetRef="og" />
+    <bpmn:sequenceFlow id="f-og-brag" name="brag" sourceRef="og" targetRef="brag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">brag = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-og-send" name="send" sourceRef="og" targetRef="send">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">send = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-brag-oj" sourceRef="brag" targetRef="oj" />
+    <bpmn:sequenceFlow id="f-send-oj" sourceRef="send" targetRef="oj" />
+    <bpmn:sequenceFlow id="f-oj-e" sourceRef="oj" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

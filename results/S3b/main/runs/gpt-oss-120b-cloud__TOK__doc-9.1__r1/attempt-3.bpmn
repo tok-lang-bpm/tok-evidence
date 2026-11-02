@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Defaulter Handling Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Defaulter Handling Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="ops" name="Operations">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkNewRecords</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwNewRecords</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endNewRecords</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwNewReturns1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAdvised</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produceTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendToAM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwDeadline2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSupervisor2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwNewReturns2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwDeadline4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSupervisor4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endProcess</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Weekday morning start" />
+    <bpmn:task id="backup" name="Backup the database" />
+    <bpmn:task id="checkNewRecords" name="Check Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="gwNewRecords" name="New records found?" default="f-gwNewRecords-checkCRM1" />
+    <bpmn:endEvent id="endNewRecords" name="Process ends (new records found)" />
+    <bpmn:task id="checkCRM1" name="Check CRM system for new returns" />
+    <bpmn:exclusiveGateway id="gwNewReturns1" name="New returns exist?" default="f-gwNewReturns1-gwDeadline2" />
+    <bpmn:task id="register" name="Register defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="gwAdvised" name="Defaulting client codes previously advised?" />
+    <bpmn:task id="produceTable" name="Produce table of defaulting accounts" />
+    <bpmn:task id="sendToAM" name="Send table to account management" />
+    <bpmn:exclusiveGateway id="gwDeadline2" name="Completed by 2:30 pm?" default="f-gwDeadline2-alertSupervisor2" />
+    <bpmn:task id="alertSupervisor2" name="Send alert to supervisor" />
+    <bpmn:task id="checkCRM2" name="Check CRM system for new returns (post‑report)" />
+    <bpmn:exclusiveGateway id="gwNewReturns2" name="New returns filed?" default="f-gwNewReturns2-gwDeadline4" />
+    <bpmn:task id="reconcile" name="Reconcile with existing account defaulters table" />
+    <bpmn:exclusiveGateway id="gwDeadline4" name="Completed by 4:00 pm?" default="f-gwDeadline4-alertSupervisor4" />
+    <bpmn:task id="alertSupervisor4" name="Send message to supervisor" />
+    <bpmn:endEvent id="endProcess" name="Process completed" />
+    <bpmn:sequenceFlow id="f-s-backup" sourceRef="s" targetRef="backup" />
+    <bpmn:sequenceFlow id="f-backup-checkNewRecords" sourceRef="backup" targetRef="checkNewRecords" />
+    <bpmn:sequenceFlow id="f-checkNewRecords-gwNewRecords" sourceRef="checkNewRecords" targetRef="gwNewRecords" />
+    <bpmn:sequenceFlow id="f-gwNewRecords-endNewRecords" sourceRef="gwNewRecords" targetRef="endNewRecords">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newRecordsFound</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwNewRecords-checkCRM1" sourceRef="gwNewRecords" targetRef="checkCRM1" />
+    <bpmn:sequenceFlow id="f-checkCRM1-gwNewReturns1" sourceRef="checkCRM1" targetRef="gwNewReturns1" />
+    <bpmn:sequenceFlow id="f-gwNewReturns1-register" sourceRef="gwNewReturns1" targetRef="register">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturnsExist</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwNewReturns1-gwDeadline2" sourceRef="gwNewReturns1" targetRef="gwDeadline2" />
+    <bpmn:sequenceFlow id="f-register-gwAdvised" sourceRef="register" targetRef="gwAdvised" />
+    <bpmn:sequenceFlow id="f-gwAdvised-produceTable" sourceRef="gwAdvised" targetRef="produceTable">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">advised = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwAdvised-gwDeadline2" sourceRef="gwAdvised" targetRef="gwDeadline2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">advised = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-produceTable-sendToAM" sourceRef="produceTable" targetRef="sendToAM" />
+    <bpmn:sequenceFlow id="f-sendToAM-gwDeadline2" sourceRef="sendToAM" targetRef="gwDeadline2" />
+    <bpmn:sequenceFlow id="f-gwDeadline2-checkCRM2" sourceRef="gwDeadline2" targetRef="checkCRM2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">deadline2Met</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwDeadline2-alertSupervisor2" sourceRef="gwDeadline2" targetRef="alertSupervisor2" />
+    <bpmn:sequenceFlow id="f-alertSupervisor2-checkCRM2" sourceRef="alertSupervisor2" targetRef="checkCRM2" />
+    <bpmn:sequenceFlow id="f-checkCRM2-gwNewReturns2" sourceRef="checkCRM2" targetRef="gwNewReturns2" />
+    <bpmn:sequenceFlow id="f-gwNewReturns2-reconcile" sourceRef="gwNewReturns2" targetRef="reconcile">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturnsAfterReport</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwNewReturns2-gwDeadline4" sourceRef="gwNewReturns2" targetRef="gwDeadline4" />
+    <bpmn:sequenceFlow id="f-reconcile-gwDeadline4" sourceRef="reconcile" targetRef="gwDeadline4" />
+    <bpmn:sequenceFlow id="f-gwDeadline4-endProcess" sourceRef="gwDeadline4" targetRef="endProcess">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">deadline4Met</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gwDeadline4-alertSupervisor4" sourceRef="gwDeadline4" targetRef="alertSupervisor4" />
+    <bpmn:sequenceFlow id="f-alertSupervisor4-endProcess" sourceRef="alertSupervisor4" targetRef="endProcess" />
+  </bpmn:process>
+</bpmn:definitions>

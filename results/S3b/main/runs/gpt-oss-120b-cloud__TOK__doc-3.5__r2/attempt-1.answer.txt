@@ -1,0 +1,59 @@
+```tok
+tok 1.0 "Mail processing"
+
+pool org "Organisation"
+  lane mpunit "Mail Processing Unit"
+    start start "Mail collected"
+    task mp_sort "Sort unopened mail into business areas"
+    task mp_distribute "Distribute mail"
+
+  lane registry "Registry"
+    task reg_open "Open mail"
+    task reg_sort "Sort mail into groups for distribution"
+    task reg_register "Register in manual incoming Mail Register"
+
+  lane arm "Assistant Registry Manager"
+    task arm_quality "Perform quality check"
+    xor quality_check "Mail compliant?"
+    task arm_compile "Compile rejection list"
+    task arm_send "Send rejection list back to party"
+    task arm_capture "Capture matter details and provide to Cashier"
+    task arm_envelope "Put receipt and documents into envelope"
+    task arm_post "Post envelope to party"
+
+  lane cashier "Cashier"
+    task cashier_fees "Take applicable fees"
+    task cashier_capture "Capture Party Details"
+    task cashier_print "Print Physical Court File"
+
+  end reject_end "Process ended - rejection"
+  end success_end "Process completed"
+
+flow start -> mp_sort
+flow mp_sort -> mp_distribute
+flow mp_distribute -> reg_open
+flow reg_open -> reg_sort
+flow reg_sort -> reg_register
+flow reg_register -> arm_quality
+flow arm_quality -> quality_check
+
+flow quality_check -> arm_compile "no" when="not compliant"
+flow quality_check -> arm_capture "yes" when="compliant"
+
+flow arm_compile -> arm_send
+flow arm_send -> reject_end
+
+flow arm_capture -> cashier_fees
+
+flow cashier_fees -> split_parallel
+flow split_parallel -> arm_envelope
+flow split_parallel -> cashier_capture
+
+flow arm_envelope -> arm_post
+flow arm_post -> join_parallel
+
+flow cashier_capture -> cashier_print
+flow cashier_print -> join_parallel
+
+flow join_parallel -> success_end
+```

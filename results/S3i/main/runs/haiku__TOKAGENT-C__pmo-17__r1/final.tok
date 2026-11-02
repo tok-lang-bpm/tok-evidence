@@ -1,0 +1,69 @@
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane customer "Customer"
+    start order "Customer places an order"
+    catch delivered "Successful delivery confirmed" message="delivery confirmed"
+    xor issue "Customer reports an issue?"
+    end failed "Order ends: payment failed"
+    end handled "Order completed"
+    end returned "Return handled"
+  lane system "System"
+    task record "Record the order details"
+    task pay "Process the payment"
+    xor paid "Payment successful?"
+    task notifyFail "Notify the customer about the failed payment"
+    task check "Check the stock availability"
+    xor instock "Items in stock?"
+    task backorder "Initiate a back-order"
+    task informDelay "Inform the customer about the delay"
+    task confirm "Send the shipping confirmation to the customer"
+    task updateInv "Update the inventory levels"
+    task followUp "Send the feedback follow-up email"
+    task refund "Process a refund or replacement"
+  lane warehouse "Warehouse"
+    xor avail "All required items available"
+    task receiveBack "Receive the back-order"
+    task pick "Pick the items from the warehouse"
+    task qc "Perform the quality control check"
+    and split "Start packaging and shipping documents"
+    xor gift "Gift wrapping requested?"
+    task wrap "Gift-wrap the order"
+    xor giftMerge
+    task pack "Package the order"
+    task receiveReturn "Receive the returned items"
+    task inspect "Inspect the returned items"
+  lane shipping "Shipping department"
+    task prepDocs "Prepare the shipping documents and labels"
+    xor intl "International order?"
+    task customs "Prepare the customs documentation"
+    xor intlMerge
+    and ready "Packaging and documents ready"
+    task dispatch "Dispatch the order"
+    task returnLabel "Send a return shipping label"
+
+flow order -> record -> pay -> paid
+flow paid -> notifyFail "no"
+flow notifyFail -> failed
+flow paid -> check "yes"
+flow check -> instock
+flow instock -> backorder "no"
+flow backorder -> informDelay -> receiveBack -> avail
+flow instock -> avail "yes"
+flow avail -> pick -> qc -> split
+flow split -> gift
+flow split -> prepDocs
+flow gift -> wrap "yes"
+flow wrap -> giftMerge
+flow gift -> giftMerge "no"
+flow giftMerge -> pack -> ready
+flow prepDocs -> intl
+flow intl -> customs "yes"
+flow customs -> intlMerge
+flow intl -> intlMerge "no"
+flow intlMerge -> ready
+flow ready -> dispatch -> confirm -> updateInv -> delivered -> issue
+flow issue -> followUp "no"
+flow followUp -> handled
+flow issue -> returnLabel "yes"
+flow returnLabel -> receiveReturn -> inspect -> refund -> returned

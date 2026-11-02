@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organization" name="Organization" processRef="claims-process" />
+    <bpmn:participant id="claimant" name="Claimant" />
+  </bpmn:collaboration>
+  <bpmn:process id="claims-process" isExecutable="false">
+    <bpmn:laneSet id="claims-lanes">
+      <bpmn:lane id="claims-handler" name="Claims Handler">
+        <bpmn:flowNodeRef>claim-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-insured</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>insured-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evaluate-severity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>severity-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-simple-forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-complex-forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forms-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-completeness</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completeness-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register-claim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-update-forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updated-forms-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-updated-forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>claim-rejected-end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>claim-registered-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="claimant-lane" name="Claimant">
+        <bpmn:flowNodeRef>return-forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return-updated-forms</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="claim-received" name="Claim received" />
+    <bpmn:task id="check-insured" name="Check whether the claimant is insured" />
+    <bpmn:exclusiveGateway id="insured-gateway" name="Claimant insured?" default="flow-not-insured" />
+    <bpmn:task id="inform-rejection" name="Inform the claimant that the claim must be rejected" />
+    <bpmn:task id="evaluate-severity" name="Evaluate the severity of the claim" />
+    <bpmn:exclusiveGateway id="severity-gateway" name="Simple or complex claim?" />
+    <bpmn:task id="send-simple-forms" name="Send the relevant forms for a simple claim" />
+    <bpmn:task id="send-complex-forms" name="Send the relevant forms for a complex claim" />
+    <bpmn:exclusiveGateway id="forms-merge" />
+    <bpmn:task id="return-forms" name="Return the forms" />
+    <bpmn:task id="check-completeness" name="Check the forms for completeness" />
+    <bpmn:exclusiveGateway id="completeness-gateway" name="Forms provide all relevant details?" default="flow-incomplete" />
+    <bpmn:task id="register-claim" name="Register the claim in the Claims Management system" />
+    <bpmn:task id="inform-update-forms" name="Inform the claimant to update the forms" />
+    <bpmn:task id="return-updated-forms" name="Return the updated forms" />
+    <bpmn:exclusiveGateway id="updated-forms-merge" />
+    <bpmn:task id="check-updated-forms" name="Check the updated forms" />
+    <bpmn:endEvent id="claim-rejected-end" name="Claim rejected" />
+    <bpmn:endEvent id="claim-registered-end" name="Claims Notification process ended" />
+
+    <bpmn:sequenceFlow id="flow-1" sourceRef="claim-received" targetRef="check-insured" />
+    <bpmn:sequenceFlow id="flow-2" sourceRef="check-insured" targetRef="insured-gateway" />
+    <bpmn:sequenceFlow id="flow-not-insured" name="no" sourceRef="insured-gateway" targetRef="inform-rejection" />
+    <bpmn:sequenceFlow id="flow-insured" name="yes" sourceRef="insured-gateway" targetRef="evaluate-severity">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">insured</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-3" sourceRef="inform-rejection" targetRef="claim-rejected-end" />
+    <bpmn:sequenceFlow id="flow-4" sourceRef="evaluate-severity" targetRef="severity-gateway" />
+    <bpmn:sequenceFlow id="flow-simple" name="simple" sourceRef="severity-gateway" targetRef="send-simple-forms" />
+    <bpmn:sequenceFlow id="flow-complex" name="complex" sourceRef="severity-gateway" targetRef="send-complex-forms" />
+    <bpmn:sequenceFlow id="flow-5" sourceRef="send-simple-forms" targetRef="forms-merge" />
+    <bpmn:sequenceFlow id="flow-6" sourceRef="send-complex-forms" targetRef="forms-merge" />
+    <bpmn:sequenceFlow id="flow-7" sourceRef="forms-merge" targetRef="return-forms" />
+    <bpmn:sequenceFlow id="flow-8" sourceRef="return-forms" targetRef="check-completeness" />
+    <bpmn:sequenceFlow id="flow-9" sourceRef="check-completeness" targetRef="completeness-gateway" />
+    <bpmn:sequenceFlow id="flow-complete" name="yes" sourceRef="completeness-gateway" targetRef="register-claim">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">complete</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-incomplete" name="no" sourceRef="completeness-gateway" targetRef="inform-update-forms" />
+    <bpmn:sequenceFlow id="flow-10" sourceRef="register-claim" targetRef="claim-registered-end" />
+    <bpmn:sequenceFlow id="flow-11" sourceRef="inform-update-forms" targetRef="return-updated-forms" />
+    <bpmn:sequenceFlow id="flow-12" sourceRef="return-updated-forms" targetRef="updated-forms-merge" />
+    <bpmn:sequenceFlow id="flow-13" sourceRef="updated-forms-merge" targetRef="check-updated-forms" />
+    <bpmn:sequenceFlow id="flow-14" sourceRef="check-updated-forms" targetRef="completeness-gateway" />
+  </bpmn:process>
+</bpmn:definitions>

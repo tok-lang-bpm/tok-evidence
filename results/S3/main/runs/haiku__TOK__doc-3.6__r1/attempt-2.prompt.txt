@@ -1,0 +1,63 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+When a claim is received, it is first checked whether the claimant is insured by the organization. If not, the claimant is informed that the claim must be rejected. Otherwise, the severity of the claim is evaluated. Based on the outcome (simple or complex claims), relevant forms are sent to the claimant. Once the forms are returned, they are checked for completeness. If the forms provide all relevant details, the claim is registered in the Claims Management system, which ends the Claims Notification process. Otherwise, the claimant is informed to update the forms. Upon reception of the updated forms, they are checked again.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Claims notification"
+
+pool org "Organization"
+  lane clerk "Claims department"
+    start received "Claim received"
+    task check_insured "Check whether the claimant is insured"
+    xor insured "Claimant insured?"
+    task inform_reject "Inform the claimant that the claim must be rejected"
+    end rejected "Claim rejected"
+    task evaluate "Evaluate the severity of the claim"
+    xor kind "Simple or complex claim?"
+    task send_forms "Send the relevant forms to the claimant"
+    catch returned "Forms returned" message="Forms returned"
+    xor reviewed
+    task check_forms "Check the forms for completeness"
+    xor complete "Forms provide all relevant details?"
+    task inform_update "Inform the claimant to update the forms"
+    catch updated "Updated forms received" message="Updated forms received"
+  lane claimant "Claimant"
+    task return_forms "Return the forms"
+    task update_forms "Update the forms"
+  lane system "Claims Management system"
+    task register "Register the claim in the Claims Management system"
+    end ended "Claims Notification process ended"
+
+flow received -> check_insured -> insured
+flow insured -> evaluate "yes" when="insured = true"
+flow insured -> inform_reject "no" default
+flow inform_reject -> rejected
+flow evaluate -> kind
+flow kind -> send_forms "simple claim"
+flow kind -> send_forms "complex claim"
+flow send_forms -> return_forms -> returned
+flow returned -> reviewed
+flow inform_update -> update_forms -> updated
+flow updated -> reviewed
+flow reviewed -> check_forms -> complete
+flow complete -> register "yes" when="complete = true"
+flow complete -> inform_update "no" default
+flow register -> ended
+```
+
+The tok checker reports these problems in it:
+
+- line 32: warning W023: sequence flow repeats another one (same source, target and condition) (f-kind-send_forms-2)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

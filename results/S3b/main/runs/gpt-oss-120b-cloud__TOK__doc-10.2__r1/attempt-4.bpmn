@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Meter Operation Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Report" name="Report" />
+  <bpmn:message id="Message_Failure" name="Failure" />
+  <bpmn:message id="Message_Success" name="Success" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Meter Operation Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="MPON" name="MPON">
+        <bpmn:flowNodeRef>s_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_equip_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>r_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>r_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="GO" name="GO">
+        <bpmn:flowNodeRef>t_examine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_app_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirm_app</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_inform_reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mpoo_reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mspo_reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_reg_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_equip_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_equip_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c_deadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mpon_deadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirm_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_inform_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mpoo_fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mspo_fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_failure_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirm_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_inform_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mpoo_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_mspo_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_inform_sp_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_success_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="MPOO" name="MPOO">
+        <bpmn:flowNodeRef>t_equip_mpoo</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="MSPO" name="MSPO" />
+      <bpmn:lane id="SP" name="SP" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s_start" name="Process start" />
+    <bpmn:sendTask id="s_report" name="Report the meter operation to the GO" messageRef="Message_Report" />
+    <bpmn:task id="t_equip_mpon" name="Perform equipment acquisition and changes" />
+    <bpmn:receiveTask id="r_failure" name="Receive failure from MPON" messageRef="Message_Failure" />
+    <bpmn:receiveTask id="r_success" name="Receive success from MPON" messageRef="Message_Success" />
+    <bpmn:endEvent id="e_end_failure" name="Process completed with failure" />
+    <bpmn:endEvent id="e_end_success" name="Process completed successfully" />
+    <bpmn:task id="t_examine" name="Examine the application of the MPON" />
+    <bpmn:exclusiveGateway id="g_app_decision" name="Application decision?" />
+    <bpmn:task id="t_reject" name="Reject the application of the MPON" />
+    <bpmn:endEvent id="e_reject" name="Application rejected" />
+    <bpmn:task id="t_confirm_app" name="Confirm the application of the MPON" />
+    <bpmn:parallelGateway id="g_inform_reg" />
+    <bpmn:task id="t_inform_mpoo_reg" name="Inform MPOO about registration confirmation of the MPON" />
+    <bpmn:task id="t_inform_mspo_reg" name="Inform MSPO about registration confirmation of the MPON" />
+    <bpmn:parallelGateway id="g_reg_done" />
+    <bpmn:parallelGateway id="g_equip_split" />
+    <bpmn:parallelGateway id="g_equip_join" />
+    <bpmn:exclusiveGateway id="g_wait" name="Wait for MPON outcome or timeout" />
+    <bpmn:intermediateCatchEvent id="c_deadline" name="Deadline waiting">
+      <bpmn:timerEventDefinition id="c_deadline-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT48H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="t_inform_mpon_deadline" name="Inform MPON about failure of the overall transaction by deadline" />
+    <bpmn:task id="t_confirm_failure" name="Confirm failure of the assignment to the MPON" />
+    <bpmn:parallelGateway id="g_inform_failure" />
+    <bpmn:task id="t_inform_mpoo_fail" name="Inform MPOO about failure of the assignment of the MPON" />
+    <bpmn:task id="t_inform_mspo_fail" name="Inform MSPO about failure of the assignment of the MPON" />
+    <bpmn:parallelGateway id="g_failure_done" />
+    <bpmn:task id="t_assign" name="Assign the MPON" />
+    <bpmn:task id="t_confirm_assign" name="Confirm the assignment to the MPON" />
+    <bpmn:parallelGateway id="g_inform_success" />
+    <bpmn:task id="t_inform_mpoo_assign" name="Inform MPOO about the assignment of the MPON" />
+    <bpmn:task id="t_inform_mspo_assign" name="Inform MSPO about the assignment of the MPON" />
+    <bpmn:task id="t_inform_sp_assign" name="Inform SP about the assignment of the MPON" />
+    <bpmn:parallelGateway id="g_success_done" />
+    <bpmn:task id="t_equip_mpoo" name="Perform equipment acquisition and changes" />
+    <bpmn:sequenceFlow id="f-s_start-s_report" sourceRef="s_start" targetRef="s_report" />
+    <bpmn:sequenceFlow id="f-s_report-t_examine" sourceRef="s_report" targetRef="t_examine" />
+    <bpmn:sequenceFlow id="f-t_examine-g_app_decision" sourceRef="t_examine" targetRef="g_app_decision" />
+    <bpmn:sequenceFlow id="f-g_app_decision-t_reject" name="reject" sourceRef="g_app_decision" targetRef="t_reject" />
+    <bpmn:sequenceFlow id="f-g_app_decision-t_confirm_app" name="confirm" sourceRef="g_app_decision" targetRef="t_confirm_app" />
+    <bpmn:sequenceFlow id="f-t_reject-e_reject" sourceRef="t_reject" targetRef="e_reject" />
+    <bpmn:sequenceFlow id="f-t_confirm_app-g_inform_reg" sourceRef="t_confirm_app" targetRef="g_inform_reg" />
+    <bpmn:sequenceFlow id="f-g_inform_reg-t_inform_mpoo_reg" sourceRef="g_inform_reg" targetRef="t_inform_mpoo_reg" />
+    <bpmn:sequenceFlow id="f-g_inform_reg-t_inform_mspo_reg" sourceRef="g_inform_reg" targetRef="t_inform_mspo_reg" />
+    <bpmn:sequenceFlow id="f-t_inform_mpoo_reg-g_reg_done" sourceRef="t_inform_mpoo_reg" targetRef="g_reg_done" />
+    <bpmn:sequenceFlow id="f-t_inform_mspo_reg-g_reg_done" sourceRef="t_inform_mspo_reg" targetRef="g_reg_done" />
+    <bpmn:sequenceFlow id="f-g_reg_done-g_equip_split" sourceRef="g_reg_done" targetRef="g_equip_split" />
+    <bpmn:sequenceFlow id="f-g_equip_split-t_equip_mpon" sourceRef="g_equip_split" targetRef="t_equip_mpon" />
+    <bpmn:sequenceFlow id="f-g_equip_split-t_equip_mpoo" sourceRef="g_equip_split" targetRef="t_equip_mpoo" />
+    <bpmn:sequenceFlow id="f-t_equip_mpon-g_equip_join" sourceRef="t_equip_mpon" targetRef="g_equip_join" />
+    <bpmn:sequenceFlow id="f-t_equip_mpoo-g_equip_join" sourceRef="t_equip_mpoo" targetRef="g_equip_join" />
+    <bpmn:sequenceFlow id="f-g_equip_join-g_wait" sourceRef="g_equip_join" targetRef="g_wait" />
+    <bpmn:sequenceFlow id="f-g_wait-r_success" name="success" sourceRef="g_wait" targetRef="r_success" />
+    <bpmn:sequenceFlow id="f-g_wait-r_failure" name="failure" sourceRef="g_wait" targetRef="r_failure" />
+    <bpmn:sequenceFlow id="f-g_wait-c_deadline" name="timeout" sourceRef="g_wait" targetRef="c_deadline" />
+    <bpmn:sequenceFlow id="f-c_deadline-t_inform_mpon_deadline" sourceRef="c_deadline" targetRef="t_inform_mpon_deadline" />
+    <bpmn:sequenceFlow id="f-t_inform_mpon_deadline-t_confirm_failure" sourceRef="t_inform_mpon_deadline" targetRef="t_confirm_failure" />
+    <bpmn:sequenceFlow id="f-r_success-t_assign" sourceRef="r_success" targetRef="t_assign" />
+    <bpmn:sequenceFlow id="f-t_assign-t_confirm_assign" sourceRef="t_assign" targetRef="t_confirm_assign" />
+    <bpmn:sequenceFlow id="f-t_confirm_assign-g_inform_success" sourceRef="t_confirm_assign" targetRef="g_inform_success" />
+    <bpmn:sequenceFlow id="f-g_inform_success-t_inform_mpoo_assign" sourceRef="g_inform_success" targetRef="t_inform_mpoo_assign" />
+    <bpmn:sequenceFlow id="f-g_inform_success-t_inform_mspo_assign" sourceRef="g_inform_success" targetRef="t_inform_mspo_assign" />
+    <bpmn:sequenceFlow id="f-g_inform_success-t_inform_sp_assign" sourceRef="g_inform_success" targetRef="t_inform_sp_assign" />
+    <bpmn:sequenceFlow id="f-t_inform_mpoo_assign-g_success_done" sourceRef="t_inform_mpoo_assign" targetRef="g_success_done" />
+    <bpmn:sequenceFlow id="f-t_inform_mspo_assign-g_success_done" sourceRef="t_inform_mspo_assign" targetRef="g_success_done" />
+    <bpmn:sequenceFlow id="f-t_inform_sp_assign-g_success_done" sourceRef="t_inform_sp_assign" targetRef="g_success_done" />
+    <bpmn:sequenceFlow id="f-g_success_done-e_end_success" sourceRef="g_success_done" targetRef="e_end_success" />
+    <bpmn:sequenceFlow id="f-r_failure-t_confirm_failure" sourceRef="r_failure" targetRef="t_confirm_failure" />
+    <bpmn:sequenceFlow id="f-t_confirm_failure-g_inform_failure" sourceRef="t_confirm_failure" targetRef="g_inform_failure" />
+    <bpmn:sequenceFlow id="f-g_inform_failure-t_inform_mpoo_fail" sourceRef="g_inform_failure" targetRef="t_inform_mpoo_fail" />
+    <bpmn:sequenceFlow id="f-g_inform_failure-t_inform_mspo_fail" sourceRef="g_inform_failure" targetRef="t_inform_mspo_fail" />
+    <bpmn:sequenceFlow id="f-t_inform_mpoo_fail-g_failure_done" sourceRef="t_inform_mpoo_fail" targetRef="g_failure_done" />
+    <bpmn:sequenceFlow id="f-t_inform_mspo_fail-g_failure_done" sourceRef="t_inform_mspo_fail" targetRef="g_failure_done" />
+    <bpmn:sequenceFlow id="f-g_failure_done-e_end_failure" sourceRef="g_failure_done" targetRef="e_end_failure" />
+  </bpmn:process>
+</bpmn:definitions>

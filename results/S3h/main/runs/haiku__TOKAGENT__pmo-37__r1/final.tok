@@ -1,0 +1,37 @@
+tok 1.0 "Contract"
+
+pool org "Contract project"
+  lane buyer "Buyer"
+    start parts-needed "Parts needed for the contract"
+    task query-shops "Query web shops for stock, price and delivery time"
+    task parts-list "Create list of parts per web shop"
+    xor one-shop "Enough parts from one web shop?"
+    task order-one "Order cheapest parts from one web shop"
+    task order-several "Order cheapest parts from several web shops"
+    xor orders-placed
+    task reorder-cheapest "Reorder cheapest parts"
+    task reorder-fastest "Reorder fastest parts"
+    task write-mail "Write mail to friends complaining about web shops"
+  lane builder "Builder"
+    catch first-parts "First parts arrive" message="Parts delivered"
+    task build "Start building"
+    task check-stock "Check stock of each part"
+    xor stock-level "Stock level of a part?"
+    xor stock-checked
+    xor building-done "Building finished?"
+    end contract-built "Contract built"
+
+flow parts-needed -> query-shops -> parts-list -> one-shop
+flow one-shop -> order-one "yes" when="enough_one_shop = true"
+flow one-shop -> order-several "no" default
+flow order-one -> orders-placed
+flow order-several -> orders-placed -> first-parts -> build -> check-stock -> stock-level
+flow stock-level -> write-mail "zero" when="stock = 0"
+flow stock-level -> reorder-fastest "below 3" when="stock > 0 and stock < 3"
+flow stock-level -> reorder-cheapest "below 5" when="stock >= 3 and stock < 5"
+flow stock-level -> stock-checked "5 or more" default
+flow write-mail -> stock-checked
+flow reorder-fastest -> stock-checked
+flow reorder-cheapest -> stock-checked -> building-done
+flow building-done -> contract-built "yes" when="building_finished = true"
+flow building-done -> check-stock "no" default

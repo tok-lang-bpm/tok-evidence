@@ -1,0 +1,87 @@
+tok 1.0 "Customer switch-over to a new power supplier"
+
+pool supplier "New power supplier"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task send-data "Transmit customer data to customer service"
+    task check-contract "Check contract details"
+    xor decide "Withdraw from the contract within 7 days?"
+    task confirm-contract "Confirm switch contract"
+    catch wait-7d "7 days passed, contract accepted" timer=P7D
+    xor accepted
+    end cust-end "Final billing received, process ends"
+  lane cs "Customer service"
+    task receive-data "Receive customer data"
+    task enter-crm "Enter customer data object into CRM system"
+    task compare-data "Compare customer data with internal customer database"
+    task check-data "Check completeness and plausibility of customer data"
+    xor errors-found "Errors found?"
+    task correct-errors "Correct errors based on error list"
+    xor data-merge
+    xor in-database "Customer exists in customer database?"
+    task create-customer "Create new customer object"
+    xor customer-merge
+    task prepare-docs "Prepare contract documents for the power supplier switch"
+    task resolve "Analyse and resolve causing issues"
+    task send-confirmation "Send confirmation document to customer"
+    and j0
+    and s3
+    task create-contract "Create CIS contract"
+    and j3
+    task import-meter "Import meter data into systems that require the information"
+    end won "Process of winning a new customer ends"
+    end withdrawn "Switch-over withdrawn by customer"
+  lane cis "CIS (customer information system)"
+    task check-docs "Check contract documents automatically in CIS"
+    xor docs-ok "Contract documents generated?"
+    task regenerate "Generate contract documents again"
+    and s0
+    task send-request "Send request to grid operator automatically"
+  lane grid "Grid operator"
+    task check-concurrence "Check switch-over request for supplier concurrence"
+    task response "Transmit response comment"
+    xor concurrence "Supplier concurrence?"
+    task inform-suppliers "Inform all involved suppliers and demand conflict resolution"
+    end conflict "Conflict resolution demanded"
+    task terminate "Terminate sales agreement with old supplier"
+    catch switch-date "Switch-over date (no later than 10 days after supply begins)" timer=P10D
+    and s5
+    task transmit-meter "Transmit power meter data to customer service and old supplier"
+    task compute-billing "Compute final billing based on meter data"
+    and s6
+    task send-billing "Send final billing to old supplier"
+    end grid-end "Grid operator process ends"
+  lane old "Old supplier"
+    task create-billing "Create and send final billing to customer"
+
+flow request -> send-data -> receive-data -> enter-crm -> compare-data -> check-data -> errors-found
+flow errors-found -> correct-errors "yes" when=""
+flow errors-found -> data-merge "no" default
+flow correct-errors -> data-merge
+flow data-merge -> in-database
+flow in-database -> create-customer "no" when=""
+flow in-database -> customer-merge "yes" default
+flow create-customer -> customer-merge
+flow customer-merge -> prepare-docs -> check-docs -> docs-ok
+flow docs-ok -> resolve "no" when=""
+flow resolve -> regenerate -> check-docs
+flow docs-ok -> s0 "yes" default
+flow s0 -> send-confirmation -> j0
+flow s0 -> send-request -> j0
+flow j0 -> check-concurrence -> response -> concurrence
+flow concurrence -> inform-suppliers "yes" when=""
+flow inform-suppliers -> conflict
+flow concurrence -> s3 "no" default
+flow s3 -> terminate -> j3
+flow s3 -> create-contract -> j3
+flow j3 -> check-contract -> decide
+flow decide -> withdrawn "withdraw" when=""
+flow decide -> confirm-contract "confirm" when=""
+flow decide -> wait-7d default
+flow confirm-contract -> accepted
+flow wait-7d -> accepted
+flow accepted -> switch-date -> s5
+flow s5 -> transmit-meter -> import-meter -> won
+flow s5 -> compute-billing -> s6
+flow s6 -> send-billing -> grid-end
+flow s6 -> create-billing -> cust-end

@@ -1,0 +1,52 @@
+tok 1.0
+
+pool org "Organisation"
+  lane fault_detector "Fault Detector"
+    task report-failure "fault detector reports failure"
+  lane mpo "MPO"
+    start s "Start"
+    end e "End"
+    xor start_decision "Fault reported or suspicion?"
+    xor exam_merge "Merge reports"
+    xor confirm_decision "Reject or confirm?"
+    and split_initial "Initial parallel actions"
+    and join_initial "Join initial actions"
+    and split_resolution "Resolution informs"
+    and join_resolution "Join resolution informs"
+    task mpo-suspicion "MPO has suspicion of own fault"
+    task mpo-examine-failure "MPO examine failure"
+    task mpo-reject-failure "MPO reject failure of fault detector"
+    task mpo-confirm-failure "MPO confirm failure of fault detector"
+    task mpo-fix-fault "MPO fix fault at measuring device"
+    task mpo-share-results "MPO share results of repairs with fault detector"
+    task mpo-inform-go "MPO inform GO"
+    task mpo-inform-msp "MPO inform MSP"
+    task mpo-inform-go-resolution "MPO inform GO about resolution of interference"
+    task mpo-inform-msp-resolution "MPO inform MSP about resolution of interference"
+  lane go "GO"
+  lane msp "MSP"
+
+flow s -> start_decision
+flow start_decision -> report-failure "report"
+flow start_decision -> mpo-suspicion "suspicion"
+flow report-failure -> exam_merge
+flow mpo-suspicion -> exam_merge
+flow exam_merge -> mpo-examine-failure
+flow mpo-examine-failure -> confirm_decision
+flow confirm_decision -> mpo-reject-failure "reject"
+flow confirm_decision -> mpo-confirm-failure "confirm"
+flow mpo-reject-failure -> e
+flow mpo-confirm-failure -> split_initial
+flow split_initial -> mpo-inform-go
+flow split_initial -> mpo-inform-msp
+flow split_initial -> mpo-fix-fault
+flow mpo-inform-go -> join_initial
+flow mpo-inform-msp -> join_initial
+flow mpo-fix-fault -> join_initial
+flow join_initial -> mpo-share-results
+flow mpo-share-results -> split_resolution
+flow split_resolution -> mpo-inform-go-resolution
+flow split_resolution -> mpo-inform-msp-resolution
+flow mpo-inform-go-resolution -> join_resolution
+flow mpo-inform-msp-resolution -> join_resolution
+flow join_resolution -> e

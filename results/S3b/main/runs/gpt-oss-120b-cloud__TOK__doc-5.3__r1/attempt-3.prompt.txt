@@ -1,0 +1,67 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process of an Office Supply Request starts when any employee of the organization submits an office supply request. Once the requirement is registered, the request is received by the immediate supervisor of the employee requesting the office supplies. The supervisor must approve or ask for a change, or reject the request. If the request is rejected the process will end. If the request is asked to make a change then it is returned to the petitioner / employee who can review the comments for the change request. If the request is approved it will go to the purchase department that will be in charge of making quotations (using a subprocess) and select a vendor. If the vendor is not valid in the system the purchase department will have to choose a different vendor. After a vendor is selected and confirmed, the system will generate and send a purchase order and wait for the product to be delivered and the invoice received. In any case the system will send a notification to let the user know what the result was. In any of the cases, approval, rejection or change required the system will send the user a notification.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Office Supply Request Process"
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start_event "Office supply request submitted"
+    task submit_request "Submit office supply request"
+    task register_requirement "Register requirement"
+    task review_change "Review change request"
+    flow start_event -> submit_request -> register_requirement
+
+  lane supervisor "Supervisor"
+    task receive_request "Receive request"
+    xor decision "Supervisor decision?"
+    task approve_request "Approve request"
+    task ask_change "Ask for change"
+    task reject_request "Reject request"
+    flow register_requirement -> receive_request -> decision
+    flow decision -> approve_request
+    flow decision -> ask_change
+    flow decision -> reject_request
+
+  lane purchase "Purchase Department"
+    sub make_quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+    task wait_delivery "Wait for product delivery and invoice receipt"
+    flow approve_request -> make_quotations -> select_vendor -> vendor_valid
+    flow vendor_valid -> select_vendor "valid"
+    flow vendor_valid -> choose_different_vendor "invalid"
+    flow choose_different_vendor -> select_vendor
+    flow select_vendor -> generate_po -> wait_delivery
+
+  lane system "System"
+    task send_notification "Send notification to user"
+    flow reject_request -> send_notification
+    flow send_notification -> end end_reject "Request rejected"
+    flow ask_change -> send_notification
+    flow send_notification -> review_change
+    flow review_change -> decision
+    flow wait_delivery -> send_notification
+    flow send_notification -> end end_done "Request completed"
+```
+
+The tok checker reports these problems in it:
+
+- line 38: error P007: malformed attribute near 'Request rejected'
+- line 43: error P007: malformed attribute near 'Request completed'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

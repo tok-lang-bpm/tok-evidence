@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Chainsaw" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_parts_arrived" name="parts arrived" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Chainsaw Manufacturer" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Chainsaw" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tell</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="manufacturer" name="Manufacturer">
+        <bpmn:flowNodeRef>order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produce_first</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_first</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>likes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produce_rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopped</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updates</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Order received" />
+    <bpmn:task id="tell" name="Tell properties" />
+    <bpmn:task id="order" name="Order parts">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="parts" name="Parts arrived">
+      <bpmn:messageEventDefinition id="parts-def" messageRef="Message_parts_arrived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="inspect" name="Inspect parts" />
+    <bpmn:task id="assemble" name="Assemble parts" />
+    <bpmn:task id="produce_first" name="Produce first saw" />
+    <bpmn:task id="send_first" name="Send first saw" />
+    <bpmn:exclusiveGateway id="likes" name="Customer likes first saw?" default="f-likes-stopped" />
+    <bpmn:task id="produce_rest" name="Produce rest of order" />
+    <bpmn:endEvent id="done" name="Order completed" />
+    <bpmn:endEvent id="stopped" name="Order stopped">
+      <bpmn:terminateEventDefinition id="stopped-def" />
+    </bpmn:endEvent>
+    <bpmn:subProcess id="updates" name="Send updates" triggeredByEvent="true">
+      <bpmn:startEvent id="update_due" name="Update due">
+        <bpmn:timerEventDefinition id="update_due-def">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:task id="send_update" name="Send updates" />
+      <bpmn:endEvent id="update_done" name="Update sent" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="f-needed-tell" sourceRef="needed" targetRef="tell" />
+    <bpmn:sequenceFlow id="f-tell-order" sourceRef="tell" targetRef="order" />
+    <bpmn:sequenceFlow id="f-order-parts" sourceRef="order" targetRef="parts" />
+    <bpmn:sequenceFlow id="f-parts-inspect" sourceRef="parts" targetRef="inspect" />
+    <bpmn:sequenceFlow id="f-inspect-assemble" sourceRef="inspect" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f-assemble-produce_first" sourceRef="assemble" targetRef="produce_first" />
+    <bpmn:sequenceFlow id="f-produce_first-send_first" sourceRef="produce_first" targetRef="send_first" />
+    <bpmn:sequenceFlow id="f-send_first-likes" sourceRef="send_first" targetRef="likes" />
+    <bpmn:sequenceFlow id="f-likes-produce_rest" name="yes" sourceRef="likes" targetRef="produce_rest" />
+    <bpmn:sequenceFlow id="f-likes-stopped" name="no" sourceRef="likes" targetRef="stopped" />
+    <bpmn:sequenceFlow id="f-produce_rest-done" sourceRef="produce_rest" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

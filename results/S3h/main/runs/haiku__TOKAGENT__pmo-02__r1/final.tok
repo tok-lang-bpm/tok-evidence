@@ -1,0 +1,53 @@
+tok 1.0 "New hire process"
+
+pool org "Organisation"
+  lane dept "Department"
+    start s1 "Need for new hire identified"
+    task identify-need "Identify need for new hire"
+    task conduct-in-person "Conduct in-person interview"
+    task conduct-virtual "Conduct virtual interview"
+    task choose-candidate "Choose candidate"
+    task integrate "Integrate new hire into team"
+    end e-done "New hire integrated into team"
+  lane hr "HR"
+    task create-jd "Create job description"
+    task post-jd "Post job description on job boards"
+    task collect "Collect resumes"
+    task screen "Screen resumes"
+    task phone "Conduct initial phone interview"
+    xor g-sel "Candidate selected?"
+    task reject "Reject candidate"
+    end e-rej "Candidate rejected"
+    task invite "Invite candidate to interview"
+    task extend "Extend offer"
+    xor g-neg "Salary negotiation needed?"
+    task negotiate "Negotiate salary"
+    xor m-neg
+    task paperwork "Complete paperwork"
+    task orientation "Conduct orientation"
+    task training "Provide training"
+  lane cand "Candidate"
+    task choose-format "Choose interview format"
+    xor g-format "In-person or virtual?"
+    xor m-format
+    task accept "Accept offer"
+    xor g-accept "Offer accepted?"
+    end e-declined "Offer declined"
+
+flow s1 -> identify-need -> create-jd -> post-jd -> collect -> screen -> phone -> g-sel
+flow g-sel -> reject "no" when="selected = false"
+flow g-sel -> invite "yes" when="selected = true"
+flow reject -> e-rej
+flow invite -> choose-format -> g-format
+flow g-format -> conduct-in-person "in-person" when="preference = \"in-person\""
+flow g-format -> conduct-virtual "virtual" when="preference = \"virtual\""
+flow conduct-in-person -> m-format
+flow conduct-virtual -> m-format
+flow m-format -> choose-candidate -> extend -> g-neg
+flow g-neg -> negotiate "yes" when="salary_negotiation = true"
+flow g-neg -> m-neg "no" when="salary_negotiation = false"
+flow negotiate -> m-neg
+flow m-neg -> accept -> g-accept
+flow g-accept -> e-declined "no" when="offer_accepted = false"
+flow g-accept -> paperwork "yes" when="offer_accepted = true"
+flow paperwork -> orientation -> training -> integrate -> e-done

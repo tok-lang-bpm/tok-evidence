@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Court mail handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="registry" name="Court registry" processRef="registry-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="registry-process" name="Court mail handling" isExecutable="false">
+    <bpmn:laneSet id="registry-lanes">
+      <bpmn:lane id="mpu" name="Mail Clerk (Mail Processing Unit)">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sort_areas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distribute</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="reg" name="Registry">
+        <bpmn:flowNodeRef>open</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sort_groups</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="arm" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>qc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compliant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>envelope</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cash" name="Cashier">
+        <bpmn:flowNodeRef>fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>party</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Mail from the party collected" />
+    <bpmn:task id="collect" name="Collect the mail from the party" />
+    <bpmn:task id="sort_areas" name="Sort the unopened mail into business areas" />
+    <bpmn:task id="distribute" name="Distribute the mail" />
+    <bpmn:task id="open" name="Open the mail" />
+    <bpmn:task id="sort_groups" name="Sort the mail into groups for distribution" />
+    <bpmn:task id="register" name="Register the mail in the manual incoming Mail Register" />
+    <bpmn:task id="qc" name="Perform the quality check" />
+    <bpmn:exclusiveGateway id="compliant" name="Mail compliant?" default="f-compliant-list" />
+    <bpmn:task id="list" name="Compile a list of requisition explaining the rejection" />
+    <bpmn:task id="return" name="Send the list of requisition back to the party" />
+    <bpmn:endEvent id="rejected" name="Mail rejected" />
+    <bpmn:task id="details" name="Capture the matter details (types of action)" />
+    <bpmn:task id="provide" name="Provide the matter details to the Cashier" />
+    <bpmn:parallelGateway id="split_work" />
+    <bpmn:task id="envelope" name="Put the receipt and copied documents into an envelope" />
+    <bpmn:task id="post" name="Post the envelope to the party" />
+    <bpmn:parallelGateway id="join_work" />
+    <bpmn:endEvent id="processed" name="Application processed" />
+    <bpmn:task id="fees" name="Take the applicable fees attached to the mail" />
+    <bpmn:task id="party" name="Capture the Party Details" />
+    <bpmn:task id="print" name="Print the Physical Court File" />
+    <bpmn:sequenceFlow id="f-received-collect" sourceRef="received" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-sort_areas" sourceRef="collect" targetRef="sort_areas" />
+    <bpmn:sequenceFlow id="f-sort_areas-distribute" sourceRef="sort_areas" targetRef="distribute" />
+    <bpmn:sequenceFlow id="f-distribute-open" sourceRef="distribute" targetRef="open" />
+    <bpmn:sequenceFlow id="f-open-sort_groups" sourceRef="open" targetRef="sort_groups" />
+    <bpmn:sequenceFlow id="f-sort_groups-register" sourceRef="sort_groups" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-qc" sourceRef="register" targetRef="qc" />
+    <bpmn:sequenceFlow id="f-qc-compliant" sourceRef="qc" targetRef="compliant" />
+    <bpmn:sequenceFlow id="f-compliant-details" name="yes" sourceRef="compliant" targetRef="details">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">compliant = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-compliant-list" name="no" sourceRef="compliant" targetRef="list" />
+    <bpmn:sequenceFlow id="f-list-return" sourceRef="list" targetRef="return" />
+    <bpmn:sequenceFlow id="f-return-rejected" sourceRef="return" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-details-provide" sourceRef="details" targetRef="provide" />
+    <bpmn:sequenceFlow id="f-provide-fees" sourceRef="provide" targetRef="fees" />
+    <bpmn:sequenceFlow id="f-fees-split_work" sourceRef="fees" targetRef="split_work" />
+    <bpmn:sequenceFlow id="f-split_work-envelope" sourceRef="split_work" targetRef="envelope" />
+    <bpmn:sequenceFlow id="f-envelope-post" sourceRef="envelope" targetRef="post" />
+    <bpmn:sequenceFlow id="f-post-join_work" sourceRef="post" targetRef="join_work" />
+    <bpmn:sequenceFlow id="f-split_work-party" sourceRef="split_work" targetRef="party" />
+    <bpmn:sequenceFlow id="f-party-print" sourceRef="party" targetRef="print" />
+    <bpmn:sequenceFlow id="f-print-join_work" sourceRef="print" targetRef="join_work" />
+    <bpmn:sequenceFlow id="f-join_work-processed" sourceRef="join_work" targetRef="processed" />
+  </bpmn:process>
+</bpmn:definitions>

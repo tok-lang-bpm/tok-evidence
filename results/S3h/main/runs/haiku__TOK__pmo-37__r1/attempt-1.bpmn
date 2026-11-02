@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Contract" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Parts_batch_arrived" name="Parts batch arrived" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Contract project" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Contract" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="contractor" name="Contractor">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enough</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order_one</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order_several</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ordered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>first</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>loop_in</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder_fast</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder_cheap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>next</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finished</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Parts needed for the contract project" />
+    <bpmn:task id="query" name="Query all web shops for quantity, price and delivery time" />
+    <bpmn:task id="choose" name="Choose the cheapest parts" />
+    <bpmn:exclusiveGateway id="enough" name="One shop has enough parts?" default="f-enough-order_several" />
+    <bpmn:task id="order_one" name="Order the parts from one shop" />
+    <bpmn:task id="order_several" name="Order the parts from several shops" />
+    <bpmn:exclusiveGateway id="ordered" />
+    <bpmn:task id="list" name="Create a list of the parts ordered from each shop" />
+    <bpmn:intermediateCatchEvent id="first" name="First parts arrive">
+      <bpmn:messageEventDefinition id="first-def" messageRef="Message_Parts_batch_arrived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="split" />
+    <bpmn:exclusiveGateway id="loop_in" />
+    <bpmn:task id="check" name="Check the stock level of each part" />
+    <bpmn:exclusiveGateway id="stock" name="Stock level of a part?" default="f-stock-stock_done" />
+    <bpmn:task id="mail" name="Write a mail to friends complaining about the web shops" />
+    <bpmn:task id="reorder_fast" name="Reorder the part from the fastest web shop" />
+    <bpmn:task id="reorder_cheap" name="Reorder the part from the cheapest web shop" />
+    <bpmn:exclusiveGateway id="stock_done" />
+    <bpmn:intermediateCatchEvent id="next" name="Next parts batch arrives">
+      <bpmn:messageEventDefinition id="next-def" messageRef="Message_Parts_batch_arrived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="build" name="Build the contract" />
+    <bpmn:endEvent id="finished" name="Contract built">
+      <bpmn:terminateEventDefinition id="finished-def" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="f-needed-query" sourceRef="needed" targetRef="query" />
+    <bpmn:sequenceFlow id="f-query-choose" sourceRef="query" targetRef="choose" />
+    <bpmn:sequenceFlow id="f-choose-enough" sourceRef="choose" targetRef="enough" />
+    <bpmn:sequenceFlow id="f-enough-order_one" name="yes" sourceRef="enough" targetRef="order_one">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">one_shop_enough = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-enough-order_several" name="no" sourceRef="enough" targetRef="order_several" />
+    <bpmn:sequenceFlow id="f-order_one-ordered" sourceRef="order_one" targetRef="ordered" />
+    <bpmn:sequenceFlow id="f-order_several-ordered" sourceRef="order_several" targetRef="ordered" />
+    <bpmn:sequenceFlow id="f-ordered-list" sourceRef="ordered" targetRef="list" />
+    <bpmn:sequenceFlow id="f-list-first" sourceRef="list" targetRef="first" />
+    <bpmn:sequenceFlow id="f-first-split" sourceRef="first" targetRef="split" />
+    <bpmn:sequenceFlow id="f-split-build" sourceRef="split" targetRef="build" />
+    <bpmn:sequenceFlow id="f-build-finished" sourceRef="build" targetRef="finished" />
+    <bpmn:sequenceFlow id="f-split-loop_in" sourceRef="split" targetRef="loop_in" />
+    <bpmn:sequenceFlow id="f-loop_in-check" sourceRef="loop_in" targetRef="check" />
+    <bpmn:sequenceFlow id="f-check-stock" sourceRef="check" targetRef="stock" />
+    <bpmn:sequenceFlow id="f-stock-mail" name="zero" sourceRef="stock" targetRef="mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-reorder_fast" name="below 3" sourceRef="stock" targetRef="reorder_fast">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &gt; 0 and stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-reorder_cheap" name="below 5" sourceRef="stock" targetRef="reorder_cheap">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &gt;= 3 and stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-stock_done" name="otherwise" sourceRef="stock" targetRef="stock_done" />
+    <bpmn:sequenceFlow id="f-mail-stock_done" sourceRef="mail" targetRef="stock_done" />
+    <bpmn:sequenceFlow id="f-reorder_fast-stock_done" sourceRef="reorder_fast" targetRef="stock_done" />
+    <bpmn:sequenceFlow id="f-reorder_cheap-stock_done" sourceRef="reorder_cheap" targetRef="stock_done" />
+    <bpmn:sequenceFlow id="f-stock_done-next" sourceRef="stock_done" targetRef="next" />
+    <bpmn:sequenceFlow id="f-next-loop_in" sourceRef="next" targetRef="loop_in" />
+  </bpmn:process>
+</bpmn:definitions>

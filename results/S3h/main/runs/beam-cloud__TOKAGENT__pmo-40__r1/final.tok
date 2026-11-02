@@ -1,0 +1,23 @@
+tok 1.0 "OEE"
+
+pool oee "OEE"
+  lane system "System"
+    start s "Start"
+    sub monitoring "Monitor machine" loop while="true"
+      start ms "Start monitoring"
+      task collect "Collect relevant information from machine"
+      task calculate "Calculate OEE"
+      xor check "OEE below threshold?"
+      task stop "Stop machine"
+      task email "Send email to engineer"
+      catch restart "Machine restarted" message="Machine restarted"
+      end ms_end "Monitoring period ended"
+    boundary disconnected "Machine disconnected" on=monitoring message="Machine disconnected"
+    end e "Process stopped" terminate
+
+flow ms -> collect -> calculate -> check
+flow check -> stop "yes" when="oee < threshold"
+flow stop -> email -> restart -> ms_end
+flow check -> ms_end "no" default
+flow s -> monitoring -> e
+flow disconnected -> e

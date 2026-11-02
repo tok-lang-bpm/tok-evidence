@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process_1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process_1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_MPOO" name="MPOO">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Send_TempContinuation_MPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Send_EquipAcq_MPOO_to_MPON</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Send_EquipAcq_MPOO_to_GO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Confirm_Invoice_to_MPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Reject_Invoice_MPOO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_MSPO" name="MSPO">
+        <bpmn:flowNodeRef>Task_Send_TempContinuation_MSPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Send_AdditionalReadings_MSPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Confirm_Invoice_to_MSPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Reject_Invoice_MSPO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_GO" name="GO">
+        <bpmn:flowNodeRef>Task_Examine_TempContinuation_GO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Examine_AdditionalReadings_GO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Examine_EquipAcq_GO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Decision_Confirm_GO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_MPNO" name="MPON">
+        <bpmn:flowNodeRef>Task_Examine_EquipAcq_MPNO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Decision_Confirm_MPNO</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="StartEvent_1" name="Start" />
+
+    <!-- Split gateway -->
+    <bpmn:exclusiveGateway id="Gateway_Split" name="Bill type decision" />
+
+    <!-- Tasks: sending bills -->
+    <bpmn:task id="Task_Send_TempContinuation_MPOO"
+               name="Send bill for temporary continuation of the metering point operations to GO" />
+    <bpmn:task id="Task_Send_TempContinuation_MSPO"
+               name="Send bill for temporary continuation of the measurement to GO" />
+    <bpmn:task id="Task_Send_AdditionalReadings_MSPO"
+               name="Send bill for additional readings to GO" />
+    <bpmn:task id="Task_Send_EquipAcq_MPOO_to_MPON"
+               name="Send bill for equipment acquisition to MPON" />
+    <bpmn:task id="Task_Send_EquipAcq_MPOO_to_GO"
+               name="Send bill for equipment acquisition to GO" />
+
+    <!-- Examine tasks -->
+    <bpmn:task id="Task_Examine_TempContinuation_GO"
+               name="Examine the bill for temporary continuation of the metering point operations" />
+    <bpmn:task id="Task_Examine_AdditionalReadings_GO"
+               name="Examine the bill for additional readings" />
+    <bpmn:task id="Task_Examine_EquipAcq_GO"
+               name="Examine the bill for equipment acquisition" />
+    <bpmn:task id="Task_Examine_EquipAcq_MPNO"
+               name="Examine the bill for equipment acquisition" />
+
+    <!-- Decision gateways after examination -->
+    <bpmn:exclusiveGateway id="Gateway_Decision_Confirm_GO" name="Confirm invoice?" />
+    <bpmn:exclusiveGateway id="Gateway_Decision_Confirm_MPNO" name="Confirm invoice?" />
+
+    <!-- Confirmation / Rejection tasks -->
+    <bpmn:task id="Task_Confirm_Invoice_to_MPOO"
+               name="Confirm invoice with payment advice to MPOO" />
+    <bpmn:task id="Task_Reject_Invoice_MPOO"
+               name="Reject invoice of MPOO" />
+    <bpmn:task id="Task_Confirm_Invoice_to_MSPO"
+               name="Confirm invoice with payment advice to MSPO" />
+    <bpmn:task id="Task_Reject_Invoice_MSPO"
+               name="Reject invoice of MSPO" />
+
+    <!-- End events -->
+    <bpmn:endEvent id="End_Confirmed" name="Invoice confirmed" />
+    <bpmn:endEvent id="End_Rejected" name="Invoice rejected" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="F_start_to_split" sourceRef="StartEvent_1" targetRef="Gateway_Split" />
+
+    <!-- From split to send tasks -->
+    <bpmn:sequenceFlow id="F_split_to_send_MPOO_temp" sourceRef="Gateway_Split" targetRef="Task_Send_TempContinuation_MPOO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MPOO sends temporary continuation bill</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_split_to_send_MSPO_temp" sourceRef="Gateway_Split" targetRef="Task_Send_TempContinuation_MSPO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MSPO sends temporary continuation bill</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_split_to_send_MSPO_readings" sourceRef="Gateway_Split" targetRef="Task_Send_AdditionalReadings_MSPO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MSPO sends additional readings bill</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_split_to_send_MPOO_eq_MPON" sourceRef="Gateway_Split" targetRef="Task_Send_EquipAcq_MPOO_to_MPON">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MPOO sends equipment acquisition bill to MPON</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_split_to_send_MPOO_eq_GO" sourceRef="Gateway_Split" targetRef="Task_Send_EquipAcq_MPOO_to_GO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MPOO sends equipment acquisition bill to GO</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Send -> Examine -->
+    <bpmn:sequenceFlow id="F_MPOO_temp_send_to_examine_GO" sourceRef="Task_Send_TempContinuation_MPOO" targetRef="Task_Examine_TempContinuation_GO" />
+    <bpmn:sequenceFlow id="F_MSPO_temp_send_to_examine_GO" sourceRef="Task_Send_TempContinuation_MSPO" targetRef="Task_Examine_TempContinuation_GO" />
+    <bpmn:sequenceFlow id="F_MSPO_readings_send_to_examine_GO" sourceRef="Task_Send_AdditionalReadings_MSPO" targetRef="Task_Examine_AdditionalReadings_GO" />
+    <bpmn:sequenceFlow id="F_MPOO_eq_send_to_examine_MPON" sourceRef="Task_Send_EquipAcq_MPOO_to_MPON" targetRef="Task_Examine_EquipAcq_MPNO" />
+    <bpmn:sequenceFlow id="F_MPOO_eq_send_to_examine_GO" sourceRef="Task_Send_EquipAcq_MPOO_to_GO" targetRef="Task_Examine_EquipAcq_GO" />
+
+    <!-- Examine -> Decision gateway -->
+    <bpmn:sequenceFlow id="F_examine_GO_to_decision" sourceRef="Task_Examine_TempContinuation_GO" targetRef="Gateway_Decision_Confirm_GO" />
+    <bpmn:sequenceFlow id="F_examine_add_readings_GO_to_decision" sourceRef="Task_Examine_AdditionalReadings_GO" targetRef="Gateway_Decision_Confirm_GO" />
+    <bpmn:sequenceFlow id="F_examine_eq_GO_to_decision" sourceRef="Task_Examine_EquipAcq_GO" targetRef="Gateway_Decision_Confirm_GO" />
+    <bpmn:sequenceFlow id="F_examine_eq_MPNO_to_decision" sourceRef="Task_Examine_EquipAcq_MPNO" targetRef="Gateway_Decision_Confirm_MPNO" />
+
+    <!-- Decision gateway -> Confirm / Reject (GO side) -->
+    <bpmn:sequenceFlow id="F_decision_GO_confirm" sourceRef="Gateway_Decision_Confirm_GO" targetRef="Task_Confirm_Invoice_to_MPOO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Confirm</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_decision_GO_reject" sourceRef="Gateway_Decision_Confirm_GO" targetRef="Task_Reject_Invoice_MPOO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Reject</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Decision gateway -> Confirm / Reject (MPON side) -->
+    <bpmn:sequenceFlow id="F_decision_MPNO_confirm" sourceRef="Gateway_Decision_Confirm_MPNO" targetRef="Task_Confirm_Invoice_to_MPOO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Confirm</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_decision_MPNO_reject" sourceRef="Gateway_Decision_Confirm_MPNO" targetRef="Task_Reject_Invoice_MPOO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Reject</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- After confirmations / rejections for MSPO (these come from GO examination of MSPO bills) -->
+    <bpmn:sequenceFlow id="F_examine_MSPO_to_decision_GO" sourceRef="Task_Examine_TempContinuation_GO" targetRef="Gateway_Decision_Confirm_GO" />
+    <!-- Re‑use same decision gateway; add conditional flows for MSPO -->
+    <bpmn:sequenceFlow id="F_decision_GO_confirm_MSPO" sourceRef="Gateway_Decision_Confirm_GO" targetRef="Task_Confirm_Invoice_to_MSPO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Confirm</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_decision_GO_reject_MSPO" sourceRef="Gateway_Decision_Confirm_GO" targetRef="Task_Reject_Invoice_MSPO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Reject</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Confirm / Reject -> End -->
+    <bpmn:sequenceFlow id="F_confirm_to_end" sourceRef="Task_Confirm_Invoice_to_MPOO" targetRef="End_Confirmed" />
+    <bpmn:sequenceFlow id="F_confirm_MSPO_to_end" sourceRef="Task_Confirm_Invoice_to_MSPO" targetRef="End_Confirmed" />
+    <bpmn:sequenceFlow id="F_reject_to_end" sourceRef="Task_Reject_Invoice_MPOO" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F_reject_MSPO_to_end" sourceRef="Task_Reject_Invoice_MSPO" targetRef="End_Rejected" />
+  </bpmn:process>
+</bpmn:definitions>

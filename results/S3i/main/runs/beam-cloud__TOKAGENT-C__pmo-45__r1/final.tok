@@ -1,0 +1,45 @@
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online Shop"
+  lane customer "Customer"
+    start start_order "Start ordering"
+    task login "Log into E-Shop system"
+    task wait_login "Wait for login confirmation"
+    task select "Select product"
+    task add "Add product to shopping cart"
+    task save "Save product"
+    task check_selected "Check if every product was selected"
+    xor all_selected "All products selected?"
+    task enter_payment "Enter payment data"
+    task enter_shipping "Enter shipping address"
+    task enter_billing "Enter billing address"
+    xor billing_eq "Shipping address equals billing address?"
+    end stopped "Shopping experience stops"
+  lane system "E-Shop System"
+    task check_credentials "Check credentials"
+    xor login_ok "Login successful?"
+    task finish_order "Finish the order"
+    and fork "Prepare payment and shipment"
+    task prepare_payment "Prepare payment"
+    task prepare_shipment "Prepare shipment"
+    and join "Address and payment completed"
+    task finish_final "Finish the order"
+    end done "Order finished"
+  lane bank "Bank"
+    task confirm_payment "Confirm payment"
+
+flow start_order -> login -> wait_login -> check_credentials -> login_ok
+flow login_ok -> select "yes"
+flow login_ok -> stopped "no"
+flow select -> add -> save -> check_selected -> all_selected
+flow all_selected -> finish_order "yes"
+flow all_selected -> select "no"
+flow finish_order -> fork
+flow fork -> prepare_payment
+flow fork -> prepare_shipment
+flow prepare_payment -> enter_payment -> confirm_payment -> join
+flow prepare_shipment -> enter_shipping -> billing_eq
+flow billing_eq -> enter_billing "No" when="shippingAddress != billingAddress"
+flow enter_billing -> join
+flow billing_eq -> join "Yes" default
+flow join -> finish_final -> done

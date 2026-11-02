@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense Report Processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Expense Report Processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_progress</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="accounting" name="Accounting">
+        <bpmn:flowNodeRef>account_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>auto_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>process_reimbursement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_progress_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_cancellation_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_rejection_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>approval_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>supervisor_approve</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Expense report received" />
+    <bpmn:task id="receive" name="Receive expense report" />
+    <bpmn:endEvent id="end_success" name="Process completed" />
+    <bpmn:endEvent id="end_rejected" name="Process rejected" />
+    <bpmn:endEvent id="end_cancelled" name="Process cancelled" />
+    <bpmn:endEvent id="end_progress" name="Approval in progress email sent" />
+    <bpmn:exclusiveGateway id="account_check" name="Employee has account?" />
+    <bpmn:task id="create_account" name="Create new account" />
+    <bpmn:task id="review" name="Review expense report for automatic approval" />
+    <bpmn:exclusiveGateway id="amount_check" name="Amount under $200?" />
+    <bpmn:task id="auto_approve" name="Automatically approve expense" />
+    <bpmn:task id="process_reimbursement" name="Process reimbursement" />
+    <bpmn:boundaryEvent id="timer7" name="7-day timer" attachedToRef="process_reimbursement" cancelActivity="false">
+      <bpmn:timerEventDefinition id="timer7-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="send_progress_email" name="Send approval in progress email" />
+    <bpmn:boundaryEvent id="timer30" name="30-day timer" attachedToRef="process_reimbursement">
+      <bpmn:timerEventDefinition id="timer30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="send_cancellation_email" name="Send cancellation email" />
+    <bpmn:task id="send_rejection_email" name="Send rejection notice email" />
+    <bpmn:task id="reimburse" name="Reimburse via direct deposit" />
+    <bpmn:exclusiveGateway id="approval_decision" name="Expense approved?" />
+    <bpmn:task id="supervisor_approve" name="Supervisor approves expense report" />
+    <bpmn:sequenceFlow id="f-start-receive" sourceRef="start" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-account_check" sourceRef="receive" targetRef="account_check" />
+    <bpmn:sequenceFlow id="f-account_check-review" name="yes" sourceRef="account_check" targetRef="review" />
+    <bpmn:sequenceFlow id="f-account_check-create_account" name="no" sourceRef="account_check" targetRef="create_account" />
+    <bpmn:sequenceFlow id="f-create_account-review" sourceRef="create_account" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-amount_check" sourceRef="review" targetRef="amount_check" />
+    <bpmn:sequenceFlow id="f-amount_check-auto_approve" name="yes" sourceRef="amount_check" targetRef="auto_approve" />
+    <bpmn:sequenceFlow id="f-amount_check-supervisor_approve" name="no" sourceRef="amount_check" targetRef="supervisor_approve" />
+    <bpmn:sequenceFlow id="f-auto_approve-process_reimbursement" sourceRef="auto_approve" targetRef="process_reimbursement" />
+    <bpmn:sequenceFlow id="f-supervisor_approve-approval_decision" sourceRef="supervisor_approve" targetRef="approval_decision" />
+    <bpmn:sequenceFlow id="f-approval_decision-process_reimbursement" name="approved" sourceRef="approval_decision" targetRef="process_reimbursement" />
+    <bpmn:sequenceFlow id="f-approval_decision-send_rejection_email" name="rejected" sourceRef="approval_decision" targetRef="send_rejection_email" />
+    <bpmn:sequenceFlow id="f-send_rejection_email-end_rejected" sourceRef="send_rejection_email" targetRef="end_rejected" />
+    <bpmn:sequenceFlow id="f-process_reimbursement-reimburse" sourceRef="process_reimbursement" targetRef="reimburse" />
+    <bpmn:sequenceFlow id="f-reimburse-end_success" sourceRef="reimburse" targetRef="end_success" />
+    <bpmn:sequenceFlow id="f-timer7-send_progress_email" sourceRef="timer7" targetRef="send_progress_email" />
+    <bpmn:sequenceFlow id="f-send_progress_email-end_progress" sourceRef="send_progress_email" targetRef="end_progress" />
+    <bpmn:sequenceFlow id="f-timer30-send_cancellation_email" sourceRef="timer30" targetRef="send_cancellation_email" />
+    <bpmn:sequenceFlow id="f-send_cancellation_email-end_cancelled" sourceRef="send_cancellation_email" targetRef="end_cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

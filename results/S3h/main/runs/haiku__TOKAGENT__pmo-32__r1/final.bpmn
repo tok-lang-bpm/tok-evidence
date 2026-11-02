@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:signal id="Signal_Natural_disaster" name="Natural disaster" />
+  <bpmn:signal id="Signal_Milestone_reached" name="Milestone reached" />
+  <bpmn:signal id="Signal_Update_materials_list" name="Update materials list" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="game" name="Farming bot service" processRef="game-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="game-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="game-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>s-wants</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select-res</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>set-urgency</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-mat</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done-m</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-update</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming bot">
+        <bpmn:flowNodeRef>check-deps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tool-q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-tool</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tool-m</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dist</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>milestone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-ms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-ms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>upd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s-wants" name="Player wants a farming bot" />
+    <bpmn:userTask id="select-res" name="Select resources to farm" />
+    <bpmn:userTask id="set-urgency" name="Set urgency of resources" />
+    <bpmn:userTask id="confirm" name="Confirm preferences" />
+    <bpmn:userTask id="update-list" name="Update list of materials to farm" />
+    <bpmn:userTask id="brag" name="Brag to selected friends" />
+    <bpmn:exclusiveGateway id="send-q" name="Send materials to friends?" default="f-send-q-done-m" />
+    <bpmn:userTask id="send-mat" name="Send materials to friends" />
+    <bpmn:exclusiveGateway id="done-m" name="Friends handled" />
+    <bpmn:endEvent id="e-done" name="Bot task complete" />
+    <bpmn:endEvent id="e-update" name="Materials list updated" />
+    <bpmn:task id="check-deps" name="Check resource dependencies" />
+    <bpmn:exclusiveGateway id="tool-q" name="Tool needed for resource?" default="f-tool-q-tool-m" />
+    <bpmn:task id="create-tool" name="Create required tool" />
+    <bpmn:exclusiveGateway id="tool-m" name="Tool ready" />
+    <bpmn:task id="collect" name="Collect resources">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+    </bpmn:task>
+    <bpmn:boundaryEvent id="dist" attachedToRef="collect">
+      <bpmn:signalEventDefinition id="dist-def" signalRef="Signal_Natural_disaster" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="recover" name="Recover bot from disaster" />
+    <bpmn:boundaryEvent id="milestone" attachedToRef="collect" cancelActivity="false">
+      <bpmn:signalEventDefinition id="milestone-def" signalRef="Signal_Milestone_reached" />
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="notify-ms" name="Notify player of milestone" />
+    <bpmn:endEvent id="e-ms" name="Milestone notified" />
+    <bpmn:boundaryEvent id="upd" attachedToRef="collect" cancelActivity="false">
+      <bpmn:signalEventDefinition id="upd-def" signalRef="Signal_Update_materials_list" />
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="notify-done" name="Notify player that farming is finished" />
+    <bpmn:sequenceFlow id="f-s-wants-select-res" sourceRef="s-wants" targetRef="select-res" />
+    <bpmn:sequenceFlow id="f-select-res-set-urgency" sourceRef="select-res" targetRef="set-urgency" />
+    <bpmn:sequenceFlow id="f-set-urgency-confirm" sourceRef="set-urgency" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-confirm-check-deps" sourceRef="confirm" targetRef="check-deps" />
+    <bpmn:sequenceFlow id="f-check-deps-tool-q" sourceRef="check-deps" targetRef="tool-q" />
+    <bpmn:sequenceFlow id="f-tool-q-create-tool" name="yes" sourceRef="tool-q" targetRef="create-tool">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">toolNeeded = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-tool-q-tool-m" name="no" sourceRef="tool-q" targetRef="tool-m" />
+    <bpmn:sequenceFlow id="f-create-tool-tool-m" sourceRef="create-tool" targetRef="tool-m" />
+    <bpmn:sequenceFlow id="f-tool-m-collect" sourceRef="tool-m" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-notify-done" sourceRef="collect" targetRef="notify-done" />
+    <bpmn:sequenceFlow id="f-notify-done-brag" sourceRef="notify-done" targetRef="brag" />
+    <bpmn:sequenceFlow id="f-brag-send-q" sourceRef="brag" targetRef="send-q" />
+    <bpmn:sequenceFlow id="f-send-q-send-mat" name="yes" sourceRef="send-q" targetRef="send-mat">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">sendMaterials = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-send-q-done-m" name="no" sourceRef="send-q" targetRef="done-m" />
+    <bpmn:sequenceFlow id="f-send-mat-done-m" sourceRef="send-mat" targetRef="done-m" />
+    <bpmn:sequenceFlow id="f-done-m-e-done" sourceRef="done-m" targetRef="e-done" />
+    <bpmn:sequenceFlow id="f-dist-recover" sourceRef="dist" targetRef="recover" />
+    <bpmn:sequenceFlow id="f-recover-collect" sourceRef="recover" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-milestone-notify-ms" sourceRef="milestone" targetRef="notify-ms" />
+    <bpmn:sequenceFlow id="f-notify-ms-e-ms" sourceRef="notify-ms" targetRef="e-ms" />
+    <bpmn:sequenceFlow id="f-upd-update-list" sourceRef="upd" targetRef="update-list" />
+    <bpmn:sequenceFlow id="f-update-list-e-update" sourceRef="update-list" targetRef="e-update" />
+  </bpmn:process>
+</bpmn:definitions>

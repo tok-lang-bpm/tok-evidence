@@ -1,0 +1,101 @@
+```tok
+tok 1.0 "Intake Workflow"
+
+pool institute "Mental Health Care Institute"
+  lane family_doctor "Family Doctor"
+    start s0 "Intake notice by telephone"
+    task fd_notice "Family doctor gives notice by telephone"
+
+  lane secretarial "Secretarial Office"
+    task sec_inquire "Secretarial worker inquires name and residence"
+    task sec_record_form "Record information on registration form"
+    task sec_hand_form "Hand registration form to secretarial office"
+    task sec_store_system "Store information in information system"
+    task sec_print "Print registration form"
+    xor g_new_patient "Is patient new?"
+    task sec_create_file "Create patient file"
+    task sec_store_form "Store registration form and print in patient file"
+    and g_cards_start
+    task sec_produce_card_first "Produce registration card for first intaker"
+    task sec_produce_card_second "Produce registration card for second intaker"
+    and g_cards_end
+    task sec_add_to_new_notices "Add patient to list of new notices"
+    task sec_staff_meeting "Staff meeting (Wednesday) – medical team"
+    task sec_store_assignment "Store assignment in information system"
+    task sec_pass_card_first "Pass registration card to first intaker"
+    task sec_pass_card_second "Pass registration card to second intaker"
+    xor g_medical_file_needed "Is medical file required?"
+    task sec_prepare_letter "Prepare and send letter to family doctor"
+    task sec_wait_medical_file "Wait for medical file copy"
+    task sec_inform_second_intaker "Inform second intaker of received medical file"
+    task sec_add_medical_copy "Add medical file copy to patient file"
+    task sec_type_dictaphone "Type out dictaphone recordings"
+    and pg_meetings_done
+    task sec_update_status "Update status list of patients with completed intake"
+    task sec_provide_list "Provide list of ready patients to team leader"
+    end e_end "Intake completed"
+
+  lane nursing "Nursing Officer"
+    task nursing_inquiry "Nursing officer makes full inquiry into mental, health, and social state"
+
+  lane team_leader "Team Leader"
+    task tl_assign_intakers "Team leader assigns first and second intakers and records on assignment list"
+    task tl_form_treatment_plan "Formulate treatment plan with intakers and psychiatrist"
+
+  lane first_intaker "First Intaker (Social‑Medical Worker)"
+    task fi_plan_meeting "First intaker plans meeting with patient"
+    task fi_conduct_meeting "First intaker conducts first meeting and examines using checklist"
+    task fi_fill_checklist "First intaker fills checklist"
+    task fi_add_notes "First intaker adds notes and checklist to patient file"
+
+  lane second_intaker "Second Intaker (Physician)"
+    task si_plan_meeting "Second intaker plans first meeting (after medical file received)"
+    task si_conduct_meeting "Second intaker conducts meeting with patient"
+    task si_record_dictaphone "Physician records observations with dictaphone"
+
+  lane psychiatrist "Psychiatrist"
+    # participates in treatment plan only
+
+flow s0 -> fd_notice
+flow fd_notice -> sec_inquire
+flow sec_inquire -> nursing_inquiry
+flow nursing_inquiry -> sec_record_form
+flow sec_record_form -> sec_hand_form
+flow sec_hand_form -> sec_store_system
+flow sec_store_system -> sec_print
+flow sec_print -> g_new_patient
+flow g_new_patient -> sec_create_file "yes"
+flow g_new_patient -> sec_store_form "no"
+flow sec_create_file -> sec_store_form
+flow sec_store_form -> g_cards_start
+flow g_cards_start -> sec_produce_card_first
+flow g_cards_start -> sec_produce_card_second
+flow sec_produce_card_first -> g_cards_end
+flow sec_produce_card_second -> g_cards_end
+flow g_cards_end -> sec_add_to_new_notices
+flow sec_add_to_new_notices -> sec_staff_meeting
+flow sec_staff_meeting -> tl_assign_intakers
+flow tl_assign_intakers -> sec_store_assignment
+flow sec_store_assignment -> sec_pass_card_first
+flow sec_store_assignment -> sec_pass_card_second
+flow sec_pass_card_first -> fi_plan_meeting
+flow sec_pass_card_second -> g_medical_file_needed
+flow g_medical_file_needed -> sec_prepare_letter "yes"
+flow g_medical_file_needed -> si_plan_meeting "no"
+flow sec_prepare_letter -> sec_wait_medical_file
+flow sec_wait_medical_file -> sec_inform_second_intaker
+flow sec_inform_second_intaker -> sec_add_medical_copy
+flow sec_add_medical_copy -> sec_type_dictaphone
+flow sec_type_dictaphone -> pg_meetings_done
+flow fi_plan_meeting -> fi_conduct_meeting
+flow fi_conduct_meeting -> fi_fill_checklist
+flow fi_fill_checklist -> fi_add_notes
+flow fi_add_notes -> pg_meetings_done
+flow si_plan_meeting -> si_conduct_meeting
+flow si_conduct_meeting -> si_record_dictaphone
+flow si_record_dictaphone -> sec_type_dictaphone
+flow pg_meetings_done -> sec_update_status
+flow sec_update_status -> sec_provide_list
+flow sec_provide_list -> tl_form_treatment_plan
+flow tl_form_treatment_plan -> e_end
+```

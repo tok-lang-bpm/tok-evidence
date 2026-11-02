@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewComments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>Task_Decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Decision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Purchase" name="Purchase department">
+        <bpmn:flowNodeRef>Sub_Quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_VendorMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ChooseDifferent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Join</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Task_Register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_1" name="Office supply needed" />
+    <bpmn:exclusiveGateway id="Gw_Merge" />
+    <bpmn:task id="Task_Submit" name="Submit office supply request" />
+    <bpmn:task id="Task_Register" name="Register request" />
+    <bpmn:task id="Task_Decide" name="Review request" />
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Request approved, changes needed or rejected?" default="F_Approved" />
+    <bpmn:task id="Task_NotifyReject" name="Send rejection notification" />
+    <bpmn:endEvent id="End_Rejected" name="Request rejected" />
+    <bpmn:task id="Task_NotifyChange" name="Send change request notification" />
+    <bpmn:task id="Task_ReviewComments" name="Review comments for change" />
+    <bpmn:task id="Task_NotifyApprove" name="Send approval notification" />
+    <bpmn:subProcess id="Sub_Quotations" name="Make quotations">
+      <bpmn:startEvent id="SStart" />
+      <bpmn:task id="STask_Req" name="Request quotations from vendors" />
+      <bpmn:task id="STask_Rec" name="Receive quotations" />
+      <bpmn:endEvent id="SEnd" />
+      <bpmn:sequenceFlow id="SF1" sourceRef="SStart" targetRef="STask_Req" />
+      <bpmn:sequenceFlow id="SF2" sourceRef="STask_Req" targetRef="STask_Rec" />
+      <bpmn:sequenceFlow id="SF3" sourceRef="STask_Rec" targetRef="SEnd" />
+    </bpmn:subProcess>
+    <bpmn:exclusiveGateway id="Gw_VendorMerge" />
+    <bpmn:task id="Task_SelectVendor" name="Select vendor" />
+    <bpmn:exclusiveGateway id="Gw_Valid" name="Vendor valid?" default="F_Valid" />
+    <bpmn:task id="Task_ChooseDifferent" name="Choose different vendor" />
+    <bpmn:task id="Task_PO" name="Generate and send purchase order" />
+    <bpmn:parallelGateway id="Gw_Split" />
+    <bpmn:task id="Task_Product" name="Receive product" />
+    <bpmn:task id="Task_Invoice" name="Receive invoice" />
+    <bpmn:parallelGateway id="Gw_Join" />
+    <bpmn:endEvent id="End_Done" name="Order completed" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_1" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Gw_Merge" targetRef="Task_Submit" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Task_Submit" targetRef="Task_Register" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Task_Register" targetRef="Task_Decide" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Task_Decide" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="F_Rejected" name="rejected" sourceRef="Gw_Decision" targetRef="Task_NotifyReject" />
+    <bpmn:sequenceFlow id="F_Change" name="change requested" sourceRef="Gw_Decision" targetRef="Task_NotifyChange" />
+    <bpmn:sequenceFlow id="F_Approved" name="approved" sourceRef="Gw_Decision" targetRef="Task_NotifyApprove" />
+    <bpmn:sequenceFlow id="F9" sourceRef="Task_NotifyReject" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_NotifyChange" targetRef="Task_ReviewComments" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Task_ReviewComments" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Task_NotifyApprove" targetRef="Sub_Quotations" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Sub_Quotations" targetRef="Gw_VendorMerge" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Gw_VendorMerge" targetRef="Task_SelectVendor" />
+    <bpmn:sequenceFlow id="F15" sourceRef="Task_SelectVendor" targetRef="Gw_Valid" />
+    <bpmn:sequenceFlow id="F_Invalid" name="no" sourceRef="Gw_Valid" targetRef="Task_ChooseDifferent" />
+    <bpmn:sequenceFlow id="F_Valid" name="yes" sourceRef="Gw_Valid" targetRef="Task_PO" />
+    <bpmn:sequenceFlow id="F18" sourceRef="Task_ChooseDifferent" targetRef="Gw_VendorMerge" />
+    <bpmn:sequenceFlow id="F19" sourceRef="Task_PO" targetRef="Gw_Split" />
+    <bpmn:sequenceFlow id="F20" sourceRef="Gw_Split" targetRef="Task_Product" />
+    <bpmn:sequenceFlow id="F21" sourceRef="Gw_Split" targetRef="Task_Invoice" />
+    <bpmn:sequenceFlow id="F22" sourceRef="Task_Product" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F23" sourceRef="Task_Invoice" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F24" sourceRef="Gw_Join" targetRef="End_Done" />
+  </bpmn:process>
+</bpmn:definitions>

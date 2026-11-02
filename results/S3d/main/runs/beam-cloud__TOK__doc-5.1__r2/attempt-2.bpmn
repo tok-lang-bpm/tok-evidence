@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Loan approval process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Loan approval process" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk" name="Risk Assessment Web Service">
+        <bpmn:flowNodeRef>assess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>outcome</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Customer request received" />
+    <bpmn:task id="feedback" name="Receive feedback" />
+    <bpmn:endEvent id="done" name="Loan approval completed" />
+    <bpmn:serviceTask id="assess" name="Assess request" />
+    <bpmn:exclusiveGateway id="outcome" name="Loan small and customer low risk?" default="f-outcome-send" />
+    <bpmn:task id="approve" name="Approve loan" />
+    <bpmn:task id="deny" name="Deny loan" />
+    <bpmn:serviceTask id="send" name="Send request to approver Web service" />
+    <bpmn:exclusiveGateway id="merge" name="Feedback path?" />
+    <bpmn:sequenceFlow id="f-received-assess" sourceRef="received" targetRef="assess" />
+    <bpmn:sequenceFlow id="f-assess-outcome" sourceRef="assess" targetRef="outcome" />
+    <bpmn:sequenceFlow id="f-outcome-approve" name="small and low risk" sourceRef="outcome" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 10000 and risk = "low"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-outcome-deny" name="high risk" sourceRef="outcome" targetRef="deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">risk = "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-outcome-send" name="further review or &gt;= 10000" sourceRef="outcome" targetRef="send" />
+    <bpmn:sequenceFlow id="f-approve-merge" sourceRef="approve" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-deny-merge" sourceRef="deny" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-send-merge" sourceRef="send" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-merge-feedback" sourceRef="merge" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f-feedback-done" sourceRef="feedback" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

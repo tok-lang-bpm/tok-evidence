@@ -1,0 +1,69 @@
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane sys "Order system"
+    start s1 "Order placed"
+    task record "Record order details"
+    task pay "Process payment"
+    xor payok "Payment successful?"
+    task notifyfail "Notify customer about failed payment"
+    end e1 "Order cancelled"
+    task stock "Check stock availability"
+    xor instock "Items in stock?"
+    task backorder "Initiate back-order"
+    task delay "Inform customer about delay"
+    receive recvbo "Receive back-order"
+    xor stockmerge
+    and fork
+    and join
+    task dispatch "Dispatch order"
+    task confirm "Send shipping confirmation"
+    task updinv "Update inventory levels"
+    task deliv "Confirm successful delivery"
+    xor issues "Customer reports issues?"
+    task feedback "Send follow-up feedback email"
+    end e2 "Order completed"
+    task retlabel "Send return shipping label"
+    task recvret "Receive returned items"
+    task inspect "Inspect returned items"
+    task refund "Process refund or replacement"
+    end e3 "Return handled"
+  lane wh "Warehouse"
+    task pick "Pick items from warehouse"
+    task qc "Perform quality control checks"
+    task pack "Package order"
+    xor gift "Gift wrapping requested?"
+    task wrap "Wrap gift"
+    xor giftmerge
+  lane ship "Shipping department"
+    task docs "Prepare shipping documents and labels"
+    xor intl "International order?"
+    task customs "Prepare customs documentation"
+    xor intlmerge
+
+flow s1 -> record -> pay -> payok
+flow payok -> notifyfail "no" default
+flow payok -> stock "yes" when="paymentSuccessful = true"
+flow notifyfail -> e1
+flow stock -> instock
+flow instock -> backorder "no" default
+flow instock -> stockmerge "yes" when="inStock = true"
+flow backorder -> delay -> recvbo -> stockmerge
+flow stockmerge -> fork
+flow fork -> pick
+flow fork -> docs
+flow pick -> qc -> pack -> gift
+flow gift -> wrap "yes" when="giftWrap = true"
+flow gift -> giftmerge "no" default
+flow wrap -> giftmerge
+flow giftmerge -> join
+flow docs -> intl
+flow intl -> customs "yes" when="international = true"
+flow intl -> intlmerge "no" default
+flow customs -> intlmerge
+flow intlmerge -> join
+flow join -> dispatch -> confirm -> updinv -> deliv -> issues
+flow issues -> retlabel "yes" when="issuesReported = true"
+flow issues -> feedback "no" default
+flow feedback -> e2
+flow retlabel -> recvret -> inspect -> refund -> e3

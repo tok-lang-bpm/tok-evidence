@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="LANESET">
+      <bpmn:lane id="lane_fault_detector" name="Fault Detector">
+        <bpmn:flowNodeRef>report_failure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_mpo" name="MPO">
+        <bpmn:flowNodeRef>suspect_fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_go_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_msp_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fix_fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share_results</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_go_resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_msp_resolution</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_go" name="GO" />
+      <bpmn:lane id="lane_msp" name="MSP" />
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Failure detection" />
+
+    <!-- Decision: report or suspicion -->
+    <bpmn:exclusiveGateway id="gateway_report_or_suspect" name="Report or suspicion" />
+    <bpmn:task id="report_failure" name="Report failure to MPO" />
+    <bpmn:task id="suspect_fault" name="Suspect own fault" />
+    <bpmn:exclusiveGateway id="join_report_suspect" name="Merge reports" />
+
+    <!-- Examine -->
+    <bpmn:task id="examine_failure" name="Examine failure" />
+
+    <!-- Decision: confirm or reject -->
+    <bpmn:exclusiveGateway id="gateway_confirm_reject" name="Confirm or reject failure" />
+    <bpmn:task id="reject_failure" name="Reject failure of fault detector" />
+    <bpmn:endEvent id="end_rejected" name="Failure rejected" />
+
+    <!-- Confirm path -->
+    <bpmn:parallelGateway id="pg_inform_failure" />
+    <bpmn:task id="inform_go_failure" name="Inform GO about failure" />
+    <bpmn:task id="inform_msp_failure" name="Inform MSP about failure" />
+    <bpmn:parallelGateway id="pg_inform_failure_join" />
+
+    <bpmn:task id="fix_fault" name="Fix fault at measuring device" />
+    <bpmn:task id="share_results" name="Share results of repairs with fault detector" />
+
+    <bpmn:parallelGateway id="pg_inform_resolution" />
+    <bpmn:task id="inform_go_resolution" name="Inform GO about resolution of the interference" />
+    <bpmn:task id="inform_msp_resolution" name="Inform MSP about resolution of the interference" />
+    <bpmn:parallelGateway id="pg_inform_resolution_join" />
+    <bpmn:endEvent id="end_success" name="Process completed" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow_start_to_gateway1" sourceRef="start" targetRef="gateway_report_or_suspect" />
+    <bpmn:sequenceFlow id="flow_gateway1_to_report" name="report" sourceRef="gateway_report_or_suspect" targetRef="report_failure" />
+    <bpmn:sequenceFlow id="flow_gateway1_to_suspect" name="suspect" sourceRef="gateway_report_or_suspect" targetRef="suspect_fault" />
+    <bpmn:sequenceFlow id="flow_report_to_join" sourceRef="report_failure" targetRef="join_report_suspect" />
+    <bpmn:sequenceFlow id="flow_suspect_to_join" sourceRef="suspect_fault" targetRef="join_report_suspect" />
+    <bpmn:sequenceFlow id="flow_join_to_examine" sourceRef="join_report_suspect" targetRef="examine_failure" />
+    <bpmn:sequenceFlow id="flow_examine_to_decision" sourceRef="examine_failure" targetRef="gateway_confirm_reject" />
+    <bpmn:sequenceFlow id="flow_decision_to_reject" name="reject" sourceRef="gateway_confirm_reject" targetRef="reject_failure" />
+    <bpmn:sequenceFlow id="flow_reject_to_end" sourceRef="reject_failure" targetRef="end_rejected" />
+    <bpmn:sequenceFlow id="flow_decision_to_confirm" name="confirm" sourceRef="gateway_confirm_reject" targetRef="pg_inform_failure" />
+    <bpmn:sequenceFlow id="flow_pg_inform_failure_to_go" sourceRef="pg_inform_failure" targetRef="inform_go_failure" />
+    <bpmn:sequenceFlow id="flow_pg_inform_failure_to_msp" sourceRef="pg_inform_failure" targetRef="inform_msp_failure" />
+    <bpmn:sequenceFlow id="flow_inform_go_to_join" sourceRef="inform_go_failure" targetRef="pg_inform_failure_join" />
+    <bpmn:sequenceFlow id="flow_inform_msp_to_join" sourceRef="inform_msp_failure" targetRef="pg_inform_failure_join" />
+    <bpmn:sequenceFlow id="flow_join_to_fix" sourceRef="pg_inform_failure_join" targetRef="fix_fault" />
+    <bpmn:sequenceFlow id="flow_fix_to_share" sourceRef="fix_fault" targetRef="share_results" />
+    <bpmn:sequenceFlow id="flow_share_to_pg2" sourceRef="share_results" targetRef="pg_inform_resolution" />
+    <bpmn:sequenceFlow id="flow_pg2_to_go_res" sourceRef="pg_inform_resolution" targetRef="inform_go_resolution" />
+    <bpmn:sequenceFlow id="flow_pg2_to_msp_res" sourceRef="pg_inform_resolution" targetRef="inform_msp_resolution" />
+    <bpmn:sequenceFlow id="flow_inform_go_res_to_join2" sourceRef="inform_go_resolution" targetRef="pg_inform_resolution_join" />
+    <bpmn:sequenceFlow id="flow_inform_msp_res_to_join2" sourceRef="inform_msp_resolution" targetRef="pg_inform_resolution_join" />
+    <bpmn:sequenceFlow id="flow_join2_to_end" sourceRef="pg_inform_resolution_join" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

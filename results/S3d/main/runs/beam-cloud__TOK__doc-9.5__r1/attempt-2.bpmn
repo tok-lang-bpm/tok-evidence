@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Expense report processing" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmitted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor" />
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify_progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress_sent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify_cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="resubmit" name="Re-submit expense report" />
+    <bpmn:endEvent id="resubmitted" name="Expense report re-submitted" />
+    <bpmn:startEvent id="received" name="Expense report received" />
+    <bpmn:subProcess id="handle" name="Handle expense report">
+      <bpmn:startEvent id="handling" name="Expense report handling" />
+      <bpmn:exclusiveGateway id="has_account" name="Employee has account?" default="f-has_account-review" />
+      <bpmn:task id="create_account" name="Create new account" />
+      <bpmn:task id="review" name="Review expense report for automatic approval" />
+      <bpmn:exclusiveGateway id="amount" name="Amount under $200?" default="f-amount-approve" />
+      <bpmn:task id="auto_approve" name="Automatically approve expense report" />
+      <bpmn:task id="approve" name="Approve expense report" />
+      <bpmn:exclusiveGateway id="approved" name="Expense report approved?" default="f-approved-reject" />
+      <bpmn:task id="reject" name="Send rejection notice by email" />
+      <bpmn:task id="reimburse" name="Send reimbursement to direct deposit bank account" />
+      <bpmn:endEvent id="rejected" name="Expense report rejected" />
+      <bpmn:endEvent id="reimbursed" name="Expense report reimbursed" />
+      <bpmn:sequenceFlow id="f-handling-has_account" sourceRef="handling" targetRef="has_account" />
+      <bpmn:sequenceFlow id="f-has_account-create_account" name="No" sourceRef="has_account" targetRef="create_account">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-has_account-review" name="Yes" sourceRef="has_account" targetRef="review" />
+      <bpmn:sequenceFlow id="f-create_account-review" sourceRef="create_account" targetRef="review" />
+      <bpmn:sequenceFlow id="f-review-amount" sourceRef="review" targetRef="amount" />
+      <bpmn:sequenceFlow id="f-amount-auto_approve" name="Yes" sourceRef="amount" targetRef="auto_approve">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-amount-approve" name="No" sourceRef="amount" targetRef="approve" />
+      <bpmn:sequenceFlow id="f-auto_approve-reimburse" sourceRef="auto_approve" targetRef="reimburse" />
+      <bpmn:sequenceFlow id="f-approve-approved" sourceRef="approve" targetRef="approved" />
+      <bpmn:sequenceFlow id="f-approved-reimburse" name="Yes" sourceRef="approved" targetRef="reimburse">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-approved-reject" name="No" sourceRef="approved" targetRef="reject" />
+      <bpmn:sequenceFlow id="f-reimburse-reimbursed" sourceRef="reimburse" targetRef="reimbursed" />
+      <bpmn:sequenceFlow id="f-reject-rejected" sourceRef="reject" targetRef="rejected" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="progress" name="Approval in progress" attachedToRef="handle" cancelActivity="false">
+      <bpmn:timerEventDefinition id="progress-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="cancelled" name="Expense report cancelled" attachedToRef="handle">
+      <bpmn:timerEventDefinition id="cancelled-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="notify_progress" name="Send approval in progress email" />
+    <bpmn:endEvent id="progress_sent" name="Approval in progress notice sent" />
+    <bpmn:task id="notify_cancellation" name="Send cancellation notice by email" />
+    <bpmn:endEvent id="handled" name="Expense report handled" />
+    <bpmn:sequenceFlow id="f-received-handle" sourceRef="received" targetRef="handle" />
+    <bpmn:sequenceFlow id="f-handle-handled" sourceRef="handle" targetRef="handled" />
+    <bpmn:sequenceFlow id="f-progress-notify_progress" sourceRef="progress" targetRef="notify_progress" />
+    <bpmn:sequenceFlow id="f-notify_progress-progress_sent" sourceRef="notify_progress" targetRef="progress_sent" />
+    <bpmn:sequenceFlow id="f-cancelled-notify_cancellation" sourceRef="cancelled" targetRef="notify_cancellation" />
+    <bpmn:sequenceFlow id="f-notify_cancellation-resubmit" sourceRef="notify_cancellation" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="f-resubmit-resubmitted" sourceRef="resubmit" targetRef="resubmitted" />
+  </bpmn:process>
+</bpmn:definitions>

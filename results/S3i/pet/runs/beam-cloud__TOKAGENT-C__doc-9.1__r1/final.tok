@@ -1,0 +1,51 @@
+tok 1.0 "Account defaulters processing"
+
+pool organisation "Organisation"
+  lane team "Team"
+    start morning "Every weekday morning"
+    task backup "Back up the database"
+    task check_defaulter "Check the Account Defaulter table for new records"
+    xor found "New records found?"
+    task check_crm_first "Check the CRM system for new returns"
+    xor returns_first "New returns exist?"
+    task register "Register all defaulting accounts and customers"
+    xor advised "Previously advised?"
+    task report "Produce another table of defaulting accounts and send to account management"
+    task check_crm_second "Check the CRM system for new returns"
+    xor returns_second "New returns filed?"
+    task reconcile "Reconcile with the existing account defaulters table"
+    task alert_supplier "Send an alert to the supervisor"
+    task message_supplier "Send a message to the supervisor"
+    boundary b_defaulter "Not completed by 2:30 pm" on=check_defaulter timer=PT6H30M
+    boundary b_crm_first "Not completed by 2:30 pm" on=check_crm_first timer=PT6H30M
+    boundary b_register "Not completed by 2:30 pm" on=register timer=PT6H30M
+    boundary b_report "Not completed by 2:30 pm" on=report timer=PT6H30M
+    boundary b_crm_second "Not completed by 4:00 pm" on=check_crm_second timer=PT1H30M
+    boundary b_reconcile "Not completed by 4:00 pm" on=reconcile timer=PT1H30M
+    end done "Process complete"
+    end no_action "No further action"
+    end alert_end "Alert sent"
+    end message_end "Message sent"
+
+flow morning -> backup -> check_defaulter -> found
+flow found -> check_crm_first "no"
+flow found -> check_crm_second "yes"
+flow check_crm_first -> returns_first
+flow returns_first -> register "yes"
+flow returns_first -> no_action "no"
+flow register -> advised
+flow advised -> report "no"
+flow advised -> check_crm_second "yes"
+flow report -> check_crm_second
+flow check_crm_second -> returns_second
+flow returns_second -> reconcile "yes"
+flow returns_second -> done "no"
+flow reconcile -> done
+flow b_defaulter -> alert_supplier
+flow b_crm_first -> alert_supplier
+flow b_register -> alert_supplier
+flow b_report -> alert_supplier
+flow b_crm_second -> message_supplier
+flow b_reconcile -> message_supplier
+flow alert_supplier -> alert_end
+flow message_supplier -> message_end

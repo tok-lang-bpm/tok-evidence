@@ -1,0 +1,79 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Ordering in an Online Shop  
+
+A customer that logs into an E-Shop system and has to wait for its login confirmation (its credentials are checked by the system).
+If the login was successful then the customer can continue to select products, else the shopping experience stops.
+After selecting a product the customer has to add it to a shopping cart, save the product and check if every product was already selected.
+These steps repeat until all products were selected.
+Then the order is finished by the shopping system and simultaneously payment and shipment for the order is prepared.
+For the payment the customer has to enter its payment data and has to wait until the bank confirms the payment.
+While waiting for the payment confirmation the customer can enter its shipping address (an independent billing address can be entered if the shipping address is not equal to the billing address).
+Finally if the address and the payment steps are executed then the order will be finished by the system.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online Shop"
+  lane customer "Customer"
+    start begin "Customer wants to order"
+    task login "Log into the E-Shop system"
+    receive wait_login "Wait for the login confirmation"
+    xor select_merge
+    task select "Select a product"
+    task add "Add the product to the shopping cart"
+    task save "Save the product"
+    task check_all "Check if every product was already selected"
+    xor all_selected "Every product selected?"
+    and split
+    task pay_data "Enter the payment data"
+    receive wait_pay "Wait for the payment confirmation"
+    task ship_addr "Enter the shipping address"
+    xor billing_diff "Billing address different from shipping address?"
+    task bill_addr "Enter the billing address"
+    xor billing_merge
+    and join
+    end stopped "Shopping stopped"
+  lane system "E-Shop system"
+    task check_cred "Check the credentials"
+    xor login_ok "Login successful?"
+    task finish_shop "Finish the order"
+    task prep_pay "Prepare the payment"
+    task prep_ship "Prepare the shipment"
+    task complete "Finish the order"
+    end done "Order finished"
+
+flow begin -> login -> check_cred -> wait_login -> login_ok
+flow login_ok -> select_merge "yes"
+flow login_ok -> stopped "no" default
+flow select_merge -> select -> add -> save -> check_all -> all_selected
+flow all_selected -> select_merge "no" default
+flow all_selected -> finish_shop "yes"
+flow finish_shop -> split
+flow split -> prep_pay -> pay_data -> wait_pay -> join
+flow split -> prep_ship -> ship_addr -> billing_diff
+flow billing_diff -> bill_addr "yes"
+flow billing_diff -> billing_merge "no" default
+flow bill_addr -> billing_merge
+flow billing_merge -> join
+flow join -> complete -> done
+```
+
+The tok checker reports these problems in it:
+
+- line 33: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-login_ok-select_merge)
+- line 37: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-all_selected-finish_shop)
+- line 41: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-billing_diff-bill_addr)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

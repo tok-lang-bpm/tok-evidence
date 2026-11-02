@@ -1,0 +1,102 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneMPOO" name="MPOO">
+        <bpmn:flowNodeRef>t1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tMPOOConfirm</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGO" name="GO">
+        <bpmn:flowNodeRef>t2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tReadmission</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tBind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tEquip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tAssignMPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tInformMPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tInformMSPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tInformSP</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Process start" />
+    
+    <!-- Tasks -->
+    <bpmn:task id="t1" name="MPOO deregisters at the GO" />
+    <bpmn:task id="t2" name="GO verifies the deregistration" />
+    
+    <!-- Decision: reject or preliminarily confirm -->
+    <bpmn:exclusiveGateway id="gDecision" name="GO decision" />
+    <bpmn:task id="tReject" name="GO rejects the deregistration of the MPOO" />
+    <bpmn:task id="tConfirm" name="GO preliminarily confirms the deregistration of the MPOO" />
+    
+    <bpmn:task id="tReadmission" name="GO prepares the readmission of the measuring point" />
+    
+    <!-- Optional obligation to continue -->
+    <bpmn:exclusiveGateway id="gOblige" name="Oblige continuation?" />
+    <bpmn:task id="tBind" name="GO binds the MPOO to continue the operation" />
+    <bpmn:task id="tMPOOConfirm" name="MPOO confirms the continuation" />
+    <bpmn:exclusiveGateway id="gObligeMerge" name="Obligation merge" />
+    
+    <!-- Equipment handling -->
+    <bpmn:task id="tEquip" name="GO performs the equipment acquisition and/or equipment changes" />
+    
+    <!-- Assignment -->
+    <bpmn:task id="tAssignMPO" name="GO assigns the GO as MPO" />
+    
+    <!-- Inform MPOO -->
+    <bpmn:task id="tInformMPOO" name="GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO" />
+    
+    <!-- Parallel inform to MSPO and SP -->
+    <bpmn:parallelGateway id="pgSplit" />
+    <bpmn:task id="tInformMSPO" name="GO informs the MSPO about the assignment of the GO" />
+    <bpmn:task id="tInformSP" name="GO informs the SP about the assignment of the GO" />
+    <bpmn:parallelGateway id="pgJoin" />
+    
+    <!-- End events -->
+    <bpmn:endEvent id="endReject" name="Deregistration rejected" />
+    <bpmn:endEvent id="endProcess" name="Process complete" />
+    
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f_start_t1" sourceRef="start" targetRef="t1" />
+    <bpmn:sequenceFlow id="f1" sourceRef="t1" targetRef="t2" />
+    <bpmn:sequenceFlow id="f2" sourceRef="t2" targetRef="gDecision" />
+    
+    <bpmn:sequenceFlow id="fReject" name="reject" sourceRef="gDecision" targetRef="tReject" />
+    <bpmn:sequenceFlow id="fConfirm" name="confirm" sourceRef="gDecision" targetRef="tConfirm" />
+    
+    <bpmn:sequenceFlow id="fRejectEnd" sourceRef="tReject" targetRef="endReject" />
+    <bpmn:sequenceFlow id="fConfirmReadmission" sourceRef="tConfirm" targetRef="tReadmission" />
+    
+    <bpmn:sequenceFlow id="fReadmissionOblige" sourceRef="tReadmission" targetRef="gOblige" />
+    
+    <bpmn:sequenceFlow id="fObligeYes" name="yes" sourceRef="gOblige" targetRef="tBind" />
+    <bpmn:sequenceFlow id="fObligeNo" name="no" sourceRef="gOblige" targetRef="gObligeMerge" />
+    
+    <bpmn:sequenceFlow id="fBindConfirm" sourceRef="tBind" targetRef="tMPOOConfirm" />
+    <bpmn:sequenceFlow id="fConfirmMerge" sourceRef="tMPOOConfirm" targetRef="gObligeMerge" />
+    
+    <bpmn:sequenceFlow id="fMergeEquip" sourceRef="gObligeMerge" targetRef="tEquip" />
+    
+    <bpmn:sequenceFlow id="fEquipAssign" sourceRef="tEquip" targetRef="tAssignMPO" />
+    <bpmn:sequenceFlow id="fAssignInformMPOO" sourceRef="tAssignMPO" targetRef="tInformMPOO" />
+    <bpmn:sequenceFlow id="fInformMPOOPG" sourceRef="tInformMPOO" targetRef="pgSplit" />
+    
+    <bpmn:sequenceFlow id="fPGtoMSPO" sourceRef="pgSplit" targetRef="tInformMSPO" />
+    <bpmn:sequenceFlow id="fPGtoSP" sourceRef="pgSplit" targetRef="tInformSP" />
+    
+    <bpmn:sequenceFlow id="fMSPOJoin" sourceRef="tInformMSPO" targetRef="pgJoin" />
+    <bpmn:sequenceFlow id="fSPJoin" sourceRef="tInformSP" targetRef="pgJoin" />
+    
+    <bpmn:sequenceFlow id="fJoinEnd" sourceRef="pgJoin" targetRef="endProcess" />
+    
+  </bpmn:process>
+</bpmn:definitions>
+```

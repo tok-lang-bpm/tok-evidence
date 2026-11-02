@@ -1,0 +1,56 @@
+tok 1.0 "Account defaulters processing"
+
+pool org "Organisation"
+  lane process "Process"
+    start morning "Every weekday morning"
+    sub initial "Initial processing"
+      start is "Start initial processing"
+      task backup "Back up the database"
+      task check_records "Check the Account Defaulter table for new records"
+      xor records "New records found?"
+      task check_crm1 "Check the CRM system for new returns"
+      xor new_returns "New returns exist?"
+      task register "Register all defaulting accounts and customers"
+      xor advised "Defaulting client codes previously advised?"
+      task produce "Produce another table of defaulting accounts"
+      task send_mgmt "Send to account management"
+      xor merge1 "Merge initial branches"
+      end ie "Initial processing completed"
+      flow is -> backup -> check_records -> records
+      flow records -> check_crm1 "no"
+      flow records -> merge1 "yes"
+      flow check_crm1 -> new_returns
+      flow new_returns -> register "yes"
+      flow new_returns -> merge1 "no"
+      flow register -> advised
+      flow advised -> produce "not previously advised"
+      flow advised -> merge1 "previously advised" default
+      flow produce -> send_mgmt
+      flow send_mgmt -> merge1
+      flow merge1 -> ie
+    boundary alert on=initial timer noninterrupting
+    sub second "Second processing"
+      start ss "Start second processing"
+      task check_crm2 "Check the CRM system for new returns"
+      xor new_returns2 "New returns filed?"
+      task reconcile "Reconcile with the existing account defaulters table"
+      xor merge2 "Merge second branches"
+      end se "Second processing completed"
+      flow ss -> check_crm2 -> new_returns2
+      flow new_returns2 -> reconcile "yes"
+      flow new_returns2 -> merge2 "no"
+      flow reconcile -> merge2
+      flow merge2 -> se
+    boundary msg on=second timer noninterrupting
+    task send_alert "Send an alert to the supervisor"
+    task send_msg "Send a message to the supervisor"
+    end done "Process completed"
+    end alert_done "Alert sent"
+    end msg_done "Message sent"
+    flow morning -> initial
+    flow initial -> second
+    flow second -> done
+    flow alert -> send_alert
+    flow send_alert -> alert_done
+    flow msg -> send_msg
+    flow send_msg -> msg_done

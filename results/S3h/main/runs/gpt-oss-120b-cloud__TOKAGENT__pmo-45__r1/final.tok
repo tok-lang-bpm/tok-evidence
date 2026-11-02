@@ -1,0 +1,62 @@
+tok 1.0
+
+pool shop "Online Shop"
+  lane cust "Customer"
+    start start
+    task login "Log into E-Shop system"
+    task select_product "Select product"
+    task add_to_cart "Add product to shopping cart"
+    task enter_payment_data "Enter payment data"
+    task enter_shipping_address "Enter shipping address"
+    task enter_billing_address "Enter billing address"
+    end end_success
+    end end_failure
+  lane sys "E-Shop System"
+    task wait_login_confirmation "Wait for login confirmation"
+    task save_product "Save product"
+    task check_all_selected "Check if every product was already selected"
+    task finish_order "Finish order by shopping system"
+    task wait_bank_confirmation "Wait for bank confirms payment"
+    task prepare_shipment "Prepare shipment"
+    task finalize_order "Finalize order by system"
+    xor gw_login "Login successful?"
+    xor gw_more "All products selected?"
+    xor gw_address "Shipping address equals billing address?"
+    and split_payment_shipment "Split payment and shipment"
+    and join_payment_shipment "Join payment and shipment"
+    and split_payment "Split payment parallel"
+    and join_payment "Join payment parallel"
+
+flow start -> login
+flow login -> wait_login_confirmation
+flow wait_login_confirmation -> gw_login
+flow gw_login -> select_product when="login_success = true"
+flow gw_login -> end_failure default
+
+flow select_product -> add_to_cart
+flow add_to_cart -> save_product
+flow save_product -> check_all_selected
+flow check_all_selected -> gw_more
+flow gw_more -> select_product when="all_selected = false"
+flow gw_more -> finish_order default
+
+flow finish_order -> split_payment_shipment
+flow split_payment_shipment -> enter_payment_data
+flow split_payment_shipment -> prepare_shipment
+
+flow enter_payment_data -> split_payment
+flow split_payment -> wait_bank_confirmation
+flow split_payment -> enter_shipping_address
+
+flow enter_shipping_address -> gw_address
+flow gw_address -> join_payment default
+flow gw_address -> enter_billing_address when="shipping_eq_billing = false"
+flow enter_billing_address -> join_payment
+
+flow wait_bank_confirmation -> join_payment
+
+flow join_payment -> join_payment_shipment
+flow prepare_shipment -> join_payment_shipment
+
+flow join_payment_shipment -> finalize_order
+flow finalize_order -> end_success

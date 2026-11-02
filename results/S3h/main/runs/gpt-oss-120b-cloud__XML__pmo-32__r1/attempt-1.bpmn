@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="farming-bot-process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="farming-bot-process" isExecutable="false">
+    <bpmn:laneSet id="laneSet1">
+      <bpmn:lane id="playerLane" name="Player">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>findResources</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createTools</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bragFriends</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendMaterials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="botLane" name="Farming Bot / System">
+        <bpmn:flowNodeRef>farming</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recoverFromDisaster</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyMilestone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateResourceList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>afterFarmSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>afterFarmJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Start bot creation" />
+
+    <!-- Player activities -->
+    <bpmn:task id="findResources" name="Find out which resources you want" />
+    <bpmn:task id="createTools" name="Create required tools for dependent resources" />
+
+    <!-- Bot activity -->
+    <bpmn:task id="farming" name="Start farming (collect resources)" />
+
+    <!-- Boundary events on farming -->
+    <bpmn:boundaryEvent id="disasterEvent" attachedToRef="farming" cancelActivity="true">
+      <bpmn:timerEventDefinition />
+    </bpmn:boundaryEvent>
+
+    <bpmn:boundaryEvent id="milestoneEvent" attachedToRef="farming" cancelActivity="false">
+      <bpmn:signalEventDefinition />
+    </bpmn:boundaryEvent>
+
+    <bpmn:boundaryEvent id="updateEvent" attachedToRef="farming" cancelActivity="false">
+      <bpmn:messageEventDefinition />
+    </bpmn:boundaryEvent>
+
+    <!-- Handling activities -->
+    <bpmn:task id="recoverFromDisaster" name="Recover from disaster" />
+    <bpmn:task id="notifyMilestone" name="Notify player of milestone" />
+    <bpmn:task id="updateResourceList" name="Update list of to‑be‑farmed materials" />
+
+    <!-- After farming parallel split/join -->
+    <bpmn:parallelGateway id="afterFarmSplit" />
+    <bpmn:task id="bragFriends" name="Brag to selected friends" />
+    <bpmn:task id="sendMaterials" name="Send materials to friends" />
+    <bpmn:parallelGateway id="afterFarmJoin" />
+
+    <!-- End -->
+    <bpmn:endEvent id="processEnd" name="Bot finished" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="sf1" sourceRef="start" targetRef="findResources" />
+    <bpmn:sequenceFlow id="sf2" sourceRef="findResources" targetRef="createTools" />
+    <bpmn:sequenceFlow id="sf3" sourceRef="createTools" targetRef="farming" />
+
+    <bpmn:sequenceFlow id="sf4" sourceRef="farming" targetRef="afterFarmSplit" />
+
+    <!-- Disaster handling loop -->
+    <bpmn:sequenceFlow id="sfDisaster" sourceRef="disasterEvent" targetRef="recoverFromDisaster" />
+    <bpmn:sequenceFlow id="sfRecoverBack" sourceRef="recoverFromDisaster" targetRef="farming" />
+
+    <!-- Milestone notification loop -->
+    <bpmn:sequenceFlow id="sfMilestone" sourceRef="milestoneEvent" targetRef="notifyMilestone" />
+    <bpmn:sequenceFlow id="sfNotifyBack" sourceRef="notifyMilestone" targetRef="farming" />
+
+    <!-- Update list loop -->
+    <bpmn:sequenceFlow id="sfUpdate" sourceRef="updateEvent" targetRef="updateResourceList" />
+    <bpmn:sequenceFlow id="sfUpdateBack" sourceRef="updateResourceList" targetRef="farming" />
+
+    <!-- Parallel split after farming -->
+    <bpmn:sequenceFlow id="sf5" sourceRef="afterFarmSplit" targetRef="bragFriends" />
+    <bpmn:sequenceFlow id="sf6" sourceRef="afterFarmSplit" targetRef="sendMaterials" />
+    <!-- Parallel join -->
+    <bpmn:sequenceFlow id="sf7" sourceRef="bragFriends" targetRef="afterFarmJoin" />
+    <bpmn:sequenceFlow id="sf8" sourceRef="sendMaterials" targetRef="afterFarmJoin" />
+    <!-- End of process -->
+    <bpmn:sequenceFlow id="sf9" sourceRef="afterFarmJoin" targetRef="processEnd" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="ORG_PROCESS" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="ORG_PROCESS" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANESET_ORG">
+      <bpmn:lane id="LANE_SCHEDULER" name="Scheduler">
+        <bpmn:flowNodeRef>Task_ScheduleAudit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_INTERNAL" name="Internal Team">
+        <bpmn:flowNodeRef>Gateway_PrepareSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PrepareDocumentation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GatherEvidence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ConductSelfAssessment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_PrepareJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewProcesses</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_GapsDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_MakeCorrections</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FinalAudit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CriteriaDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AwardCertification</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_IssueDocuments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ProcessCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_AUDITORS" name="Auditors">
+        <bpmn:flowNodeRef>Task_ReviewProcesses</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="Start_Process" name="Process Start" />
+
+    <bpmn:task id="Task_ScheduleAudit" name="Schedule compliance audit" />
+
+    <!-- Parallel preparation split -->
+    <bpmn:parallelGateway id="Gateway_PrepareSplit" name="Preparation Parallel Split" />
+
+    <bpmn:task id="Task_PrepareDocumentation" name="Prepare documentation" />
+    <bpmn:task id="Task_GatherEvidence" name="Gather evidence" />
+    <bpmn:task id="Task_ConductSelfAssessment" name="Conduct self-assessment" />
+
+    <!-- Parallel preparation join -->
+    <bpmn:parallelGateway id="Gateway_PrepareJoin" name="Preparation Parallel Join" />
+
+    <bpmn:task id="Task_ReviewProcesses" name="Review processes" />
+
+    <!-- Decision on gaps -->
+    <bpmn:exclusiveGateway id="Gateway_GapsDecision" name="Gaps identified?" />
+
+    <bpmn:task id="Task_MakeCorrections" name="Make corrections or improvements" />
+
+    <bpmn:task id="Task_FinalAudit" name="Undergo final audit" />
+
+    <!-- Decision on criteria -->
+    <bpmn:exclusiveGateway id="Gateway_CriteriaDecision" name="All criteria met?" />
+
+    <bpmn:task id="Task_AwardCertification" name="Award certification" />
+    <bpmn:task id="Task_IssueDocuments" name="Issue official documents" />
+
+    <bpmn:endEvent id="End_ProcessCompleted" name="Process Completed" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="F_StartToSchedule" sourceRef="Start_Process" targetRef="Task_ScheduleAudit" />
+    <bpmn:sequenceFlow id="F_ScheduleToSplit" sourceRef="Task_ScheduleAudit" targetRef="Gateway_PrepareSplit" />
+    <bpmn:sequenceFlow id="F_SplitToDoc" sourceRef="Gateway_PrepareSplit" targetRef="Task_PrepareDocumentation" />
+    <bpmn:sequenceFlow id="F_SplitToEvidence" sourceRef="Gateway_PrepareSplit" targetRef="Task_GatherEvidence" />
+    <bpmn:sequenceFlow id="F_SplitToSelf" sourceRef="Gateway_PrepareSplit" targetRef="Task_ConductSelfAssessment" />
+    <bpmn:sequenceFlow id="F_DocToJoin" sourceRef="Task_PrepareDocumentation" targetRef="Gateway_PrepareJoin" />
+    <bpmn:sequenceFlow id="F_EvidenceToJoin" sourceRef="Task_GatherEvidence" targetRef="Gateway_PrepareJoin" />
+    <bpmn:sequenceFlow id="F_SelfToJoin" sourceRef="Task_ConductSelfAssessment" targetRef="Gateway_PrepareJoin" />
+    <bpmn:sequenceFlow id="F_JoinToReview" sourceRef="Gateway_PrepareJoin" targetRef="Task_ReviewProcesses" />
+    <bpmn:sequenceFlow id="F_ReviewToDecision" sourceRef="Task_ReviewProcesses" targetRef="Gateway_GapsDecision" />
+    <bpmn:sequenceFlow id="F_DecisionYes" name="yes" sourceRef="Gateway_GapsDecision" targetRef="Task_MakeCorrections" />
+    <bpmn:sequenceFlow id="F_DecisionNo" name="no" sourceRef="Gateway_GapsDecision" targetRef="Task_FinalAudit" />
+    <bpmn:sequenceFlow id="F_CorrectionsToFinalAudit" sourceRef="Task_MakeCorrections" targetRef="Task_FinalAudit" />
+    <bpmn:sequenceFlow id="F_FinalAuditToCriteria" sourceRef="Task_FinalAudit" targetRef="Gateway_CriteriaDecision" />
+    <bpmn:sequenceFlow id="F_CriteriaYes" name="yes" sourceRef="Gateway_CriteriaDecision" targetRef="Task_AwardCertification" />
+    <bpmn:sequenceFlow id="F_CriteriaNo" name="no" sourceRef="Gateway_CriteriaDecision" targetRef="End_ProcessCompleted" />
+    <bpmn:sequenceFlow id="F_AwardToIssue" sourceRef="Task_AwardCertification" targetRef="Task_IssueDocuments" />
+    <bpmn:sequenceFlow id="F_IssueToEnd" sourceRef="Task_IssueDocuments" targetRef="End_ProcessCompleted" />
+  </bpmn:process>
+</bpmn:definitions>

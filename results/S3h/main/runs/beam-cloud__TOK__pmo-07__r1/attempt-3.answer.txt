@@ -1,0 +1,67 @@
+```tok
+tok 1.0 "Ticket booking process"
+
+pool travel "Travel company" process-name="Travel booking"
+  lane customer "Customer"
+    start start_booking "Booking started"
+    task search "Search for a flight, train, or bus ticket"
+    task select "Select preferred route, date, and time"
+    task provide_personal "Provide personal information"
+    task provide_payment "Provide payment details"
+    xor reminders "Receive reminders?"
+    task receive_reminders "Receive reminders"
+    xor instructions "Receive instructions?"
+    xor instruction_type "Check-in or boarding?"
+    task receive_checkin "Receive check-in instructions"
+    task receive_boarding "Receive boarding instructions"
+    xor instructions_join "Instructions handled"
+    task complete_journey "Complete journey"
+    xor post_travel "Post-travel feedback or services?"
+    xor post_travel_type "Feedback or services?"
+    task provide_feedback "Provide feedback"
+    task use_services "Use post-travel services"
+    end end_journey "Journey completed"
+    end end_extended "Post-travel completed"
+  lane booking "Booking system"
+    task generate_ticket "Generate ticket"
+    xor delivery_type "Email or SMS?"
+    task send_email "Send ticket by email"
+    task send_sms "Send ticket by SMS"
+    xor delivery_join "Ticket delivered"
+    and ticket_split "Split ticket processing"
+    and ticket_join "Join ticket processing"
+  lane inventory "Travel company"
+    task update_inventory "Update seat inventory"
+
+flow start_booking -> search -> select -> provide_personal -> provide_payment -> generate_ticket
+
+flow generate_ticket -> ticket_split
+flow ticket_split -> delivery_type
+flow ticket_split -> update_inventory
+flow delivery_type -> send_email "Email" when='delivery = "email"'
+flow delivery_type -> send_sms "SMS" default
+flow send_email -> delivery_join
+flow send_sms -> delivery_join
+flow delivery_join -> ticket_join
+flow update_inventory -> ticket_join
+
+flow ticket_join -> reminders
+flow reminders -> receive_reminders "Yes" when="reminders"
+flow reminders -> instructions "No" default
+flow receive_reminders -> instructions
+flow instructions -> instruction_type "Yes" when="instructions"
+flow instructions -> complete_journey "No" default
+flow instruction_type -> receive_checkin "Check-in" when='instructionType = "checkin"'
+flow instruction_type -> receive_boarding "Boarding" default
+flow receive_checkin -> instructions_join
+flow receive_boarding -> instructions_join
+flow instructions_join -> complete_journey
+
+flow complete_journey -> post_travel
+flow post_travel -> post_travel_type "Yes" when="postTravel"
+flow post_travel -> end_journey "No" default
+flow post_travel_type -> provide_feedback "Feedback" when='postTravelType = "feedback"'
+flow post_travel_type -> use_services "Services" default
+flow provide_feedback -> end_extended
+flow use_services -> end_extended
+```

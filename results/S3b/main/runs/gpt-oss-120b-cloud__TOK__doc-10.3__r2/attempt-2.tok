@@ -1,0 +1,38 @@
+tok 1.0 "MPOO deregistration process"
+
+pool organisation "Organisation"
+  lane MPOO "MPOO"
+    start start "Start"
+    task dreg "MPOO deregisters at the GO"
+    task mopoconfirm "MPOO confirms the continuation to the MPOO"
+  lane GO "GO"
+    task verify "GO verifies the deregistration"
+    xor decision1 "Deregistration decision"
+    task reject "GO rejects the deregistration of the MPOO"
+    end reject_end "Deregistration rejected"
+    task confirm "GO preliminarily confirms the deregistration of the MPOO"
+    task readmit "GO prepares the readmission of the measuring point"
+    xor decision2 "Obligation to continue?"
+    task bind "GO binds the MPOO to continue the operation"
+    and split_equip "Equipment split"
+    task acquire "GO performs equipment acquisition"
+    task change "GO performs equipment changes"
+    and join_equip "Equipment join"
+    task assign "GO assigns the GO as MPO"
+    task inform_mpoo "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "GO informs the MSPO about the assignment of the GO"
+    task inform_sp "GO informs the SP about the assignment of the GO"
+    end end_process "Process completed"
+  lane MSPO "MSPO"
+    # receiving inform_mspo (no tasks required)
+  lane SP "SP"
+    # receiving inform_sp (no tasks required)
+
+flow start -> dreg -> verify -> decision1
+flow decision1 -> reject -> reject_end
+flow decision1 -> confirm -> readmit -> decision2
+flow decision2 -> bind -> mopoconfirm -> split_equip
+flow decision2 -> split_equip
+flow split_equip -> acquire -> join_equip
+flow split_equip -> change -> join_equip
+flow join_equip -> assign -> inform_mpoo -> inform_mspo -> inform_sp -> end_process

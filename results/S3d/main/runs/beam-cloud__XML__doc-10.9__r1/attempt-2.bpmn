@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="sp-pu-go" name="SP / PU / GO">
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpo" name="MPO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cause</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>perform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-reported</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-failed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" />
+
+    <bpmn:exclusiveGateway id="g1" name="Who initiates the change?" default="f-cause" />
+    <bpmn:task id="request" name="Request changes to the MPO" />
+    <bpmn:task id="cause" name="Cause a change" />
+    <bpmn:task id="review" name="Review the change request" />
+
+    <bpmn:exclusiveGateway id="g2" name="Reject or confirm?" default="f-confirm" />
+    <bpmn:task id="reject" name="Reject the change of the measuring point" />
+    <bpmn:task id="confirm" name="Confirm the request of the SP / PU / GO" />
+    <bpmn:task id="perform" name="Perform the measuring point change" />
+
+    <bpmn:exclusiveGateway id="g3" name="Implementation successful?" default="f-report" />
+    <bpmn:task id="report" name="Report the implementation" />
+    <bpmn:task id="notify" name="Notify about the failure of the changes" />
+
+    <bpmn:endEvent id="end-rejected" name="Change rejected" />
+    <bpmn:endEvent id="end-reported" name="Implementation reported" />
+    <bpmn:endEvent id="end-failed" name="Failure notified" />
+
+    <bpmn:sequenceFlow id="f-start" sourceRef="start" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-request" name="SP / PU / GO request changes" sourceRef="g1" targetRef="request">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">initiator == 'sp-pu-go'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-cause" name="MPO himself causes a change" sourceRef="g1" targetRef="cause" />
+    <bpmn:sequenceFlow id="f-request-review" sourceRef="request" targetRef="review" />
+    <bpmn:sequenceFlow id="f-cause-review" sourceRef="cause" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review" sourceRef="review" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-reject" name="rejects" sourceRef="g2" targetRef="reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reviewDecision == 'rejected'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-confirm" name="confirms" sourceRef="g2" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-reject-end" sourceRef="reject" targetRef="end-rejected" />
+    <bpmn:sequenceFlow id="f-confirm-perform" sourceRef="confirm" targetRef="perform" />
+    <bpmn:sequenceFlow id="f-perform" sourceRef="perform" targetRef="g3" />
+    <bpmn:sequenceFlow id="f-report" name="reports implementation" sourceRef="g3" targetRef="report" />
+    <bpmn:sequenceFlow id="f-notify" name="notifies failure" sourceRef="g3" targetRef="notify">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">implementationStatus == 'failed'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-report-end" sourceRef="report" targetRef="end-reported" />
+    <bpmn:sequenceFlow id="f-notify-end" sourceRef="notify" targetRef="end-failed" />
+  </bpmn:process>
+</bpmn:definitions>

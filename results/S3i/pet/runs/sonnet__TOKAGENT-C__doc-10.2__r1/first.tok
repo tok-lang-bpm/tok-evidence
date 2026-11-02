@@ -1,0 +1,58 @@
+tok 1.0 "Meter registration"
+
+pool org "Meter operation"
+  lane mpon "MPON"
+    start begin "Meter operation to report"
+    task report "Report the meter operation to the GO"
+    task equip "Perform the equipment acquisition and / or equipment changes"
+    xor outcome "Outcome?"
+    task fail "Inform the GO about the failure of the entire process"
+    task success "Inform the GO about the successful completion of the entire process"
+  lane go "GO"
+    task examine "Examine the application of the MPON"
+    xor ok "Application acceptable?"
+    task reject "Reject the application of the MPON"
+    task confirm "Confirm the application of the MPON"
+    and reg "Registration confirmed"
+    task regmpoo "Inform the MPOO about the registration confirmation"
+    task regmspo "Inform the MSPO about the registration confirmation"
+    and regd
+    task late "Inform the MPON about the failure of the overall transaction by deadline"
+    task cfail "Confirm the failure of the assignment to the MPON"
+    and ffork
+    task fmpoo "Inform the MPOO about the failure of the assignment"
+    task fmspo "Inform the MSPO about the failure of the assignment"
+    and fjoin
+    task assign "Assign the MPON"
+    task cassign "Confirm the assignment to the MPON"
+    and sfork
+    task smpoo "Inform the MPOO about the assignment of the MPON"
+    task smspo "Inform the MSPO about the assignment of the MPON"
+    task ssp "Inform the SP about the assignment of the MPON"
+    and sjoin
+    end rejected "Application rejected"
+    end timedout "Transaction failed by deadline"
+    end failed "Assignment failed"
+    end assigned "MPON assigned"
+
+flow begin -> report -> examine -> ok
+flow ok -> reject "no"
+flow ok -> confirm "yes"
+flow reject -> rejected
+flow confirm -> reg
+flow reg -> regmpoo -> regd
+flow reg -> regmspo -> regd
+flow regd -> equip -> outcome
+flow outcome -> fail "failure"
+flow outcome -> success "success"
+flow outcome -> late "no message by deadline"
+flow late -> timedout
+flow fail -> cfail -> ffork
+flow ffork -> fmpoo -> fjoin
+flow ffork -> fmspo -> fjoin
+flow fjoin -> failed
+flow success -> assign -> cassign -> sfork
+flow sfork -> smpoo -> sjoin
+flow sfork -> smspo -> sjoin
+flow sfork -> ssp -> sjoin
+flow sjoin -> assigned

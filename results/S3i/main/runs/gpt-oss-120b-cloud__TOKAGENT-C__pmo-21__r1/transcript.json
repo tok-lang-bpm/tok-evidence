@@ -1,0 +1,158 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3834,
+  "output_tokens": 1488,
+  "seconds": 9.7070103000151,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to parse the description, identify actors, steps, decisions, parallel flows.\n\nText:\n\n\"If goods shall be shipped, the secretary clarifies ...\". So first decision: goods shall be shipped? Probably start event already goods need shipping? We'll model start event \"Start\". Then decision: goods shall be shipped? If no, maybe process ends? Not given. We'll assume we only model shipping path. But need end event.\n\nActors: secretary, logistics department head, warehousemen. Possibly logistic company (selected) but that's external? We'll include logistic company as separate lane? It says secretary invites three logistic companies to make offers and she selects one. The selected logistic company will later pick up. Could be a lane \"logistic company\". Let's include lane \"logistic company\".\n\nProcess flow:\n\nStart -> xor goods_shipped? label \"Goods shall be shipped?\" \nIf yes: proceed. If no: maybe end? We'll add end \"No shipping needed\".\n\nIf yes: secretary clarifies who will do shipping. Then decision: large amounts? (If you have large amounts, special shipping will be necessary.) So another xor \"Large amount?\" If yes: special shipping path: secretary invites three logistic companies to make offers and selects one. So tasks: \"Invite three logistic companies to make offers\", \"Select one logistic company\". After selection, there is logistic company (selected) etc.\n\nIf small amounts: normal post shipment is used. So branch.\n\nBoth cases converge? After that, \"Therefore a package label is written by the secretary and a parcel insurance taken by the logistics department head if necessary.\" So after decision of amount, we have tasks: \"Write package label\" (secretary) and possibly \"Take parcel insurance\" (logistics department head) if necessary. That's another decision: Is insurance necessary? Not explicitly but phrase \"if necessary\". Could model as optional with xor? Might just include in parallel with condition \"if necessary\". For simplicity maybe include task with conditional flow. But we can model as xor with label \"Insurance needed?\" Yes/No.\n\nAlso \"In the meantime the goods can be already packaged by the warehousemen.\" That suggests parallel activity: packaging happening while label/insurance tasks. So we need parallel gateway after previous decision fork maybe.\n\nSequence:\nAfter amount decision, we branch to:\n- Parallel: \n   - Task \"Package goods\" (warehousemen)\n   - Sequence: label and possibly insurance (secretary and logistics head)\n\nBoth converge before preparing for pickup.\n\nThen \"If everything is ready, the packaged goods are prepared for being picked up by the logistic company.\"\n\nSo after parallel join, maybe decision \"Everything ready?\" XOR. If yes: task \"Prepare goods for pickup\". Then end? maybe end event \"Ready for pickup\". Could also include logistic company lane with \"Pick up goods\". But description says prepared for being picked up, not actual pickup. We'll end there.\n\nWe'll model as:\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    xor goods_shipped \"Goods shall be shipped?\"\n    task clarify \"Clarify who will do the shipping\"\n    xor large_amount \"Large amount?\"\n    task invite_offers \"Invite three logistic companies to make offers\"\n    task select_company \"Select one logistic company\"\n    task write_label \"Write package label\"\n  lane logistics_head \"Logistics Department Head\"\n    xor insurance_needed \"Parcel insurance needed?\"\n    task take_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task package_goods \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task prepare_pickup \"Prepare goods for pickup\"\n\nNeed parallel gateways: After large amount decision (both branches converge before label). Both small and large amount converge to label and insurance parallel? The description says in both cases, label written and insurance optional. So after the large amount branch (or small amount path), converge with and.\n\nThus flow:\n\nStart -> goods_shipped xor.\n\nIf no: end \"No shipping\".\n\nIf yes: clarify -> large_amount xor.\n\nIf large yes: invite_offers -> select_company -> (then converge) (maybe just proceed). If large no (small): proceed directly.\n\nWe need a join XOR? Actually large_amount xor splits and joins before label.\n\nSo after both branches, have an and join? We'll just use an and gateway after large_amount decision to converge.\n\nThen we have parallel: label (secretary) and insurance (logistics head) optional? Actually insurance only if necessary, but we can model as xor for insurance path, else skip. Could just include a xor before insurance task. But then parallel with package goods? The packaging is concurrent with label+insurance.\n\nSo after the converge, we branch with an and gateway into two parallel branches:\n- Branch A: label task (secretary) then (xor insurance? maybe optional after label). Could just do label then xor insurance (yes->insurance, no->skip) then go to join.\n- Branch B: package_goods (warehousemen).\n\nAll converge before prepare_pickup.\n\nFinally end event.\n\nImplement flows.\n\nWe need to assign tasks to lanes. So tasks placed within lane block.\n\nGateway IDs need unique.\n\nWe'll write model.\n\nNow we need to run check tool to ensure syntax correct.\n\nLet's draft.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor goods_shipped \"Goods shall be shipped?\"\n    task clarify \"Clarify who will do the shipping\"\n    xor large_amount \"Large amount?\"\n    task invite_offers \"Invite three logistic companies to make offers\"\n    task select_company \"Select one logistic company\"\n    task write_label \"Write package label\"\n    xor insurance_needed \"Parcel insurance needed?\"\n    task take_insurance \"Take parcel insurance\"\n    and parallel1\n    and join_parallel1\n    task prepare_pickup \"Prepare goods for pickup\"\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task take_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task package_goods \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task prepare_pickup \"Prepare goods for pickup\"\n\nflow s -> goods_shipped\nflow goods_shipped \"yes\" -> clarify\nflow goods_shipped \"no\" -> e\nflow clarify -> large_amount\nflow large_amount \"yes\" -> invite_offers\nflow large_amount \"no\" -> write_label\nflow invite_offers -> select_company\nflow select_company -> write_label\nflow write_label -> insurance_needed\nflow insurance_needed \"yes\" -> take_insurance\nflow insurance_needed \"no\" -> parallel1\nflow take_insurance -> parallel1\nflow parallel1 -> package_goods\nflow parallel1 -> prepare_pickup\nflow package_goods -> join_parallel1\nflow prepare_pickup -> join_parallel1\nflow join_parallel1 -> e"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5390,
+  "output_tokens": 424,
+  "seconds": 5.465742600004887,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool expects either path or text, not both. Provide only text. Let's call again with only text.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor goods_shipped \"Goods shall be shipped?\"\n    task clarify \"Clarify who will do the shipping\"\n    xor large_amount \"Large amount?\"\n    task invite_offers \"Invite three logistic companies to make offers\"\n    task select_company \"Select one logistic company\"\n    task write_label \"Write package label\"\n    xor insurance_needed \"Parcel insurance needed?\"\n    task take_insurance \"Take parcel insurance\"\n    and parallel1\n    and join_parallel1\n    task prepare_pickup \"Prepare goods for pickup\"\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task take_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task package_goods \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task prepare_pickup \"Prepare goods for pickup\"\n\nflow s -> goods_shipped\nflow goods_shipped \"yes\" -> clarify\nflow goods_shipped \"no\" -> e\nflow clarify -> large_amount\nflow large_amount \"yes\" -> invite_offers\nflow large_amount \"no\" -> write_label\nflow invite_offers -> select_company\nflow select_company -> write_label\nflow write_label -> insurance_needed\nflow insurance_needed \"yes\" -> take_insurance\nflow insurance_needed \"no\" -> parallel1\nflow take_insurance -> parallel1\nflow parallel1 -> package_goods\nflow parallel1 -> prepare_pickup\nflow package_goods -> join_parallel1\nflow prepare_pickup -> join_parallel1\nflow join_parallel1 -> e"
+    },
+    "is_error": false,
+    "result": "line 19: error R001: identifier 'take_insurance' is already used on line 13\nline 23: error R001: identifier 'prepare_pickup' is already used on line 16\nline 26: error P008: malformed flow line: expected '->'\nline 27: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 30: error P008: malformed flow line: expected '->'\nline 34: error P008: malformed flow line: expected '->'\nline 35: error P008: malformed flow line: expected '->'\n8 error(s), 8 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6048,
+  "output_tokens": 1025,
+  "seconds": 4.972294500010321,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need unique identifiers: cannot duplicate task IDs. I used same names across lanes. Need distinct IDs per task. Also flow syntax: need \"flow A -> B\" not \"flow A -\\u003e B\" (the escaped arrow may be okay but need proper arrow). Use \"flow A -> B\". Also need specify labels for flows with quotes after arrow? For labeled flow, you can do `flow G -> D \"tak\" when=\"condition\"` etc. The format \"flow goods_shipped \\\"yes\\\" -> clarify\" is not correct. Should be `flow goods_shipped -> clarify \"yes\"` maybe? Actually example: `flow complete -> approve \"yes\"` So label after arrow.\n\nThus adjust.\n\nAlso need to reference correct IDs: the task IDs should be unique across document, not just unique per lane. So rename tasks with IDs including suffix.\n\nLet's create IDs:\n\n- start s\n- xor gshipped\n- task clarify t_clarify\n- xor large_amount g_large\n- task invite t_invite\n- task select t_select\n- task label t_label\n- xor insurance_needed g_ins\n- task insurance t_insurance\n- and and1\n- and join_and1\n- task pickup t_prepare_pickup\n- end e\n\nIn logistics_head lane we need task insurance, but we already have t_insurance defined earlier but tasks can be shared? Better define only once in its lane. Remove duplicate tasks from logistics_head lane; instead the task should be placed in that lane. So we need to place t_insurance under logistics_head lane, not duplicate. That means we need to reference the same ID but defined inside lane logistics_head. In tok, tasks inside lane have unique IDs across document; you can place same ID only once. So we place t_insurance definition in logistics_head lane. Remove from secretary lane.\n\nSimilarly t_prepare_pickup appears both in secretary lane and logistic_company lane; we need only one definition, placed maybe in logistic_company lane. So remove from secretary lane.\n\nNow flow definitions: need correct referencing.\n\nAlso parallel gateway: after label and insurance decisions we need fork AND (and1) to split into package_goods and (maybe also to continue to prepare_pickup?). Actually we need to wait for package done and label/insurance done before prepare_pickup. So after label and optional insurance done, we can have AND gateway that splits to package_goods and then join after both finish before pickup. So flow: after label (and maybe insurance) we go to and1 (fork). But label and insurance are sequential? Actually label then insurance optional, then after that we go to and1. So flow: t_label -> g_ins -> (if yes) t_insurance else skip. After that, flow to and1.\n\nThus we need to unify after g_ins and possible insurance to go to and1. In tok, you can have flow from both g_ins->and1 (default) and t_insurance->and1.\n\nDefine and1 as AND fork, join_and as AND join.\n\nNow flows for package_goods and prepare_pickup join.\n\nNow we need to include flows.\n\nLet's write model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor gshipped \"Goods shall be shipped?\"\n    task t_clarify \"Clarify who will do the shipping\"\n    xor g_large \"Large amount?\"\n    task t_invite \"Invite three logistic companies to make offers\"\n    task t_select \"Select one logistic company\"\n    task t_label \"Write package label\"\n    xor g_ins \"Parcel insurance needed?\"\n    and and1\n    and join_and\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task t_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task t_package \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task t_prepare \"Prepare goods for pickup\"\n\nflow s -> gshipped\nflow gshipped \"yes\" -> t_clarify\nflow gshipped \"no\" -> e\nflow t_clarify -> g_large\nflow g_large \"yes\" -> t_invite\nflow g_large \"no\" -> t_label\nflow t_invite -> t_select\nflow t_select -> t_label\nflow t_label -> g_ins\nflow g_ins \"yes\" -> t_insurance\nflow g_ins \"no\" -> and1\nflow t_insurance -> and1\nflow and1 -> t_package\nflow and1 -> t_prepare\nflow t_package -> join_and\nflow t_prepare -> join_and\nflow join_and -> e"
+    },
+    "is_error": false,
+    "result": "line 24: error P008: malformed flow line: expected '->'\nline 25: error P008: malformed flow line: expected '->'\nline 27: error P008: malformed flow line: expected '->'\nline 28: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7263,
+  "output_tokens": 513,
+  "seconds": 2.762177700002212,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Flow syntax: Should be `flow A -> B` optionally with label after arrow: `flow A -> B \"yes\"` . Not before arrow.\n\nSo correct format: `flow gshipped -> t_clarify \"yes\"`? Wait need label on outgoing flow. In example: `flow complete -> approve \"yes\"` So arrow then label on destination side after target. So for decision we do `flow gshipped -> t_clarify \"yes\"`. For default false path: `flow gshipped -> e \"no\"` etc.\n\nThus adjust all lines.\n\nAlso need to ensure each flow line uses correct IDs.\n\nLet's rewrite flows.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor gshipped \"Goods shall be shipped?\"\n    task t_clarify \"Clarify who will do the shipping\"\n    xor g_large \"Large amount?\"\n    task t_invite \"Invite three logistic companies to make offers\"\n    task t_select \"Select one logistic company\"\n    task t_label \"Write package label\"\n    xor g_ins \"Parcel insurance needed?\"\n    and and1\n    and join_and\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task t_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task t_package \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task t_prepare \"Prepare goods for pickup\"\n\nflow s -> gshipped\nflow gshipped -> t_clarify \"yes\"\nflow gshipped -> e \"no\"\nflow t_clarify -> g_large\nflow g_large -> t_invite \"yes\"\nflow g_large -> t_label \"no\"\nflow t_invite -> t_select\nflow t_select -> t_label\nflow t_label -> g_ins\nflow g_ins -> t_insurance \"yes\"\nflow g_ins -> and1 \"no\"\nflow t_insurance -> and1\nflow and1 -> t_package\nflow and1 -> t_prepare\nflow t_package -> join_and\nflow t_prepare -> join_and\nflow join_and -> e"
+    },
+    "is_error": false,
+    "result": "line 13: note L021: gateway both joins and splits (and1)\nline 13: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (and1)\n0 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 7917,
+  "output_tokens": 887,
+  "seconds": 3.9801720999821555,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We have an AND gateway used as both split and join? We used and1 as split and also as join? Actually and1 is used as split (after insurance decision) and also a join? No, we used and1 as split only. Then join_and is separate join (AND). However line 13 note L021: gateway both joins and splits (and1). This indicates that we used and1 as both a split and a join somewhere incorrectly. Let's examine: we have flow g_ins -> and1 with label \"no\". Also flow t_insurance -> and1. and1 has outgoing flows to t_package and t_prepare. So and1 is a split (fork) but also has incoming from both g_ins and t_insurance (two incoming). So that's a join as well (multiple incoming). That's not allowed; we need separate join BEFORE the split, or restructure.\n\nWe should have a join before the parallel fork to combine flows from g_ins (no) and insurance (after). Actually after decision, we have either go directly to parallel split (if insurance not needed) or after insurance task. So both paths converge before the parallel split. So we need a XOR? Actually both flow into a join gateway (AND) that then splits.\n\nSimplify: after g_ins decision:\n\n- If no: go directly to and_fork.\n- If yes: go to insurance task then to and_fork.\n\nThus we can have a XOR? But both need to converge before fork - they can be merged using an XOR? No need a join; we can have both flows go directly to the same gateway (AND fork) which is allowed as multiple incoming? In BPMN, a gateway can have multiple incoming if it's a join type. But an AND gateway can be both split and join if configured? Generally need separate join and split. Our note indicates using same AND as both.\n\nSolution: Introduce a XOR (or just a dummy task) to merge. Better: Use an AND join after insurance decision, then an AND fork.\n\nSo create an AND join ID join_pre (join_before_parallel). Flow from g_ins \"no\" goes to join_pre. Flow from t_insurance goes to join_pre. Then join_pre splits via and1 to parallel branches.\n\nThus modify: remove and1 as join. Keep and1 as fork, and create join_pre as and.\n\nUpdate flows accordingly.\n\nLet's edit model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor gshipped \"Goods shall be shipped?\"\n    task t_clarify \"Clarify who will do the shipping\"\n    xor g_large \"Large amount?\"\n    task t_invite \"Invite three logistic companies to make offers\"\n    task t_select \"Select one logistic company\"\n    task t_label \"Write package label\"\n    xor g_ins \"Parcel insurance needed?\"\n    and join_pre\n    and and_fork\n    and join_and\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task t_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task t_package \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task t_prepare \"Prepare goods for pickup\"\n\nflow s -> gshipped\nflow gshipped -> t_clarify \"yes\"\nflow gshipped -> e \"no\"\nflow t_clarify -> g_large\nflow g_large -> t_invite \"yes\"\nflow g_large -> t_label \"no\"\nflow t_invite -> t_select\nflow t_select -> t_label\nflow t_label -> g_ins\nflow g_ins -> join_pre \"no\"\nflow g_ins -> t_insurance \"yes\"\nflow t_insurance -> join_pre\nflow join_pre -> and_fork\nflow and_fork -> t_package\nflow and_fork -> t_prepare\nflow t_package -> join_and\nflow t_prepare -> join_and\nflow join_and -> e"
+    },
+    "is_error": false,
+    "result": "line 13: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (join_pre)\n0 error(s), 1 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 8932,
+  "output_tokens": 708,
+  "seconds": 2.962086300016381,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We have warning that join_pre is a join of a different type than split. join_pre currently defined as AND. Incoming flows: from g_ins \"no\" (direct) and from t_insurance (after insurance). These are two incoming flows that need to be joined. That's fine as an AND join (since both must arrive). But the preceding split is XOR (g_ins decision). The joining of XOR branches with AND join may be flagged. To avoid, we could use XOR join (i.e., use xor join). But actually after decision, the paths are exclusive, so we can just have a simple flow without join: we can have both paths directly go to the same downstream gateway (and_fork) without explicit join. That would be multiple incoming to and_fork, which would be an AND join? Actually and_fork is a split; it cannot also be join. Better to use a simple task 't_prepare' etc after merging? However easiest: replace join_pre with xor (join of exclusive paths). So change join_pre to xor (maybe call join_xor). XOR join is allowed after exclusive split.\n\nThus change definition: xor join_pre.\n\nUpdate model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor gshipped \"Goods shall be shipped?\"\n    task t_clarify \"Clarify who will do the shipping\"\n    xor g_large \"Large amount?\"\n    task t_invite \"Invite three logistic companies to make offers\"\n    task t_select \"Select one logistic company\"\n    task t_label \"Write package label\"\n    xor g_ins \"Parcel insurance needed?\"\n    xor join_pre\n    and and_fork\n    and join_and\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task t_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task t_package \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task t_prepare \"Prepare goods for pickup\"\n\nflow s -> gshipped\nflow gshipped -> t_clarify \"yes\"\nflow gshipped -> e \"no\"\nflow t_clarify -> g_large\nflow g_large -> t_invite \"yes\"\nflow g_large -> t_label \"no\"\nflow t_invite -> t_select\nflow t_select -> t_label\nflow t_label -> g_ins\nflow g_ins -> join_pre \"no\"\nflow g_ins -> t_insurance \"yes\"\nflow t_insurance -> join_pre\nflow join_pre -> and_fork\nflow and_fork -> t_package\nflow and_fork -> t_prepare\nflow t_package -> join_and\nflow t_prepare -> join_and\nflow join_and -> e"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 9666,
+  "output_tokens": 337,
+  "seconds": 0.9382052000146359,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Shipping Process\"\n\npool org \"Organization\"\n  lane secretary \"Secretary\"\n    start s \"Start\"\n    xor gshipped \"Goods shall be shipped?\"\n    task t_clarify \"Clarify who will do the shipping\"\n    xor g_large \"Large amount?\"\n    task t_invite \"Invite three logistic companies to make offers\"\n    task t_select \"Select one logistic company\"\n    task t_label \"Write package label\"\n    xor g_ins \"Parcel insurance needed?\"\n    xor join_pre\n    and and_fork\n    and join_and\n    end e \"End\"\n  lane logistics_head \"Logistics Department Head\"\n    task t_insurance \"Take parcel insurance\"\n  lane warehousemen \"Warehousemen\"\n    task t_package \"Package the goods\"\n  lane logistic_company \"Logistic Company\"\n    task t_prepare \"Prepare goods for pickup\"\n\nflow s -> gshipped\nflow gshipped -> t_clarify \"yes\"\nflow gshipped -> e \"no\"\nflow t_clarify -> g_large\nflow g_large -> t_invite \"yes\"\nflow g_large -> t_label \"no\"\nflow t_invite -> t_select\nflow t_select -> t_label\nflow t_label -> g_ins\nflow g_ins -> join_pre \"no\"\nflow g_ins -> t_insurance \"yes\"\nflow t_insurance -> join_pre\nflow join_pre -> and_fork\nflow and_fork -> t_package\nflow and_fork -> t_prepare\nflow t_package -> join_and\nflow t_prepare -> join_and\nflow join_and -> e\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

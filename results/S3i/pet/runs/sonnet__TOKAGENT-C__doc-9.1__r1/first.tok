@@ -1,0 +1,50 @@
+tok 1.0 "Account defaulter processing"
+
+pool org "Organisation"
+  lane ops "Operations"
+    start morning "Weekday morning" timer=P1D
+    task backup "Back up the database"
+    sub part1 "Process defaulters"
+      start s1 "Begin"
+      task checkTable "Check the Account Defaulter table for new records"
+      xor newRec "New records found?"
+      task checkCrm1 "Check the CRM system for new returns"
+      xor newRet1 "New returns filed?"
+      task register "Register defaulting accounts and customers"
+      xor advised "Client codes previously advised?"
+      task produce "Produce a table of defaulting accounts"
+      task sendAm "Send the table to account management"
+      xor merge "Merge"
+      end e1 "Part done"
+    boundary late1 "2:30 pm passed" on=part1 timer=PT14H30M noninterrupting
+    task checkCrm2 "Check the CRM system for new returns"
+    xor newRet2 "New returns filed?"
+    sub part2 "Reconcile"
+      start s2 "Begin"
+      task reconcile "Reconcile with the existing account defaulters table"
+      end e2 "Reconciled"
+    boundary late2 "4:00 pm passed" on=part2 timer=PT16H noninterrupting
+    end done "Process completed"
+  lane sup "Supervisor"
+    task alert "Send an alert to the supervisor"
+    task msg "Send a message to the supervisor"
+    end alerted "Alert sent"
+    end messaged "Message sent"
+
+flow morning -> backup -> part1
+flow s1 -> checkTable -> newRec
+flow newRec -> register "yes"
+flow newRec -> checkCrm1 "no"
+flow checkCrm1 -> newRet1
+flow newRet1 -> register "yes"
+flow newRet1 -> e1 "no"
+flow register -> advised
+flow advised -> produce "no"
+flow advised -> merge "yes"
+flow produce -> sendAm -> merge -> e1
+flow part1 -> checkCrm2 -> newRet2
+flow newRet2 -> part2 "yes"
+flow newRet2 -> done "no"
+flow part2 -> done
+flow late1 -> alert -> alerted
+flow late2 -> msg -> messaged

@@ -1,0 +1,46 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizzard "Blizzard"
+  lane player "Player"
+    start begin "Character creation started"
+    and split
+    task names "Come up with character names"
+    task enter_account "Enter the account information"
+    task click_link "Click the link in the confirmation mail"
+    xor pay_choice "Payment method?"
+    task card "Enter the credit card information"
+    task iban "Enter the IBAN and BIC numbers"
+    and joined
+    task login "Log into the game"
+    task select "Select realm, race and class"
+    task enter_name "Enter a character name"
+    task receive "Receive the confirmation and selfies"
+    catch expansion "Expansion released" message="Expansion released"
+    end done "Character created"
+  lane system "Blizzard system"
+    task check_account "Check whether a battle.net account exists"
+    xor has_account "Battle.net account?"
+    xor merge_account
+    task check_sub "Check whether an active WoW subscription exists"
+    xor has_sub "Active WoW subscription?"
+    xor ready
+    xor name_ok "Name still available?"
+
+flow begin -> split
+flow split -> names -> joined
+flow split -> check_account -> has_account
+flow has_account -> enter_account "no"
+flow enter_account -> click_link -> merge_account
+flow has_account -> merge_account "yes"
+flow merge_account -> check_sub -> has_sub
+flow has_sub -> ready "yes"
+flow has_sub -> pay_choice "no"
+flow pay_choice -> card "credit card"
+flow pay_choice -> iban "bank account"
+flow card -> ready
+flow iban -> ready
+flow ready -> joined
+flow joined -> login -> select -> enter_name -> name_ok
+flow name_ok -> enter_name "taken"
+flow name_ok -> receive "available"
+flow receive -> expansion -> done

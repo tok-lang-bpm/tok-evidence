@@ -1,0 +1,49 @@
+tok 1.0 "MPOO deregistration process" [executable]
+    [process-name="MPOO deregistration"] doc="Process of deregistering MPOO at GO"
+
+pool org "Organization"
+  lane MPOO "MPOO"
+    start S1 "Start deregistration"
+    task T1 "MPOO deregisters at the GO"
+    task T7 "MPOO confirms the continuation to the MPOO"
+    end E2 "Process completed"
+
+  lane GO "GO"
+    task T2 "GO verifies the deregistration"
+    xor G1 "GO decision on deregistration"
+    task T3 "GO rejects the deregistration of the MPOO"
+    end E1 "Deregistration rejected"
+    task T4 "GO preliminarily confirms the deregistration of the MPOO"
+    task T5 "GO prepares the readmission of the measuring point"
+    xor G2 "GO obliges MPOO to continue?"
+    task T6 "GO binds the MPOO to continue the operation"
+    and G3 "Equipment split"
+    task T8 "GO performs equipment acquisition"
+    task T9 "GO performs equipment changes"
+    and G4 "Equipment join"
+    task T10 "GO assigns the GO as MPO"
+    task T11 "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    and G5 "Inform split"
+    task T12 "GO informs the MSPO about the assignment of the GO"
+    task T13 "GO informs the SP about the assignment of the GO"
+    and G6 "Inform join"
+
+  lane MSPO "MSPO"
+    # No specific tasks; receives information from GO (modeled in GO lane)
+
+  lane SP "SP"
+    # No specific tasks; receives information from GO (modeled in GO lane)
+
+# Sequence flows
+flow S1 -> T1 -> T2 -> G1
+flow G1 -> T3 -> E1
+flow G1 -> T4 -> T5 -> G2
+flow G2 -> T6 "yes"
+flow G2 -> G3 "no"
+flow T6 -> T7 -> G3
+flow G3 -> T8 -> G4
+flow G3 -> T9 -> G4
+flow G4 -> T10 -> T11 -> G5
+flow G5 -> T12 -> G6
+flow G5 -> T13 -> G6
+flow G6 -> E2

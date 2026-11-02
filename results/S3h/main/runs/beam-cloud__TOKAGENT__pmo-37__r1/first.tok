@@ -1,0 +1,43 @@
+tok 1.0 "Contract"
+
+pool contract "Contract"
+  lane buyer "Buyer"
+    start s "Start contract project"
+    task q "Query all web shops"
+    task f "Find out how much they can deliver, at which price, and how long it will take"
+    task c "Create a list of parts that you order from each shop"
+    xor g1 "One shop has enough parts?"
+    task o1 "Order from one shop"
+    task om "Order from several shops"
+    catch first "First parts arrive" message="parts delivered"
+    task b "Start building"
+    end e1 "End contract project"
+    eventsub monitor "Stock monitoring"
+      start sm "Stock falls below 5" condition="stock < 5"
+      task rcheap "Reorder (the cheapest)"
+      xor g2 "Stock below 3?"
+      task rfast "Reorder again (the fastest)"
+      xor g3 "Stock is zero?"
+      task mail "Write a mail to your friends, complaining about the webshops"
+      end e2 "End reorder"
+      flow rcheap -> g2
+      flow g2 -> rfast "yes" when="stock < 3"
+      flow g2 -> e2 "no" default
+      flow rfast -> g3
+      flow g3 -> mail "yes" when="stock = 0"
+      flow g3 -> e2 "no" default
+      flow mail -> e2
+  lane shops "Web shops"
+    task deliver "Deliver parts in batches"
+
+flow s -> q
+flow q -> f
+flow f -> c
+flow c -> g1
+flow g1 -> o1 "yes" when="oneShopHasEnough = true"
+flow g1 -> om "no" default
+flow o1 -> deliver
+flow om -> deliver
+flow deliver -> first
+flow first -> b
+flow b -> e1

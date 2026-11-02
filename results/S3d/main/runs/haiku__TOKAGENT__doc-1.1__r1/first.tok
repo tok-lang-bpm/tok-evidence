@@ -1,0 +1,41 @@
+tok 1.0 "Customized bicycle order"
+
+pool company "Bicycle manufacturer"
+  lane sales "Sales department"
+    start order-received "Order received" message="Customer order"
+    task decide-order "Accept or reject the order"
+    xor accepted "Order accepted?"
+    end order-rejected "Process instance finished (order rejected)"
+    task inform "Inform storehouse and engineering department"
+    and split-work
+    task ship "Ship the bicycle to the customer"
+    end shipped "Process instance finished"
+  lane store "Storehouse"
+    task process-parts "Process the part list"
+    task check-quantity "Check the required quantity of each part"
+    xor available "Part available in-house?"
+    task reserve "Reserve the part"
+    task back-order "Back-order the part"
+    xor item-done "Item processed"
+    xor more-items "More items on the part list?"
+  lane eng "Engineering department"
+    task prepare "Prepare everything for assembling the bicycle"
+    and ready
+    task assemble "Assemble the bicycle"
+
+flow order-received -> decide-order -> accepted
+flow accepted -> order-rejected "no" when="accepted = false"
+flow accepted -> inform "yes" when="accepted = true"
+flow inform -> split-work
+flow split-work -> process-parts
+flow split-work -> prepare
+flow process-parts -> check-quantity -> available
+flow available -> reserve "yes" when="available = true"
+flow available -> back-order "no" default
+flow reserve -> item-done
+flow back-order -> item-done
+flow item-done -> more-items
+flow more-items -> check-quantity "yes" when="more = true"
+flow more-items -> ready "no" default
+flow prepare -> ready
+flow ready -> assemble -> ship -> shipped

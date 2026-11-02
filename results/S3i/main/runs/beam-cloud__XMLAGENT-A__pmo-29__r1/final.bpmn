@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="proc" />
+  </bpmn:collaboration>
+  <bpmn:process id="proc" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="applicant" name="Applicant">
+        <bpmn:flowNodeRef>SE_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_checkReq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_prep_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_orgAcc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_openBank</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_prep_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_detVisaType</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_visaType</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_detRepSch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_detRepD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_typeMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_gatherDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_provideAdd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IE_timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_renew</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EE_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="representation" name="Representation office">
+        <bpmn:flowNodeRef>T_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_addDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_requestAdd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_refusal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_refuse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EE_refused</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="SE_start" name="Start work and live in Austria process" />
+
+    <bpmn:task id="T_checkReq" name="Check requirements for working and living in Austria" />
+    <bpmn:parallelGateway id="GW_prep_split" />
+    <bpmn:task id="T_orgAcc" name="Organize accommodation" />
+    <bpmn:task id="T_openBank" name="Open bank account" />
+    <bpmn:parallelGateway id="GW_prep_join" />
+    <bpmn:task id="T_detVisaType" name="Determine visa type" />
+    <bpmn:exclusiveGateway id="GW_visaType" name="Visa type?" default="F_typeD" />
+    <bpmn:task id="T_detRepSch" name="Determine competent representation office for Schengen visa" />
+    <bpmn:task id="T_detRepD" name="Determine competent Austrian representation for Type D visa" />
+    <bpmn:exclusiveGateway id="GW_typeMerge" name="Competent office determined" />
+    <bpmn:task id="T_gatherDocs" name="Gather required documents" />
+    <bpmn:task id="T_submit" name="Submit visa application with documents" />
+
+    <bpmn:task id="T_review" name="Review visa application" />
+    <bpmn:exclusiveGateway id="GW_addDocs" name="Additional documents needed?" default="F_noAdd" />
+    <bpmn:task id="T_requestAdd" name="Request additional documents" />
+    <bpmn:task id="T_provideAdd" name="Provide additional documents" />
+    <bpmn:exclusiveGateway id="GW_refusal" name="Grounds for refusal present?" default="F_noRefusal" />
+    <bpmn:task id="T_refuse" name="Refuse visa application" />
+    <bpmn:task id="T_issue" name="Issue visa / Rot-Weiss-Rot Card" />
+    <bpmn:intermediateCatchEvent id="IE_timer" name="Visa validity period elapses">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P6M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_renew" name="Renew Rot-Weiss-Rot Card" />
+
+    <bpmn:endEvent id="EE_refused" name="Application refused" />
+    <bpmn:endEvent id="EE_success" name="Work and live in Austria enabled" />
+
+    <bpmn:sequenceFlow id="F_start" sourceRef="SE_start" targetRef="T_checkReq" />
+    <bpmn:sequenceFlow id="F_check" sourceRef="T_checkReq" targetRef="GW_prep_split" />
+    <bpmn:sequenceFlow id="F_split_org" sourceRef="GW_prep_split" targetRef="T_orgAcc" />
+    <bpmn:sequenceFlow id="F_split_bank" sourceRef="GW_prep_split" targetRef="T_openBank" />
+    <bpmn:sequenceFlow id="F_join_org" sourceRef="T_orgAcc" targetRef="GW_prep_join" />
+    <bpmn:sequenceFlow id="F_join_bank" sourceRef="T_openBank" targetRef="GW_prep_join" />
+    <bpmn:sequenceFlow id="F_prep_done" sourceRef="GW_prep_join" targetRef="T_detVisaType" />
+    <bpmn:sequenceFlow id="F_detType" sourceRef="T_detVisaType" targetRef="GW_visaType" />
+    <bpmn:sequenceFlow id="F_schengen" name="Schengen (A/C)" sourceRef="GW_visaType" targetRef="T_detRepSch">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">visaType = 'schengen'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_typeD" name="Type D" sourceRef="GW_visaType" targetRef="T_detRepD" />
+    <bpmn:sequenceFlow id="F_schengen_done" sourceRef="T_detRepSch" targetRef="GW_typeMerge" />
+    <bpmn:sequenceFlow id="F_typeD_done" sourceRef="T_detRepD" targetRef="GW_typeMerge" />
+    <bpmn:sequenceFlow id="F_typeMerge" sourceRef="GW_typeMerge" targetRef="T_gatherDocs" />
+    <bpmn:sequenceFlow id="F_gather" sourceRef="T_gatherDocs" targetRef="T_submit" />
+    <bpmn:sequenceFlow id="F_submit" sourceRef="T_submit" targetRef="T_review" />
+    <bpmn:sequenceFlow id="F_review" sourceRef="T_review" targetRef="GW_addDocs" />
+    <bpmn:sequenceFlow id="F_add_yes" name="Yes" sourceRef="GW_addDocs" targetRef="T_requestAdd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">additionalNeeded = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_noAdd" name="No" sourceRef="GW_addDocs" targetRef="GW_refusal" />
+    <bpmn:sequenceFlow id="F_request" sourceRef="T_requestAdd" targetRef="T_provideAdd" />
+    <bpmn:sequenceFlow id="F_provide" sourceRef="T_provideAdd" targetRef="T_review" />
+    <bpmn:sequenceFlow id="F_ref_yes" name="Yes" sourceRef="GW_refusal" targetRef="T_refuse">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">groundsForRefusal = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_noRefusal" name="No" sourceRef="GW_refusal" targetRef="T_issue" />
+    <bpmn:sequenceFlow id="F_refuse" sourceRef="T_refuse" targetRef="EE_refused" />
+    <bpmn:sequenceFlow id="F_issue" sourceRef="T_issue" targetRef="IE_timer" />
+    <bpmn:sequenceFlow id="F_timer" sourceRef="IE_timer" targetRef="T_renew" />
+    <bpmn:sequenceFlow id="F_renew" sourceRef="T_renew" targetRef="EE_success" />
+  </bpmn:process>
+</bpmn:definitions>

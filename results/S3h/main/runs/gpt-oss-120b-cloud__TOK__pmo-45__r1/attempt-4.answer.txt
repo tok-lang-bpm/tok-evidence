@@ -1,0 +1,52 @@
+```tok
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "E-Shop"
+  lane customer "Customer"
+    start login_start "Customer logs in"
+    task select_product "Select product"
+    task add_to_cart "Add product to shopping cart"
+    task save_product "Save product"
+    task enter_payment_data "Enter payment data"
+    task enter_shipping_address "Enter shipping address"
+    task enter_billing_address "Enter billing address"
+    end login_failed "Login failed"
+    end order_completed "Order completed"
+
+  lane system "System"
+    task check_credentials "Check credentials"
+    xor login_success "Login successful?"
+    xor all_selected "All products selected?"
+    xor address_match "Shipping address equals billing address?"
+    task finish_order "Finish order"
+    and split_prepare
+    and join_prepare
+    task complete_order "Complete order"
+
+  lane bank "Bank"
+    task confirm_payment "Confirm payment"
+
+# Sequence flows
+flow login_start -> check_credentials -> login_success
+flow login_success -> select_product "yes"
+flow login_success -> login_failed "no"
+
+flow select_product -> add_to_cart -> save_product -> all_selected
+flow all_selected -> select_product "no"
+flow all_selected -> finish_order "yes"
+
+flow finish_order -> split_prepare
+
+flow split_prepare -> enter_payment_data
+flow split_prepare -> enter_shipping_address
+
+flow enter_payment_data -> confirm_payment
+flow confirm_payment -> join_prepare
+
+flow enter_shipping_address -> address_match
+flow address_match -> join_prepare "yes"
+flow address_match -> enter_billing_address "no"
+flow enter_billing_address -> join_prepare
+
+flow join_prepare -> complete_order -> order_completed
+```

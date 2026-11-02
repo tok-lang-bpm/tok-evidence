@@ -1,0 +1,63 @@
+tok 1.0 "Work Accident"
+
+pool organisation "Organisation"
+  lane employees "Employees"
+    start accident "Work accident occurs"
+    xor reported_by "Reported by?"
+    xor employee_report "What is reported?"
+    task inform_accident "Inform the employer of any work accident"
+    task inform_near_miss "Inform the employer of an incident that would almost have led to an accident"
+    task inform_risk "Inform the employer of a serious and immediate risk to safety and health"
+    task inform_defect "Inform the employer of a defect discovered in protection systems"
+    xor informed_join "Informed employer?"
+    or employer_split "Employer reporting obligations?"
+    task report_labour "Report any work accident that leads to a fatality or serious injury to the Labour Inspectorate if it has not been reported to the emergency services"
+    task report_provider "Report the work accident to the responsible accident insurance provider within five days"
+    or employer_join "Reported to provider or inspectorate?"
+    end reported "Accident reported"
+  lane self_employed "Self-employed person"
+    and self_split "Self-employed reporting obligations?"
+    task report_employees_accidents "Report accidents involving people you employ to the accident insurance provider"
+    task report_own_accident "Report accidents involving you to the accident insurance provider"
+    and self_join "Reported?"
+  lane student "Student or schoolchild"
+    task report_directorate "Report accidents to the competent directorate"
+  lane school "School, educational facility or university"
+    task report_school "Report every work accident to the responsible accident insurance provider within five days in triplicate"
+  lane insured "Insured party (private insurance)"
+    task report_private "Report an accident in writing immediately to the private insurance provider"
+    xor fatality_check "Fatalities?"
+    task report_fatality "Report fatalities to the private insurance provider within three days"
+
+flow accident -> reported_by
+flow reported_by -> employee_report "Employee"
+flow reported_by -> self_split "Self-employed person"
+flow reported_by -> report_directorate "Student or schoolchild"
+flow reported_by -> report_school "School, educational facility or university"
+flow reported_by -> report_private "Insured party (private insurance)"
+flow employee_report -> inform_accident "Work accident"
+flow employee_report -> inform_near_miss "Near miss"
+flow employee_report -> inform_risk "Serious risk"
+flow employee_report -> inform_defect "Defect in protection systems"
+flow inform_accident -> informed_join
+flow inform_near_miss -> informed_join
+flow inform_risk -> informed_join
+flow inform_defect -> informed_join
+flow informed_join -> employer_split
+flow employer_split -> report_labour "Fatality or serious injury not reported to emergency services" when="fatalAndNotEmergency"
+flow employer_split -> report_provider "Insured person killed or unable to work for three days" when="unable3Days"
+flow employer_split -> employer_join "Neither" default
+flow report_labour -> employer_join
+flow report_provider -> employer_join
+flow employer_join -> reported
+flow self_split -> report_employees_accidents
+flow self_split -> report_own_accident
+flow report_employees_accidents -> self_join
+flow report_own_accident -> self_join
+flow self_join -> reported
+flow report_directorate -> reported
+flow report_school -> reported
+flow report_private -> fatality_check
+flow fatality_check -> report_fatality "Fatalities" when="fatalities"
+flow fatality_check -> reported "No fatalities" default
+flow report_fatality -> reported

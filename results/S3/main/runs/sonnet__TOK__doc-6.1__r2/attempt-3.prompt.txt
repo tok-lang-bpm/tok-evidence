@@ -1,0 +1,87 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+As a basic principle, ACME AG receives invoices on paper or fax. These are received by the Secretariat in the central inbox and forwarded after a short visual inspection to an accounting employee. In `` ACME Financial Accounting ``, a software specially developed for the ACME AG, she identifies the charging suppliers and creates a new instance (invoice). She then checks the invoice items and notes the corresponding cost center at the ACME AG and the related cost center managers for each position on a separate form (`` docket ``). The docket and the copy of the invoice go to the internal mail together and are sent to the first cost center manager to the list. He reviews the content for accuracy after receiving the copy of the invoice. Should everything be in order, he notes his code one on the docket (`` accurate position - AP ``) and returns the copy of the invoice to the internal mail. From it, the copy of the invoice is passed on to the next cost center manager, based on the docket, or if all items are marked correct, sent back to accounting. Therefore, the copy of invoice and the docket gradually move through the hands of all cost center managers until all positions are marked as completely accurate. However, if inconsistencies exist, e.g. because the ordered product is not of the expected quantity or quality, the cost center manager rejects the AP with a note and explanatory statement on the docket, and the copy of the invoice is sent back to accounting directly. Based on the statements of the cost center managers, she will proceede with the clarification with the vendor, but, if necessary, she consults the cost center managers by telephone or e-mail again. When all inconsistencies are resolved, the copy of the invoice is sent to the cost center managers again, and the process continues. After all invoice items are AP, the accounting employee forwards the copy of the invoice to the commercial manager. He makes the commercial audit and issues the approval for payment. If the bill amount exceeds EUR 20, the Board wants to check it again (4 - eyes-principle). The copy of the invoice including the docket moves back to the accounting employee in the appropriate signature file. Should there be a complaint during the commercial audit, it will be resolved by the accounting employee with the supplier. After the commercial audit is successfully completed, the accounting employee gives payment instructions and closes the instance in `` ACME financial accounting ``.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Invoice approval at ACME AG"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received on paper or fax"
+    task inbox "Receive the invoice in the central inbox"
+    task inspect "Inspect the invoice visually"
+    task forward "Forward the invoice to an accounting employee"
+  lane accounting "Accounting employee"
+    task identify "Identify the charging supplier"
+    task create "Create a new instance in ACME Financial Accounting"
+    task checkitems "Check the invoice items"
+    task note "Note the cost centers and cost center managers on the docket"
+    task sendfirst "Send the docket and the copy of the invoice to the first cost center manager"
+    task sendback "Send the copy of the invoice back to accounting"
+    task clarify "Clarify the inconsistencies with the vendor"
+    xor consult "Consultation with cost center managers needed?"
+    task consulting "Consult the cost center managers by telephone or e-mail"
+    task sendagain "Send the copy of the invoice to the cost center managers again"
+    task tocommercial "Forward the copy of the invoice to the commercial manager"
+    task resolve "Resolve the complaint with the supplier"
+    task instruct "Give payment instructions"
+    task close "Close the instance in ACME Financial Accounting"
+    end done "Invoice processed"
+  lane manager "Cost center manager"
+    xor reviewin
+    task review "Review the content of the invoice for accuracy"
+    xor accurate "Everything in order?"
+    task markap "Note the code AP on the docket"
+    task returnmail "Return the copy of the invoice to the internal mail"
+    xor allap "All positions marked AP?"
+    task reject "Reject the AP with a note and explanatory statement on the docket"
+  lane commercial "Commercial manager"
+    xor auditin
+    task audit "Make the commercial audit"
+    xor complaint "Complaint during the audit?"
+    task approve "Issue the approval for payment"
+    xor amount "Bill amount exceeds EUR 20?"
+    xor payjoin
+    task returnsig "Return the copy of the invoice and the docket to accounting in the signature file"
+  lane board "Board"
+    task boardcheck "Check the invoice again"
+
+flow received -> inbox -> inspect -> forward -> identify -> create -> checkitems -> note -> sendfirst -> reviewin
+flow reviewin -> review -> accurate
+flow accurate -> markap "yes"
+flow accurate -> reject "no" default
+flow markap -> returnmail -> allap
+flow allap -> reviewin "no" default
+flow allap -> tocommercial "yes" when="allPositionsAP = true"
+flow reject -> sendback -> clarify -> consult
+flow consult -> consulting "yes" when="consultationNeeded = true"
+flow consulting -> clarify
+flow consult -> sendagain "no" default
+flow sendagain -> reviewin
+flow tocommercial -> auditin -> audit -> complaint
+flow complaint -> resolve "yes" when="complaintExists = true"
+flow resolve -> auditin
+flow complaint -> approve "no" default
+flow approve -> amount
+flow amount -> boardcheck "yes" when="amount > 20"
+flow amount -> payjoin "no" default
+flow boardcheck -> payjoin
+flow payjoin -> returnsig -> instruct -> close -> done
+```
+
+The tok checker reports these problems in it:
+
+- line 46: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-accurate-markap)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

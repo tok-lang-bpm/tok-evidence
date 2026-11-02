@@ -1,0 +1,46 @@
+tok 1.0 "Office Supply Request"
+
+pool office "Office Supply Request"
+  lane employee "Employee"
+    start s "Employee submits office supply request"
+    task rev "Review change comments"
+  lane supervisor "Supervisor"
+    task revreq "Review request"
+    xor decide "Approve, change or reject?"
+  lane purchase "Purchase Department"
+    sub quot "Make quotations"
+      start sqs "Start"
+      task mqt "Make quotations"
+      end sqe "End"
+    task sel "Select vendor"
+    xor vgw "Vendor valid?"
+  lane system "System"
+    task reg "Register requirement"
+    task genpo "Generate and send purchase order"
+    task rd "Receive product delivery"
+    task ri "Receive invoice"
+    and pgw "Wait for delivery and invoice"
+    and jgw "Delivery and invoice received"
+    task notif "Send notification to user"
+    end e "End"
+
+flow s -> reg
+flow reg -> revreq
+flow revreq -> decide
+flow decide -> notif "Reject" default
+flow decide -> rev "Change required" when=""
+flow decide -> quot "Approve" when=""
+flow rev -> notif
+flow quot -> sel
+flow sel -> vgw
+flow vgw -> genpo "Vendor valid" default
+flow vgw -> sel "Vendor not valid" when=""
+flow genpo -> pgw
+flow pgw -> rd
+flow pgw -> ri
+flow rd -> jgw
+flow ri -> jgw
+flow jgw -> notif
+flow notif -> e
+flow sqs -> mqt
+flow mqt -> sqe

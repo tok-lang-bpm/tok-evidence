@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="mortgage-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="mortgage-process" isExecutable="false">
+    <bpmn:laneSet id="mortgage-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>replyReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>replyType</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>declinedOrUnanswered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateDetails</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveWork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelCase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>moveToAdmin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>requestDocuments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>documentsRequested</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>caseCancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="admin" name="Administration">
+        <bpmn:flowNodeRef>completeCase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>caseCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Mortgage offer ready" />
+    <bpmn:task id="sendOffer" name="Send the mortgage offer to the customer" />
+    <bpmn:eventBasedGateway id="waitReply" name="Reply or no answer?" />
+    <bpmn:intermediateCatchEvent id="replyReceived" name="Customer reply received">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timeout" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="replyType" name="Type of reply?" />
+    <bpmn:exclusiveGateway id="declinedOrUnanswered" name="Declined or unanswered" />
+    <bpmn:task id="updateDetails" name="Update the case details" />
+    <bpmn:task id="archiveWork" name="Archive the work" />
+    <bpmn:task id="cancelCase" name="Cancel the case" />
+    <bpmn:task id="moveToAdmin" name="Move the case to administration" />
+    <bpmn:task id="requestDocuments" name="Send a message requesting the outstanding documents" />
+    <bpmn:endEvent id="documentsRequested" name="Outstanding documents requested" />
+    <bpmn:task id="completeCase" name="Complete the case" />
+    <bpmn:endEvent id="caseCompleted" name="Case completed" />
+    <bpmn:endEvent id="caseCancelled" name="Case cancelled" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sendOffer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendOffer" targetRef="waitReply" />
+    <bpmn:sequenceFlow id="f3" sourceRef="waitReply" targetRef="replyReceived" />
+    <bpmn:sequenceFlow id="f4" sourceRef="waitReply" targetRef="timeout" />
+    <bpmn:sequenceFlow id="f5" sourceRef="replyReceived" targetRef="replyType" />
+    <bpmn:sequenceFlow id="f6" name="declines the mortgage" sourceRef="replyType" targetRef="declinedOrUnanswered" />
+    <bpmn:sequenceFlow id="f7" name="completed offer documents with all prerequisite documents" sourceRef="replyType" targetRef="moveToAdmin" />
+    <bpmn:sequenceFlow id="f8" name="prerequisite documents not all provided" sourceRef="replyType" targetRef="requestDocuments" />
+    <bpmn:sequenceFlow id="f9" sourceRef="requestDocuments" targetRef="documentsRequested" />
+    <bpmn:sequenceFlow id="f10" sourceRef="timeout" targetRef="declinedOrUnanswered" />
+    <bpmn:sequenceFlow id="f11" sourceRef="declinedOrUnanswered" targetRef="updateDetails" />
+    <bpmn:sequenceFlow id="f12" sourceRef="updateDetails" targetRef="archiveWork" />
+    <bpmn:sequenceFlow id="f13" sourceRef="archiveWork" targetRef="cancelCase" />
+    <bpmn:sequenceFlow id="f14" sourceRef="cancelCase" targetRef="caseCancelled" />
+    <bpmn:sequenceFlow id="f15" sourceRef="moveToAdmin" targetRef="completeCase" />
+    <bpmn:sequenceFlow id="f16" sourceRef="completeCase" targetRef="caseCompleted" />
+  </bpmn:process>
+</bpmn:definitions>

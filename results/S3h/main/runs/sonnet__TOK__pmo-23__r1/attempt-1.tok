@@ -1,0 +1,37 @@
+tok 1.0 "Credit scoring"
+
+pool bank "Bank"
+  lane clerk "Sales clerk"
+    start needed "Credit-scoring needed"
+    task request "Request the credit-scoring"
+    task check "Check again later"
+    task see "See the result at the frontend"
+    end done "Scoring result seen"
+  lane system "Banking system"
+    task send "Send the scoring request to the agency"
+    task delay_msg "Display a delay message to the clerk"
+    task present "Present the result to the clerk"
+  lane agency "Agency"
+    task level1 "Do the first quick scoring (level 1)"
+    xor immediate "Result determined immediately?"
+    task return "Return the result to the banking system"
+    task inform "Inform the banking process of the delay"
+    and split
+    task level2 "Do the level 2 scoring"
+    task sendback "Send the scoring result to the banking process"
+    and join
+    xor merge
+
+flow needed -> request -> send -> level1 -> immediate
+flow immediate -> return "yes"
+flow immediate -> inform "no"
+flow inform -> split
+flow split -> delay_msg
+flow split -> level2
+flow delay_msg -> check
+flow level2 -> sendback
+flow check -> join
+flow sendback -> join
+flow join -> merge
+flow return -> merge
+flow merge -> present -> see -> done

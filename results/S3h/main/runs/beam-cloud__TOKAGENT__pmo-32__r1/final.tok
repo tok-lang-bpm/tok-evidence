@@ -1,0 +1,42 @@
+tok 1.0 "Farming Bot"
+
+pool org "Farming Bot Organisation"
+  lane player "Player"
+    start start "Start"
+    task find-resources "Find out which resources you want"
+    task prioritize-resources "Prioritize resources"
+    task define-dependencies "Define resource dependencies"
+    or share "Share results?"
+    task brag "Brag to selected friends"
+    or share-join "Join shares"
+    end end "End"
+  lane bot "Farming Bot"
+    task collect-resources "Collect resources" parallel
+    sub farming "Farming"
+      start farming-start "Start farming"
+      task farm-resources "Farm resources"
+      end farming-end "Finish farming"
+      eventsub disaster "Natural disaster"
+        start disaster-start "Disaster strikes" signal="Natural disaster"
+        task recover "Set bot back"
+        end disaster-end "Recovered"
+      eventsub update-list "Update farming list"
+        start update-start "Update requested" message="Update list"
+        task update-farming-list "Update farming list"
+        end update-end "Updated"
+      eventsub milestones "Milestone notification"
+        start milestone-start "Milestone reached" signal="Milestone reached"
+        task notify-milestone "Notify player of milestone"
+        end milestone-end "Notified"
+    task send "Send materials to friends"
+
+flow farming-start -> farm-resources -> farming-end
+flow disaster-start -> recover -> disaster-end
+flow update-start -> update-farming-list -> update-end
+flow milestone-start -> notify-milestone -> milestone-end
+flow start -> find-resources -> prioritize-resources -> define-dependencies -> collect-resources -> farming -> share
+flow share -> brag "Brag" when="brag = true"
+flow share -> send "Send materials" when="send = true"
+flow share -> share-join "No sharing" default
+flow brag -> share-join
+flow send -> share-join -> end

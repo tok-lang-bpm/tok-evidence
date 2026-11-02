@@ -1,0 +1,36 @@
+tok 1.0 "Contract"
+
+pool organisation "Organisation"
+  lane you "You"
+    start needed "Need parts"
+    task query "Query web shops"
+    task find "Find out how much they can deliver, at which price, and how long it will take"
+    task create "Create a list of parts to order from each shop"
+    xor enough "One shop has not enough parts?"
+    task orderseveral "Order from several shops"
+    xor enoughjoin
+    task cheapest "Always use the cheapest parts"
+    xor receivejoin
+    task receive "The parts arrive in batches"
+    task build "Start building"
+    xor stock "Stock below threshold?"
+    task reordercheap "Reorder the cheapest"
+    task reorderfast "Reorder the fastest"
+    task mail "Write a mail to your friends, complaining about the webshops"
+    end complete "Contract completed"
+    end complaint "Mail sent"
+
+flow needed -> query -> find -> create -> enough
+flow enough -> orderseveral "not enough" when="notEnough"
+flow enough -> enoughjoin "enough" default
+flow orderseveral -> enoughjoin
+flow enoughjoin -> cheapest
+flow cheapest -> receivejoin
+flow reordercheap -> receivejoin
+flow reorderfast -> receivejoin
+flow receivejoin -> receive -> build -> stock
+flow stock -> reordercheap "below 5" when="stock < 5 and stock >= 3"
+flow stock -> reorderfast "below 3" when="stock < 3 and stock > 0"
+flow stock -> mail "zero" when="stock = 0"
+flow stock -> complete "enough stock" default
+flow mail -> complaint

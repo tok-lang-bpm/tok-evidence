@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Job posting process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Vacancy_reported" name="Vacancy reported" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="HR organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Job posting process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="hr" name="HR clerk">
+        <bpmn:flowNodeRef>vacancy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clarity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clarified</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>posted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="dept" name="Department">
+        <bpmn:flowNodeRef>consider</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="vacancy" name="Vacancy reported">
+      <bpmn:messageEventDefinition id="vacancy-def" messageRef="Message_Vacancy_reported" />
+    </bpmn:startEvent>
+    <bpmn:task id="create" name="Create job description" />
+    <bpmn:exclusiveGateway id="clarity" name="Is the information still confusing?" default="f-clarity-clarified" />
+    <bpmn:task id="ask" name="Ask the Department again" />
+    <bpmn:exclusiveGateway id="clarified" />
+    <bpmn:task id="submit" name="Submit job description for consideration" />
+    <bpmn:task id="correct" name="Correct job description" />
+    <bpmn:task id="resubmit" name="Submit job description again" />
+    <bpmn:task id="post" name="Post job" />
+    <bpmn:endEvent id="posted" name="Job posted" />
+    <bpmn:task id="consider" name="Consider job description" />
+    <bpmn:exclusiveGateway id="approved" name="Is the job description approved?" default="f-approved-reject" />
+    <bpmn:task id="reject" name="Reject job description and request correction" />
+    <bpmn:sequenceFlow id="f-vacancy-create" sourceRef="vacancy" targetRef="create" />
+    <bpmn:sequenceFlow id="f-create-clarity" sourceRef="create" targetRef="clarity" />
+    <bpmn:sequenceFlow id="f-clarity-ask" name="yes" sourceRef="clarity" targetRef="ask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confusing = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-clarity-clarified" name="no" sourceRef="clarity" targetRef="clarified" />
+    <bpmn:sequenceFlow id="f-ask-clarified" sourceRef="ask" targetRef="clarified" />
+    <bpmn:sequenceFlow id="f-clarified-submit" sourceRef="clarified" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-consider" sourceRef="submit" targetRef="consider" />
+    <bpmn:sequenceFlow id="f-consider-approved" sourceRef="consider" targetRef="approved" />
+    <bpmn:sequenceFlow id="f-approved-post" name="yes" sourceRef="approved" targetRef="post">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-approved-reject" name="no" sourceRef="approved" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-reject-correct" sourceRef="reject" targetRef="correct" />
+    <bpmn:sequenceFlow id="f-correct-resubmit" sourceRef="correct" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="f-resubmit-consider" sourceRef="resubmit" targetRef="consider" />
+    <bpmn:sequenceFlow id="f-post-posted" sourceRef="post" targetRef="posted" />
+  </bpmn:process>
+</bpmn:definitions>

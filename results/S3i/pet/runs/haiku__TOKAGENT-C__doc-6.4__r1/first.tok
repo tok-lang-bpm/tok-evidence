@@ -1,0 +1,58 @@
+tok 1.0 "Acquisition of potential customers"
+
+pool company "Sales company"
+  lane marketing "Marketing staff"
+    start begin "Contact details needed"
+    xor source "Where do the contact details come from?"
+    task buy "Buy details for cold calls"
+    task exhibit "Participate in exhibitions"
+    task acquaintance "Learn of a customer through an acquaintance"
+    xor sourced "Contact details obtained"
+  lane callcenter "Call center staff"
+    task call "Call the customer"
+    task determine "Determine the contact person and the budget"
+    task ask "Ask whether the customer is generally interested"
+    xor interested "Customer generally interested?"
+    xor huge "Potential project budget huge?"
+    end left "Customer left alone"
+  lane head "Head of development"
+    task acquire "Personally acquire the customer"
+    xor endInterest "Customer interested in the end?"
+    xor ready "Customer ready for presentation"
+  lane sales "Sales representative"
+    xor presType "Presentation type?"
+    task detailed "Give detailed online presentation"
+    xor presMerge "Presentation given"
+    eventgw wait "Customer comes back within 2 weeks?"
+    catch contacted "Customer contacts us" message="Customer contact"
+    catch timeout "2 weeks passed" timer=P14D
+    task callBack "Call the customer back"
+    xor joined "Customer reached"
+    task quote "Create a quotation"
+    end done "Quotation created"
+  lane preSales "Pre-sales employee"
+    task techPres "Give technical online presentation"
+
+flow begin -> source
+flow source -> buy -> sourced
+flow source -> exhibit -> sourced
+flow source -> acquaintance -> sourced
+flow sourced -> call -> determine -> ask -> interested
+flow interested -> ready "yes"
+flow interested -> huge "no"
+flow huge -> acquire "yes"
+flow huge -> left "no"
+flow acquire -> endInterest
+flow endInterest -> ready "yes"
+flow endInterest -> left "no"
+flow ready -> presType
+flow presType -> detailed "detailed"
+flow presType -> techPres "technical"
+flow detailed -> presMerge
+flow techPres -> presMerge
+flow presMerge -> wait
+flow wait -> contacted
+flow wait -> timeout
+flow contacted -> joined
+flow timeout -> callBack -> joined
+flow joined -> quote -> done

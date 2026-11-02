@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneDatabase" name="Database System">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backupDB</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkNewRecords</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAlert2_30</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCRM" name="CRM System">
+        <bpmn:flowNodeRef>checkCRM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneAccountMgmt" name="Account Management">
+        <bpmn:flowNodeRef>registerDefaults</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produceTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendToAM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAfter4_00</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneSupervisor" name="Supervisor">
+        <bpmn:flowNodeRef>alertSupervisor2_30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSupervisor4_00</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Weekday morning start" />
+    <bpmn:task id="backupDB" name="Backup the database" />
+    <bpmn:task id="checkNewRecords" name="Check Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="g1" name="New records found?" />
+    <bpmn:task id="checkCRM1" name="Check CRM system for new returns" />
+    <bpmn:exclusiveGateway id="g4" name="New returns exist?" />
+    <bpmn:task id="registerDefaults" name="Register all defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="g2" name="Defaulting client codes previously advised?" />
+    <bpmn:task id="produceTable" name="Produce another table of defaulting accounts" />
+    <bpmn:task id="sendToAM" name="Send table to account management" />
+    <bpmn:exclusiveGateway id="g3" name="Completed by 2:30 pm?" />
+    <bpmn:task id="alertSupervisor2_30" name="Send alert to supervisor (2:30 pm breach)" />
+    <bpmn:endEvent id="endAlert2_30" name="Process ends after 2:30 pm alert" />
+    <bpmn:task id="checkCRM2" name="Check CRM system for new returns (post‑report)" />
+    <bpmn:exclusiveGateway id="g5" name="Completed by 4:00 pm?" />
+    <bpmn:task id="reconcile" name="Reconcile with existing account defaulters table" />
+    <bpmn:task id="alertSupervisor4_00" name="Send message to supervisor (4:00 pm breach)" />
+    <bpmn:endEvent id="endAfter4_00" name="Process ends after 4:00 pm check" />
+    <bpmn:endEvent id="endNoReturns" name="No further action – no new returns" />
+    <bpmn:endEvent id="endNoDefaults" name="No further action – no new defaulters" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="sf1" sourceRef="start" targetRef="backupDB" />
+    <bpmn:sequenceFlow id="sf2" sourceRef="backupDB" targetRef="checkNewRecords" />
+    <bpmn:sequenceFlow id="sf3" sourceRef="checkNewRecords" targetRef="g1" />
+    <bpmn:sequenceFlow id="sf4_yes" name="yes" sourceRef="g1" targetRef="registerDefaults">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newRecords == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf4_no" name="no" sourceRef="g1" targetRef="checkCRM1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newRecords == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Path when no new records: check CRM for returns -->
+    <bpmn:sequenceFlow id="sf5_yes" name="yes" sourceRef="checkCRM1" targetRef="registerDefaults">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newReturns == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf5_no" name="no" sourceRef="checkCRM1" targetRef="endNoReturns">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newReturns == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- After registering defaults, decide if client codes previously advised -->
+    <bpmn:sequenceFlow id="sf6" sourceRef="registerDefaults" targetRef="g2" />
+    <bpmn:sequenceFlow id="sf7_yes" name="yes" sourceRef="g2" targetRef="g3">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">alreadyAdvised == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf7_no" name="no" sourceRef="g2" targetRef="produceTable">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">alreadyAdvised == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="sf8" sourceRef="produceTable" targetRef="sendToAM" />
+    <bpmn:sequenceFlow id="sf9" sourceRef="sendToAM" targetRef="g3" />
+    <bpmn:sequenceFlow id="sf10" sourceRef="g3" targetRef="alertSupervisor2_30">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">completedBy2_30 == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf11" sourceRef="alertSupervisor2_30" targetRef="endAlert2_30" />
+    <bpmn:sequenceFlow id="sf12" sourceRef="g3" targetRef="checkCRM2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">completedBy2_30 == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Second CRM check -->
+    <bpmn:sequenceFlow id="sf13_yes" name="yes" sourceRef="checkCRM2" targetRef="reconcile">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newReturns2 == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf13_no" name="no" sourceRef="checkCRM2" targetRef="endNoReturns">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newReturns2 == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- After reconciliation, time check -->
+    <bpmn:sequenceFlow id="sf14" sourceRef="reconcile" targetRef="g5" />
+    <bpmn:sequenceFlow id="sf15_yes" sourceRef="g5" targetRef="endAfter4_00">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">completedBy4_00 == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf15_no" sourceRef="g5" targetRef="alertSupervisor4_00">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">completedBy4_00 == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sf16" sourceRef="alertSupervisor4_00" targetRef="endAfter4_00" />
+  </bpmn:process>
+</bpmn:definitions>

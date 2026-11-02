@@ -1,0 +1,47 @@
+tok 1.0
+pool org "Job Search Process" {
+  lane applicant "Applicant" {
+    start start
+    task report-applications "Report job applications"
+    task send-offers "Send job offers"
+    xor gw-interview "Interview negotiated?"
+    task negotiate-interview "Negotiate interview"
+    xor gw-job-offer "Company offers job?"
+    task probation "Enter probation phase"
+    and gw-rating "Parallel rating"
+    task wait-year "Wait 1 year"
+    task view-reviews "View company reviews"
+    xor gw-permanent "Job permanent?"
+    xor gw-low-rating "Rating <= C?"
+    task continue-offers "Continue receiving job offers"
+    end end
+  }
+  lane company "Company" {
+    task confirm-rate "Confirm receipt and rate application"
+    task rate-company "Rate company"
+    task company-rate-applicant "Company rates applicant"
+  }
+}
+flow start -> report-applications
+flow report-applications -> send-offers
+flow send-offers -> confirm-rate
+flow confirm-rate -> gw-interview
+flow gw-interview -> negotiate-interview "yes"
+flow gw-interview -> send-offers "no"
+flow negotiate-interview -> gw-job-offer
+flow send-offers -> gw-job-offer
+flow gw-job-offer -> probation "yes"
+flow gw-job-offer -> send-offers "no"
+flow probation -> gw-rating
+flow gw-rating -> rate-company
+flow gw-rating -> company-rate-applicant
+flow rate-company -> gw-rating
+flow company-rate-applicant -> gw-rating
+flow gw-rating -> wait-year
+flow wait-year -> view-reviews
+flow view-reviews -> gw-permanent
+flow gw-permanent -> end "yes"
+flow gw-permanent -> gw-low-rating "no"
+flow gw-low-rating -> continue-offers "yes"
+flow gw-low-rating -> report-applications "no"
+flow continue-offers -> send-offers

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Org" name="Organisation" processRef="Process_Expense" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Expense" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Finance" name="Finance">
+        <bpmn:flowNodeRef>Start_Received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_AccountMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutoApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ApprovedMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ProgressEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CancelEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Progress</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>Task_SupApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_7Days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_30Days</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Task_Resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Resubmit</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Received" name="Expense report received" />
+    <bpmn:exclusiveGateway id="Gw_Account" name="Employee has an account?" />
+    <bpmn:task id="Task_CreateAccount" name="Create new account" />
+    <bpmn:exclusiveGateway id="Gw_AccountMerge" />
+    <bpmn:task id="Task_Review" name="Review report for automatic approval" />
+    <bpmn:exclusiveGateway id="Gw_Amount" name="Amount under $200?" />
+    <bpmn:task id="Task_AutoApprove" name="Approve report automatically" />
+    <bpmn:task id="Task_SupApprove" name="Approve report" />
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Approved?" />
+    <bpmn:exclusiveGateway id="Gw_ApprovedMerge" />
+    <bpmn:task id="Task_Pay" name="Pay reimbursement to direct deposit bank account" />
+    <bpmn:task id="Task_RejectNotice" name="Send rejection notice by email" />
+    <bpmn:task id="Task_ProgressEmail" name="Send approval in progress email" />
+    <bpmn:task id="Task_CancelEmail" name="Send cancellation notice by email" />
+    <bpmn:task id="Task_Resubmit" name="Re-submit expense report" />
+
+    <bpmn:boundaryEvent id="Timer_7Days" name="7 days passed" attachedToRef="Task_SupApprove" cancelActivity="false">
+      <bpmn:timerEventDefinition id="TimerDef_7">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Timer_30Days" name="30 days passed" attachedToRef="Task_SupApprove" cancelActivity="true">
+      <bpmn:timerEventDefinition id="TimerDef_30">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+
+    <bpmn:endEvent id="End_Rejected" name="Expense report rejected" />
+    <bpmn:endEvent id="End_Paid" name="Reimbursement paid" />
+    <bpmn:endEvent id="End_Progress" name="Approval in progress notice sent" />
+    <bpmn:endEvent id="End_Resubmit" name="Expense report re-submitted" />
+
+    <bpmn:sequenceFlow id="F01" sourceRef="Start_Received" targetRef="Gw_Account" />
+    <bpmn:sequenceFlow id="F02" name="no" sourceRef="Gw_Account" targetRef="Task_CreateAccount" />
+    <bpmn:sequenceFlow id="F03" name="yes" sourceRef="Gw_Account" targetRef="Gw_AccountMerge" />
+    <bpmn:sequenceFlow id="F04" sourceRef="Task_CreateAccount" targetRef="Gw_AccountMerge" />
+    <bpmn:sequenceFlow id="F05" sourceRef="Gw_AccountMerge" targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="F06" sourceRef="Task_Review" targetRef="Gw_Amount" />
+    <bpmn:sequenceFlow id="F07" name="yes" sourceRef="Gw_Amount" targetRef="Task_AutoApprove" />
+    <bpmn:sequenceFlow id="F08" name="no" sourceRef="Gw_Amount" targetRef="Task_SupApprove" />
+    <bpmn:sequenceFlow id="F09" sourceRef="Task_AutoApprove" targetRef="Gw_ApprovedMerge" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_SupApprove" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="F11" name="no" sourceRef="Gw_Decision" targetRef="Task_RejectNotice" />
+    <bpmn:sequenceFlow id="F12" name="yes" sourceRef="Gw_Decision" targetRef="Gw_ApprovedMerge" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Gw_ApprovedMerge" targetRef="Task_Pay" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Task_Pay" targetRef="End_Paid" />
+    <bpmn:sequenceFlow id="F15" sourceRef="Task_RejectNotice" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F16" sourceRef="Timer_7Days" targetRef="Task_ProgressEmail" />
+    <bpmn:sequenceFlow id="F17" sourceRef="Task_ProgressEmail" targetRef="End_Progress" />
+    <bpmn:sequenceFlow id="F18" sourceRef="Timer_30Days" targetRef="Task_CancelEmail" />
+    <bpmn:sequenceFlow id="F19" sourceRef="Task_CancelEmail" targetRef="Task_Resubmit" />
+    <bpmn:sequenceFlow id="F20" sourceRef="Task_Resubmit" targetRef="End_Resubmit" />
+  </bpmn:process>
+</bpmn:definitions>

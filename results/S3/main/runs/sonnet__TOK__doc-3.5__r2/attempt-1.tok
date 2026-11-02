@@ -1,0 +1,39 @@
+tok 1.0 "Incoming mail handling"
+
+pool court "Court"
+  lane unit "Mail Processing Unit"
+    start daily "Daily mail collection" timer=P1D
+    task collect "Collect the mail from the party"
+  lane clerk "Mail Clerk"
+    task sort "Sort the unopened mail into business areas"
+    task distribute "Distribute the mail"
+  lane registry "Registry"
+    task open "Open the mail"
+    task group "Sort the mail into groups for distribution"
+    task register "Register the mail in the incoming Mail Register"
+  lane manager "Assistant Registry Manager"
+    task quality "Perform a quality check"
+    xor compliant "Mail compliant?"
+    task compile "Compile a list of requisition"
+    task sendback "Send the list of requisition back to the party"
+    task capture "Capture the matter details"
+    task provide "Provide the matter details to the Cashier"
+    and split
+    task envelope "Put the receipt and copied documents into an envelope"
+    task post "Post the envelope to the party"
+    and merge
+    end rejected "Mail rejected"
+    end done "Mail processed"
+  lane cashier "Cashier"
+    task fees "Take the applicable fees"
+    task details "Capture the Party Details"
+    task print "Print the Physical Court File"
+
+flow daily -> collect -> sort -> distribute -> open -> group -> register -> quality -> compliant
+flow compliant -> compile "no"
+flow compliant -> capture "yes"
+flow compile -> sendback -> rejected
+flow capture -> provide -> fees -> split
+flow split -> envelope -> post -> merge
+flow split -> details -> print -> merge
+flow merge -> done

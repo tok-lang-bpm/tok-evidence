@@ -1,0 +1,37 @@
+tok 1.0 "Robotic Burger Seller"
+
+pool shop "Robotic Burger Seller"
+  lane robot "Robot"
+    start s "Order placed"
+    task receive-order "Receive order"
+    task ask-menu "Ask whether customer wants menu or just burger"
+    xor g-menu "Menu or just burger?"
+    and split "Start drink and side"
+    task prep-drink "Prepare drink"
+    task ask-side "Ask whether customer wants fries or wedges"
+    xor g-side "Fries or wedges?"
+    task prep-fries "Prepare fries"
+    task prep-wedges "Prepare wedges"
+    xor m-side
+    and join
+    xor m-menu
+    task prep-burger "Prepare burger"
+    boundary tick "Every 30 seconds" on=prep-burger timer=R/PT30S noninterrupting
+    task status "Give status update"
+    end e-status "Update given"
+    task deliver "Deliver order via conveyor belt"
+    end e "Order delivered"
+
+flow s -> receive-order -> ask-menu -> g-menu
+flow g-menu -> split "menu"
+flow g-menu -> m-menu "just burger"
+flow split -> prep-drink -> join
+flow split -> ask-side -> g-side
+flow g-side -> prep-fries "fries"
+flow g-side -> prep-wedges "wedges"
+flow prep-fries -> m-side
+flow prep-wedges -> m-side
+flow m-side -> join
+flow join -> m-menu
+flow m-menu -> prep-burger -> deliver -> e
+flow tick -> status -> e-status

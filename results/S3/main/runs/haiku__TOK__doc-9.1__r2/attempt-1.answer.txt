@@ -1,0 +1,54 @@
+```tok
+tok 1.0 "Daily defaulter report"
+
+pool org "Organisation"
+  lane db "Database system"
+    start daily "Weekday morning" timer=P1D
+    task backup "Back up the database"
+    task checkTable "Check the Account Defaulter table for new records"
+    xor newRec "New records found?"
+    xor merge1
+    task register "Register all defaulting accounts and customers"
+    xor advised "Defaulting client codes previously advised?"
+    task produce "Produce another table of defaulting accounts"
+    task sendAM "Send the table to account management"
+    xor merge2
+    xor merge3
+    xor dead1 "Completed by 2:30 pm?"
+    task alert "Send an alert to the supervisor"
+    task reconcile "Reconcile with the Account Defaulter table"
+    xor dead2 "Completed by 4:00 pm?"
+    task msg "Send a message to the supervisor"
+    end endDone "Report completed"
+    end endLate "Supervisor informed of the late report"
+    end endNoRet "No new returns to reconcile"
+  lane crm "CRM system"
+    task checkCRM1 "Check the CRM system for new returns"
+    xor ret1 "New returns filed?"
+    task checkCRM2 "Check the CRM system for new returns"
+    xor ret2 "New returns filed?"
+
+flow daily -> backup -> checkTable -> newRec
+flow newRec -> checkCRM1 "no"
+flow newRec -> merge1 "yes"
+flow merge1 -> checkCRM1
+flow checkCRM1 -> ret1
+flow ret1 -> register "yes"
+flow ret1 -> merge3 "no"
+flow register -> advised
+flow advised -> produce "no"
+flow advised -> merge2 "yes"
+flow produce -> sendAM -> merge2
+flow merge2 -> merge3
+flow merge3 -> dead1
+flow dead1 -> checkCRM2 "yes"
+flow dead1 -> alert "no"
+flow alert -> checkCRM2
+flow checkCRM2 -> ret2
+flow ret2 -> reconcile "yes"
+flow ret2 -> endNoRet "no"
+flow reconcile -> dead2
+flow dead2 -> endDone "yes"
+flow dead2 -> msg "no"
+flow msg -> endLate
+```

@@ -1,0 +1,52 @@
+```tok
+tok 1.0 "MPO Change Request Process"
+
+pool organisation "Organisation"
+  lane sp "SP"
+    task sp_request "SP request changes to MPO"
+  lane pu "PU"
+    task pu_request "PU request changes to MPO"
+  lane go "GO"
+    task go_request "GO request changes to MPO"
+  lane mpo "MPO"
+    task mpo_cause "MPO causes a change"
+    task review "MPO reviews the change request"
+    xor g_mpo "MPO decision"
+    task reject "MPO rejects the change"
+    task perform "MPO performs the measuring point change"
+    xor g_out "Change outcome"
+    task report "MPO reports implementation to SP/PU/GO"
+    task notify "MPO notifies SP/PU/GO about failure"
+    end end_reject "Change rejected"
+    end end_success "Implementation reported"
+    end end_failure "Failure notified"
+
+  start s "Start"
+  xor g_init "Who initiates change?"
+
+  flow s -> g_init
+  flow g_init -> sp_request "SP"
+  flow g_init -> pu_request "PU"
+  flow g_init -> go_request "GO"
+  flow g_init -> mpo_cause "MPO self"
+
+  flow sp_request -> review
+  flow pu_request -> review
+  flow go_request -> review
+  flow mpo_cause -> review
+
+  flow review -> g_mpo
+
+  flow g_mpo -> reject "reject"
+  flow g_mpo -> perform "confirm"
+
+  flow reject -> end_reject
+
+  flow perform -> g_out
+
+  flow g_out -> report "success"
+  flow g_out -> notify "failure"
+
+  flow report -> end_success
+  flow notify -> end_failure
+```

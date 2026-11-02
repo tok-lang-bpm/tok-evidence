@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Restarted" name="Restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="plant" name="Plant" processRef="plant-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="plant-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="plant-lanes">
+      <bpmn:lane id="system" name="Monitoring system">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>low</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Monitoring started" />
+    <bpmn:exclusiveGateway id="merge" />
+    <bpmn:task id="collect" name="Collect information from the machine" />
+    <bpmn:task id="calc" name="Calculate the OEE" />
+    <bpmn:exclusiveGateway id="low" name="OEE below the value?" />
+    <bpmn:task id="stop" name="Stop the machine" />
+    <bpmn:task id="mail" name="Send an email to the engineer" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted">
+      <bpmn:messageEventDefinition id="restarted-def" messageRef="Message_Restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="conn" name="Machine disconnected?" />
+    <bpmn:endEvent id="done" name="Process stopped" />
+    <bpmn:sequenceFlow id="f-begin-merge" sourceRef="begin" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-merge-collect" sourceRef="merge" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calc" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-low" sourceRef="calc" targetRef="low" />
+    <bpmn:sequenceFlow id="f-low-stop" name="yes" sourceRef="low" targetRef="stop" />
+    <bpmn:sequenceFlow id="f-low-conn" name="no" sourceRef="low" targetRef="conn" />
+    <bpmn:sequenceFlow id="f-stop-mail" sourceRef="stop" targetRef="mail" />
+    <bpmn:sequenceFlow id="f-mail-restarted" sourceRef="mail" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f-restarted-merge" sourceRef="restarted" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-conn-done" name="yes" sourceRef="conn" targetRef="done" />
+    <bpmn:sequenceFlow id="f-conn-merge" name="no" sourceRef="conn" targetRef="merge" />
+  </bpmn:process>
+</bpmn:definitions>

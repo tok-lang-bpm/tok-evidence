@@ -1,0 +1,53 @@
+tok 1.0 "Meter operation registration"
+
+pool market "Metering market"
+  lane mpon "MPON"
+    start begin "Meter operation"
+    task report "Report the meter operation to the GO"
+    task acquire "Perform the equipment acquisition"
+  lane go "GO"
+    task examine "Examine the application of the MPON"
+    xor accepted "Application accepted?"
+    task reject "Reject the application of the MPON"
+    end rejected "Application rejected"
+    task confirm "Confirm the application of the MPON"
+    task informMpooReg "Inform the MPOO about the registration confirmation of the MPON"
+    task informMsposReg "Inform the MSPO about the registration confirmation of the MPON"
+    or equipSplit "Equipment acquisition and / or changes?"
+    or equipJoin
+    eventgw wait "Report of the MPON received?"
+    catch failRep "Failure of the entire process reported" message="Failure of the entire process"
+    catch doneRep "Successful completion reported" message="Successful completion of the entire process"
+    # the maximum time limit is not stated in the text; P30D is an assumed value
+    catch late "Maximum time limit passed" timer=P30D
+    task confirmFail "Confirm the failure of the assignment to the MPON"
+    task informMpooFail "Inform the MPOO about the failure of the assignment of the MPON"
+    task informMsposFail "Inform the MSPO about the failure of the assignment of the MPON"
+    end failed "Failure of the assignment confirmed"
+    task assign "Assign the MPON"
+    task confirmAssign "Confirm the assignment to the MPON"
+    task informMpooOk "Inform the MPOO about the assignment of the MPON"
+    task informMsposOk "Inform the MSPO about the assignment of the MPON"
+    task informSp "Inform the SP about the assignment of the MPON"
+    end done "Assignment completed"
+    task informLate "Inform the MPON about the failure of the overall transaction by deadline"
+    end lateEnd "Failure by deadline reported"
+  lane mpoo "MPOO"
+    task changes "Perform the equipment changes"
+
+flow begin -> report -> examine -> accepted
+flow accepted -> reject "no"
+flow reject -> rejected
+flow accepted -> confirm "yes"
+flow confirm -> informMpooReg -> informMsposReg -> equipSplit
+flow equipSplit -> acquire "acquisition"
+flow equipSplit -> changes "changes"
+flow acquire -> equipJoin
+flow changes -> equipJoin
+flow equipJoin -> wait
+flow wait -> failRep
+flow wait -> doneRep
+flow wait -> late
+flow failRep -> confirmFail -> informMpooFail -> informMsposFail -> failed
+flow doneRep -> assign -> confirmAssign -> informMpooOk -> informMsposOk -> informSp -> done
+flow late -> informLate -> lateEnd

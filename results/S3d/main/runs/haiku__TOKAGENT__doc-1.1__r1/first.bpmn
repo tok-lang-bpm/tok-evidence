@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Customized bicycle order" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Customer_order" name="Customer order" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Bicycle manufacturer" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Customized bicycle order" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="sales" name="Sales department">
+        <bpmn:flowNodeRef>order-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shipped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="store" name="Storehouse">
+        <bpmn:flowNodeRef>process-parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-quantity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>available</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reserve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>back-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>item-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>more-items</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="eng" name="Engineering department">
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="order-received" name="Order received">
+      <bpmn:messageEventDefinition id="order-received-def" messageRef="Message_Customer_order" />
+    </bpmn:startEvent>
+    <bpmn:task id="decide-order" name="Accept or reject the order" />
+    <bpmn:exclusiveGateway id="accepted" name="Order accepted?" />
+    <bpmn:endEvent id="order-rejected" name="Process instance finished (order rejected)" />
+    <bpmn:task id="inform" name="Inform storehouse and engineering department" />
+    <bpmn:parallelGateway id="split-work" />
+    <bpmn:task id="ship" name="Ship the bicycle to the customer" />
+    <bpmn:endEvent id="shipped" name="Process instance finished" />
+    <bpmn:task id="process-parts" name="Process the part list" />
+    <bpmn:task id="check-quantity" name="Check the required quantity of each part" />
+    <bpmn:exclusiveGateway id="available" name="Part available in-house?" default="f-available-back-order" />
+    <bpmn:task id="reserve" name="Reserve the part" />
+    <bpmn:task id="back-order" name="Back-order the part" />
+    <bpmn:exclusiveGateway id="item-done" name="Item processed" />
+    <bpmn:exclusiveGateway id="more-items" name="More items on the part list?" default="f-more-items-ready" />
+    <bpmn:task id="prepare" name="Prepare everything for assembling the bicycle" />
+    <bpmn:parallelGateway id="ready" />
+    <bpmn:task id="assemble" name="Assemble the bicycle" />
+    <bpmn:sequenceFlow id="f-order-received-decide-order" sourceRef="order-received" targetRef="decide-order" />
+    <bpmn:sequenceFlow id="f-decide-order-accepted" sourceRef="decide-order" targetRef="accepted" />
+    <bpmn:sequenceFlow id="f-accepted-order-rejected" name="no" sourceRef="accepted" targetRef="order-rejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">accepted = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-accepted-inform" name="yes" sourceRef="accepted" targetRef="inform">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">accepted = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-inform-split-work" sourceRef="inform" targetRef="split-work" />
+    <bpmn:sequenceFlow id="f-split-work-process-parts" sourceRef="split-work" targetRef="process-parts" />
+    <bpmn:sequenceFlow id="f-split-work-prepare" sourceRef="split-work" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-process-parts-check-quantity" sourceRef="process-parts" targetRef="check-quantity" />
+    <bpmn:sequenceFlow id="f-check-quantity-available" sourceRef="check-quantity" targetRef="available" />
+    <bpmn:sequenceFlow id="f-available-reserve" name="yes" sourceRef="available" targetRef="reserve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">available = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-available-back-order" name="no" sourceRef="available" targetRef="back-order" />
+    <bpmn:sequenceFlow id="f-reserve-item-done" sourceRef="reserve" targetRef="item-done" />
+    <bpmn:sequenceFlow id="f-back-order-item-done" sourceRef="back-order" targetRef="item-done" />
+    <bpmn:sequenceFlow id="f-item-done-more-items" sourceRef="item-done" targetRef="more-items" />
+    <bpmn:sequenceFlow id="f-more-items-check-quantity" name="yes" sourceRef="more-items" targetRef="check-quantity">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">more = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-more-items-ready" name="no" sourceRef="more-items" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-prepare-ready" sourceRef="prepare" targetRef="ready" />
+    <bpmn:sequenceFlow id="f-ready-assemble" sourceRef="ready" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f-assemble-ship" sourceRef="assemble" targetRef="ship" />
+    <bpmn:sequenceFlow id="f-ship-shipped" sourceRef="ship" targetRef="shipped" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,74 @@
+tok 1.0 "Annual Audit Process"
+
+pool company "Multinational Company"
+  lane audit_coordinator "Audit Coordinator"
+    start start "Start Audit Process"
+    task send_notification "Send notification to regional office"
+    and parallel_prep "Prepare and Check"
+    and parallel_prep_join "Prep done"
+  lane regional_office "Regional Office"
+    task prepare_docs "Prepare financial statements and gather documents"
+    task submit_docs "Submit documents to central audit team"
+    task provide_clarifications "Provide clarifications"
+  lane compliance_team "Compliance Team"
+    task check_regulatory "Check regulatory updates that might affect the audit"
+  lane central_audit_team "Central Audit Team"
+    task review_submission "Review submission"
+    xor discrepancy_gateway "Discrepancies found?"
+    task request_clarifications "Request clarifications from regional office"
+    and risk_split "Risk assessment"
+    task eval_financial "Evaluate financial risks"
+    task eval_operational "Evaluate operational risks"
+    task eval_compliance "Evaluate compliance risks"
+    and risk_join "Risk assessment done"
+    xor highrisk_gateway "High risk identified?"
+    task launch_investigation "Launch detailed investigation"
+    and investigation_split "Investigation activities"
+    task data_analysis "Data analysis"
+    task interviews "Interviews"
+    task site_visits "Site visits"
+    and investigation_join "Investigation done"
+    task compile_report "Compile audit report"
+  lane audit_director "Audit Director"
+    task review_report "Review report"
+    xor approval_gateway "Report approved?"
+    task update_report "Update report"
+    task distribute_archive "Distribute report to executive board and archive"
+    end end "Audit process closed"
+
+flow start -> send_notification
+flow send_notification -> parallel_prep
+flow parallel_prep -> prepare_docs
+flow parallel_prep -> check_regulatory
+flow prepare_docs -> parallel_prep_join
+flow check_regulatory -> parallel_prep_join
+flow parallel_prep_join -> submit_docs
+flow submit_docs -> review_submission
+flow review_submission -> discrepancy_gateway
+flow discrepancy_gateway -> request_clarifications "yes"
+flow discrepancy_gateway -> risk_split "no"
+flow request_clarifications -> provide_clarifications
+flow provide_clarifications -> risk_split
+flow risk_split -> eval_financial
+flow risk_split -> eval_operational
+flow risk_split -> eval_compliance
+flow eval_financial -> risk_join
+flow eval_operational -> risk_join
+flow eval_compliance -> risk_join
+flow risk_join -> highrisk_gateway
+flow highrisk_gateway -> launch_investigation "yes"
+flow highrisk_gateway -> compile_report "no"
+flow launch_investigation -> investigation_split
+flow investigation_split -> data_analysis
+flow investigation_split -> interviews
+flow investigation_split -> site_visits
+flow data_analysis -> investigation_join
+flow interviews -> investigation_join
+flow site_visits -> investigation_join
+flow investigation_join -> compile_report
+flow compile_report -> review_report
+flow review_report -> approval_gateway
+flow approval_gateway -> distribute_archive "yes"
+flow approval_gateway -> update_report "no"
+flow update_report -> review_report
+flow distribute_archive -> end

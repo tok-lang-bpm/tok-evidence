@@ -1,0 +1,53 @@
+tok 1.0 "Room Service Process"
+
+pool hotel "The Evanstonian"
+  lane manager "Room‑Service Manager"
+    start start_call "Guest calls room service"
+    task take_order "Take down the order"
+    task submit_ticket "Submit order ticket to kitchen"
+    task give_order "Give order to sommelier"
+    task assign_waiter "Assign order to waiter"
+    and split_parallel "Parallel split"
+
+  lane kitchen "Kitchen"
+    task prepare_food "Prepare food"
+
+  lane sommelier "Sommelier"
+    xor wine_needed "Wine or alcoholic beverage needed?"
+    task fetch_wine "Fetch wine and prepare alcoholic beverages"
+
+  lane waiter "Waiter"
+    task ready_cart "Ready cart and prepare non‑alcoholic drinks"
+    and sync_ready "Sync after tasks"
+    task deliver "Deliver food, wine, and cart to guest room"
+    xor bill_now "Bill now?"
+    task wait_billing "Wait for next order before billing"
+    task debit_account "Debit guest account"
+    end end_process "Room service completed"
+
+flow start_call -> take_order
+flow take_order -> submit_ticket
+flow submit_ticket -> give_order
+flow give_order -> assign_waiter
+flow assign_waiter -> split_parallel
+
+flow split_parallel -> prepare_food
+flow split_parallel -> ready_cart
+flow split_parallel -> wine_needed
+
+flow wine_needed -> fetch_wine "yes"
+flow wine_needed -> sync_ready "no"
+
+flow fetch_wine -> sync_ready
+flow prepare_food -> sync_ready
+flow ready_cart -> sync_ready
+
+flow sync_ready -> deliver
+
+flow deliver -> bill_now
+
+flow bill_now -> debit_account "yes"
+flow bill_now -> wait_billing "no"
+flow wait_billing -> debit_account
+
+flow debit_account -> end_process

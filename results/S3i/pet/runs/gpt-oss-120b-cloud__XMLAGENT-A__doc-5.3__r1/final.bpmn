@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Org" name="Organisation" processRef="Process_OfficeSupply" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_OfficeSupply" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Task_EmployeeSubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewChangeComments</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>Task_ReceiveRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_SupervisorDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AskForChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ApproveRequest</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Purchase" name="Purchase Department">
+        <bpmn:flowNodeRef>SubProcess_Quotation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Task_RegisterRequirement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GeneratePurchaseOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendPurchaseOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_WaitForDelivery</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveInvoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendNotification</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_1" name="Office supply request submitted" />
+    <bpmn:task id="Task_EmployeeSubmit" name="Submit office supply request" />
+    <bpmn:task id="Task_RegisterRequirement" name="Register requirement" />
+    <bpmn:task id="Task_ReceiveRequest" name="Receive request" />
+    <bpmn:exclusiveGateway id="Gateway_SupervisorDecision" name="Supervisor decision" />
+    <bpmn:task id="Task_RejectRequest" name="Reject request" />
+    <bpmn:task id="Task_AskForChange" name="Ask for change" />
+    <bpmn:task id="Task_ReviewChangeComments" name="Review change comments" />
+    <bpmn:task id="Task_ApproveRequest" name="Approve request" />
+    <bpmn:subProcess id="SubProcess_Quotation" name="Quotation and vendor selection">
+      <bpmn:startEvent id="Sub_Start" />
+      <bpmn:task id="Task_MakeQuotations" name="Make quotations" />
+      <bpmn:task id="Task_SelectVendor" name="Select vendor" />
+      <bpmn:exclusiveGateway id="Gateway_VendorValid" name="Vendor valid?" />
+      <bpmn:task id="Task_ChooseDifferentVendor" name="Choose different vendor" />
+      <bpmn:endEvent id="Sub_End" />
+      <bpmn:sequenceFlow id="SF_Sub1" sourceRef="Sub_Start" targetRef="Task_MakeQuotations" />
+      <bpmn:sequenceFlow id="SF_Sub2" sourceRef="Task_MakeQuotations" targetRef="Task_SelectVendor" />
+      <bpmn:sequenceFlow id="SF_Sub3" sourceRef="Task_SelectVendor" targetRef="Gateway_VendorValid" />
+      <bpmn:sequenceFlow id="SF_Sub4" sourceRef="Gateway_VendorValid" targetRef="Task_ChooseDifferentVendor" name="no">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">valid == false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="SF_Sub5" sourceRef="Task_ChooseDifferentVendor" targetRef="Task_SelectVendor" />
+      <bpmn:sequenceFlow id="SF_Sub6" sourceRef="Gateway_VendorValid" targetRef="Sub_End" name="yes">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">valid == true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+    </bpmn:subProcess>
+
+    <bpmn:task id="Task_GeneratePurchaseOrder" name="Generate purchase order" />
+    <bpmn:task id="Task_SendPurchaseOrder" name="Send purchase order" />
+    <bpmn:task id="Task_WaitForDelivery" name="Wait for product delivery" />
+    <bpmn:task id="Task_ReceiveInvoice" name="Receive invoice" />
+    <bpmn:task id="Task_SendNotification" name="Send notification" />
+    <bpmn:endEvent id="EndEvent_Completed" name="Process completed" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_EmployeeSubmit" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_EmployeeSubmit" targetRef="Task_RegisterRequirement" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_RegisterRequirement" targetRef="Task_ReceiveRequest" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_ReceiveRequest" targetRef="Gateway_SupervisorDecision" />
+
+    <bpmn:sequenceFlow id="Flow_Reject" sourceRef="Gateway_SupervisorDecision" targetRef="Task_RejectRequest" name="Reject" />
+    <bpmn:sequenceFlow id="Flow_Change" sourceRef="Gateway_SupervisorDecision" targetRef="Task_AskForChange" name="Ask for change" />
+    <bpmn:sequenceFlow id="Flow_Approve" sourceRef="Gateway_SupervisorDecision" targetRef="Task_ApproveRequest" name="Approve" />
+
+    <bpmn:sequenceFlow id="Flow_R1" sourceRef="Task_RejectRequest" targetRef="Task_SendNotification" />
+    <bpmn:sequenceFlow id="Flow_R2" sourceRef="Task_SendNotification" targetRef="EndEvent_Completed" />
+
+    <bpmn:sequenceFlow id="Flow_R3" sourceRef="Task_AskForChange" targetRef="Task_ReviewChangeComments" />
+    <bpmn:sequenceFlow id="Flow_R4" sourceRef="Task_ReviewChangeComments" targetRef="Gateway_SupervisorDecision" />
+
+    <bpmn:sequenceFlow id="Flow_R5" sourceRef="Task_ApproveRequest" targetRef="SubProcess_Quotation" />
+    <bpmn:sequenceFlow id="Flow_R6" sourceRef="SubProcess_Quotation" targetRef="Task_GeneratePurchaseOrder" />
+    <bpmn:sequenceFlow id="Flow_R7" sourceRef="Task_GeneratePurchaseOrder" targetRef="Task_SendPurchaseOrder" />
+    <bpmn:sequenceFlow id="Flow_R8" sourceRef="Task_SendPurchaseOrder" targetRef="Task_WaitForDelivery" />
+    <bpmn:sequenceFlow id="Flow_R9" sourceRef="Task_WaitForDelivery" targetRef="Task_ReceiveInvoice" />
+    <bpmn:sequenceFlow id="Flow_R10" sourceRef="Task_ReceiveInvoice" targetRef="Task_SendNotification" />
+    <bpmn:sequenceFlow id="Flow_R11" sourceRef="Task_SendNotification" targetRef="EndEvent_Completed" />
+  </bpmn:process>
+</bpmn:definitions>

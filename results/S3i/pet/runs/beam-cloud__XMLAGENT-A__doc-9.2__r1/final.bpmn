@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="MSG_Decline" name="Mortgage declined" />
+  <bpmn:message id="MSG_Docs" name="Completed offer documents" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="mortgage-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="mortgage-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef> replyGateway </bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>declineEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelledDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docsEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docsGateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>requestOutstanding</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>requestedEnd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeoutEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelledTimeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="administration" name="Administration">
+        <bpmn:flowNodeRef>completeCase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completedEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="sendOffer" name="Send mortgage offer" />
+    <bpmn:eventBasedGateway id="replyGateway" name="Customer reply?" />
+
+    <bpmn:intermediateCatchEvent id="declineEvent" name="Customer declines">
+      <bpmn:messageEventDefinition messageRef="MSG_Decline" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="updateDecline" name="Update case details" />
+    <bpmn:task id="archiveDecline" name="Archive work" />
+    <bpmn:endEvent id="cancelledDecline" name="Case cancelled" />
+
+    <bpmn:intermediateCatchEvent id="docsEvent" name="Completed offer documents received">
+      <bpmn:messageEventDefinition messageRef="MSG_Docs" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="docsGateway" name="All prerequisite documents provided?" />
+    <bpmn:task id="completeCase" name="Complete case" />
+    <bpmn:endEvent id="completedEnd" name="Case completed" />
+    <bpmn:task id="requestOutstanding" name="Generate message requesting outstanding documents" />
+    <bpmn:endEvent id="requestedEnd" name="Outstanding documents requested" />
+
+    <bpmn:intermediateCatchEvent id="timeoutEvent" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="updateTimeout" name="Update case details" />
+    <bpmn:task id="archiveTimeout" name="Archive work" />
+    <bpmn:endEvent id="cancelledTimeout" name="Case cancelled" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sendOffer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendOffer" targetRef="replyGateway" />
+
+    <bpmn:sequenceFlow id="f3" sourceRef="replyGateway" targetRef="declineEvent" />
+    <bpmn:sequenceFlow id="f4" sourceRef="declineEvent" targetRef="updateDecline" />
+    <bpmn:sequenceFlow id="f5" sourceRef="updateDecline" targetRef="archiveDecline" />
+    <bpmn:sequenceFlow id="f6" sourceRef="archiveDecline" targetRef="cancelledDecline" />
+
+    <bpmn:sequenceFlow id="f7" sourceRef="replyGateway" targetRef="docsEvent" />
+    <bpmn:sequenceFlow id="f8" sourceRef="docsEvent" targetRef="docsGateway" />
+    <bpmn:sequenceFlow id="f9" name="yes" sourceRef="docsGateway" targetRef="completeCase" />
+    <bpmn:sequenceFlow id="f10" name="no" sourceRef="docsGateway" targetRef="requestOutstanding" />
+    <bpmn:sequenceFlow id="f11" sourceRef="completeCase" targetRef="completedEnd" />
+    <bpmn:sequenceFlow id="f12" sourceRef="requestOutstanding" targetRef="requestedEnd" />
+
+    <bpmn:sequenceFlow id="f13" sourceRef="replyGateway" targetRef="timeoutEvent" />
+    <bpmn:sequenceFlow id="f14" sourceRef="timeoutEvent" targetRef="updateTimeout" />
+    <bpmn:sequenceFlow id="f15" sourceRef="updateTimeout" targetRef="archiveTimeout" />
+    <bpmn:sequenceFlow id="f16" sourceRef="archiveTimeout" targetRef="cancelledTimeout" />
+  </bpmn:process>
+</bpmn:definitions>

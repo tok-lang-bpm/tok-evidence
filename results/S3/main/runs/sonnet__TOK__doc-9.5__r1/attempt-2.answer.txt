@@ -1,0 +1,44 @@
+```tok
+tok 1.0 "Expense report reimbursement"
+
+pool company "Company"
+  lane system "Finance system"
+    start received "Expense report received"
+    xor hasaccount "Employee has an account?"
+    task create "Create a new account"
+    xor accountok
+    task review "Review the report for automatic approval"
+    xor amount "Amount under $200?"
+    task autoapprove "Approve the report automatically"
+    xor approvedjoin
+    task deposit "Reimburse to the direct deposit bank account"
+    task reject "Send the rejection notice by email"
+    task progress "Send the approval in progress email"
+    task cancel "Send the cancellation notice by email"
+    task resubmit "Request re-submission of the expense report"
+    end reimbursed "Employee reimbursed"
+    end rejected "Report rejected"
+    end reminded "Reminder sent"
+    end cancelled "Process stopped"
+  lane supervisor "Supervisor"
+    task approve "Approve the expense report"
+    xor decision "Report approved?"
+    boundary day7 "7 days passed" on=approve timer=P7D noninterrupting
+    boundary day30 "30 days passed" on=approve timer=P30D
+
+flow received -> hasaccount
+flow hasaccount -> create "no" when="hasAccount = false"
+flow hasaccount -> accountok "yes" default
+flow create -> accountok
+flow accountok -> review -> amount
+flow amount -> autoapprove "yes" when="amount < 200"
+flow amount -> approve "no" default
+flow autoapprove -> approvedjoin
+flow approve -> decision
+flow decision -> approvedjoin "yes" default
+flow decision -> reject "no" when="rejected = true"
+flow approvedjoin -> deposit -> reimbursed
+flow reject -> rejected
+flow day7 -> progress -> reminded
+flow day30 -> cancel -> resubmit -> cancelled
+```

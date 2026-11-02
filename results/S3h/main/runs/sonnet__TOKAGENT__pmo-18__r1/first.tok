@@ -1,0 +1,97 @@
+tok 1.0 "University enrollment"
+
+pool uni "University"
+  lane student "Student"
+    start s "Application needed"
+    task submit "Submit application online"
+    task provide "Provide missing items"
+    eventgw conf "Confirmation by deadline?"
+    catch confirmed "Enrollment confirmed" message="Enrollment confirmation"
+    catch deadline "Deadline passed" timer=P14D
+    task idcard "Obtain student ID card"
+    task attend "Begin attending classes"
+    xor chg "Change courses?"
+    task adddrop "Add or drop courses"
+    xor chgm
+    task review "Review grades online"
+    xor grv "Grievances?"
+    task form "Submit appeal form"
+    task await "Await appeal decision"
+    xor grvm
+    xor semm
+    xor done "Graduated or withdrawn?"
+    end e3 "Process ends"
+  lane adm "Admissions office"
+    task revapp "Review application and documents"
+    xor docs "Documents complete?"
+    task notify "Notify applicant of missing items"
+    xor revm
+    and split1
+    and join1
+    xor acc "Application accepted?"
+    task accl "Send acceptance letter"
+    task rejl "Send rejection letter"
+    end e1 "Application rejected"
+    task cancel "Cancel application"
+    end e2 "Application canceled"
+    task orient "Send orientation materials"
+    and split2
+    and join2
+    task post "Post grades"
+  lane com "Admissions committee"
+    task eval "Evaluate application"
+  lane fin "Finance department"
+    task fees "Process application fees or waivers"
+  lane it "IT department"
+    task accts "Set up student accounts"
+  lane intl "International student office"
+    xor intq "International student?"
+    task visa "Assist with visa processing"
+    xor intm
+  lane adv "Academic advisor"
+    task meet "Meet with academic advisor"
+    task select "Select courses"
+    task resolve "Resolve schedule conflicts"
+  lane appc "Appeals committee"
+    task meetapp "Meet with appeals committee"
+
+flow s -> submit -> revapp
+flow revm -> revapp
+flow revapp -> docs
+flow docs -> notify "no" when="documentsComplete = false"
+flow docs -> split1 "yes" default
+flow notify -> provide -> revm
+flow split1 -> eval
+flow split1 -> fees
+flow eval -> join1
+flow fees -> join1
+flow join1 -> acc
+flow acc -> accl "yes" default
+flow acc -> rejl "no" when="accepted = false"
+flow rejl -> e1
+flow accl -> conf
+flow conf -> confirmed
+flow conf -> deadline
+flow deadline -> cancel -> e2
+flow confirmed -> split2
+flow split2 -> orient
+flow split2 -> accts
+flow split2 -> intq
+flow intq -> visa "yes" when="international = true"
+flow intq -> intm "no" default
+flow visa -> intm
+flow orient -> join2
+flow accts -> join2
+flow intm -> join2
+flow join2 -> idcard -> meet -> select -> resolve -> semm
+flow semm -> attend -> chg
+flow chg -> adddrop "yes" when="changeCourses = true"
+flow chg -> chgm "no" default
+flow adddrop -> chgm
+flow chgm -> post -> review -> grv
+flow grv -> form "yes" when="grievance = true"
+flow grv -> grvm "no" default
+flow form -> meetapp -> await -> grvm
+flow grvm -> done
+flow done -> e3 "yes" when="graduatedOrWithdrawn = true"
+flow done -> semm "no" default

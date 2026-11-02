@@ -1,0 +1,47 @@
+tok 1.0 "Equipment change"
+
+pool org "Organisation"
+  lane mpon "MPON"
+    start change "Equipment change required"
+    task notifyMpoo "Notify the MPOO about the equipment change intentions"
+    task readMpon "Perform the final reading"
+    task dismountMpon "Dismount the old equipment"
+    task mount "Mount the new device"
+    task readMeter "Read the meter count from the installed meter"
+    task sendReading "Send the values of the final reading to the GO"
+    task tellGo "Tell the GO about the device changes, the master data and the meter count at installation"
+  lane mpoo "MPOO"
+    xor selfDismount "Does the MPOO announce self dismounting?"
+    task announceSelf "Announce self dismounting to the MPON"
+    task noSelf "Notify the MPON about no self-dismounting of the MPOO"
+    xor merge1
+    xor readSplit "Is the MPOO self-dismounting?"
+    task readMpoo "Perform the final reading"
+    xor readMerge
+    xor dismountSplit "Is the MPOO self-dismounting?"
+    task dismountMpoo "Dismount the old equipment"
+    xor dismountMerge
+  lane go "GO"
+    task notifyMsp "Notify the MSP about the device changes, the master data, the meter count at dismounting and the meter count at installation"
+    end done "MSP notified"
+
+pool msp "MSP"
+
+flow change -> notifyMpoo -> selfDismount
+flow selfDismount -> announceSelf "yes"
+flow selfDismount -> noSelf "no"
+flow announceSelf -> merge1
+flow noSelf -> merge1
+flow merge1 -> readSplit
+flow readSplit -> readMpoo "yes"
+flow readSplit -> readMpon "no"
+flow readMpoo -> readMerge
+flow readMpon -> readMerge
+flow readMerge -> dismountSplit
+flow dismountSplit -> dismountMpoo "yes"
+flow dismountSplit -> dismountMpon "no"
+flow dismountMpoo -> dismountMerge
+flow dismountMpon -> dismountMerge
+flow dismountMerge -> mount -> readMeter -> sendReading -> tellGo -> notifyMsp -> done
+
+message notifyMsp -> msp "Device changes, master data and meter counts"

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Expense report handling" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="finance" name="Finance system">
+        <bpmn:flowNodeRef>hasaccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accountok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approvedjoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>day7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>day30</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Expense report received" />
+    <bpmn:exclusiveGateway id="hasaccount" name="Employee has an account?" />
+    <bpmn:task id="create" name="Create a new account" />
+    <bpmn:exclusiveGateway id="accountok" />
+    <bpmn:task id="review" name="Review the expense report for automatic approval" />
+    <bpmn:exclusiveGateway id="amount" name="Amount under $200?" />
+    <bpmn:exclusiveGateway id="approvedjoin" />
+    <bpmn:task id="reimburse" name="Reimburse to the direct deposit bank account" />
+    <bpmn:task id="reject" name="Send a rejection notice by email" />
+    <bpmn:task id="progress" name="Send an approval in progress email" />
+    <bpmn:task id="cancel" name="Send a cancellation notice by email" />
+    <bpmn:endEvent id="paid" name="Reimbursement paid" />
+    <bpmn:endEvent id="rejected" name="Rejection notice sent" />
+    <bpmn:endEvent id="informed" name="Approval in progress email sent" />
+    <bpmn:endEvent id="cancelled" name="Expense report cancelled, to be re-submitted" />
+    <bpmn:task id="approve" name="Approve the expense report" />
+    <bpmn:exclusiveGateway id="decision" name="Approved?" />
+    <bpmn:boundaryEvent id="day7" name="7 days passed" attachedToRef="approve" cancelActivity="false">
+      <bpmn:timerEventDefinition id="day7-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="day30" name="30 days passed" attachedToRef="approve">
+      <bpmn:timerEventDefinition id="day30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-received-hasaccount" sourceRef="received" targetRef="hasaccount" />
+    <bpmn:sequenceFlow id="f-hasaccount-create" name="no" sourceRef="hasaccount" targetRef="create" />
+    <bpmn:sequenceFlow id="f-hasaccount-accountok" name="yes" sourceRef="hasaccount" targetRef="accountok" />
+    <bpmn:sequenceFlow id="f-create-accountok" sourceRef="create" targetRef="accountok" />
+    <bpmn:sequenceFlow id="f-accountok-review" sourceRef="accountok" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-amount" sourceRef="review" targetRef="amount" />
+    <bpmn:sequenceFlow id="f-amount-approvedjoin" name="yes" sourceRef="amount" targetRef="approvedjoin" />
+    <bpmn:sequenceFlow id="f-amount-approve" name="no" sourceRef="amount" targetRef="approve" />
+    <bpmn:sequenceFlow id="f-approve-decision" sourceRef="approve" targetRef="decision" />
+    <bpmn:sequenceFlow id="f-decision-approvedjoin" name="yes" sourceRef="decision" targetRef="approvedjoin" />
+    <bpmn:sequenceFlow id="f-decision-reject" name="no" sourceRef="decision" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-approvedjoin-reimburse" sourceRef="approvedjoin" targetRef="reimburse" />
+    <bpmn:sequenceFlow id="f-reimburse-paid" sourceRef="reimburse" targetRef="paid" />
+    <bpmn:sequenceFlow id="f-reject-rejected" sourceRef="reject" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-day7-progress" sourceRef="day7" targetRef="progress" />
+    <bpmn:sequenceFlow id="f-progress-informed" sourceRef="progress" targetRef="informed" />
+    <bpmn:sequenceFlow id="f-day30-cancel" sourceRef="day30" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f-cancel-cancelled" sourceRef="cancel" targetRef="cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

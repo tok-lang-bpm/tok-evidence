@@ -1,0 +1,29 @@
+tok 1.0 "Car Service"
+
+pool car-service "Car Service"
+  lane system "System"
+    start svc-needed "Service necessary"
+    task check-reg "Check if your car is still registered"
+    xor reg-gw "Car still registered?"
+    task notify "You are notified"
+    task fine "You are fined"
+    task status "You get status updates via email"
+    end end-not-registered "Car not registered"
+    end end-fined "Fined"
+  lane owner "You"
+    task go-service "Go to the service"
+    boundary timer-30 "30 days" on=go-service timer=P30D
+    task pay "Pay through the app"
+    end end-paid "Service completed"
+  lane mechanic "Mechanic"
+    task enter-problems "Enter the problems of your car for reference"
+    task enter-success "Enter that the repair was successful and you got your Pickerl"
+    task enter-next "Enter the time for your next service"
+
+flow svc-needed -> check-reg -> reg-gw
+flow reg-gw -> notify "yes" when="registered = true"
+flow reg-gw -> end-not-registered default
+flow notify -> go-service
+flow timer-30 -> fine
+flow go-service -> enter-problems -> status -> pay -> enter-success -> enter-next -> end-paid
+flow fine -> end-fined

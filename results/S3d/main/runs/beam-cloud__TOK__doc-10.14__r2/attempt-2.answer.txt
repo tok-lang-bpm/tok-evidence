@@ -1,0 +1,52 @@
+```tok
+tok 1.0 "Bill handling"
+
+pool org "Organisation"
+  lane mpoo "MPOO"
+    start s "Bill process started"
+    task send_temp_ops "Send the bill for the temporary continuation of the metering point operations to the GO"
+    task send_equip "Send the bill for the equipment acquisition to the MPON or the GO"
+    xor recipient "MPON or GO?"
+  lane go "GO"
+    xor which "Which bill?"
+    task examine_go "Examine the bill"
+    xor decide_go "Confirm or reject?"
+    task confirm_go "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_go "Reject the invoice of the MPOO or the MSPO"
+    end confirmed_go "Invoice confirmed"
+    end rejected_go "Invoice rejected"
+  lane ms "MSPO"
+    task send_temp_meas "Send the bill for the temporary continuation of the measurement to the GO"
+    task send_add "Send the bill for additional readings to the GO"
+  lane mpon "MPON"
+    task examine_mp "Examine the bill"
+    xor decide_mp "Confirm or reject?"
+    task confirm_mp "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_mp "Reject the invoice of the MPOO or the MSPO"
+
+flow s -> which
+flow which -> send_temp_ops "MPOO temporary operations"
+flow which -> send_temp_meas "MSPO temporary measurement"
+flow which -> send_add "MSPO additional readings"
+flow which -> send_equip "MPOO equipment acquisition"
+
+flow send_temp_ops -> examine_go
+flow send_temp_meas -> examine_go
+flow send_add -> examine_go
+flow send_equip -> recipient
+flow recipient -> examine_mp "MPON"
+flow recipient -> examine_go "GO"
+
+flow examine_go -> decide_go
+flow examine_mp -> decide_mp
+
+flow decide_go -> confirm_go "Confirm"
+flow decide_go -> reject_go "Reject"
+flow confirm_go -> confirmed_go
+flow reject_go -> rejected_go
+
+flow decide_mp -> confirm_mp "Confirm"
+flow decide_mp -> reject_mp "Reject"
+flow confirm_mp -> confirmed_go
+flow reject_mp -> rejected_go
+```

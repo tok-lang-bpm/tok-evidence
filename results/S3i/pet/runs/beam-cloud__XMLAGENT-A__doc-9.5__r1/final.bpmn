@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>Task_ResubmitExpenseReport</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>Start_ExpenseReportReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EmployeeHasAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateNewAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AccountMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ProcessExpenseReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_7Days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_30Days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendApprovalInProgressEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendCancellationNoticeEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ApprovalInProgressNoticeSent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ExpenseReportProcessed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ExpenseReportCancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_ExpenseReportReceived" name="Expense Report received" />
+    <bpmn:exclusiveGateway id="Gateway_EmployeeHasAccount" name="Employee has account?" />
+    <bpmn:task id="Task_CreateNewAccount" name="Create new account" />
+    <bpmn:exclusiveGateway id="Gateway_AccountMerge" name="Account handled" />
+    <bpmn:subProcess id="ProcessExpenseReport" name="Process expense report">
+      <bpmn:laneSet id="ProcessExpenseReportLanes">
+        <bpmn:lane id="systemProcess" name="System">
+          <bpmn:flowNodeRef>SP_Start</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>Task_ReviewForAutomaticApproval</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>Gateway_AmountUnder200</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>Task_SendRejectionNoticeEmail</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>Task_TransferReimbursement</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>End_ExpenseReportRejected</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>End_ExpenseReportReimbursed</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>Gateway_SupervisorApproved</bpmn:flowNodeRef>
+        </bpmn:lane>
+        <bpmn:lane id="supervisorProcess" name="Supervisor">
+          <bpmn:flowNodeRef>Task_SupervisorApproval</bpmn:flowNodeRef>
+        </bpmn:lane>
+      </bpmn:laneSet>
+      <bpmn:startEvent id="SP_Start" name="Start processing" />
+      <bpmn:task id="Task_ReviewForAutomaticApproval" name="Review for automatic approval" />
+      <bpmn:exclusiveGateway id="Gateway_AmountUnder200" name="Amount under $200?" />
+      <bpmn:task id="Task_SupervisorApproval" name="Approve expense report" />
+      <bpmn:exclusiveGateway id="Gateway_SupervisorApproved" name="Supervisor approved?" />
+      <bpmn:task id="Task_SendRejectionNoticeEmail" name="Send rejection notice email" />
+      <bpmn:task id="Task_TransferReimbursement" name="Transfer reimbursement to direct deposit bank account" />
+      <bpmn:endEvent id="End_ExpenseReportRejected" name="Expense report rejected" />
+      <bpmn:endEvent id="End_ExpenseReportReimbursed" name="Expense report reimbursed" />
+      <bpmn:sequenceFlow id="SP_F1" sourceRef="SP_Start" targetRef="Task_ReviewForAutomaticApproval" />
+      <bpmn:sequenceFlow id="SP_F2" sourceRef="Task_ReviewForAutomaticApproval" targetRef="Gateway_AmountUnder200" />
+      <bpmn:sequenceFlow id="SP_F3" name="yes" sourceRef="Gateway_AmountUnder200" targetRef="Task_TransferReimbursement" />
+      <bpmn:sequenceFlow id="SP_F4" name="no" sourceRef="Gateway_AmountUnder200" targetRef="Task_SupervisorApproval" />
+      <bpmn:sequenceFlow id="SP_F5" sourceRef="Task_SupervisorApproval" targetRef="Gateway_SupervisorApproved" />
+      <bpmn:sequenceFlow id="SP_F6" name="rejected" sourceRef="Gateway_SupervisorApproved" targetRef="Task_SendRejectionNoticeEmail" />
+      <bpmn:sequenceFlow id="SP_F7" name="approved" sourceRef="Gateway_SupervisorApproved" targetRef="Task_TransferReimbursement" />
+      <bpmn:sequenceFlow id="SP_F8" sourceRef="Task_SendRejectionNoticeEmail" targetRef="End_ExpenseReportRejected" />
+      <bpmn:sequenceFlow id="SP_F9" sourceRef="Task_TransferReimbursement" targetRef="End_ExpenseReportReimbursed" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="BoundaryEvent_7Days" name="7 days" attachedToRef="ProcessExpenseReport" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="BoundaryEvent_30Days" name="30 days" attachedToRef="ProcessExpenseReport" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+
+    <bpmn:task id="Task_SendApprovalInProgressEmail" name="Send approval in progress email" />
+    <bpmn:task id="Task_SendCancellationNoticeEmail" name="Send cancellation notice email" />
+    <bpmn:task id="Task_ResubmitExpenseReport" name="Resubmit expense report" />
+    <bpmn:endEvent id="End_ApprovalInProgressNoticeSent" name="Approval in progress notice sent" />
+    <bpmn:endEvent id="End_ExpenseReportProcessed" name="Expense report processed" />
+    <bpmn:endEvent id="End_ExpenseReportCancelled" name="Expense report cancelled" />
+
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_ExpenseReportReceived" targetRef="Gateway_EmployeeHasAccount" />
+    <bpmn:sequenceFlow id="F2" name="no" sourceRef="Gateway_EmployeeHasAccount" targetRef="Task_CreateNewAccount" />
+    <bpmn:sequenceFlow id="F3" name="yes" sourceRef="Gateway_EmployeeHasAccount" targetRef="Gateway_AccountMerge" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Task_CreateNewAccount" targetRef="Gateway_AccountMerge" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Gateway_AccountMerge" targetRef="ProcessExpenseReport" />
+    <bpmn:sequenceFlow id="F6" sourceRef="ProcessExpenseReport" targetRef="End_ExpenseReportProcessed" />
+    <bpmn:sequenceFlow id="F7" sourceRef="BoundaryEvent_7Days" targetRef="Task_SendApprovalInProgressEmail" />
+    <bpmn:sequenceFlow id="F8" sourceRef="Task_SendApprovalInProgressEmail" targetRef="End_ApprovalInProgressNoticeSent" />
+    <bpmn:sequenceFlow id="F9" sourceRef="BoundaryEvent_30Days" targetRef="Task_SendCancellationNoticeEmail" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_SendCancellationNoticeEmail" targetRef="Task_ResubmitExpenseReport" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Task_ResubmitExpenseReport" targetRef="End_ExpenseReportCancelled" />
+  </bpmn:process>
+</bpmn:definitions>

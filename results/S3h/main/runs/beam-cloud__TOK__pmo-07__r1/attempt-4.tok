@@ -1,0 +1,62 @@
+tok 1.0 "Ticket booking process"
+
+pool company "Travel company"
+  lane customer "Customer"
+    start started "Booking started"
+    task search "Search for a flight, train, or bus ticket"
+    task select "Select preferred route, date, and time"
+    task personal "Provide personal information"
+    task payment "Provide payment details"
+    xor reminder "Receive reminders?"
+    task receive_reminders "Receive reminders"
+    xor instr "Receive instructions?"
+    task receive_checkin "Receive check-in instructions"
+    task receive_boarding "Receive boarding instructions"
+    task complete_journey "Complete journey"
+    task provide_feedback "Provide feedback"
+    task use_services "Use post-travel services"
+    end journey_completed "Journey completed"
+    end post_travel_completed "Post-travel completed"
+  lane booking "Booking system"
+    task generate_ticket "Generate ticket"
+    xor delivery "Email or SMS?"
+    task send_email "Send ticket by email"
+    task send_sms "Send ticket by SMS"
+    and ticket_split "Ticket processing"
+    and ticket_join "Ticket processing complete"
+  lane travel "Travel company"
+    task update_inventory "Update seat inventory"
+
+flow started -> search -> select -> personal -> payment -> generate_ticket
+
+flow generate_ticket -> ticket_split
+flow ticket_split -> delivery
+flow ticket_split -> update_inventory
+flow delivery -> send_email "Email" when=email
+flow delivery -> send_sms "SMS" default
+flow send_email -> ticket_join
+flow send_sms -> ticket_join
+flow update_inventory -> ticket_join
+
+flow ticket_join -> reminder
+flow reminder -> receive_reminders "Yes" when=reminders
+flow reminder -> instr "No" default
+flow receive_reminders -> instr
+
+flow instr -> checkin_board "Yes" when=instructions
+flow instr -> complete_journey "No" default
+xor checkin_board "Check-in or boarding?"
+flow checkin_board -> receive_checkin "Check-in" when=checkin
+flow checkin_board -> receive_boarding "Boarding" default
+flow receive_checkin -> complete_journey
+flow receive_boarding -> complete_journey
+
+flow complete_journey -> post
+xor post "Post-travel feedback or services?"
+flow post -> post_type "Yes" when=postTravel
+flow post -> journey_completed "No" default
+xor post_type "Feedback or services?"
+flow post_type -> provide_feedback "Feedback" when=feedback
+flow post_type -> use_services "Services" default
+flow provide_feedback -> post_travel_completed
+flow use_services -> post_travel_completed

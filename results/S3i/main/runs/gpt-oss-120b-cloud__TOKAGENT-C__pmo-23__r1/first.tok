@@ -1,0 +1,40 @@
+tok 1.0 "Credit Scoring Process"
+
+pool bank "Bank"
+  lane clerk "Sales Clerk"
+    start s "Start credit scoring"
+    task cr "Receive credit-scoring request"
+    end e_clerk "Clerk done"
+  lane system "Banking System"
+    task sr "Send scoring request to agency"
+    xor g1 "Result type?"
+    task ri "Receive immediate result"
+    task rd "Receive delay notice"
+    task dm "Display delay message to clerk"
+    task rl "Receive level 2 result"
+    task pr "Present result to clerk"
+    end e_system "Process end"
+
+pool agency "Agency"
+  start a_start "Scoring request received" message="ScoringRequest"
+  task l1 "Perform level 1 scoring"
+  xor g2 "Immediate result?"
+  send si "Send immediate result" message="ScoringResult"
+  send sd "Send delay notice" message="DelayNotice"
+  task l2 "Perform level 2 scoring"
+  send s2 "Send level 2 result" message="ScoringResult"
+  end a_end "Agency end"
+
+flow s -> cr -> sr -> g1
+flow g1 -> ri "immediate"
+flow g1 -> rd "delayed"
+flow ri -> pr
+flow pr -> e_system
+flow rd -> dm -> rl -> pr
+flow dm -> rl
+flow rl -> pr
+
+message sr -> a_start "ScoringRequest"
+message si -> ri "ScoringResult"
+message sd -> rd "DelayNotice"
+message s2 -> rl "ScoringResult"

@@ -1,0 +1,69 @@
+```tok
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizz "Blizzard"
+  lane user "User"
+    start S "Start character generation"
+    task N_names "Come up with good character names"
+    task A_enter_account "Enter account information"
+    task A_click_link "Click confirmation link"
+    task P_select_payment "Select payment method"
+    task P_enter_cc "Enter credit card information"
+    task P_enter_bank "Enter IBAN and BIC numbers"
+    task G_log_in "Log into the game"
+    task G_select_rc "Select realm, race and class"
+    task N_enter_name "Enter character name"
+    task S_send_expansion "Send expansion message"
+    and G_parallel_split
+    and G_parallel_join
+    xor G_have_account "Battle.net account?"
+    xor G_have_subscription "Active WoW subscription?"
+    xor G_payment_method "Payment method?"
+    xor G_name_available "Name available?"
+    end E "Character creation completed"
+
+  lane system "System"
+    task C_check_battle "Check battle.net account"
+    task C_check_sub "Check WoW subscription"
+    task C_send_confirm "Send confirmation and selfies"
+
+    xor G_have_account_sys "Battle.net account?"   # mirrored gateway for system lane connections
+    xor G_have_subscription_sys "Active WoW subscription?"
+    xor G_payment_method_sys "Payment method?"
+    xor G_name_available_sys "Name available?"
+
+    # (gateways duplicated only for routing; they can be omitted if lanes share IDs)
+
+flow S -> G_parallel_split
+flow G_parallel_split -> C_check_battle
+flow G_parallel_split -> N_names
+
+flow C_check_battle -> G_have_account
+flow G_have_account -> C_check_sub "yes"
+flow G_have_account -> A_enter_account "no"
+
+flow A_enter_account -> A_click_link
+flow A_click_link -> C_check_sub
+
+flow C_check_sub -> G_have_subscription
+flow G_have_subscription -> G_log_in "yes"
+flow G_have_subscription -> P_select_payment "no"
+
+flow P_select_payment -> G_payment_method
+flow G_payment_method -> P_enter_cc "credit card"
+flow G_payment_method -> P_enter_bank "bank account"
+flow P_enter_cc -> G_log_in
+flow P_enter_bank -> G_log_in
+
+flow G_log_in -> G_select_rc
+flow G_select_rc -> G_parallel_join
+flow N_names -> G_parallel_join
+
+flow G_parallel_join -> N_enter_name
+flow N_enter_name -> G_name_available
+flow G_name_available -> N_enter_name "no"
+flow G_name_available -> C_send_confirm "yes"
+
+flow C_send_confirm -> S_send_expansion
+flow S_send_expansion -> E
+```

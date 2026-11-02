@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="car-service" name="Car Service" processRef="car-service-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="car-service-process" isExecutable="false">
+    <bpmn:laneSet id="car-service-lanes">
+      <bpmn:lane id="lane-system" name="System (Police App)">
+        <bpmn:flowNodeRef>start-event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registered-gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-owner</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-30-days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fine-owner</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-status-updates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-not-registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-fined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-owner" name="Car Owner">
+        <bpmn:flowNodeRef>go-service-gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay-through-app</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-mechanic" name="Mechanic">
+        <bpmn:flowNodeRef>enter-problems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-success-pickerl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-next-service</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start-event" name="Service necessary" />
+
+    <bpmn:task id="check-registration" name="Check if car is still registered" />
+    <bpmn:exclusiveGateway id="registered-gw" name="Car still registered?" />
+    <bpmn:task id="notify-owner" name="Notify owner" />
+    <bpmn:exclusiveGateway id="go-service-gw" name="Go to service?" />
+
+    <bpmn:intermediateCatchEvent id="timer-30-days" name="30 days">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="fine-owner" name="Fine owner" />
+
+    <bpmn:task id="enter-problems" name="Enter problems of car" />
+    <bpmn:task id="send-status-updates" name="Send status updates via email" />
+    <bpmn:task id="pay-through-app" name="Pay through the app" />
+    <bpmn:task id="enter-success-pickerl" name="Enter repair successful and Pickerl" />
+    <bpmn:task id="enter-next-service" name="Enter time for next service" />
+
+    <bpmn:endEvent id="end-not-registered" name="Car not registered" />
+    <bpmn:endEvent id="end-fined" name="Owner fined" />
+    <bpmn:endEvent id="end-success" name="Service completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start-event" targetRef="check-registration" />
+    <bpmn:sequenceFlow id="f2" sourceRef="check-registration" targetRef="registered-gw" />
+    <bpmn:sequenceFlow id="f3" name="yes" sourceRef="registered-gw" targetRef="notify-owner" />
+    <bpmn:sequenceFlow id="f4" name="no" sourceRef="registered-gw" targetRef="end-not-registered" />
+    <bpmn:sequenceFlow id="f5" sourceRef="notify-owner" targetRef="go-service-gw" />
+    <bpmn:sequenceFlow id="f6" name="yes" sourceRef="go-service-gw" targetRef="enter-problems" />
+    <bpmn:sequenceFlow id="f7" name="no" sourceRef="go-service-gw" targetRef="timer-30-days" />
+    <bpmn:sequenceFlow id="f8" sourceRef="timer-30-days" targetRef="fine-owner" />
+    <bpmn:sequenceFlow id="f9" sourceRef="fine-owner" targetRef="end-fined" />
+    <bpmn:sequenceFlow id="f10" sourceRef="enter-problems" targetRef="send-status-updates" />
+    <bpmn:sequenceFlow id="f11" sourceRef="send-status-updates" targetRef="pay-through-app" />
+    <bpmn:sequenceFlow id="f12" sourceRef="pay-through-app" targetRef="enter-success-pickerl" />
+    <bpmn:sequenceFlow id="f13" sourceRef="enter-success-pickerl" targetRef="enter-next-service" />
+    <bpmn:sequenceFlow id="f14" sourceRef="enter-next-service" targetRef="end-success" />
+  </bpmn:process>
+</bpmn:definitions>

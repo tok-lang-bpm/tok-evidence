@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Change of measuring point" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Change of measuring point" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="sp_pu_go" name="SP / PU / GO">
+        <bpmn:flowNodeRef>start1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reported</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>failed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpo" name="MPO">
+        <bpmn:flowNodeRef>cause</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>init</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>init_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>perform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start1" name="Change needed" />
+    <bpmn:task id="request" name="Request changes" />
+    <bpmn:endEvent id="rejected" name="Change rejected" />
+    <bpmn:endEvent id="reported" name="Implementation reported" />
+    <bpmn:endEvent id="failed" name="Failure notified" />
+    <bpmn:task id="cause" name="Cause a change" />
+    <bpmn:task id="review" name="Review the change request" />
+    <bpmn:exclusiveGateway id="init" name="Who causes the change?" default="f-init-cause" />
+    <bpmn:exclusiveGateway id="init_merge" name="Change initiated" />
+    <bpmn:exclusiveGateway id="decision" name="Change approved?" default="f-decision-confirm" />
+    <bpmn:task id="reject" name="Reject the change" />
+    <bpmn:task id="confirm" name="Confirm the request" />
+    <bpmn:task id="perform" name="Perform the measuring point change" />
+    <bpmn:exclusiveGateway id="result" name="Change successful?" default="f-result-notify" />
+    <bpmn:task id="report" name="Report the implementation" />
+    <bpmn:task id="notify" name="Notify about the failure" />
+    <bpmn:sequenceFlow id="f-start1-init" sourceRef="start1" targetRef="init" />
+    <bpmn:sequenceFlow id="f-init-request" name="Requested by SP / PU / GO" sourceRef="init" targetRef="request">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">bySpPuGo</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-init-cause" name="Caused by MPO" sourceRef="init" targetRef="cause" />
+    <bpmn:sequenceFlow id="f-request-init_merge" sourceRef="request" targetRef="init_merge" />
+    <bpmn:sequenceFlow id="f-cause-init_merge" sourceRef="cause" targetRef="init_merge" />
+    <bpmn:sequenceFlow id="f-init_merge-review" sourceRef="init_merge" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-decision" sourceRef="review" targetRef="decision" />
+    <bpmn:sequenceFlow id="f-decision-reject" name="No" sourceRef="decision" targetRef="reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">rejected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decision-confirm" name="Yes" sourceRef="decision" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-reject-rejected" sourceRef="reject" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-confirm-perform" sourceRef="confirm" targetRef="perform" />
+    <bpmn:sequenceFlow id="f-perform-result" sourceRef="perform" targetRef="result" />
+    <bpmn:sequenceFlow id="f-result-report" name="Implemented" sourceRef="result" targetRef="report">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">implemented</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-result-notify" name="Failed" sourceRef="result" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-report-reported" sourceRef="report" targetRef="reported" />
+    <bpmn:sequenceFlow id="f-notify-failed" sourceRef="notify" targetRef="failed" />
+  </bpmn:process>
+</bpmn:definitions>

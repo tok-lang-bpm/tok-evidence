@@ -1,0 +1,52 @@
+```tok
+tok 1.0 "Account defaulter processing"
+
+pool org "Organisation"
+  lane main "Main process"
+    start start "Weekday morning"
+    task backup "Backup the database"
+    task checkDefaulter "Check the Account Defaulter table for new records"
+    xor hasNew "New records found?"
+    sub firstStage "Check CRM and register defaulting accounts"
+      start firstStart "Start checking"
+      task checkCRM1 "Check the CRM system for new returns"
+      xor hasReturns1 "New returns exist?"
+      task register "Register all defaulting accounts and customers"
+      xor previouslyAdvised "Defaulting client codes previously advised?"
+      task produce "Produce table of defaulting accounts"
+      task send "Send table to account management"
+      end firstEnd "First stage completed"
+      flow firstStart -> checkCRM1 -> hasReturns1
+      flow hasReturns1 -> register "yes"
+      flow hasReturns1 -> firstEnd "no"
+      flow register -> previouslyAdvised
+      flow previouslyAdvised -> produce "no"
+      flow previouslyAdvised -> firstEnd "yes"
+      flow produce -> send -> firstEnd
+    boundary firstDeadline on=firstStage timer=PT5H30M noninterrupting
+    task alertSupervisor1 "Send alert to supervisor"
+    end alertEnd1 "Alert sent"
+    task checkCRM2 "Check the CRM system for new returns"
+    xor hasReturns2 "New returns filed?"
+    sub reconcileStage "Reconcile account defaulters"
+      start reconcileStart "Start reconciliation"
+      task reconcile "Reconcile with the existing account defaulters table"
+      end reconcileEnd "Reconciliation completed"
+      flow reconcileStart -> reconcile -> reconcileEnd
+    boundary reconcileDeadline on=reconcileStage timer=PT7H noninterrupting
+    task alertSupervisor2 "Send message to supervisor"
+    end alertEnd2 "Message sent"
+    end completed "Process completed"
+    end newRecordsFound "New records found"
+
+    flow start -> backup -> checkDefaulter -> hasNew
+    flow hasNew -> firstStage "no"
+    flow hasNew -> newRecordsFound "yes"
+    flow firstStage -> checkCRM2
+    flow checkCRM2 -> hasReturns2
+    flow hasReturns2 -> reconcileStage "yes"
+    flow hasReturns2 -> completed "no"
+    flow reconcileStage -> completed
+    flow firstDeadline -> alertSupervisor1 -> alertEnd1
+    flow reconcileDeadline -> alertSupervisor2 -> alertEnd2
+```

@@ -1,0 +1,53 @@
+tok 1.0 "Office Supply Request"
+
+pool office "Office"
+  lane employee "Employee"
+    start needed "Office supply request needed"
+    task submit "Submit office supply request"
+    task review "Review comments for the change request"
+  lane supervisor "Supervisor"
+    task receive_req "Receive office supply request"
+    xor sup_decision "Approve, request change, or reject?"
+  lane purchase "Purchase department"
+    sub quotations "Make quotations"
+      start qstart "Start quotations"
+      task prepare "Prepare quotations"
+      end qend "Quotations made"
+    task select_vendor "Select a vendor"
+    xor vendor_valid "Is the vendor valid in the system?"
+    task choose_vendor "Choose a different vendor"
+    task confirm_vendor "Confirm vendor"
+  lane system "System"
+    task register "Register the requirement"
+    task generate_po "Generate and send purchase order"
+    and wait_parallel "Wait for delivery and invoice"
+    task wait_delivery "Wait for the product to be delivered"
+    task receive_invoice "Receive invoice"
+    and wait_done "Delivery and invoice received"
+    xor merge "Merge"
+    task notify "Send notification"
+    end completed "Office supply request completed"
+
+flow needed -> submit
+flow submit -> register
+flow register -> receive_req
+flow receive_req -> sup_decision
+flow sup_decision -> merge "reject"
+flow sup_decision -> review "request change"
+flow review -> merge
+flow sup_decision -> quotations "approve"
+flow qstart -> prepare -> qend
+flow quotations -> select_vendor
+flow select_vendor -> vendor_valid
+flow vendor_valid -> choose_vendor "no"
+flow choose_vendor -> select_vendor
+flow vendor_valid -> confirm_vendor "yes"
+flow confirm_vendor -> generate_po
+flow generate_po -> wait_parallel
+flow wait_parallel -> wait_delivery
+flow wait_parallel -> receive_invoice
+flow wait_delivery -> wait_done
+flow receive_invoice -> wait_done
+flow wait_done -> merge
+flow merge -> notify
+flow notify -> completed

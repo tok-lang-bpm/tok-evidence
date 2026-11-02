@@ -1,0 +1,67 @@
+```tok
+tok 1.0 "Ticket booking process"
+
+pool travel "Travel company" process-name="Travel booking"
+  lane customer "Customer"
+    start start_booking "Booking started"
+    task search "Search for flight, train, or bus ticket"
+    task select "Select route, date, and time"
+    task provide_personal "Provide personal information"
+    task provide_payment "Provide payment details"
+    xor xor_reminders "Receive reminders?"
+    task receive_reminders "Receive reminders"
+    xor xor_instructions "Receive instructions?"
+    xor xor_instruction_type "Check-in or boarding?"
+    task receive_checkin "Receive check-in instructions"
+    task receive_boarding "Receive boarding instructions"
+    task complete_journey "Complete journey"
+    xor xor_posttravel "Post-travel feedback or services?"
+    xor xor_posttravel_type "Feedback or services?"
+    task provide_feedback "Provide feedback"
+    task use_services "Use post-travel services"
+    end end_journey "Journey completed"
+    end end_extended "Post-travel completed"
+
+  lane booking "Booking system"
+    task generate_ticket "Generate ticket"
+    task send_email "Send ticket by email"
+    task send_sms "Send ticket by SMS"
+    xor xor_delivery "Email or SMS?"
+    parallel split_proc "Process ticket"
+    parallel join_proc "Processing joined"
+
+  lane inventory "Travel company"
+    task update_inventory "Update seat inventory"
+
+flow start_booking -> search -> select -> provide_personal -> provide_payment -> generate_ticket
+
+flow generate_ticket -> split_proc
+flow split_proc -> xor_delivery
+flow split_proc -> update_inventory
+flow xor_delivery -> send_email "Email"
+flow xor_delivery -> send_sms "SMS" default
+flow send_email -> join_delivery
+flow send_sms -> join_delivery
+flow join_delivery -> join_proc
+flow update_inventory -> join_proc
+
+flow join_proc -> xor_reminders
+flow xor_reminders -> receive_reminders "Yes"
+flow xor_reminders -> xor_instructions "No" default
+flow receive_reminders -> xor_instructions
+flow xor_instructions -> xor_instruction_type "Yes"
+flow xor_instructions -> complete_journey "No" default
+flow xor_instruction_type -> receive_checkin "Check-in"
+flow xor_instruction_type -> receive_boarding "Boarding" default
+flow receive_checkin -> join_instructions
+flow receive_boarding -> join_instructions
+flow join_instructions -> complete_journey
+
+flow complete_journey -> xor_posttravel
+flow xor_posttravel -> xor_posttravel_type "Yes"
+flow xor_posttravel -> end_journey "No" default
+flow xor_posttravel_type -> provide_feedback "Feedback"
+flow xor_posttravel_type -> use_services "Services" default
+flow provide_feedback -> end_extended
+flow use_services -> end_extended
+```

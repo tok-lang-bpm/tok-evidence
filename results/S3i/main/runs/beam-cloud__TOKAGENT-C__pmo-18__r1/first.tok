@@ -1,0 +1,95 @@
+tok 1.0 "University enrollment"
+
+pool university "University"
+  lane applicant "Applicant"
+    start s "Start"
+    task submit "Submit an application online"
+    task provide "Provide the missing items"
+    task confirm "Confirm enrollment"
+    task receive_orientation "Receive orientation materials"
+    task obtain_id "Obtain a student ID card"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve schedule conflicts"
+    task attend "Begin attending classes"
+    task review_grades "Review grades online"
+    task submit_appeal "Submit an appeal form"
+    task await_decision "Await a decision"
+    and orient
+    and orient_done
+    xor confirmed "Confirmed by deadline?"
+    xor intl "International student?"
+    xor may_ad "Add or drop courses?"
+    xor grievances "Any grievances?"
+    xor outcome "Graduate or withdraw?"
+    end canceled "Application canceled"
+    end graduated "Student graduated"
+    end withdrawn "Student withdrew"
+
+  lane admissions "Admissions Office"
+    task review "Review the application and supporting documents"
+    task notify_missing "Notify applicant to provide missing items"
+    task send_accept "Send an acceptance letter"
+    task send_reject "Send a rejection letter"
+    xor docs "Documents complete?"
+    and par1
+    and join1
+    xor accepted "Application accepted?"
+    end rejected "Application rejected"
+
+  lane committee "Admissions Committee"
+    task evaluate "Evaluate the application"
+
+  lane finance "Finance Department"
+    task process_fees "Process application fees or waivers"
+
+  lane it "IT Department"
+    task setup_accounts "Set up student accounts for email, online portals, and library access"
+
+  lane international "International Student Office"
+    task visa "Assist with visa processing"
+
+  lane advisor "Academic Advisor"
+    task meet_advisor "Meet with an academic advisor"
+
+  lane appeals "Appeals Committee"
+    task meet_appeals "Meet with the appeals committee"
+
+  lane registrar "Registrar"
+    task post_grades "Post grades"
+
+flow s -> submit -> review -> docs
+flow docs -> notify_missing "Documents missing"
+flow notify_missing -> provide
+flow provide -> par1
+flow docs -> par1 "Documents complete" default
+flow par1 -> evaluate
+flow par1 -> process_fees
+flow evaluate -> join1
+flow process_fees -> join1
+flow join1 -> accepted
+flow accepted -> send_accept "Accepted"
+flow accepted -> send_reject "Rejected" default
+flow send_reject -> rejected
+flow send_accept -> confirm
+flow confirm -> confirmed
+flow confirmed -> orient "Confirmed"
+flow confirmed -> canceled default
+flow orient -> receive_orientation
+flow orient -> setup_accounts
+flow receive_orientation -> orient_done
+flow setup_accounts -> orient_done
+flow orient_done -> intl
+flow intl -> visa "International"
+flow intl -> obtain_id "Not international" default
+flow visa -> obtain_id
+flow obtain_id -> meet_advisor -> select_courses -> resolve_conflicts -> attend -> may_ad
+flow may_ad -> adddrop "Add or drop" 
+flow may_ad -> post_grades "No changes" default
+flow adddrop -> post_grades
+flow post_grades -> review_grades -> grievances
+flow grievances -> submit_appeal "Grievances"
+flow grievances -> outcome "No grievances" default
+flow submit_appeal -> meet_appeals -> await_decision -> outcome
+flow outcome -> graduated "Graduate"
+flow outcome -> withdrawn "Withdraw"
+flow outcome -> attend "Continue" default

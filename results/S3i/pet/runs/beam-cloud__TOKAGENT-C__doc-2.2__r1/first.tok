@@ -1,0 +1,74 @@
+tok 1.0 "Power supplier switch"
+
+pool company "Company"
+  lane customer "Customer"
+    start req "Switch-over request"
+    task transmit "Transmit customer data"
+    task checkdetails "Check contract details"
+  lane service "Customer service"
+    task receive "Receive customer data"
+    task enter "Enter customer data into CRM system"
+    task compare "Compare customer data with internal customer data base and check completeness and plausibility"
+    task correct "Correct errors based on error list"
+    task createcust "Create new customer object"
+    task prepare "Prepare contract documents for the power supplier switch"
+    task checkdocs "Check contract documents in CIS"
+    task analyze "Analyze and resolve issues"
+    task regenerate "Regenerate contract documents"
+    task sendconf "Send confirmation document to customer"
+    task sendreq "Send request to grid operator"
+    task createcis "Create CIS contract"
+    task import "Import meter data to systems"
+    end withdrawn "Contract withdrawn"
+    end success "Winning a new customer ends"
+    xor err "Errors found?"
+    xor exists "Customer exists in database?"
+    xor docs "Contract documents generated successfully?"
+    xor conc "Supplier concurrence?"
+    eventgw resp "Customer response or 7 days?"
+    catch withdrawal "Withdrawal received" message="withdrawal"
+    catch confirmation "Confirmation received" message="confirmation"
+    catch timer7 "7 days elapsed" timer=P7D
+    and par
+  lane grid "Grid operator"
+    task checkconc "Check switch-over request for supplier concurrence"
+    task inform "Inform all involved suppliers and demand resolution"
+    task terminate "Carry out termination of sales agreement"
+    task transmitmeter "Transmit power meter data to customer service and old supplier"
+    task computebill "Compute final billing based on meter data and send to old supplier"
+    end conflict "Supplier concurrence"
+    end gridend "Grid operator process ends"
+  lane oldsup "Old supplier"
+    task finalbill "Create and send final billing to customer"
+    end oldend "Old supplier process ends"
+
+flow req -> transmit -> receive -> enter -> compare -> err
+flow err -> correct "errors"
+flow err -> exists "no errors" default
+flow correct -> exists
+flow exists -> createcust "not exists"
+flow exists -> prepare "exists" default
+flow createcust -> prepare
+flow prepare -> checkdocs -> docs
+flow docs -> analyze "no"
+flow analyze -> regenerate
+flow regenerate -> checkdocs
+flow docs -> sendconf "yes" default
+flow sendconf -> sendreq -> checkconc -> conc
+flow conc -> inform "concurrence"
+flow inform -> terminate -> conflict
+flow conc -> createcis "no concurrence" default
+flow createcis -> checkdetails -> resp
+flow resp -> withdrawal
+flow resp -> confirmation
+flow resp -> timer7
+flow withdrawal -> withdrawn
+flow confirmation -> transmitmeter
+flow timer7 -> transmitmeter
+flow transmitmeter -> par
+flow par -> computebill
+flow par -> finalbill
+flow par -> import
+flow computebill -> gridend
+flow finalbill -> oldend
+flow import -> success

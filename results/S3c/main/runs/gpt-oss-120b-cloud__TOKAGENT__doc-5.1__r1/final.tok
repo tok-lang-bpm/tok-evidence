@@ -1,0 +1,32 @@
+tok 1.0
+
+pool BANK "Bank" {
+  lane customer "Customer" {
+    start start "Loan approval process"
+    task receive "receive customer request for a loan amount"
+    task approve "approve loan"
+    task deny "deny loan"
+    task feedback "send feedback to customer"
+    end end "End"
+  }
+
+  lane risk "Risk Assessment" {
+    task assess "invoke risk assessment Web service"
+    xor decision "risk decision"
+  }
+
+  lane approver "Approver" {
+    task approver "invoke approver Web service"
+  }
+}
+
+flow start -> receive
+flow receive -> assess
+flow assess -> decision
+flow decision -> approve "loan is small and low risk" when="loanAmount < 10000 and risk = 'low'"
+flow decision -> deny "high risk" when="risk = 'high'"
+flow decision -> approver "needs further review or amount >= 10000" when="reviewNeeded or loanAmount >= 10000"
+flow approve -> feedback
+flow deny -> feedback
+flow approver -> feedback
+flow feedback -> end

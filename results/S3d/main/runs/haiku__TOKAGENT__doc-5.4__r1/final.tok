@@ -1,0 +1,39 @@
+tok 1.0 "Expense report approval"
+
+pool org "Company"
+  lane emp "Employee"
+    start s1 "Product or service needed"
+    task purchase "Purchase product or service"
+    task submit "Submit expense report with receipts"
+    task correct "Correct and resubmit expense report"
+  lane sup "Supervisor"
+    xor sup-in
+    xor rules-q "Expense rules apply?"
+    task first "Decide report on first inspection"
+    task review "Review expense report"
+    xor dec-join
+    xor approve-q "Report approved?"
+    task reject "Reject expense report"
+  lane tre "Treasurer"
+    task check "Check receipts against items"
+    xor match-q "Receipts complete and matching?"
+    task accept "Accept expenses for processing"
+    task return "Return report to employee"
+  lane paysys "Payment system"
+    service pay "Link report to payment system"
+    catch confirmed "Payment confirmed" message="Payment confirmed"
+    end done "Expense paid"
+
+flow s1 -> purchase -> submit -> sup-in -> rules-q
+flow rules-q -> first "yes" when="rules_apply = true"
+flow rules-q -> review "no" default
+flow first -> dec-join
+flow review -> dec-join -> approve-q
+flow approve-q -> check "approved" when="approved = true"
+flow approve-q -> reject "rejected" default
+flow reject -> correct -> sup-in
+flow check -> match-q
+flow match-q -> accept "complete" when="receipts_ok = true"
+flow match-q -> return "incomplete" default
+flow return -> correct
+flow accept -> pay -> confirmed -> done

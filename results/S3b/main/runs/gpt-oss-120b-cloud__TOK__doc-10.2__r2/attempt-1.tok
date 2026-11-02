@@ -1,0 +1,86 @@
+tok 1.0 "MPON Process"
+
+pool organisation "Organisation"
+  lane MPON "MPON"
+    start start1 "Start"
+    task report "Report the meter operation to the GO"
+    xor decisionAfterEquipment "Failure or success?"
+    task informFailure "Inform GO about the failure of the entire process"
+    task informSuccess "Inform GO about the successful completion of the entire process"
+    end endReject "Application rejected"
+    end endSuccess "Process completed successfully"
+  lane GO "GO"
+    task examine "Examine the application of the MPON"
+    xor decisionApplication "Reject or confirm application?"
+    task rejectApplication "Reject the application of the MPON"
+    task confirmApplication "Confirm the application of the MPON"
+    task informMPOOReg "Inform MPOO about the registration confirmation of the MPON"
+    task informMSPOReg "Inform MSPO about the registration confirmation of the MPON"
+    task receiveFailureInfo "Receive failure information from MPON"
+    task receiveSuccessInfo "Receive successful completion information from MPON"
+    task informMPONDeadline "Inform MPON about the failure of the overall transaction by deadline"
+    task confirmFailureAssignment "Confirm failure of the assignment to the MPON"
+    task assignMPON "Assign the MPON"
+    task confirmAssignment "Confirm assignment to the MPON"
+    task informMPOOAssignFail "Inform MPOO about the failure of assignment of the MPON"
+    task informMSPOAssignFail "Inform MSPO about the failure of assignment of the MPON"
+    task informMPOOAssign "Inform MPOO about the assignment of the MPON"
+    task informMSPOAssign "Inform MSPO about the assignment of the MPON"
+    task informSPAssign "Inform SP about the assignment of the MPON"
+  lane MPOO "MPOO"
+    task performEquipmentMPON "Perform equipment acquisition and/or changes"
+    task receiveMPOOAssignFail "Receive failure of assignment of the MPON"
+    task receiveMPOOAssign "Receive assignment of the MPON"
+  lane MSPO "MSPO"
+    task performEquipmentMPOO "Perform equipment acquisition and/or changes"
+    task receiveMSPOAssignFail "Receive failure of assignment of the MPON"
+    task receiveMSPOAssign "Receive assignment of the MPON"
+  lane SP "SP"
+    task receiveSPAssign "Receive assignment of the MPON"
+
+flow start1 -> report
+flow report -> examine
+flow examine -> decisionApplication
+flow decisionApplication -> rejectApplication "reject"
+flow decisionApplication -> confirmApplication "confirm"
+flow rejectApplication -> endReject
+flow confirmApplication -> andReg
+  and andReg
+    flow confirmApplication -> informMPOOReg
+    flow confirmApplication -> informMSPOReg
+  and andRegEnd
+    flow informMPOOReg -> andEquip
+    flow informMSPOReg -> andEquip
+  and andEquip
+    flow andRegEnd -> performEquipmentMPON
+    flow andRegEnd -> performEquipmentMPOO
+  and equipEnd
+    flow performEquipmentMPON -> decisionAfterEquipment
+    flow performEquipmentMPOO -> decisionAfterEquipment
+flow decisionAfterEquipment -> informFailure "failure"
+flow decisionAfterEquipment -> informSuccess "success"
+flow informFailure -> receiveFailureInfo
+flow receiveFailureInfo -> informMPONDeadline
+flow informMPONDeadline -> confirmFailureAssignment
+flow confirmFailureAssignment -> andFailAssignInfo
+  and andFailAssignInfo
+    flow confirmFailureAssignment -> informMPOOAssignFail
+    flow confirmFailureAssignment -> informMSPOAssignFail
+  and failAssignInfoEnd
+    flow informMPOOAssignFail -> endReject
+    flow informMSPOAssignFail -> endReject
+flow informSuccess -> receiveSuccessInfo
+flow receiveSuccessInfo -> assignMPON
+flow assignMPON -> confirmAssignment
+flow confirmAssignment -> andAssignInfo
+  and andAssignInfo
+    flow confirmAssignment -> informMPOOAssign
+    flow confirmAssignment -> informMSPOAssign
+    flow confirmAssignment -> informSPAssign
+  and assignInfoEnd
+    flow informMPOOAssign -> receiveMPOOAssign
+    flow informMSPOAssign -> receiveMSPOAssign
+    flow informSPAssign -> receiveSPAssign
+    flow receiveMPOOAssign -> endSuccess
+    flow receiveMSPOAssign -> endSuccess
+    flow receiveSPAssign -> endSuccess

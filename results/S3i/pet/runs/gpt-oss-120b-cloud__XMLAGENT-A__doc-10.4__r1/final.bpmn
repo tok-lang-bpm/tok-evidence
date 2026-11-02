@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration and pool -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="OrgPool" name="Organisation" processRef="Process_1"/>
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="Process_1" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_Org">
+      <bpmn:lane id="Lane_MPNO" name="MPON">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyMPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FinalReading_MPNO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DismountOld_MPNO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_MountNew</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReadMeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendValuesToGO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TellGO</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_MPOO" name="MPOO">
+        <bpmn:flowNodeRef>Task_AnnounceSelf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyNoSelf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FinalReading_MPOO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DismountOld_MPOO</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_GO" name="GO">
+        <bpmn:flowNodeRef>Task_NotifyMSP</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_MSP" name="MSP"/>
+    </bpmn:laneSet>
+
+    <!-- Start event -->
+    <bpmn:startEvent id="StartEvent_1" name="Process start"/>
+
+    <!-- Tasks -->
+    <bpmn:task id="Task_NotifyMPOO" name="Notify MPOO about equipment change intentions"/>
+    
+    <bpmn:task id="Task_AnnounceSelf" name="Announce self dismounting to MPON"/>
+    <bpmn:task id="Task_NotifyNoSelf" name="Notify MPON about no self‑dismounting of MPOO"/>
+
+    <bpmn:task id="Task_FinalReading_MPNO" name="Perform final reading"/>
+    <bpmn:task id="Task_FinalReading_MPOO" name="Perform final reading"/>
+
+    <bpmn:task id="Task_DismountOld_MPNO" name="Dismount old equipment"/>
+    <bpmn:task id="Task_DismountOld_MPOO" name="Dismount old equipment"/>
+
+    <bpmn:task id="Task_MountNew" name="Mount new device"/>
+    <bpmn:task id="Task_ReadMeter" name="Read meter count from installed meter"/>
+    <bpmn:task id="Task_SendValuesToGO" name="Send final reading values to GO"/>
+    <bpmn:task id="Task_TellGO" name="Tell GO about device changes, master data and meter count at installation"/>
+    <bpmn:task id="Task_NotifyMSP" name="Notify MSP about device changes, master data, meter count at dismounting and installation"/>
+
+    <!-- End event -->
+    <bpmn:endEvent id="EndEvent_1" name="Process end"/>
+
+    <!-- Gateways -->
+    <!-- 1. MPOO decision -->
+    <bpmn:exclusiveGateway id="Gateway_MPOO_Decision" name="MPOO decision"/>
+    <bpmn:exclusiveGateway id="Gateway_MPOO_Merge" name="MPOO merge"/>
+
+    <!-- 2. Performer of final reading -->
+    <bpmn:exclusiveGateway id="Gateway_FinalReading_Decision" name="Who performs final reading?"/>
+    <bpmn:exclusiveGateway id="Gateway_FinalReading_Merge" name="Final reading merge"/>
+
+    <!-- 3. Performer of dismount -->
+    <bpmn:exclusiveGateway id="Gateway_Dismount_Decision" name="Who dismounts old equipment?"/>
+    <bpmn:exclusiveGateway id="Gateway_Dismount_Merge" name="Dismount merge"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="StartEvent_1" targetRef="Task_NotifyMPOO"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Task_NotifyMPOO" targetRef="Gateway_MPOO_Decision"/>
+
+    <bpmn:sequenceFlow id="Flow_2a" sourceRef="Gateway_MPOO_Decision" targetRef="Task_AnnounceSelf" name="self dismounting"/>
+    <bpmn:sequenceFlow id="Flow_2b" sourceRef="Gateway_MPOO_Decision" targetRef="Task_NotifyNoSelf" name="no self dismounting"/>
+
+    <bpmn:sequenceFlow id="Flow_3a" sourceRef="Task_AnnounceSelf" targetRef="Gateway_MPOO_Merge"/>
+    <bpmn:sequenceFlow id="Flow_3b" sourceRef="Task_NotifyNoSelf" targetRef="Gateway_MPOO_Merge"/>
+
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Gateway_MPOO_Merge" targetRef="Gateway_FinalReading_Decision"/>
+
+    <bpmn:sequenceFlow id="Flow_5a" sourceRef="Gateway_FinalReading_Decision" targetRef="Task_FinalReading_MPNO" name="MPON"/>
+    <bpmn:sequenceFlow id="Flow_5b" sourceRef="Gateway_FinalReading_Decision" targetRef="Task_FinalReading_MPOO" name="MPOO"/>
+
+    <bpmn:sequenceFlow id="Flow_6a" sourceRef="Task_FinalReading_MPNO" targetRef="Gateway_FinalReading_Merge"/>
+    <bpmn:sequenceFlow id="Flow_6b" sourceRef="Task_FinalReading_MPOO" targetRef="Gateway_FinalReading_Merge"/>
+
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_FinalReading_Merge" targetRef="Gateway_Dismount_Decision"/>
+
+    <bpmn:sequenceFlow id="Flow_8a" sourceRef="Gateway_Dismount_Decision" targetRef="Task_DismountOld_MPNO" name="MPON"/>
+    <bpmn:sequenceFlow id="Flow_8b" sourceRef="Gateway_Dismount_Decision" targetRef="Task_DismountOld_MPOO" name="MPOO"/>
+
+    <bpmn:sequenceFlow id="Flow_9a" sourceRef="Task_DismountOld_MPNO" targetRef="Gateway_Dismount_Merge"/>
+    <bpmn:sequenceFlow id="Flow_9b" sourceRef="Task_DismountOld_MPOO" targetRef="Gateway_Dismount_Merge"/>
+
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Gateway_Dismount_Merge" targetRef="Task_MountNew"/>
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_MountNew" targetRef="Task_ReadMeter"/>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_ReadMeter" targetRef="Task_SendValuesToGO"/>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_SendValuesToGO" targetRef="Task_TellGO"/>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_TellGO" targetRef="Task_NotifyMSP"/>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_NotifyMSP" targetRef="EndEvent_1"/>
+
+  </bpmn:process>
+</bpmn:definitions>

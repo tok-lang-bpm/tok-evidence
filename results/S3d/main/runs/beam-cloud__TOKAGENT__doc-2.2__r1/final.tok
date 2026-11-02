@@ -1,0 +1,74 @@
+tok 1.0 "Power supplier switch process"
+
+pool org "Power supplier switch process"
+  lane customer "Customer"
+    start s "Switch-over request"
+    task transmit-data "Transmit customer data"
+    task check-contract-details "Check contract details"
+    task withdraw "Withdraw from switch contract"
+    end end-withdraw "Process ends (withdrawal)"
+  lane customer-service "Customer Service"
+    task receive-data "Receive customer data"
+    task compare-data "Compare customer data with internal customer database"
+    task check-data "Check data for completeness and plausibility"
+    task correct-errors "Correct data errors based on error list"
+    task prepare-contracts "Prepare contract documents for power supplier switch"
+    task send-confirmation "Send confirmation document to customer"
+    task create-cis-contract "Create CIS contract"
+    task import-meter "Import meter data into systems"
+    end end-won "Process of winning new customer ends"
+    xor gw-errors "Data errors found?"
+    xor gw-exists "Customer exists in database?"
+    xor gw-customer-join "Customer data merge"
+    xor gw-contract "Contract documents generated correctly?"
+    xor gw-concurrence "Supplier concurrence found?"
+    xor gw-withdraw "Withdraw from switch contract?"
+    and g-final "Final billing phase"
+    and g-grid-old "Grid-to-old-supplier split"
+  lane crm "CRM System"
+    task enter-crm "Enter customer data object into CRM system"
+    task create-customer "Create new customer object"
+  lane cis "Customer Information System (CIS)"
+    task check-contracts-cis "Check contract documents in CIS"
+    task analyze-issues "Analyze and resolve contract generation issues"
+    task regenerate-contracts "Regenerate contract documents"
+    task send-request-grid "Send switch-over request to grid operator"
+  lane grid "Grid Operator"
+    task check-supplier-concurrence "Check switch-over request for supplier concurrence"
+    task transmit-response "Transmit response comment"
+    task inform-suppliers "Inform involved suppliers and demand conflict resolution"
+    task terminate-agreement "Carry out termination of sales agreement with old supplier"
+    task transmit-meter "Transmit power meter data"
+    task compute-final "Compute final billing based on meter data"
+    task send-go-final "Send final billing to old supplier"
+    end end-concurrence "Process ends after supplier concurrence"
+    end end-grid "Grid operator process ends"
+  lane old-supplier "Old Supplier"
+    task create-old-final "Create final billing"
+    task send-old-final "Send final billing to customer"
+    end end-customer "Customer process ends"
+
+flow s -> transmit-data -> receive-data -> enter-crm -> compare-data -> check-data -> gw-errors
+flow gw-errors -> correct-errors "Errors found" when="errors = true"
+flow gw-errors -> gw-exists "No errors" default
+flow correct-errors -> compare-data
+flow gw-exists -> gw-customer-join "Customer exists" default
+flow gw-exists -> create-customer "Customer does not exist" when="customerExists = false"
+flow create-customer -> gw-customer-join -> prepare-contracts -> check-contracts-cis -> gw-contract
+flow gw-contract -> analyze-issues "Documents not generated" when="generated = false"
+flow gw-contract -> send-confirmation "Documents generated" default
+flow analyze-issues -> regenerate-contracts -> check-contracts-cis
+flow send-confirmation -> send-request-grid -> check-supplier-concurrence -> transmit-response -> gw-concurrence
+flow gw-concurrence -> inform-suppliers "Supplier concurrence" when="concurrence = true"
+flow gw-concurrence -> create-cis-contract "No concurrence" default
+flow inform-suppliers -> terminate-agreement -> end-concurrence
+flow create-cis-contract -> check-contract-details -> gw-withdraw
+flow gw-withdraw -> withdraw "Withdraw" when="withdraw = true"
+flow gw-withdraw -> g-final "Confirm or accepted after 7 days" default
+flow withdraw -> end-withdraw
+flow g-final -> transmit-meter
+flow g-final -> compute-final
+flow transmit-meter -> import-meter -> end-won
+flow compute-final -> send-go-final -> g-grid-old
+flow g-grid-old -> end-grid
+flow g-grid-old -> create-old-final -> send-old-final -> end-customer

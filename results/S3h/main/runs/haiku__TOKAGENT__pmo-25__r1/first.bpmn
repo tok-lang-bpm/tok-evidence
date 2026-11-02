@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Find a Job" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="job" name="Find a Job" processRef="job-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="job-process" name="Find a Job" isExecutable="false">
+    <bpmn:laneSet id="job-lanes">
+      <bpmn:lane id="seeker" name="Job seeker">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-apps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-apps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>negotiate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-interview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-rate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-rate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-company</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-year</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>view-reviews</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviews-seen</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>permanent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>grade</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="company" name="Company">
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-app</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hire</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-seeker</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="platform" name="Job platform">
+        <bpmn:flowNodeRef>offers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offers-later</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offers-continue</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start job search" />
+    <bpmn:task id="report" name="Report job applications" />
+    <bpmn:parallelGateway id="split-apps" />
+    <bpmn:parallelGateway id="join-apps" />
+    <bpmn:exclusiveGateway id="interview" name="Job interview wanted?" default="f-interview-merge-interview" />
+    <bpmn:task id="negotiate" name="Negotiate job interview" />
+    <bpmn:exclusiveGateway id="merge-interview" />
+    <bpmn:parallelGateway id="split-rate" />
+    <bpmn:parallelGateway id="join-rate" />
+    <bpmn:task id="rate-company" name="Rate the company" />
+    <bpmn:intermediateCatchEvent id="wait-year" name="Wait one year">
+      <bpmn:timerEventDefinition id="wait-year-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1Y</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="view-reviews" name="View company reviews" />
+    <bpmn:endEvent id="reviews-seen" name="Company reviews visible" />
+    <bpmn:exclusiveGateway id="permanent" name="Job became permanent?" default="f-permanent-report" />
+    <bpmn:exclusiveGateway id="grade" name="Company rated C or less?" default="f-grade-finish" />
+    <bpmn:endEvent id="finish" name="Job search ends" />
+    <bpmn:task id="confirm" name="Confirm receipt of job application" />
+    <bpmn:task id="rate-app" name="Rate job application" />
+    <bpmn:exclusiveGateway id="hire" name="Company wants you to work for them?" default="f-hire-report" />
+    <bpmn:task id="probation" name="Carry out probation phase" />
+    <bpmn:task id="rate-seeker" name="Rate job seeker" />
+    <bpmn:task id="offers" name="Send potential job offers" />
+    <bpmn:task id="offers-later" name="Send potential job offers" />
+    <bpmn:endEvent id="offers-continue" name="Job offers continue without reporting" />
+    <bpmn:sequenceFlow id="f-s-report" sourceRef="s" targetRef="report" />
+    <bpmn:sequenceFlow id="f-report-split-apps" sourceRef="report" targetRef="split-apps" />
+    <bpmn:sequenceFlow id="f-split-apps-confirm" sourceRef="split-apps" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-confirm-rate-app" sourceRef="confirm" targetRef="rate-app" />
+    <bpmn:sequenceFlow id="f-rate-app-join-apps" sourceRef="rate-app" targetRef="join-apps" />
+    <bpmn:sequenceFlow id="f-split-apps-offers" sourceRef="split-apps" targetRef="offers" />
+    <bpmn:sequenceFlow id="f-offers-join-apps" sourceRef="offers" targetRef="join-apps" />
+    <bpmn:sequenceFlow id="f-join-apps-interview" sourceRef="join-apps" targetRef="interview" />
+    <bpmn:sequenceFlow id="f-interview-negotiate" name="yes" sourceRef="interview" targetRef="negotiate">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">interview_wanted = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-interview-merge-interview" name="no" sourceRef="interview" targetRef="merge-interview" />
+    <bpmn:sequenceFlow id="f-negotiate-merge-interview" sourceRef="negotiate" targetRef="merge-interview" />
+    <bpmn:sequenceFlow id="f-merge-interview-hire" sourceRef="merge-interview" targetRef="hire" />
+    <bpmn:sequenceFlow id="f-hire-probation" name="yes" sourceRef="hire" targetRef="probation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">company_hires = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-hire-report" name="no" sourceRef="hire" targetRef="report" />
+    <bpmn:sequenceFlow id="f-probation-split-rate" sourceRef="probation" targetRef="split-rate" />
+    <bpmn:sequenceFlow id="f-split-rate-rate-company" sourceRef="split-rate" targetRef="rate-company" />
+    <bpmn:sequenceFlow id="f-rate-company-join-rate" sourceRef="rate-company" targetRef="join-rate" />
+    <bpmn:sequenceFlow id="f-split-rate-rate-seeker" sourceRef="split-rate" targetRef="rate-seeker" />
+    <bpmn:sequenceFlow id="f-rate-seeker-join-rate" sourceRef="rate-seeker" targetRef="join-rate" />
+    <bpmn:sequenceFlow id="f-split-rate-wait-year" sourceRef="split-rate" targetRef="wait-year" />
+    <bpmn:sequenceFlow id="f-wait-year-view-reviews" sourceRef="wait-year" targetRef="view-reviews" />
+    <bpmn:sequenceFlow id="f-view-reviews-reviews-seen" sourceRef="view-reviews" targetRef="reviews-seen" />
+    <bpmn:sequenceFlow id="f-join-rate-permanent" sourceRef="join-rate" targetRef="permanent" />
+    <bpmn:sequenceFlow id="f-permanent-grade" name="yes" sourceRef="permanent" targetRef="grade">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">job_permanent = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-permanent-report" name="no" sourceRef="permanent" targetRef="report" />
+    <bpmn:sequenceFlow id="f-grade-offers-later" name="yes" sourceRef="grade" targetRef="offers-later">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">grade = "C" or grade = "D" or grade = "E" or grade = "F"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-grade-finish" name="no" sourceRef="grade" targetRef="finish" />
+    <bpmn:sequenceFlow id="f-offers-later-offers-continue" sourceRef="offers-later" targetRef="offers-continue" />
+  </bpmn:process>
+</bpmn:definitions>

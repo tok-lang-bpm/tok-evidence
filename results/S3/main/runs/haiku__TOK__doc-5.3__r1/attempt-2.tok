@@ -1,0 +1,51 @@
+tok 1.0 "Office supply request"
+
+pool org "Organization"
+  lane employee "Employee"
+    start needed "Office supply need arises"
+    task submit "Submit the office supply request"
+    task revise "Review the comments on the change request"
+  lane supervisor "Immediate supervisor"
+    task review "Receive and review the request"
+    xor decide "Approve, change or reject?"
+    task approve "Approve the request"
+    task askChange "Ask for a change"
+    task reject "Reject the request"
+  lane purchase "Purchase department"
+    sub quotes "Make quotations"
+      start qs "Quotations needed"
+      task getQuotes "Request quotations from vendors"
+      task compare "Compare the quotations"
+      end qe "Quotations made"
+    task select "Select a vendor"
+    xor valid "Vendor valid in the system?"
+    task other "Choose a different vendor"
+    task confirm "Confirm the selected vendor"
+    task receiveProduct "Receive the product"
+    task receiveInvoice "Receive the invoice"
+  lane system "System"
+    task register "Register the requirement"
+    task notifyChange "Notify the user of the change request"
+    task notifyReject "Notify the user of the rejection"
+    task generate "Generate and send the purchase order"
+    and fork
+    and joined
+    task notifyResult "Notify the user of the result"
+    end endRejected "Request rejected"
+    end endDone "Result notified"
+
+flow needed -> submit -> register -> review -> decide
+flow decide -> approve "approved"
+flow decide -> askChange "change required"
+flow decide -> reject "rejected"
+flow askChange -> notifyChange -> revise -> submit
+flow reject -> notifyReject -> endRejected
+flow approve -> quotes -> select -> valid
+flow qs -> getQuotes -> compare -> qe
+flow valid -> other "no"
+flow other -> select
+flow valid -> confirm "yes"
+flow confirm -> generate -> fork
+flow fork -> receiveProduct -> joined
+flow fork -> receiveInvoice -> joined
+flow joined -> notifyResult -> endDone

@@ -1,0 +1,46 @@
+```tok
+tok 1.0 "Defaulter Handling Process"
+
+pool org "Organisation"
+  lane ops "Operations"
+    start s "Weekday morning start"
+    task backup "Backup the database"
+    task checkNewRecords "Check Account Defaulter table for new records"
+    xor gwNewRecords "New records found?"
+    end endNewRecords "Process ends (new records found)"
+    task checkCRM1 "Check CRM system for new returns"
+    xor gwNewReturns1 "New returns exist?"
+    task register "Register defaulting accounts and customers"
+    xor gwAdvised "Defaulting client codes previously advised?"
+    task produceTable "Produce table of defaulting accounts"
+    task sendToAM "Send table to account management"
+    xor gwDeadline2 "Completed by 2:30 pm?"
+    task alertSupervisor2 "Send alert to supervisor"
+    task checkCRM2 "Check CRM system for new returns (post‑report)"
+    xor gwNewReturns2 "New returns filed?"
+    task reconcile "Reconcile with existing account defaulters table"
+    xor gwDeadline4 "Completed by 4:00 pm?"
+    task alertSupervisor4 "Send message to supervisor"
+    end endProcess "Process completed"
+
+    flow s -> backup -> checkNewRecords -> gwNewRecords
+    flow gwNewRecords -> endNewRecords when="newRecordsFound"
+    flow gwNewRecords -> checkCRM1 default
+    flow checkCRM1 -> gwNewReturns1
+    flow gwNewReturns1 -> register when="newReturnsExist"
+    flow gwNewReturns1 -> gwDeadline2 default
+    flow register -> gwAdvised
+    flow gwAdvised -> produceTable when="advised = false"
+    flow gwAdvised -> gwDeadline2 when="advised = true"
+    flow produceTable -> sendToAM -> gwDeadline2
+    flow gwDeadline2 -> checkCRM2 when="deadline2Met"
+    flow gwDeadline2 -> alertSupervisor2 default
+    flow alertSupervisor2 -> checkCRM2
+    flow checkCRM2 -> gwNewReturns2
+    flow gwNewReturns2 -> reconcile when="newReturnsAfterReport"
+    flow gwNewReturns2 -> gwDeadline4 default
+    flow reconcile -> gwDeadline4
+    flow gwDeadline4 -> endProcess when="deadline4Met"
+    flow gwDeadline4 -> alertSupervisor4 default
+    flow alertSupervisor4 -> endProcess
+```

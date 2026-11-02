@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs" targetNamespace="http://example.org/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <bpmn:signal id="Signal_UpdateResources" name="Update Resources" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Game System" processRef="process1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="laneSet1">
+      <bpmn:lane id="lane_player" name="Player">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectResources</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_UpdateResources</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_BragFriends</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendMaterials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_bot" name="Bot">
+        <bpmn:flowNodeRef>Gateway_ParallelStart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CollectResource1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CollectResource2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_StartFarming</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DisasterDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_HandleDisaster</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckMilestones</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_MilestoneDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyPlayer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FinishBot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EndParallelStart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EndParallelJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_1" name="Start" />
+    <bpmn:task id="Task_SelectResources" name="Select resources to farm" />
+    <bpmn:parallelGateway id="Gateway_ParallelStart" />
+    <bpmn:task id="Task_CollectResource1" name="Collect resource 1" />
+    <bpmn:task id="Task_CollectResource2" name="Collect resource 2" />
+    <bpmn:parallelGateway id="Gateway_ParallelJoin" />
+    <bpmn:task id="Task_StartFarming" name="Start farming">
+      <bpmn:boundaryEvent id="Boundary_UpdateResources" attachedToRef="Task_StartFarming" cancelActivity="false">
+        <bpmn:signalEventDefinition signalRef="Signal_UpdateResources" />
+      </bpmn:boundaryEvent>
+    </bpmn:task>
+    <bpmn:task id="Task_UpdateResources" name="Update resource list" />
+    <bpmn:exclusiveGateway id="Gateway_DisasterDecision" name="Disaster occurs?" />
+    <bpmn:task id="Task_HandleDisaster" name="Recover from disaster" />
+    <bpmn:task id="Task_CheckMilestones" name="Check milestones" />
+    <bpmn:exclusiveGateway id="Gateway_MilestoneDecision" name="Milestone reached?" />
+    <bpmn:task id="Task_NotifyPlayer" name="Notify player" />
+    <bpmn:task id="Task_FinishBot" name="Finish bot" />
+    <bpmn:parallelGateway id="Gateway_EndParallelStart" />
+    <bpmn:task id="Task_BragFriends" name="Brag to selected friends" />
+    <bpmn:task id="Task_SendMaterials" name="Send materials to friends" />
+    <bpmn:parallelGateway id="Gateway_EndParallelJoin" />
+    <bpmn:endEvent id="EndEvent_1" name="End" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="StartEvent_1" targetRef="Task_SelectResources" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="Task_SelectResources" targetRef="Gateway_ParallelStart" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="Gateway_ParallelStart" targetRef="Task_CollectResource1" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="Gateway_ParallelStart" targetRef="Task_CollectResource2" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="Task_CollectResource1" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="Task_CollectResource2" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="Gateway_ParallelJoin" targetRef="Task_StartFarming" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="Task_StartFarming" targetRef="Gateway_DisasterDecision" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="Gateway_DisasterDecision" targetRef="Task_HandleDisaster" name="yes" />
+    <bpmn:sequenceFlow id="flow10" sourceRef="Gateway_DisasterDecision" targetRef="Task_CheckMilestones" name="no" />
+    <bpmn:sequenceFlow id="flow11" sourceRef="Task_HandleDisaster" targetRef="Task_StartFarming" />
+    <bpmn:sequenceFlow id="flow12" sourceRef="Task_CheckMilestones" targetRef="Gateway_MilestoneDecision" />
+    <bpmn:sequenceFlow id="flow13" sourceRef="Gateway_MilestoneDecision" targetRef="Task_NotifyPlayer" name="yes" />
+    <bpmn:sequenceFlow id="flow14" sourceRef="Gateway_MilestoneDecision" targetRef="Task_FinishBot" name="no" />
+    <bpmn:sequenceFlow id="flow15" sourceRef="Task_NotifyPlayer" targetRef="Task_FinishBot" />
+    <bpmn:sequenceFlow id="flow16" sourceRef="Task_FinishBot" targetRef="Gateway_EndParallelStart" />
+    <bpmn:sequenceFlow id="flow17" sourceRef="Gateway_EndParallelStart" targetRef="Task_BragFriends" />
+    <bpmn:sequenceFlow id="flow18" sourceRef="Gateway_EndParallelStart" targetRef="Task_SendMaterials" />
+    <bpmn:sequenceFlow id="flow19" sourceRef="Task_BragFriends" targetRef="Gateway_EndParallelJoin" />
+    <bpmn:sequenceFlow id="flow20" sourceRef="Task_SendMaterials" targetRef="Gateway_EndParallelJoin" />
+    <bpmn:sequenceFlow id="flow21" sourceRef="Gateway_EndParallelJoin" targetRef="EndEvent_1" />
+
+    <!-- Boundary event flow -->
+    <bpmn:sequenceFlow id="flow_boundary" sourceRef="Boundary_UpdateResources" targetRef="Task_UpdateResources" />
+    <bpmn:sequenceFlow id="flow_back_update" sourceRef="Task_UpdateResources" targetRef="Task_StartFarming" />
+  </bpmn:process>
+</bpmn:definitions>

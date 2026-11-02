@@ -1,0 +1,94 @@
+tok 1.0 "Power supplier switch"
+
+pool company "Company"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit_data "Transmit customer data"
+    task check_details "Check contract details"
+    catch withdraw_notice "Withdrawal received" message="withdrawal"
+    catch confirm_notice "Confirmation received" message="confirmation"
+    catch auto_accept "7 days elapsed" timer=P7D
+    eventgw customer_response "Customer response"
+    end withdrawn "Contract withdrawn"
+    end customer_done "Customer process ended"
+  lane customer_service "Customer Service"
+    task receive_data "Receive customer data"
+    task enter_data "Enter customer data object into CRM system"
+    task compare_data "Compare customer data with internal customer data base"
+    task check_data "Check customer data for completeness and plausibility"
+    xor data_errors "Errors in customer data?"
+    task correct_errors "Correct errors based on simple error list"
+    xor customer_exists "Customer exists in data base?"
+    task create_customer "Create new customer object"
+    task prepare_docs "Prepare contract documents for power supplier switch"
+    xor docs_gw "Contract documents generated correctly?"
+    task analyze_issues "Analyze and resolve issues"
+    task generate_docs "Generate contract documents"
+    task send_confirmation "Send confirmation document to customer"
+    task create_contract "Create CIS contract"
+    xor continue_gw "Customer accepted?"
+    and finalize_split "Finalize switch-over"
+    and finalize_join "Finalization complete"
+    task import_meter "Import meter data to systems requiring information"
+    end success "Process of winning new customer ended"
+  lane cis "CIS"
+    service check_docs "Check contract documents" type="job"
+    service send_grid_request "Send request to grid operator" type="job"
+  lane grid_operator "Grid Operator"
+    task check_concurrence "Check switch-over request for supplier concurrence"
+    task send_response "Transmit response comment"
+    xor concurrence_gw "Supplier concurrence?"
+    task inform_suppliers "Inform all involved suppliers and demand resolution of conflict"
+    end concurrence_end "Supplier concurrence resolved"
+    task communicate_old "Communicate with old supplier"
+    task terminate_agreement "Carry out termination of sales agreement"
+    task transmit_meter "Transmit power meter data to customer service and old supplier"
+    task compute_billing "Compute final billing and send it to old supplier"
+    end grid_done "Grid operator process ended"
+  lane old_supplier "Old Supplier"
+    task create_final_billing "Create final billing and send it to customer"
+    end old_supplier_done "Old supplier process ended"
+
+flow request -> transmit_data
+flow transmit_data -> receive_data
+flow receive_data -> enter_data
+flow enter_data -> compare_data
+flow compare_data -> check_data
+flow check_data -> data_errors
+flow data_errors -> correct_errors "Errors found" when="errors = true"
+flow data_errors -> customer_exists "No errors" default
+flow correct_errors -> customer_exists
+flow customer_exists -> create_customer "Customer does not exist" when="customerExists = false"
+flow customer_exists -> prepare_docs "Customer exists" default
+flow create_customer -> prepare_docs
+flow prepare_docs -> check_docs
+flow check_docs -> docs_gw
+flow docs_gw -> analyze_issues "Not generated correctly" when="documentsGenerated = false"
+flow docs_gw -> send_confirmation "Generated correctly" default
+flow analyze_issues -> generate_docs
+flow generate_docs -> check_docs
+flow send_confirmation -> send_grid_request
+flow send_grid_request -> check_concurrence
+flow check_concurrence -> send_response
+flow send_response -> concurrence_gw
+flow concurrence_gw -> inform_suppliers "Supplier concurrence" when="concurrence = true"
+flow inform_suppliers -> concurrence_end
+flow concurrence_gw -> communicate_old "No supplier concurrence" default
+flow communicate_old -> terminate_agreement
+flow terminate_agreement -> create_contract
+flow create_contract -> check_details
+flow check_details -> customer_response
+flow customer_response -> withdraw_notice
+flow customer_response -> confirm_notice
+flow customer_response -> auto_accept
+flow withdraw_notice -> withdrawn
+flow confirm_notice -> continue_gw
+flow auto_accept -> continue_gw
+flow continue_gw -> finalize_split
+flow finalize_split -> transmit_meter
+flow finalize_split -> compute_billing
+flow transmit_meter -> finalize_join
+flow compute_billing -> finalize_join
+flow finalize_join -> create_final_billing
+flow create_final_billing -> import_meter
+flow import_meter -> success

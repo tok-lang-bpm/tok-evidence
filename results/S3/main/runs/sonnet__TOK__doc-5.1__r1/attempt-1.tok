@@ -1,0 +1,27 @@
+tok 1.0 "Loan approval"
+
+pool bank "Bank"
+  lane assessor "Risk assessment Web service"
+    start begin "Loan request needed"
+    task receive "Receive the customer request for a loan amount"
+    service assess "Assess the request"
+    xor decision "Loan small and customer low risk, high risk, or further review needed?"
+    task approve "Approve the loan"
+    task deny "Deny the loan"
+    task send "Send the request to the approver Web service"
+    xor joined
+  lane approver "Approver Web service"
+    task review "Review the request"
+  lane customer "Customer"
+    task feedback "Receive feedback"
+    end done "Customer informed"
+
+flow begin -> receive -> assess -> decision
+flow decision -> approve "small loan and low risk" when="amount < 10000 and risk = \"low\""
+flow decision -> deny "high risk" when="risk = \"high\""
+flow decision -> send "further review or amount of $10,000 or more" default
+flow send -> review
+flow approve -> joined
+flow deny -> joined
+flow review -> joined
+flow joined -> feedback -> done

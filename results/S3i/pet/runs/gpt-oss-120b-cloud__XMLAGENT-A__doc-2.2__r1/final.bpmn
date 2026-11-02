@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_1"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration and participants -->
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Company" name="Company" processRef="Process_Company"/>
+    <bpmn:participant id="Participant_Customer" name="Customer"/>
+    <bpmn:participant id="Participant_GridOperator" name="Grid Operator"/>
+    <bpmn:participant id="Participant_OldSupplier" name="Old Supplier"/>
+  </bpmn:collaboration>
+
+  <!-- Messages used for message flows -->
+  <bpmn:message id="Message_CustomerData" name="Customer data"/>
+  <bpmn:message id="Message_ConfirmationDoc" name="Confirmation document"/>
+  <bpmn:message id="Message_RequestGrid" name="Request to Grid Operator"/>
+  <bpmn:message id="Message_GridResponse" name="Grid operator response"/>
+  <bpmn:message id="Message_TerminateAgreement" name="Terminate sales agreement"/>
+  <bpmn:message id="Message_MeterDataToCS" name="Meter data to Customer Service"/>
+  <bpmn:message id="Message_MeterDataToOldSup" name="Meter data to Old Supplier"/>
+  <bpmn:message id="Message_FinalBillingToOldSup" name="Final billing to Old Supplier"/>
+  <bpmn:message id="Message_FinalBillingToCustomer" name="Final billing to Customer"/>
+
+  <!-- Main process (Company) -->
+  <bpmn:process id="Process_Company" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_Company">
+      <bpmn:lane id="Lane_CustomerService" name="Customer Service">
+        <bpmn:flowNodeRef>StartEvent_Request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveCustomerData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EnterCRM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CompareDatabase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DataOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CorrectErrors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CustomerExists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateNewCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PrepareContractDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutomatedCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CheckPositive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AnalyzeIssues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RegenerateDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestGridOperator</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Objection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateCISContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ImportMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_ProcessEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_CIS" name="CIS System">
+        <bpmn:flowNodeRef>Task_AutomatedCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestGridOperator</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ImportMeterData</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_Request" name="Switch‑over request initiated"/>
+    <bpmn:task id="Task_ReceiveCustomerData" name="Receive customer data"/>
+    <bpmn:task id="Task_EnterCRM" name="Enter customer data into CRM system"/>
+    <bpmn:task id="Task_CompareDatabase" name="Compare with internal customer database"/>
+    <bpmn:exclusiveGateway id="Gateway_DataOk" name="Data complete &amp; plausible?"/>
+    <bpmn:task id="Task_CorrectErrors" name="Create error list and correct data"/>
+    <bpmn:exclusiveGateway id="Gateway_CustomerExists" name="Customer exists in database?"/>
+    <bpmn:task id="Task_CreateNewCustomer" name="Create new customer object"/>
+    <bpmn:task id="Task_PrepareContractDocs" name="Prepare contract documents for switch‑over"/>
+    <bpmn:task id="Task_AutomatedCheck" name="Automated check of contract documents"/>
+    <bpmn:exclusiveGateway id="Gateway_CheckPositive" name="Contract documents ok?"/>
+    <bpmn:task id="Task_AnalyzeIssues" name="Analyze and resolve issues"/>
+    <bpmn:task id="Task_RegenerateDocs" name="Regenerate contract documents"/>
+    <bpmn:task id="Task_SendConfirmation" name="Send confirmation document to customer"/>
+    <bpmn:task id="Task_RequestGridOperator" name="Request grid operator for supplier concurrence"/>
+    <bpmn:exclusiveGateway id="Gateway_Objection" name="Supplier concurrence?"/>
+    <bpmn:task id="Task_CreateCISContract" name="Create CIS contract"/>
+    <bpmn:task id="Task_ImportMeterData" name="Import meter data to systems"/>
+    <bpmn:endEvent id="EndEvent_ProcessEnd" name="Process ends (customer won)"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_Request" targetRef="Task_ReceiveCustomerData"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ReceiveCustomerData" targetRef="Task_EnterCRM"/>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_EnterCRM" targetRef="Task_CompareDatabase"/>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_CompareDatabase" targetRef="Gateway_DataOk"/>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Gateway_DataOk" targetRef="Task_CorrectErrors" name="No"/>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_CorrectErrors" targetRef="Task_CompareDatabase"/>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_DataOk" targetRef="Gateway_CustomerExists" name="Yes"/>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Gateway_CustomerExists" targetRef="Task_CreateNewCustomer" name="No"/>
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_CreateNewCustomer" targetRef="Task_PrepareContractDocs"/>
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Gateway_CustomerExists" targetRef="Task_PrepareContractDocs" name="Yes"/>
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_PrepareContractDocs" targetRef="Task_AutomatedCheck"/>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_AutomatedCheck" targetRef="Gateway_CheckPositive"/>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Gateway_CheckPositive" targetRef="Task_AnalyzeIssues" name="No"/>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_AnalyzeIssues" targetRef="Task_RegenerateDocs"/>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_RegenerateDocs" targetRef="Task_AutomatedCheck"/>
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Gateway_CheckPositive" targetRef="Task_SendConfirmation" name="Yes"/>
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_SendConfirmation" targetRef="Task_RequestGridOperator"/>
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_RequestGridOperator" targetRef="Gateway_Objection"/>
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Gateway_Objection" targetRef="Task_CreateCISContract" name="No objection"/>
+    <bpmn:sequenceFlow id="Flow_20" sourceRef="Task_CreateCISContract" targetRef="Task_ImportMeterData"/>
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="Task_ImportMeterData" targetRef="EndEvent_ProcessEnd"/>
+
+    <!-- Message flows (to/from external participants) -->
+    <bpmn:messageFlow id="MessageFlow_CustToCS" sourceRef="Participant_Customer" targetRef="Task_ReceiveCustomerData" messageRef="Message_CustomerData"/>
+    <bpmn:messageFlow id="MessageFlow_CSToCust" sourceRef="Task_SendConfirmation" targetRef="Participant_Customer" messageRef="Message_ConfirmationDoc"/>
+    <bpmn:messageFlow id="MessageFlow_CS_ReqGrid" sourceRef="Task_RequestGridOperator" targetRef="Participant_GridOperator" messageRef="Message_RequestGrid"/>
+    <bpmn:messageFlow id="MessageFlow_GridResp" sourceRef="Participant_GridOperator" targetRef="Gateway_Objection" messageRef="Message_GridResponse"/>
+    <bpmn:messageFlow id="MessageFlow_Grid_Terminate" sourceRef="Participant_GridOperator" targetRef="Participant_OldSupplier" messageRef="Message_TerminateAgreement"/>
+    <bpmn:messageFlow id="MessageFlow_Grid_MeterToCS" sourceRef="Participant_GridOperator" targetRef="Task_ImportMeterData" messageRef="Message_MeterDataToCS"/>
+    <bpmn:messageFlow id="MessageFlow_Grid_MeterToOldSup" sourceRef="Participant_GridOperator" targetRef="Participant_OldSupplier" messageRef="Message_MeterDataToOldSup"/>
+    <bpmn:messageFlow id="MessageFlow_Grid_FinalBillOldSup" sourceRef="Participant_GridOperator" targetRef="Participant_OldSupplier" messageRef="Message_FinalBillingToOldSup"/>
+    <bpmn:messageFlow id="MessageFlow_OldSup_FinalBillCust" sourceRef="Participant_OldSupplier" targetRef="Participant_Customer" messageRef="Message_FinalBillingToCustomer"/>
+
+    <!-- Additional tasks for customer decision on contract (optional) -->
+    <bpmn:task id="Task_CustomerCheck" name="Customer checks contract details"/>
+    <bpmn:exclusiveGateway id="Gateway_CustomerDecision" name="Customer accepts contract?"/>
+    <bpmn:task id="Task_Withdraw" name="Customer withdraws from switch contract"/>
+    <bpmn:endEvent id="EndEvent_Withdrawn" name="Process ends (withdrawn)"/>
+    
+    <!-- Insert after sending confirmation and before request to grid operator -->
+    <bpmn:sequenceFlow id="Flow_16b" sourceRef="Task_SendConfirmation" targetRef="Task_CustomerCheck"/>
+    <bpmn:sequenceFlow id="Flow_16c" sourceRef="Task_CustomerCheck" targetRef="Gateway_CustomerDecision"/>
+    <bpmn:sequenceFlow id="Flow_16d" sourceRef="Gateway_CustomerDecision" targetRef="Task_Withdraw" name="No"/>
+    <bpmn:sequenceFlow id="Flow_16e" sourceRef="Task_Withdraw" targetRef="EndEvent_Withdrawn"/>
+    <bpmn:sequenceFlow id="Flow_16f" sourceRef="Gateway_CustomerDecision" targetRef="Task_RequestGridOperator" name="Yes"/>
+    
+    <!-- Connect withdrawal end to overall end (optional) -->
+    <bpmn:sequenceFlow id="Flow_WithdrawToEnd" sourceRef="EndEvent_Withdrawn" targetRef="EndEvent_ProcessEnd"/>
+    
+  </bpmn:process>
+</bpmn:definitions>

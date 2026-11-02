@@ -1,0 +1,33 @@
+tok 1.0 "Work Accident"
+
+pool org "Organisation"
+  lane employee "Employee"
+    start noticed "Accident or near accident noticed"
+    task inform "Inform the employer immediately"
+  lane employer "Employer"
+    task record "Record the accident"
+    and split
+    xor serious "Fatality or serious injury?"
+    xor emergency "Reported to the emergency services?"
+    task labour "Report the accident to the Labour Inspectorate"
+    xor m1
+    xor insured "Person killed or unable to work for three days?"
+    task insurer "Report the accident to the accident insurance provider within five days"
+    xor m2
+    and joined
+    end done "Accident reported"
+
+flow noticed -> inform -> record -> split
+flow split -> serious
+flow split -> insured
+flow serious -> emergency "yes" when="serious = true"
+flow serious -> m1 "no" default
+flow emergency -> labour "no" default
+flow emergency -> m1 "yes" when="reportedToEmergencyServices = true"
+flow labour -> m1
+flow insured -> insurer "yes" when="killedOrUnableToWork = true"
+flow insured -> m2 "no" default
+flow insurer -> m2
+flow m1 -> joined
+flow m2 -> joined
+flow joined -> done

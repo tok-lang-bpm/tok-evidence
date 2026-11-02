@@ -1,0 +1,102 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process is initiated by a switch-over request. In doing so, the customer transmits his data to the customer service department of the company. Customer service is a shared service center between the departments Sales and Distribution. The customer data is received by customer service and based on this data a customer data object is entered into the CRM system. After customer data has been entered it should then be compared with the internal customer data base and checked for completeness and plausibility. In case of any errors these should be corrected on the basis of a simple error list. The comparison of data is done to prevent individual customer data being stored multiple times. In case the customer does not exist in the customer data base, a new customer object is being created which will remain the data object of interest during the rest of the process flow. This object consists of data elements such as the customer's name and address and the assigned power gauge. The generated customer object is then used, in combination with other customer data to prepare the contract documents for the power supplier switch (including data such as bank connection, information on the selected rate, requested date of switch-over). In the following an automated check of the contract documents is carried out within the CIS (customer information system) in order to confirm their successful generation. In case of a negative response, i.e. the contract documents are not (or incorrectly) generated, the causing issues are being analyzed and resolved. Subsequently the contract documents are generated once again. In case of a positive response a confirmation document is sent out to the customer stating that the switch-over to the new supplier can be executed. A request to the grid operator is automatically sent out by the CIS. It puts the question whether the customer may be supplied by the selected supplier in the future. The switch-over request is checked by the grid operator for supplier concurrence, and the grid operator transmits a response comment. In the case of supplier concurrence the grid operator would inform all involved suppliers and demand the resolution of the conflict. The grid operator communicates with the old supplier and carries out the termination of the sales agreement between the customer and the old supplier (i.e. the customer service (of the new supplier) does not have to interact with the old supplier regarding termination). If there are not any objections by the grid operator (i.e. no supplier concurrence), customer service creates a CIS contract. The customer then has the chance to check the contract details and based on this check may decide to either withdraw from the switch contract or confirm it. Depending on the customer's acceptance / rejection the process flow at customer service either ends (in case of withdrawal) or continues (in case of a confirmation). An additional constraint is that the customer can only withdraw from the offered contract within 7 days after the 7th day the contract will be regarded as accepted and the process continues. The confirmation message by the customer is therefore not absolutely necessary (as it will count as accepted after 7 days in any way) but it can speed up the switch process. On the switch-date, but no later than 10 days after power supply has begun, the grid operator transmits the power meter data to the customer service and the old supplier via messages containing a services consumption report. At the same time, the grid operator computes the final billing based on the meter data and sends it to the old supplier. Likewise the old supplier creates and sends the final billing to the customer. For the customer as well as the grid operator the process ends then. After receiving the meter data customer service imports the meter data to systems that require the information. The process of winning a new customer ends here.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Winning a new customer: power supplier switch"
+
+pool company "Company"
+  lane customer "Customer"
+    start requested "Switch-over request initiated"
+    task transmit "Transmit customer data"
+    task checkcontract "Check contract details"
+    eventgw decide
+    catch withdraw "Withdrawal received" message="Withdrawal"
+    catch confirm "Confirmation received" message="Confirmation"
+    catch wait7 "7 days passed" timer=P7D
+    task receivebill "Receive final billing"
+  lane service "Customer service"
+    task receive "Receive customer data"
+    task enter "Enter customer data object into CRM system"
+    task compare "Compare customer data with customer data base"
+    task checkdata "Check customer data for completeness and plausibility"
+    xor errors "Errors found?"
+    task correct "Correct errors using error list"
+    xor exists "Customer exists in data base?"
+    task create "Create new customer object"
+    xor existsmerge
+    xor prepmerge
+    task prepare "Prepare contract documents"
+    task sendconf "Send confirmation document to customer"
+    task createcis "Create CIS contract"
+    xor accepted
+    and split
+    task import "Import meter data to systems"
+    and join
+    end done "New customer won"
+    end withdrawn "Process ended by withdrawal"
+  lane cis "CIS"
+    task checkdocs "Check contract documents"
+    xor generated "Contract documents generated successfully?"
+    task analyze "Analyze and resolve issues"
+    task sendreq "Send request to grid operator"
+  lane grid "Grid operator"
+    task checkreq "Check switch-over request for supplier concurrence"
+    xor concurrence "Supplier concurrence?"
+    task informsup "Inform involved suppliers and demand conflict resolution"
+    task terminate "Terminate sales agreement with old supplier"
+    task transmitmeter "Transmit power meter data"
+    task compute "Compute final billing"
+    task sendbill "Send final billing to old supplier"
+    end rejected "Switch-over rejected"
+  lane old "Old supplier"
+    task createbill "Create final billing"
+    task sendcust "Send final billing to customer"
+
+flow requested -> transmit -> receive -> enter -> compare -> checkdata -> errors
+flow errors -> correct "yes"
+flow correct -> checkdata
+flow errors -> exists "no" default
+flow exists -> create "no" default
+flow exists -> existsmerge "yes"
+flow create -> existsmerge
+flow existsmerge -> prepmerge -> prepare -> checkdocs -> generated
+flow generated -> analyze "no" default
+flow analyze -> prepmerge
+flow generated -> sendconf "yes"
+flow sendconf -> sendreq -> checkreq -> concurrence
+flow concurrence -> informsup "yes"
+flow informsup -> rejected
+flow concurrence -> terminate "no" default
+flow terminate -> createcis -> checkcontract -> decide
+flow decide -> withdraw
+flow decide -> confirm
+flow decide -> wait7
+flow withdraw -> withdrawn
+flow confirm -> accepted
+flow wait7 -> accepted
+flow accepted -> split
+flow split -> transmitmeter -> import -> join
+flow split -> compute -> sendbill -> createbill -> sendcust -> receivebill -> join
+flow join -> done
+```
+
+The tok checker reports these problems in it:
+
+- line 52: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-errors-correct)
+- line 56: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-exists-existsmerge)
+- line 61: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-generated-sendconf)
+- line 63: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-concurrence-informsup)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

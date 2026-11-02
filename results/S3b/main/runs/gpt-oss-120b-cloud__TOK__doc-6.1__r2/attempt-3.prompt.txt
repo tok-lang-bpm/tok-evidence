@@ -1,0 +1,82 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+As a basic principle, ACME AG receives invoices on paper or fax. These are received by the Secretariat in the central inbox and forwarded after a short visual inspection to an accounting employee. In `` ACME Financial Accounting ``, a software specially developed for the ACME AG, she identifies the charging suppliers and creates a new instance (invoice). She then checks the invoice items and notes the corresponding cost center at the ACME AG and the related cost center managers for each position on a separate form (`` docket ``). The docket and the copy of the invoice go to the internal mail together and are sent to the first cost center manager to the list. He reviews the content for accuracy after receiving the copy of the invoice. Should everything be in order, he notes his code one on the docket (`` accurate position - AP ``) and returns the copy of the invoice to the internal mail. From it, the copy of the invoice is passed on to the next cost center manager, based on the docket, or if all items are marked correct, sent back to accounting. Therefore, the copy of invoice and the docket gradually move through the hands of all cost center managers until all positions are marked as completely accurate. However, if inconsistencies exist, e.g. because the ordered product is not of the expected quantity or quality, the cost center manager rejects the AP with a note and explanatory statement on the docket, and the copy of the invoice is sent back to accounting directly. Based on the statements of the cost center managers, she will proceede with the clarification with the vendor, but, if necessary, she consults the cost center managers by telephone or e-mail again. When all inconsistencies are resolved, the copy of the invoice is sent to the cost center managers again, and the process continues. After all invoice items are AP, the accounting employee forwards the copy of the invoice to the commercial manager. He makes the commercial audit and issues the approval for payment. If the bill amount exceeds EUR 20, the Board wants to check it again (4 - eyes-principle). The copy of the invoice including the docket moves back to the accounting employee in the appropriate signature file. Should there be a complaint during the commercial audit, it will be resolved by the accounting employee with the supplier. After the commercial audit is successfully completed, the accounting employee gives payment instructions and closes the instance in `` ACME financial accounting ``.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Invoice Processing"
+
+pool org "ACME AG" [executable]
+  lane secretariat "Secretariat"
+    start start_evt "Invoice received (paper or fax)"
+    task receive_invoice "Receive invoice on paper or fax"
+    task forward_invoice "Forward invoice after visual inspection"
+  lane accounting "Accounting Employee"
+    task identify_create "Identify suppliers and create invoice instance"
+    task check_items "Check invoice items and note cost centers on docket"
+    task send_internal_mail "Send docket and copy of invoice to internal mail"
+    task clarify_vendor "Clarify with vendor and consult cost centre managers"
+    task forward_to_commercial "Forward copy of invoice to commercial manager"
+    task give_payment "Give payment instructions and close invoice"
+  lane manager "Cost Centre Manager"
+    task receive_copy "Receive copy of invoice and docket"
+    xor accuracy_gate "Is position accurate?"
+      task mark_ap "Mark position as accurate (AP) on docket"
+      task reject_ap "Reject AP with note on docket"
+    xor all_accurate_gate "All positions marked accurate?"
+      task return_to_accounting_all "Return copy to accounting (all accurate)"
+      task return_to_accounting_rej "Return copy to accounting (rejection)"
+  lane commercial "Commercial Manager"
+    task perform_audit "Perform commercial audit"
+    xor amount_gate "Invoice amount > EUR 20?"
+      task board_check "Board checks invoice"
+    xor complaint_gate "Complaint during commercial audit?"
+      task resolve_complaint "Resolve complaint with supplier"
+  lane board "Board"
+    task board_review "Review invoice"
+  lane end_lane "End"
+    end end_evt "Process completed"
+
+  # Sequence flows
+  flow start_evt -> receive_invoice -> forward_invoice -> identify_create -> check_items -> send_internal_mail -> receive_copy
+  flow receive_copy -> accuracy_gate
+  flow accuracy_gate -> mark_ap -> all_accurate_gate
+  flow accuracy_gate -> reject_ap -> return_to_accounting_rej
+  flow all_accurate_gate -> return_to_accounting_all
+  flow all_accurate_gate -> receive_copy
+  flow return_to_accounting_all -> forward_to_commercial
+  flow return_to_accounting_rej -> clarify_vendor -> send_internal_mail -> receive_copy
+  flow forward_to_commercial -> perform_audit -> amount_gate
+  flow amount_gate -> board_check -> board_review -> complaint_gate
+  flow amount_gate -> complaint_gate
+  flow complaint_gate -> resolve_complaint -> perform_audit
+  flow complaint_gate -> give_payment -> end_evt
+```
+
+The tok checker reports these problems in it:
+
+- line 3: error T001: invalid token: unexpected character '['
+- line 4: error P004: 'lane' is not allowed inside top
+- line 5: error P003: 'lane' cannot have an indented block
+- line 8: error P004: 'lane' is not allowed inside top
+- line 9: error P003: 'lane' cannot have an indented block
+- line 15: error P004: 'lane' is not allowed inside top
+- line 16: error P003: 'lane' cannot have an indented block
+- line 23: error P004: 'lane' is not allowed inside top
+- line 24: error P003: 'lane' cannot have an indented block
+- line 29: error P004: 'lane' is not allowed inside top
+- line 30: error P003: 'lane' cannot have an indented block
+- line 31: error P004: 'lane' is not allowed inside top
+- line 32: error P003: 'lane' cannot have an indented block
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

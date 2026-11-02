@@ -1,0 +1,88 @@
+tok 1.0 "Meter operation registration"
+
+pool org "Meter operation"
+  lane mpon "MPON"
+    start s-start "Meter operation"
+    task report-op "Report the meter operation to the GO"
+    or equip-split
+    task acquire "Perform the equipment acquisition"
+    or equip-join
+    xor completed "Process completed successfully?"
+    task report-ok "Report the successful completion of the entire process"
+    task report-fail "Report the failure of the entire process"
+    xor report-merge
+  lane go "GO"
+    task examine "Examine the application of the MPON"
+    xor decide "Application confirmed?"
+    task reject "Reject the application of the MPON"
+    task confirm "Confirm the application of the MPON"
+    and reg-split
+    task inform-mpoo-reg "Inform the MPOO about the registration confirmation of the MPON"
+    task inform-mspo-reg "Inform the MSPO about the registration confirmation of the MPON"
+    and reg-join
+    receive wait-report "Receive the report of the MPON" message="Report of the MPON"
+    # the time limit is not given in the text; P30D is a placeholder
+    boundary deadline "Time limit exceeded" on=wait-report timer=P30D
+    task inform-timeout "Inform the MPON about the failure of the overall transaction"
+    end end-timeout "Overall transaction failed"
+    xor report-check "Failure reported?"
+    task confirm-fail "Confirm the failure of the assignment to the MPON"
+    task assign "Assign the MPON"
+    task confirm-assign "Confirm the assignment to the MPON"
+    xor assign-merge
+    xor assigned "Assignment made?"
+    and assign-split
+    task inform-mpoo-ok "Inform the MPOO about the assignment of the MPON"
+    task inform-mspo-ok "Inform the MSPO about the assignment of the MPON"
+    task inform-sp "Inform the SP about the assignment of the MPON"
+    and assign-join
+    end end-done "Assignment completed"
+    and fail-split
+    task inform-mpoo-fail "Inform the MPOO about the failure of the assignment of the MPON"
+    task inform-mspo-fail "Inform the MSPO about the failure of the assignment of the MPON"
+    and fail-join
+    end end-failed "Assignment failed"
+    end end-rejected "Application rejected"
+  lane mpoo "MPOO"
+    task changes "Perform the equipment changes"
+
+flow s-start -> report-op -> examine -> decide
+flow decide -> confirm "yes" when="confirmed = true"
+flow decide -> reject "no" default
+flow reject -> end-rejected
+flow confirm -> reg-split
+flow reg-split -> inform-mpoo-reg
+flow reg-split -> inform-mspo-reg
+flow inform-mpoo-reg -> reg-join
+flow inform-mspo-reg -> reg-join
+flow reg-join -> equip-split
+flow equip-split -> acquire "acquisition" when="acquisition = true"
+flow equip-split -> changes "changes" default
+flow acquire -> equip-join
+flow changes -> equip-join
+flow equip-join -> completed
+flow completed -> report-ok "yes" when="success = true"
+flow completed -> report-fail "no" default
+flow report-ok -> report-merge
+flow report-fail -> report-merge
+flow report-merge -> wait-report -> report-check
+flow deadline -> inform-timeout -> end-timeout
+flow report-check -> confirm-fail "yes" when="failure = true"
+flow report-check -> assign "no" default
+flow confirm-fail -> assign-merge
+flow assign -> confirm-assign -> assign-merge
+flow assign-merge -> assigned
+flow assigned -> assign-split "yes" when="assigned = true"
+flow assigned -> fail-split "no" default
+flow assign-split -> inform-mpoo-ok
+flow assign-split -> inform-mspo-ok
+flow assign-split -> inform-sp
+flow inform-mpoo-ok -> assign-join
+flow inform-mspo-ok -> assign-join
+flow inform-sp -> assign-join
+flow assign-join -> end-done
+flow fail-split -> inform-mpoo-fail
+flow fail-split -> inform-mspo-fail
+flow inform-mpoo-fail -> fail-join
+flow inform-mspo-fail -> fail-join
+flow fail-join -> end-failed

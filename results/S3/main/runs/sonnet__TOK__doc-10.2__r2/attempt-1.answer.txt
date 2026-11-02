@@ -1,0 +1,67 @@
+```tok
+tok 1.0 "Meter operation registration and assignment"
+
+pool process "Meter registration"
+  lane mpon "MPON"
+    start begin "Meter operation to be reported"
+    task report "Report the meter operation to the GO"
+    task equipment "Perform the equipment acquisition and / or equipment changes"
+    xor outcome "Outcome of the process?"
+    task informfail "Inform the GO about the failure of the entire process"
+    task informok "Inform the GO about the successful completion of the entire process"
+  lane go "GO"
+    task examine "Examine the application of the MPON"
+    xor decision "Application confirmed?"
+    task reject "Reject the application of the MPON"
+    task confirm "Confirm the application of the MPON"
+    and regsplit
+    task regmpoo "Inform the MPOO about the registration confirmation of the MPON"
+    task regmspo "Inform the MSPO about the registration confirmation of the MPON"
+    and regjoin
+    task deadline "Inform the MPON about the failure of the overall transaction by deadline"
+    task confirmfail "Confirm the failure of the assignment to the MPON"
+    and failsplit
+    task failmpoo "Inform the MPOO about the failure of the assignment of the MPON"
+    task failmspo "Inform the MSPO about the failure of the assignment of the MPON"
+    and failjoin
+    task assign "Assign the MPON"
+    task confirmassign "Confirm the assignment to the MPON"
+    and asssplit
+    task assmpoo "Inform the MPOO about the assignment of the MPON"
+    task assmspo "Inform the MSPO about the assignment of the MPON"
+    task asssp "Inform the SP about the assignment of the MPON"
+    and assjoin
+    end rejected "Application rejected"
+    end timedout "Transaction failed by deadline"
+    end failed "Assignment failed"
+    end assigned "MPON assigned"
+
+flow begin -> report -> examine -> decision
+flow decision -> confirm "yes" when="confirmed = true"
+flow decision -> reject "no" default
+flow reject -> rejected
+flow confirm -> regsplit
+flow regsplit -> regmpoo
+flow regsplit -> regmspo
+flow regmpoo -> regjoin
+flow regmspo -> regjoin
+flow regjoin -> equipment -> outcome
+flow outcome -> informfail "failure" when="result = \"failure\""
+flow outcome -> informok "success" when="result = \"success\""
+flow outcome -> deadline "no message by the maximum time limit" default
+flow deadline -> timedout
+flow informfail -> confirmfail -> failsplit
+flow failsplit -> failmpoo
+flow failsplit -> failmspo
+flow failmpoo -> failjoin
+flow failmspo -> failjoin
+flow failjoin -> failed
+flow informok -> assign -> confirmassign -> asssplit
+flow asssplit -> assmpoo
+flow asssplit -> assmspo
+flow asssplit -> asssp
+flow assmpoo -> assjoin
+flow assmspo -> assjoin
+flow asssp -> assjoin
+flow assjoin -> assigned
+```

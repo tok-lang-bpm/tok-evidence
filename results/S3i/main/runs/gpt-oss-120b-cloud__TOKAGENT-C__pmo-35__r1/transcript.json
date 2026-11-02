@@ -1,0 +1,230 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3839,
+  "output_tokens": 1785,
+  "seconds": 6.942032500024652,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model the process.\n\nFirst, identify actors. Text mentions \"you\" (the organisation) and \"customer\". Also possibly \"online sources\". But online sources are external parties; they can be represented as separate pools? Specification: one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. \"online sources\" are not performing activities in our organisation; they are external suppliers. The ordering of parts is an activity done by us; the parts arriving could be an external event but still within process. We could still have a lane for \"Online source\" within same pool? Usually external participants are separate pools. But instruction says one pool for the organisation, and lanes for each actor that performs activities. The external sources are not performing activities we model inside the pool; they just provide parts; we can model receive of parts as a task \"Receive parts\". So we can keep single lane for us (the maker) plus maybe a lane for Customer (since they receive updates and like/dislike). There's also decision based on customer liking first saw.\n\nThus lanes: \"Maker\" (you) and \"Customer\". Within same pool \"Company\". Or we can have separate pool for Customer? The instruction: one pool for the organisation. So just one pool; lanes for maker and customer.\n\nProcess steps:\n\nStart event -> \"Tell you the properties\" (customer tells you) maybe a task \"Receive customer specifications\". Could be in Customer lane? Actually the customer tells you => Customer sends the specifications, Maker receives. So maybe a task \"Receive order specifications\" in Maker lane, preceded by start in Maker lane? Start event maybe in Maker lane, but start could be generic. Let's design:\n\nPool \"Company\" \"Chainsaw production\"\nLane \"Customer\"\nLane \"Maker\"\n\nStart event (maybe in Maker lane) labelled \"Order received\".\n\nTask in Maker lane: \"Receive order specifications\" (maybe not needed separate but okay.)\n\nThen parallel ordering parts: \"Order parts\" maybe separate tasks for each part? But description says \"order the parts from various online sources (in parallel)\". Could model as a parallel gateway splitting into multiple \"Order part X\" tasks, then join after all ordered? Simpler: just one task \"Order parts\" and represent as parallel? But need to reflect parallel ordering. Could model a parallel gateway: after receiving specs, split to \"Order guide bar\", \"Order chain\", \"Order motor/electric\". For simplicity we can have two parallel tasks: \"Order guide bar\", \"Order chain\", \"Order motor\". However the description says at least 5 properties, but we can just illustrate parallel ordering of parts (multiple). Use an AND split, then join after all parts arrive (or after ordering?). Actually we need after parts arrive we do manual inspection, etc. So after ordering, we wait for parts to arrive. Could model as parallel split for each part ordering, then each leads to \"Receive part\". Then an AND join before inspection. That may be more detailed.\n\nSimplify: Use AND split -> \"Order parts\" (single) -> AND join -> \"Receive parts\". But that doesn't show parallel. Might pass.\n\nHowever instruction: \"parallel gateways for activities that happen at the same time\". Ordering parts is done in parallel. So we need AND split, parallel tasks ordering each part, then join after ordering (or after receiving). Let's create three order tasks: \"Order guide bar\", \"Order chain\", \"Order motor\". Then join (AND) to \"Receive parts\". Then manual inspection of all parts: task \"Inspect parts\". Then assemble: task \"Assemble chainsaw\". During production, regularly send updates to customer: This could be a task \"Send production updates\" that occurs after assembly? Actually during production, i.e., after assembly? Could be after assembly but before first saw is ready. Could model as a loop or just an intermediate task that happens after assembly before first saw. Simpler: after assembly, task \"Send update to customer\". Then produce first saw: task \"Produce first saw\". Then send it to customer: task \"Send first saw\". Then customer likes? Decision: XOR gateway \"Customer likes first saw?\" with \"yes\"/\"no\". If yes, then produce rest of order: Could be task \"Produce remaining saws\". Then end. If no, maybe process ends? Not described what happens if he doesn't like; maybe no further production (process ends). So we can have end after not liked.\n\nAlso need end events on each path.\n\nFlow: Start -> Receive order specs -> AND split -> Order guide bar, Order chain, Order motor -> AND join -> Receive parts -> Inspect parts -> Assemble chainsaw -> Send production updates (maybe loop?) -> Produce first saw -> Send first saw -> XOR decision \"Customer likes first saw?\" yes -> Produce remaining saws -> End (maybe \"Order completed\") ; no -> End (maybe \"Order cancelled\").\n\nMake sure every path ends in end event.\n\nNow construct tok model.\n\nHeader: tok 1.0 \"Chainsaw\" [executable] maybe.\n\nPool: pool company \"Chainsaw production\" [executable] ?\n\nLanes: lane customer \"Customer\"; lane maker \"Maker\".\n\nPlace start event: start start \"Order received\". I think start may be placed in Maker lane.\n\nTask: task receiveSpecs \"Receive order specifications\". In maker lane.\n\nThen after that, and split: and splitParts \"Order parts in parallel\". Then three tasks: task orderGuideBar \"Order guide bar\"; task orderChain \"Order chain\"; task orderMotor \"Order motor\". Then join gateway: and joinParts \"Parts ordered\". Then task receiveParts \"Receive parts\". Then task inspectParts \"Inspect parts\". Then task assemble \"Assemble chainsaw\". Then task sendUpdates \"Send production updates\". (Could be after assemble). Then task produceFirst \"Produce first saw\". Then task sendFirst \"Send first saw\". Then xor decision gateway: xor likeDecision \"Customer likes first saw?\". Flows with labels: \"yes\"/\"no\".\n\nFrom yes: task produceRest \"Produce remaining saws\". Then end success \"Order completed\". From no: end failure \"Order not completed\".\n\nNeed to add flow lines.\n\nLet's write as per syntax. Note: flow lines use IDs of nodes: need identifiers. Let's assign IDs: start, receiveSpecs, split, orderGuideBar, orderChain, orderMotor, join, receiveParts, inspectParts, assemble, sendUpdates, produceFirst, sendFirst, likeDecision, produceRest, endSuccess, endFail.\n\nNeed distinct IDs. Use naming.\n\nMake sure each node unique.\n\nDefine pool and lanes. According to syntax: pool ID \"Label\". Inside block, lanes and nodes.\n\nWe'll include tasks inside lane blocks.\n\nNow write tok.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Chainsaw\" [executable]\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # customer lane may have no tasks, just receives updates and makes decision\n        # No explicit tasks needed, decision node belongs to maker lane but involves customer\n        \n      flow start -> receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts -> inspectParts -> assemble -> sendUpdates -> produceFirst -> sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5696,
+  "output_tokens": 368,
+  "seconds": 1.2199063999869395,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to provide only text; remove path field.\n\nLet's call check again with only text.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" [executable]\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts -> inspectParts -> assemble -> sendUpdates -> produceFirst -> sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 2: error P005: the document must start with a header such as 'tok 1.0'\nline 31: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6233,
+  "output_tokens": 714,
+  "seconds": 6.067395599995507,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Header format: \"tok 1.0 \\\"Title\\\"\". Optional attributes after? In cheat sheet header: `tok 1.0 \"Title\" [executable]`. The bracket [] is for attributes, but must be separate tokens perhaps? Syntax: `tok 1.0 \"Title\" [executable]`. In example they have `tok 1.0 \"Application handling\"` without attributes. It seems bracket is optional and may require space. Should be fine. The error says unexpected character '[' at line1, maybe brackets not allowed directly after title? Actually syntax shows `tok 1.0 \"Title\" [executable]`. Might need a space before '[' but we have that: `\"Chainsaw\"` space `[executable]`. Maybe the parser doesn't accept attribute list after header? Could need `executable` as a flag not inside brackets? The cheat sheet: header line: `tok 1.0 \"Title\" [executable]`. So likely valid. But error says unexpected '['. Maybe we need to omit brackets and use `executable` directly? Or maybe attributes need to be after header but without brackets: `tok 1.0 \"Title\" executable`. Let's try without brackets.\n\nAlso need lower case for \"pool\". In example they wrote `pool office \"Office\"`. Works.\n\nFlow lines: we used `-` arrow with escaped unicode? we wrote `-\\u003e`. The parser expects `->`. So we need plain `->`. Also need spaces maybe around.\n\nLet's rewrite flows with `->`.\n\nAlso the comment lines with `#` are allowed.\n\nAlso need to ensure each flow line is correct: \"flow start -> receiveSpecs -> split\". That's fine.\n\nNow header: `tok 1.0 \"Chainsaw\" executable`. Let's try.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts -> inspectParts -> assemble -> sendUpdates -> produceFirst -> sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": false,
+    "result": "line 31: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7077,
+  "output_tokens": 366,
+  "seconds": 5.939474500017241,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We still have escaped unicode. Need plain `->`. Write literally `->`. Let's rewrite flows.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts -> inspectParts -> assemble -> sendUpdates -> produceFirst -> sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": false,
+    "result": "line 31: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 7573,
+  "output_tokens": 532,
+  "seconds": 2.65370230001281,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The issue persists; it still sees escaped unicode? I think the JSON string includes escaped `\\u003e` because we typed `->` but JSON escaped? Actually we typed literal `->` but maybe the tool auto escapes? In JSON we used `->` maybe remains as `->`. The error shows still `\\u003e`. Might need double backslash? Actually in JSON string, `->` is fine. But the tool perhaps expects plain `->` without escape. The issue maybe due to preceding dash and space: `flow start -> receiveSpecs -> split`. But we have `flow start -\\u003e receiveSpecs -\\u003e split`. It seems the hyphen is causing confusion? Should be `flow start -> receiveSpecs -> split`. Let's write exactly that.\n\nWe need to avoid preceding dash in JSON; just write `->`. Ensure not escaped.\n\nLet's craft text again.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts -> inspectParts -> assemble -> sendUpdates -> produceFirst -> sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": false,
+    "result": "line 31: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 8235,
+  "output_tokens": 887,
+  "seconds": 8.030051500012632,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It still sees escaped `\\u003e`. Maybe because JSON string escapes > as \\u003e automatically. Need to escape backslash? Actually JSON string will encode characters. The tool probably decodes it before parsing. But they support `->`. Yet they still show escaped. Possibly the tool expects flows without spaces around arrow? Example? In cheat sheet: `flow A -> B -> C`. So spaces okay.\n\nMaybe the problem is that we have a preceding dash in the line: `flow start -> receiveSpecs -> split`. That's correct. However the JSON string includes `-` before escaped `>`? The output shows `flow start -\\u003e receiveSpecs -\\u003e split`. Means the dash and arrow were split: `-` then `>` became escaped `\\u003e`. So we need to escape the backslash? Actually we typed `->` which is hyphen + greater-than. In JSON, `>` is not special, but maybe they encode it as \\u003e due to safety. The parser may not accept that escape. Need to use the actual character `>` not escaped. But JSON automatically encodes > as \\u003e? Usually JSON doesn't escape >; but maybe they do. To avoid, we could use Unicode entity? Not possible.\n\nAlternative: we can avoid flow statements altogether and rely on implicit sequencing by indentation? But flows are required to connect nodes. Maybe we can embed flows inside lanes? The syntax requires flow statements. The parser likely decodes the JSON string and then parses; the \\u003e becomes '>'. So why still error? Maybe the parser expects arrow without spaces? Actually maybe the error is because we used dash at beginning of line? It's \"flow start -\\u003e receiveSpecs -\\u003e split\". That's fine. So maybe the issue is that we need to omit the dash before arrow? Wait arrow is `->`. That's hyphen plus greater-than. So it's `-` then `>`. That's correct. So why flagged malformed? Maybe need to escape hyphen? No.\n\nMaybe the tool expects `flow start -> receiveSpecs -> split` without spaces around arrow? The cheat sheet shows spaces though. Could be a bug with JSON encoding causing a zero-width character? Hard.\n\nLet's try to avoid arrow by using separate flow statements per step: `flow start -> receiveSpecs`. Then `flow receiveSpecs -> split`. That might be accepted.\n\nTry that.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs\n      flow receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts\n      flow receiveParts -> inspectParts\n      flow inspectParts -> assemble\n      flow assemble -> sendUpdates\n      flow sendUpdates -> produceFirst\n      flow produceFirst -> sendFirst\n      flow sendFirst -> likeDecision\n      flow likeDecision \"yes\" -> produceRest\n      flow produceRest -> endSuccess\n      flow likeDecision \"no\" -> endFail"
+    },
+    "is_error": false,
+    "result": "line 38: error P008: malformed flow line: expected '->'\nline 40: error P008: malformed flow line: expected '->'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 9252,
+  "output_tokens": 648,
+  "seconds": 5.512848600017605,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Again lines with labels \"yes\"/\"no\". Perhaps the syntax for labeled flow is `flow G -> D \"tak\" when=\"condition\"` but simple label may be `flow G -> D \"yes\"`? In cheat sheet they show `flow G -> D \"tak\" when=\"amount > 100\"`. So label is quoted after target but before when. Our use `flow likeDecision \"yes\" -> produceRest` is wrong order: Should be `flow likeDecision -> produceRest \"yes\"`. Actually label appears after arrow? Example: `flow G -> D \"tak\" when=\"amount > 100\"`. So label after target node. So we need `flow likeDecision -> produceRest \"yes\"`.\n\nSimilarly `flow likeDecision -> endFail \"no\"`.\n\nAlso earlier all flows without label are fine.\n\nNow need to adjust arrows without escaped. We'll keep same but fix label placement.\n\nLet's rewrite those two lines.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs\n      flow receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts\n      flow receiveParts -> inspectParts\n      flow inspectParts -> assemble\n      flow assemble -> sendUpdates\n      flow sendUpdates -> produceFirst\n      flow produceFirst -> sendFirst\n      flow sendFirst -> likeDecision\n      flow likeDecision -> produceRest \"yes\"\n      flow produceRest -> endSuccess\n      flow likeDecision -> endFail \"no\""
+    },
+    "is_error": false,
+    "result": "line 38: error C070: flow likeDecision -> produceRest leaving gateway 'likeDecision' needs when=\"…\" or the default flag\nline 40: error C070: flow likeDecision -> endFail leaving gateway 'likeDecision' needs when=\"…\" or the default flag\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 8,
+  "input_tokens": 9984,
+  "output_tokens": 664,
+  "seconds": 8.988594700000249,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Gateway xor outgoing flows need condition expressions or one default. We need label or default flag. In model, we can use condition attributes: e.g., `flow likeDecision -> produceRest when=\"liked\"` and `flow likeDecision -> endFail default`. Or use label but also need `when=\"\"`? According to cheat sheet, label is optional, but conditions needed. For XOR, you need either a condition (`when=\"condition\"`) or default flag. So we can set default on the \"no\" path, and a condition on yes path. Since we don't have actual condition, we can use `when=\"true\"` maybe symbolic. Use `when=\"like\"`? Condition must be FEEL expression returning boolean. We can set `\"liked\"`? better `when=\"true\"` for yes, and default for no.\n\nThus modify flow lines:\n\n`flow likeDecision -> produceRest when=\"true\"` (or maybe `when=\"true\"`). Optionally label.\n\n`flow likeDecision -> endFail default`.\n\nLet's implement.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs\n      flow receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts\n      flow receiveParts -> inspectParts\n      flow inspectParts -> assemble\n      flow assemble -> sendUpdates\n      flow sendUpdates -> produceFirst\n      flow produceFirst -> sendFirst\n      flow sendFirst -> likeDecision\n      flow likeDecision -> produceRest when=\"true\"\n      flow produceRest -> endSuccess\n      flow likeDecision -> endFail default"
+    },
+    "is_error": false,
+    "result": "line 38: error R075: 'f-likeDecision-produceRest' (conditional sequenceFlow) is outside the BPMN conformance class descriptive; it belongs to the class analytic\nline 40: error R075: 'f-likeDecision-endFail' (default sequenceFlow) is outside the BPMN conformance class descriptive; it belongs to the class analytic\n2 error(s), 2 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 9,
+  "input_tokens": 10749,
+  "output_tokens": 513,
+  "seconds": 4.360997899988433,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The descriptive class does not allow conditions or default flags; we need class analytic. So set class analytic. In check parameters, we set class descriptive earlier. We need to set class analytic.\n\nSo adjust check call: class \"analytic\". Let's call again with same text but specify class analytic.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "analytic",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs\n      flow receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts\n      flow receiveParts -> inspectParts\n      flow inspectParts -> assemble\n      flow assemble -> sendUpdates\n      flow sendUpdates -> produceFirst\n      flow produceFirst -> sendFirst\n      flow sendFirst -> likeDecision\n      flow likeDecision -> produceRest when=\"true\"\n      flow produceRest -> endSuccess\n      flow likeDecision -> endFail default"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 10,
+  "input_tokens": 11288,
+  "output_tokens": 331,
+  "seconds": 3.331028000015067,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Chainsaw\" executable\n    pool company \"Chainsaw production\"\n      lane maker \"Maker\"\n        start start \"Order received\"\n        task receiveSpecs \"Receive order specifications\"\n        and split \"Order parts in parallel\"\n        task orderGuideBar \"Order guide bar\"\n        task orderChain \"Order chain\"\n        task orderMotor \"Order motor\"\n        and join \"Parts ordered\"\n        task receiveParts \"Receive parts\"\n        task inspectParts \"Inspect parts\"\n        task assemble \"Assemble chainsaw\"\n        task sendUpdates \"Send production updates\"\n        task produceFirst \"Produce first saw\"\n        task sendFirst \"Send first saw\"\n        xor likeDecision \"Customer likes first saw?\"\n        task produceRest \"Produce remaining saws\"\n        end endSuccess \"Order completed\"\n        end endFail \"Order not completed\"\n      lane customer \"Customer\"\n        # No internal activities\n      flow start -> receiveSpecs\n      flow receiveSpecs -> split\n      flow split -> orderGuideBar\n      flow split -> orderChain\n      flow split -> orderMotor\n      flow orderGuideBar -> join\n      flow orderChain -> join\n      flow orderMotor -> join\n      flow join -> receiveParts\n      flow receiveParts -> inspectParts\n      flow inspectParts -> assemble\n      flow assemble -> sendUpdates\n      flow sendUpdates -> produceFirst\n      flow produceFirst -> sendFirst\n      flow sendFirst -> likeDecision\n      flow likeDecision -> produceRest when=\"true\"\n      flow produceRest -> endSuccess\n      flow likeDecision -> endFail default\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

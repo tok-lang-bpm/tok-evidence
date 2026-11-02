@@ -1,0 +1,47 @@
+tok 1.0
+
+pool org "Car Service Process" {
+  lane system "System" {
+    start start "Start"
+    task check-registration "check if car is still registered"
+    xor g-reg "Is car registered?"
+    task notify "notify customer"
+    xor g-go "Will customer go to service?"
+    task fine "fine customer after 30 days"
+    end end-fine "End (fine)"
+    and split "Parallel split"
+    task send-updates "send status updates via email"
+    and join "Parallel join"
+    task pay "pay through app"
+    end end-success "End"
+  }
+  lane customer "Customer" {
+    end end-not-registered "End (not registered)"
+    end end-fine "End (fine)"
+    end end-success "End"
+  }
+  lane mechanic "Mechanic" {
+    task enter-problems "enter car problems"
+    task repair "repair car"
+    task enter-success "enter repair successful and Pickerl"
+    task enter-next-time "enter next service time"
+  }
+
+  flow start -> check-registration
+  flow check-registration -> g-reg
+  flow g-reg -> notify when="registered = true"
+  flow g-reg -> end-not-registered default
+  flow notify -> g-go
+  flow g-go -> enter-problems when="go = true"
+  flow g-go -> fine when="go = false"
+  flow fine -> end-fine
+  flow enter-problems -> split
+  flow split -> repair
+  flow split -> send-updates
+  flow repair -> join
+  flow send-updates -> join
+  flow join -> pay
+  flow pay -> enter-success
+  flow enter-success -> enter-next-time
+  flow enter-next-time -> end-success
+}

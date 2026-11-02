@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Chainsaw" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Order_with_properties" name="Order with properties" />
+  <bpmn:message id="Message_Parts_order" name="Parts order" />
+  <bpmn:message id="Message_Parts_delivered" name="Parts delivered" />
+  <bpmn:message id="Message_First_saw" name="First saw" />
+  <bpmn:message id="Message_Production_update" name="Production update" />
+  <bpmn:message id="Message_Feedback" name="Feedback" />
+  <bpmn:message id="Message_Customer_order" name="Customer order" />
+  <bpmn:message id="Message_Customer_feedback" name="Customer feedback" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="customer" name="Customer" />
+    <bpmn:participant id="suppliers" name="Online parts suppliers" />
+    <bpmn:participant id="chainsaw" name="Chainsaw manufacturer" processRef="chainsaw-process" />
+    <bpmn:messageFlow id="m-customer-order-received" name="Order with properties" sourceRef="customer" targetRef="order-received" messageRef="Message_Order_with_properties" />
+    <bpmn:messageFlow id="m-order-parts-suppliers" name="Parts order" sourceRef="order-parts" targetRef="suppliers" messageRef="Message_Parts_order" />
+    <bpmn:messageFlow id="m-suppliers-parts-arrived" name="Parts delivered" sourceRef="suppliers" targetRef="parts-arrived" messageRef="Message_Parts_delivered" />
+    <bpmn:messageFlow id="m-send-first-saw-customer" name="First saw" sourceRef="send-first-saw" targetRef="customer" messageRef="Message_First_saw" />
+    <bpmn:messageFlow id="m-update-customer-customer" name="Production update" sourceRef="update-customer" targetRef="customer" messageRef="Message_Production_update" />
+    <bpmn:messageFlow id="m-customer-customer-feedback" name="Feedback" sourceRef="customer" targetRef="customer-feedback" messageRef="Message_Feedback" />
+  </bpmn:collaboration>
+  <bpmn:process id="chainsaw-process" name="Chainsaw" isExecutable="false">
+    <bpmn:laneSet id="chainsaw-lanes">
+      <bpmn:lane id="sales" name="Sales">
+        <bpmn:flowNodeRef>order-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customer-feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>likes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-closed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchasing" name="Purchasing">
+        <bpmn:flowNodeRef>order-parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parts-arrived</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="production" name="Production">
+        <bpmn:flowNodeRef>inspect-parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble-saw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-customer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-sent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-first-saw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produce-rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="order-received" name="Customer tells the properties of the saw">
+      <bpmn:messageEventDefinition id="order-received-def" messageRef="Message_Customer_order" />
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="customer-feedback" name="Customer feedback received">
+      <bpmn:messageEventDefinition id="customer-feedback-def" messageRef="Message_Customer_feedback" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="likes" name="Customer likes the saw?" default="f-likes-order-closed" />
+    <bpmn:endEvent id="order-closed" name="Order ends" />
+    <bpmn:task id="order-parts" name="Order the parts from various online sources">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="parts-arrived" name="Parts arrived">
+      <bpmn:messageEventDefinition id="parts-arrived-def" messageRef="Message_Parts_delivered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:manualTask id="inspect-parts" name="Inspect all parts manually" />
+    <bpmn:task id="assemble-saw" name="Assemble the parts into the first saw" />
+    <bpmn:boundaryEvent id="update-timer" name="Every week" attachedToRef="assemble-saw" cancelActivity="false">
+      <bpmn:timerEventDefinition id="update-timer-def">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/P1W</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="update-customer" name="Send production update to customer" messageRef="Message_Production_update" />
+    <bpmn:endEvent id="update-sent" name="Update sent" />
+    <bpmn:sendTask id="send-first-saw" name="Send the first saw to the customer" messageRef="Message_First_saw" />
+    <bpmn:task id="produce-rest" name="Produce the rest of the order" />
+    <bpmn:endEvent id="order-done" name="Order completed" />
+    <bpmn:sequenceFlow id="f-order-received-order-parts" sourceRef="order-received" targetRef="order-parts" />
+    <bpmn:sequenceFlow id="f-order-parts-parts-arrived" sourceRef="order-parts" targetRef="parts-arrived" />
+    <bpmn:sequenceFlow id="f-parts-arrived-inspect-parts" sourceRef="parts-arrived" targetRef="inspect-parts" />
+    <bpmn:sequenceFlow id="f-inspect-parts-assemble-saw" sourceRef="inspect-parts" targetRef="assemble-saw" />
+    <bpmn:sequenceFlow id="f-assemble-saw-send-first-saw" sourceRef="assemble-saw" targetRef="send-first-saw" />
+    <bpmn:sequenceFlow id="f-send-first-saw-customer-feedback" sourceRef="send-first-saw" targetRef="customer-feedback" />
+    <bpmn:sequenceFlow id="f-customer-feedback-likes" sourceRef="customer-feedback" targetRef="likes" />
+    <bpmn:sequenceFlow id="f-likes-produce-rest" name="yes" sourceRef="likes" targetRef="produce-rest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">customer-likes = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-likes-order-closed" name="no" sourceRef="likes" targetRef="order-closed" />
+    <bpmn:sequenceFlow id="f-produce-rest-order-done" sourceRef="produce-rest" targetRef="order-done" />
+    <bpmn:sequenceFlow id="f-update-timer-update-customer" sourceRef="update-timer" targetRef="update-customer" />
+    <bpmn:sequenceFlow id="f-update-customer-update-sent" sourceRef="update-customer" targetRef="update-sent" />
+  </bpmn:process>
+</bpmn:definitions>

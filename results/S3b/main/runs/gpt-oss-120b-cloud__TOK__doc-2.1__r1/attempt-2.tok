@@ -1,0 +1,144 @@
+tok 1.0 "Service Degradation Handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start s0 "Service degradation perceived"
+    end e_customer "Customer process ends"
+
+  lane customer_service "Customer Service"
+    task cs_send_params "send problem parameters list"
+    task cs_enter_report "enter problem report into system T"
+    task cs_compare_sla "compare problem report to SLA"
+    task cs_determine_measures "determine counter measures and priorities"
+    task cs_determine_significance "determine customer significance"
+    xor g_premium "Customer premium?"
+    task cs_link_extra_fix "link to extra problem fix process"
+    xor g_signif "Significance affects counter measures?"
+    task cs_reprioritize "re‑prioritize counter measures"
+    task cs_create_detailed "create detailed problem report"
+    task cs_send_to_sm "send detailed problem report to Service Management"
+    task cs_receive_performance "receive actual service performance"
+    task cs_receive_resolution "receive problem resolution report"
+    and and_start "Parallel start"
+    task cs_create_cust_report "create report for the customer"
+    task bc_adjust_billing "adjust billing"
+    task cs_send_cust_report "send customer report to Customer"
+    end e_cs_end "Customer Service process ends"
+
+  lane service_management "Service Management"
+    task sm_receive_detailed "receive detailed problem report"
+    xor g_analyzable "Problem analyzable by Service Management?"
+    task sm_analyze "analyze problem"
+    task sm_create_trouble_sm "create trouble report (SM)"
+    task sm_send_to_rp "send detailed problem report to Resource Provisioning"
+    task sm_receive_status "receive status report from Resource Provisioning"
+    task sm_prepare_final "prepare final status report"
+    xor g_counter_path "Determine counter‑measure path"
+    task sm_send_performance "send actual service performance to Customer Service"
+    task sm_undertake_minor "undertake minor corrective actions"
+    task sm_create_resolution "create problem resolution report"
+    task sm_send_resolution "send problem resolution report to Customer Service"
+    task sm_create_rest_req "create request for automatic resource restoration"
+    task sm_send_rest_req "send restoration request to Resource Provisioning"
+    task sm_receive_troubleshoot "receive trouble‑shooting report"
+    task sm_create_resolution2 "create problem resolution report"
+    task sm_send_resolution2 "send problem resolution report to Customer Service"
+    end e_sm_end "Service Management process ends"
+
+  lane resource_provisioning "Resource Provisioning"
+    task rp_receive_detailed "receive detailed problem report"
+    xor g_any_problem "Any problems detected?"
+    task rp_create_normal_notify "create normal execution notification"
+    task rp_analyze "analyze problem"
+    task rp_create_trouble_rp "create trouble report (RP)"
+    task rp_include_status_send "include report in status report and send to Service Management"
+    task rp_receive_rest_req "receive restoration request"
+    xor g_within_2days "Restoration request within 2 days?"
+    task rp_track_errors "track all possible errors"
+    task rp_undertake_corr "undertake necessary corrective actions"
+    task rp_create_troubleshoot_report "create trouble‑shooting report"
+    task rp_send_troubleshoot_report "send trouble‑shooting report to Service Management"
+    end e_rp_termination "Process terminated (timeout)"
+
+  lane billing_collections "Billing & Collections"
+    task bc_adjust_billing "adjust billing"
+    end e_bc_end "Billing process ends"
+
+# -----------------------------------------------------------------
+# Sequence flows
+flow s0 -> cs_send_params
+flow cs_send_params -> cs_enter_report
+flow cs_enter_report -> cs_compare_sla
+flow cs_compare_sla -> cs_determine_measures
+flow cs_determine_measures -> cs_determine_significance
+flow cs_determine_significance -> g_premium
+
+flow g_premium -> cs_link_extra_fix
+flow g_premium -> g_signif
+
+flow cs_link_extra_fix -> e_customer          # premium path ends
+
+flow g_signif -> cs_reprioritize
+flow g_signif -> cs_create_detailed
+
+flow cs_reprioritize -> cs_determine_measures   # loop back to re‑prioritise
+flow cs_create_detailed -> cs_send_to_sm
+
+flow cs_send_to_sm -> sm_receive_detailed
+
+flow sm_receive_detailed -> g_analyzable
+
+flow g_analyzable -> sm_analyze
+flow g_analyzable -> sm_send_to_rp
+
+flow sm_analyze -> sm_create_trouble_sm -> sm_send_to_rp
+
+flow sm_send_to_rp -> rp_receive_detailed
+
+flow rp_receive_detailed -> g_any_problem
+
+flow g_any_problem -> rp_create_normal_notify
+flow g_any_problem -> rp_analyze
+
+flow rp_create_normal_notify -> rp_include_status_send
+flow rp_analyze -> rp_create_trouble_rp -> rp_include_status_send
+
+flow rp_include_status_send -> sm_receive_status
+
+flow sm_receive_status -> sm_prepare_final -> g_counter_path
+
+# Counter‑measure path A: No problem detected
+flow g_counter_path -> sm_send_performance
+flow sm_send_performance -> cs_receive_performance
+
+# Counter‑measure path B: Minor corrective actions
+flow g_counter_path -> sm_undertake_minor
+flow sm_undertake_minor -> sm_create_resolution -> sm_send_resolution
+flow sm_send_resolution -> cs_receive_resolution
+
+# Counter‑measure path C: Automatic resource restoration
+flow g_counter_path -> sm_create_rest_req -> sm_send_rest_req
+flow sm_send_rest_req -> rp_receive_rest_req
+
+flow rp_receive_rest_req -> g_within_2days
+
+flow g_within_2days -> rp_track_errors
+flow g_within_2days -> e_rp_termination
+
+flow rp_track_errors -> rp_undertake_corr -> rp_create_troubleshoot_report -> rp_send_troubleshoot_report -> sm_receive_troubleshoot
+
+flow sm_receive_troubleshoot -> sm_create_resolution2 -> sm_send_resolution2
+flow sm_send_resolution2 -> cs_receive_resolution
+
+# Parallel activities after CS receives a report
+flow cs_receive_performance -> and_start
+flow cs_receive_resolution -> and_start
+
+flow and_start -> cs_create_cust_report
+flow and_start -> bc_adjust_billing
+
+flow cs_create_cust_report -> cs_send_cust_report
+flow bc_adjust_billing -> e_bc_end
+
+flow cs_send_cust_report -> e_cs_end
+flow e_cs_end -> e_customer

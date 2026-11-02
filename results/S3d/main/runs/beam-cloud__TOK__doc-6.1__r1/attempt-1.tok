@@ -1,0 +1,67 @@
+tok 1.0 "Invoice processing at ACME AG"
+
+pool organisation "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received"
+    task receive_inbox "Receive invoice in central inbox"
+    task forward_accounting "Forward invoice to accounting after visual inspection"
+  lane accounting "Accounting employee"
+    task identify_suppliers "Identify charging suppliers"
+    task create_instance "Create new invoice instance"
+    task check_items "Check invoice items"
+    task note_docket "Note cost centers and cost center managers on docket"
+    task clarify_vendor "Proceed with clarification with vendor"
+    task consult_managers "Consult cost center managers by telephone or e-mail"
+    xor need_consult "Need consult cost center managers?"
+    xor inconsistencies_resolved "All inconsistencies resolved?"
+    task resolve_complaint "Resolve complaint with supplier"
+    task forward_commercial "Forward invoice copy to commercial manager"
+    task file_signature "File invoice in signature file"
+    task give_payment "Give payment instructions"
+    task close_instance "Close invoice instance"
+    end completed "Invoice processed"
+  lane internal_mail "Internal mail"
+    task send_first_manager "Send docket and invoice copy to first cost center manager"
+    task route_invoice "Pass invoice copy to next cost center manager or accounting"
+    xor all_marked "All invoice items marked AP?"
+    task send_rejected "Send invoice copy to accounting"
+    task send_managers_again "Send invoice copy to cost center managers again"
+  lane cost_manager "Cost center manager"
+    task review_accuracy "Review invoice copy for accuracy"
+    xor accuracy_decision "Everything in order?"
+    task note_ap "Note accurate position (AP) on docket"
+    task reject_ap "Reject AP and note explanation on docket"
+  lane commercial "Commercial manager"
+    task commercial_audit "Make commercial audit"
+    xor complaint_decision "Complaint during commercial audit?"
+    task issue_approval "Issue approval for payment"
+    xor amount_over_20 "Bill amount exceeds EUR 20?"
+  lane board "Board"
+    task board_check "Check invoice again (4-eyes)"
+
+flow received -> receive_inbox -> forward_accounting -> identify_suppliers -> create_instance -> check_items -> note_docket -> send_first_manager
+flow send_first_manager -> review_accuracy -> accuracy_decision
+flow accuracy_decision -> note_ap "yes"
+flow accuracy_decision -> reject_ap "no"
+flow note_ap -> route_invoice
+flow route_invoice -> all_marked
+flow all_marked -> review_accuracy "no"
+flow all_marked -> forward_commercial "yes" default
+flow reject_ap -> send_rejected -> clarify_vendor
+flow clarify_vendor -> need_consult
+flow need_consult -> consult_managers "yes"
+flow need_consult -> inconsistencies_resolved "no" default
+flow consult_managers -> inconsistencies_resolved
+flow inconsistencies_resolved -> send_managers_again "yes"
+flow inconsistencies_resolved -> clarify_vendor "no" default
+flow send_managers_again -> review_accuracy
+flow forward_commercial -> commercial_audit
+flow commercial_audit -> complaint_decision
+flow complaint_decision -> resolve_complaint "yes"
+flow complaint_decision -> issue_approval "no" default
+flow resolve_complaint -> commercial_audit
+flow issue_approval -> amount_over_20
+flow amount_over_20 -> board_check "yes"
+flow amount_over_20 -> give_payment "no" default
+flow board_check -> file_signature -> give_payment
+flow give_payment -> close_instance -> completed

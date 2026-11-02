@@ -1,0 +1,48 @@
+tok 1.0 "Billing process"
+
+pool org "Organisation"
+  lane mpoo "MPOO"
+    start s "Process started"
+    xor billtype "Bill type?"
+    task send_temp_ops "Send the bill for the temporary continuation of the metering point operations to the GO"
+    task send_equip "Send the bill for the equipment acquisition to the MPON or the GO"
+    xor recipient "Sent to MPON or GO?"
+  lane mspo "MSPO"
+    task send_temp_meas "Send the bill for the temporary continuation of the measurement to the GO"
+    task send_add_read "Send the bill for additional readings to the GO"
+  lane go "GO"
+    task examine_go "Examine the bill"
+    xor outcome_go "Confirm or reject?"
+    task confirm_go "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_go "Reject the invoice of the MPOO or the MSPO"
+    end end_go_confirmed "Invoice confirmed"
+    end end_go_rejected "Invoice rejected"
+  lane mpon "MPON"
+    task examine_mpon "Examine the bill"
+    xor outcome_mpon "Confirm or reject?"
+    task confirm_mpon "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_mpon "Reject the invoice of the MPOO or the MSPO"
+    end end_mpon_confirmed "Invoice confirmed"
+    end end_mpon_rejected "Invoice rejected"
+
+flow s -> billtype
+flow billtype -> send_temp_ops "MPOO temporary continuation"
+flow billtype -> send_temp_meas "MSPO temporary measurement"
+flow billtype -> send_add_read "MSPO additional readings"
+flow billtype -> send_equip "MPOO equipment acquisition"
+flow send_temp_ops -> examine_go
+flow send_temp_meas -> examine_go
+flow send_add_read -> examine_go
+flow send_equip -> recipient
+flow recipient -> examine_mpon "to the MPON"
+flow recipient -> examine_go "to the GO"
+flow examine_go -> outcome_go
+flow outcome_go -> confirm_go "Confirm"
+flow outcome_go -> reject_go "Reject"
+flow confirm_go -> end_go_confirmed
+flow reject_go -> end_go_rejected
+flow examine_mpon -> outcome_mpon
+flow outcome_mpon -> confirm_mpon "Confirm"
+flow outcome_mpon -> reject_mpon "Reject"
+flow confirm_mpon -> end_mpon_confirmed
+flow reject_mpon -> end_mpon_rejected

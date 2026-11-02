@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Car Service" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Owner_comes_to_service" name="Owner comes to service" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="police" name="Police car service app" processRef="police-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="police-process" name="Car Service" isExecutable="false">
+    <bpmn:laneSet id="police-lanes">
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>serviced</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>visit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>late</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notregistered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>status</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joined</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="owner" name="Car owner">
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mechanic" name="Mechanic">
+        <bpmn:flowNodeRef>problems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>repair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>next</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="serviced" name="Service successfully done" />
+    <bpmn:task id="check" name="Check if the car is still registered" />
+    <bpmn:exclusiveGateway id="registered" name="Car registered?" default="f-registered-notregistered" />
+    <bpmn:task id="notify" name="Notify the owner" />
+    <bpmn:eventBasedGateway id="wait" />
+    <bpmn:intermediateCatchEvent id="visit" name="Owner comes to service">
+      <bpmn:messageEventDefinition id="visit-def" messageRef="Message_Owner_comes_to_service" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="late" name="30 days passed">
+      <bpmn:timerEventDefinition id="late-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="fine" name="Fine the owner" />
+    <bpmn:endEvent id="fined" name="Owner fined" />
+    <bpmn:endEvent id="notregistered" name="No reminder needed" />
+    <bpmn:parallelGateway id="split" />
+    <bpmn:task id="status" name="Send status updates via email" />
+    <bpmn:parallelGateway id="joined" />
+    <bpmn:task id="pay" name="Pay through the app" />
+    <bpmn:task id="problems" name="Enter the problems of the car" />
+    <bpmn:task id="repair" name="Repair the car" />
+    <bpmn:task id="success" name="Enter that the repair was successful" />
+    <bpmn:task id="next" name="Enter the time for the next service" />
+    <bpmn:endEvent id="done" name="Service completed" />
+    <bpmn:sequenceFlow id="f-serviced-check" sourceRef="serviced" targetRef="check" />
+    <bpmn:sequenceFlow id="f-check-registered" sourceRef="check" targetRef="registered" />
+    <bpmn:sequenceFlow id="f-registered-notify" name="yes" sourceRef="registered" targetRef="notify">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">registered = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-registered-notregistered" name="no" sourceRef="registered" targetRef="notregistered" />
+    <bpmn:sequenceFlow id="f-notify-wait" sourceRef="notify" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-visit" sourceRef="wait" targetRef="visit" />
+    <bpmn:sequenceFlow id="f-wait-late" sourceRef="wait" targetRef="late" />
+    <bpmn:sequenceFlow id="f-late-fine" sourceRef="late" targetRef="fine" />
+    <bpmn:sequenceFlow id="f-fine-fined" sourceRef="fine" targetRef="fined" />
+    <bpmn:sequenceFlow id="f-visit-problems" sourceRef="visit" targetRef="problems" />
+    <bpmn:sequenceFlow id="f-problems-split" sourceRef="problems" targetRef="split" />
+    <bpmn:sequenceFlow id="f-split-status" sourceRef="split" targetRef="status" />
+    <bpmn:sequenceFlow id="f-split-repair" sourceRef="split" targetRef="repair" />
+    <bpmn:sequenceFlow id="f-status-joined" sourceRef="status" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-repair-joined" sourceRef="repair" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-joined-pay" sourceRef="joined" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-success" sourceRef="pay" targetRef="success" />
+    <bpmn:sequenceFlow id="f-success-next" sourceRef="success" targetRef="next" />
+    <bpmn:sequenceFlow id="f-next-done" sourceRef="next" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

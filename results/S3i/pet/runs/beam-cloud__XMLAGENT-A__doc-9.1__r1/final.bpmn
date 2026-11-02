@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="staff" name="Staff">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sub1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert_task</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sub2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>msg_task</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>msg_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>final_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Every weekday morning">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0 0 9 ? * MON-FRI</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+
+    <bpmn:subProcess id="sub1" name="New defaulting account report">
+      <bpmn:startEvent id="a_start" name="start" />
+      <bpmn:task id="a_backup" name="Back up the database" />
+      <bpmn:task id="a_check_new" name="Check whether the Account Defaulter table has new records" />
+      <bpmn:exclusiveGateway id="a_g1" name="New records found?" default="af5" />
+      <bpmn:task id="a_check_crm1" name="Check CRM for new returns" />
+      <bpmn:exclusiveGateway id="a_g2" name="New returns exist?" default="af8" />
+      <bpmn:task id="a_register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="a_g3" name="Defaulting client codes previously advised?" default="af11" />
+      <bpmn:task id="a_produce" name="Produce table of defaulting accounts" />
+      <bpmn:task id="a_send_am" name="Send to account management" />
+      <bpmn:exclusiveGateway id="a_mg3" name="Merge" />
+      <bpmn:exclusiveGateway id="a_mg2" name="Merge" />
+      <bpmn:exclusiveGateway id="a_mg1" name="Merge" />
+      <bpmn:endEvent id="a_end" name="Report completed" />
+      <bpmn:sequenceFlow id="af1" sourceRef="a_start" targetRef="a_backup" />
+      <bpmn:sequenceFlow id="af2" sourceRef="a_backup" targetRef="a_check_new" />
+      <bpmn:sequenceFlow id="af3" sourceRef="a_check_new" targetRef="a_g1" />
+      <bpmn:sequenceFlow id="af4" name="No" sourceRef="a_g1" targetRef="a_check_crm1" />
+      <bpmn:sequenceFlow id="af5" name="Yes" sourceRef="a_g1" targetRef="a_mg1" />
+      <bpmn:sequenceFlow id="af6" sourceRef="a_check_crm1" targetRef="a_g2" />
+      <bpmn:sequenceFlow id="af7" name="Yes" sourceRef="a_g2" targetRef="a_register" />
+      <bpmn:sequenceFlow id="af8" name="No" sourceRef="a_g2" targetRef="a_mg2" />
+      <bpmn:sequenceFlow id="af9" sourceRef="a_register" targetRef="a_g3" />
+      <bpmn:sequenceFlow id="af10" name="No" sourceRef="a_g3" targetRef="a_produce" />
+      <bpmn:sequenceFlow id="af11" name="Yes" sourceRef="a_g3" targetRef="a_mg3" />
+      <bpmn:sequenceFlow id="af12" sourceRef="a_produce" targetRef="a_send_am" />
+      <bpmn:sequenceFlow id="af13" sourceRef="a_send_am" targetRef="a_mg3" />
+      <bpmn:sequenceFlow id="af14" sourceRef="a_mg3" targetRef="a_mg2" />
+      <bpmn:sequenceFlow id="af15" sourceRef="a_mg2" targetRef="a_mg1" />
+      <bpmn:sequenceFlow id="af16" sourceRef="a_mg1" targetRef="a_end" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="b1" name="2:30 PM deadline" cancelActivity="false" attachedToRef="sub1">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">2024-01-01T14:30:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert_task" name="Send alert to supervisor" />
+    <bpmn:endEvent id="alert_end" name="Alert sent" />
+
+    <bpmn:subProcess id="sub2" name="Reconcile returns">
+      <bpmn:startEvent id="b_start" name="start" />
+      <bpmn:task id="b_check_crm2" name="Check CRM for new returns" />
+      <bpmn:exclusiveGateway id="b_g4" name="New returns filed?" default="bf4" />
+      <bpmn:task id="b_reconcile" name="Reconcile with existing account defaulters table" />
+      <bpmn:exclusiveGateway id="b_mg4" name="Merge" />
+      <bpmn:endEvent id="b_end" name="Reconciliation completed" />
+      <bpmn:sequenceFlow id="bf1" sourceRef="b_start" targetRef="b_check_crm2" />
+      <bpmn:sequenceFlow id="bf2" sourceRef="b_check_crm2" targetRef="b_g4" />
+      <bpmn:sequenceFlow id="bf3" name="Yes" sourceRef="b_g4" targetRef="b_reconcile" />
+      <bpmn:sequenceFlow id="bf4" name="No" sourceRef="b_g4" targetRef="b_mg4" />
+      <bpmn:sequenceFlow id="bf5" sourceRef="b_reconcile" targetRef="b_mg4" />
+      <bpmn:sequenceFlow id="bf6" sourceRef="b_mg4" targetRef="b_end" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="b2" name="4:00 PM deadline" cancelActivity="false" attachedToRef="sub2">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">2024-01-01T16:00:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="msg_task" name="Send message to supervisor" />
+    <bpmn:endEvent id="msg_end" name="Message sent" />
+
+    <bpmn:endEvent id="final_end" name="Process completed" />
+
+    <bpmn:sequenceFlow id="tf1" sourceRef="start" targetRef="sub1" />
+    <bpmn:sequenceFlow id="tf2" sourceRef="sub1" targetRef="sub2" />
+    <bpmn:sequenceFlow id="tf3" sourceRef="b1" targetRef="alert_task" />
+    <bpmn:sequenceFlow id="tf4" sourceRef="alert_task" targetRef="alert_end" />
+    <bpmn:sequenceFlow id="tf5" sourceRef="b2" targetRef="msg_task" />
+    <bpmn:sequenceFlow id="tf6" sourceRef="msg_task" targetRef="msg_end" />
+    <bpmn:sequenceFlow id="tf7" sourceRef="sub2" targetRef="final_end" />
+  </bpmn:process>
+</bpmn:definitions>

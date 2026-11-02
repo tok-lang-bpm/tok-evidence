@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Company" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANESET">
+      <bpmn:lane id="lane_customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_transmitData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_checkContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_withdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_withdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_custService" name="Customer Service">
+        <bpmn:flowNodeRef>t_enterCRM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_correctErrors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_exists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_createCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_prepareContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_sendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_createCISContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_importMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg_join</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_cis" name="CIS">
+        <bpmn:flowNodeRef>gateway_contractCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_analyzeIssues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_sendGridRequest</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_grid" name="Grid Operator">
+        <bpmn:flowNodeRef>t_checkSupplierConcurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_concurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informSuppliers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_terminateOldAgreement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_sendMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_computeFinalBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_oldSupplier" name="Old Supplier">
+        <bpmn:flowNodeRef>t_receiveMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_receiveFinalBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Switch-over request received" />
+    <bpmn:task id="t_transmitData" name="Transmit customer data to Customer Service" />
+    <bpmn:task id="t_enterCRM" name="Enter customer data into CRM system" />
+    <bpmn:exclusiveGateway id="gateway_compare" name="Data comparison result" />
+    <bpmn:task id="t_correctErrors" name="Correct data errors" />
+    <bpmn:exclusiveGateway id="gateway_exists" name="Customer exists?" />
+    <bpmn:task id="t_createCustomer" name="Create new customer object" />
+    <bpmn:task id="t_prepareContract" name="Prepare contract documents for switch" />
+    <bpmn:exclusiveGateway id="gateway_contractCheck" name="Contract check result" />
+    <bpmn:task id="t_analyzeIssues" name="Analyze and resolve contract issues" />
+    <bpmn:task id="t_sendConfirmation" name="Send confirmation document to customer" />
+    <bpmn:task id="t_sendGridRequest" name="Send switch request to Grid Operator" />
+    <bpmn:task id="t_checkSupplierConcurrence" name="Check supplier concurrence" />
+    <bpmn:exclusiveGateway id="gateway_concurrence" name="Supplier concurrence?" />
+    <bpmn:task id="t_informSuppliers" name="Inform suppliers and demand conflict resolution" />
+    <bpmn:task id="t_terminateOldAgreement" name="Terminate sales agreement with old supplier" />
+    <bpmn:task id="t_createCISContract" name="Create CIS contract" />
+    <bpmn:task id="t_checkContract" name="Customer checks contract details" />
+    <bpmn:exclusiveGateway id="gateway_withdraw" name="Customer decision" />
+    <bpmn:endEvent id="end_withdraw" name="Process ends (withdrawal)" />
+    <bpmn:task id="t_sendMeterData" name="Transmit meter data to Customer Service and Old Supplier" />
+    <bpmn:parallelGateway id="pg_split" name="Meter data parallel split" />
+    <bpmn:task id="t_computeFinalBilling" name="Compute final billing and send to Old Supplier" />
+    <bpmn:task id="t_receiveMeterData" name="Receive meter data" />
+    <bpmn:task id="t_receiveFinalBilling" name="Receive final billing" />
+    <bpmn:task id="t_importMeterData" name="Import meter data to required systems" />
+    <bpmn:parallelGateway id="pg_join" name="Parallel join before end" />
+    <bpmn:endEvent id="end_success" name="Process ends (successful)" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="t_transmitData" />
+    <bpmn:sequenceFlow id="f2" sourceRef="t_transmitData" targetRef="t_enterCRM" />
+    <bpmn:sequenceFlow id="f3" sourceRef="t_enterCRM" targetRef="gateway_compare" />
+    <bpmn:sequenceFlow id="f4" name="errors" sourceRef="gateway_compare" targetRef="t_correctErrors" />
+    <bpmn:sequenceFlow id="f5" name="no errors" sourceRef="gateway_compare" targetRef="gateway_exists" />
+    <bpmn:sequenceFlow id="f6" sourceRef="t_correctErrors" targetRef="gateway_compare" />
+    <bpmn:sequenceFlow id="f7" name="exists" sourceRef="gateway_exists" targetRef="t_prepareContract" />
+    <bpmn:sequenceFlow id="f8" name="new" sourceRef="gateway_exists" targetRef="t_createCustomer" />
+    <bpmn:sequenceFlow id="f9" sourceRef="t_createCustomer" targetRef="t_prepareContract" />
+    <bpmn:sequenceFlow id="f10" sourceRef="t_prepareContract" targetRef="gateway_contractCheck" />
+    <bpmn:sequenceFlow id="f11" name="negative" sourceRef="gateway_contractCheck" targetRef="t_analyzeIssues" />
+    <bpmn:sequenceFlow id="f12" sourceRef="t_analyzeIssues" targetRef="t_prepareContract" />
+    <bpmn:sequenceFlow id="f13" name="positive" sourceRef="gateway_contractCheck" targetRef="t_sendConfirmation" />
+    <bpmn:sequenceFlow id="f14" sourceRef="t_sendConfirmation" targetRef="t_sendGridRequest" />
+    <bpmn:sequenceFlow id="f15" sourceRef="t_sendGridRequest" targetRef="t_checkSupplierConcurrence" />
+    <bpmn:sequenceFlow id="f16" sourceRef="t_checkSupplierConcurrence" targetRef="gateway_concurrence" />
+    <bpmn:sequenceFlow id="f17" name="yes" sourceRef="gateway_concurrence" targetRef="t_informSuppliers" />
+    <bpmn:sequenceFlow id="f18" sourceRef="t_informSuppliers" targetRef="t_terminateOldAgreement" />
+    <bpmn:sequenceFlow id="f19" name="no" sourceRef="gateway_concurrence" targetRef="t_createCISContract" />
+    <bpmn:sequenceFlow id="f20" sourceRef="t_createCISContract" targetRef="t_checkContract" />
+    <bpmn:sequenceFlow id="f21" sourceRef="t_checkContract" targetRef="gateway_withdraw" />
+    <bpmn:sequenceFlow id="f22" name="withdraw" sourceRef="gateway_withdraw" targetRef="end_withdraw" />
+    <bpmn:sequenceFlow id="f23" name="confirm" sourceRef="gateway_withdraw" targetRef="t_sendMeterData" />
+    <bpmn:sequenceFlow id="f24" sourceRef="t_sendMeterData" targetRef="pg_split" />
+    <bpmn:sequenceFlow id="f25" sourceRef="pg_split" targetRef="t_computeFinalBilling" />
+    <bpmn:sequenceFlow id="f26" sourceRef="pg_split" targetRef="t_receiveMeterData" />
+    <bpmn:sequenceFlow id="f27" sourceRef="t_computeFinalBilling" targetRef="t_receiveFinalBilling" />
+    <bpmn:sequenceFlow id="f28" sourceRef="t_receiveMeterData" targetRef="t_importMeterData" />
+    <bpmn:sequenceFlow id="f29" sourceRef="t_importMeterData" targetRef="pg_join" />
+    <bpmn:sequenceFlow id="f30" sourceRef="t_receiveFinalBilling" targetRef="pg_join" />
+    <bpmn:sequenceFlow id="f31" sourceRef="t_terminateOldAgreement" targetRef="pg_join" />
+    <bpmn:sequenceFlow id="f32" sourceRef="pg_join" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

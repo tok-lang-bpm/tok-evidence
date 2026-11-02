@@ -1,0 +1,42 @@
+tok 1.0 "MPOO deregistration"
+
+pool market "Market"
+  lane mpoo "MPOO"
+    start requested "Deregistration needed"
+    task deregister "Deregister at the GO"
+    task confirm "Confirm the continuation"
+  lane go "GO"
+    task verify "Verify the deregistration"
+    xor accepted "Deregistration accepted?"
+    task reject "Reject the deregistration of the MPOO"
+    task preconfirm "Preliminarily confirm the deregistration of the MPOO"
+    task prepare "Prepare the readmission of the measuring point"
+    xor oblige "Continue operations required?"
+    task bind "Oblige the MPOO to continue the operations"
+    xor merge
+    task acquire "Perform the equipment acquisition and / or equipment changes"
+    task assign "Assign the GO as MPO"
+    and inform
+    task informmpoo "Inform the MPOO about the end of its assignment and the beginning of the assignment of the GO"
+    task informmspo "Inform the MSPO about the assignment of the GO"
+    task informsp "Inform the SP about the assignment of the GO"
+    and informed
+    end done "Deregistration completed"
+    end rejected "Deregistration rejected"
+
+flow requested -> deregister -> verify -> accepted
+flow accepted -> preconfirm "yes" when="accepted = true"
+flow accepted -> reject "no" default
+flow reject -> rejected
+flow preconfirm -> prepare -> oblige
+flow oblige -> bind "yes" when="continuationRequired = true"
+flow oblige -> merge "no" default
+flow bind -> confirm -> merge
+flow merge -> acquire -> assign -> inform
+flow inform -> informmpoo
+flow inform -> informmspo
+flow inform -> informsp
+flow informmpoo -> informed
+flow informmspo -> informed
+flow informsp -> informed
+flow informed -> done

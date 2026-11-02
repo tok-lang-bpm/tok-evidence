@@ -1,0 +1,111 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process is initiated by a switch-over request. In doing so, the customer transmits his data to the customer service department of the company. Customer service is a shared service center between the departments Sales and Distribution. The customer data is received by customer service and based on this data a customer data object is entered into the CRM system. After customer data has been entered it should then be compared with the internal customer data base and checked for completeness and plausibility. In case of any errors these should be corrected on the basis of a simple error list. The comparison of data is done to prevent individual customer data being stored multiple times. In case the customer does not exist in the customer data base, a new customer object is being created which will remain the data object of interest during the rest of the process flow. This object consists of data elements such as the customer's name and address and the assigned power gauge. The generated customer object is then used, in combination with other customer data to prepare the contract documents for the power supplier switch (including data such as bank connection, information on the selected rate, requested date of switch-over). In the following an automated check of the contract documents is carried out within the CIS (customer information system) in order to confirm their successful generation. In case of a negative response, i.e. the contract documents are not (or incorrectly) generated, the causing issues are being analyzed and resolved. Subsequently the contract documents are generated once again. In case of a positive response a confirmation document is sent out to the customer stating that the switch-over to the new supplier can be executed. A request to the grid operator is automatically sent out by the CIS. It puts the question whether the customer may be supplied by the selected supplier in the future. The switch-over request is checked by the grid operator for supplier concurrence, and the grid operator transmits a response comment. In the case of supplier concurrence the grid operator would inform all involved suppliers and demand the resolution of the conflict. The grid operator communicates with the old supplier and carries out the termination of the sales agreement between the customer and the old supplier (i.e. the customer service (of the new supplier) does not have to interact with the old supplier regarding termination). If there are not any objections by the grid operator (i.e. no supplier concurrence), customer service creates a CIS contract. The customer then has the chance to check the contract details and based on this check may decide to either withdraw from the switch contract or confirm it. Depending on the customer's acceptance / rejection the process flow at customer service either ends (in case of withdrawal) or continues (in case of a confirmation). An additional constraint is that the customer can only withdraw from the offered contract within 7 days after the 7th day the contract will be regarded as accepted and the process continues. The confirmation message by the customer is therefore not absolutely necessary (as it will count as accepted after 7 days in any way) but it can speed up the switch process. On the switch-date, but no later than 10 days after power supply has begun, the grid operator transmits the power meter data to the customer service and the old supplier via messages containing a services consumption report. At the same time, the grid operator computes the final billing based on the meter data and sends it to the old supplier. Likewise the old supplier creates and sends the final billing to the customer. For the customer as well as the grid operator the process ends then. After receiving the meter data customer service imports the meter data to systems that require the information. The process of winning a new customer ends here.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Switch-over request"
+
+pool organisation "Organisation"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit_data "Transmit customer data"
+    task check_contract "Check contract details"
+    task receive_bill_customer "Receive final billing"
+    end end_customer "Customer process ends"
+  lane customer_service "Customer Service"
+    task receive_data "Receive customer data"
+    task enter_data "Enter customer data object into CRM system"
+    task compare_data "Compare customer data with internal database"
+    task check_data "Check completeness and plausibility"
+    task correct_errors "Correct errors"
+    xor g_errors "Errors found?"
+    task create_customer "Create new customer object"
+    xor g_exists "Customer exists?"
+    task prepare_docs "Prepare contract documents"
+    task analyze_issues "Analyze and resolve issues"
+    task regenerate_docs "Regenerate contract documents"
+    task send_confirmation "Send confirmation document"
+    task create_cis_contract "Create CIS contract"
+    task receive_meter_cs "Receive meter data"
+    task import_meter "Import meter data"
+    eventgw g_response "Customer response?"
+    catch withdraw "Withdrawal received" message="Withdrawal"
+    catch confirm "Confirmation received" message="Confirmation"
+    catch timeout "7 days elapsed" timer=P7D
+    xor g_docs "Contract documents generated successfully?"
+    end end_withdrawn "Contract withdrawn"
+    end end_new_customer "New customer won"
+  lane cis "CIS"
+    task check_docs "Check contract documents automatically"
+    task send_request_go "Send switch-over request to grid operator"
+  lane grid_operator "Grid Operator"
+    task check_concurrence "Check supplier concurrence"
+    task transmit_comment "Transmit response comment"
+    xor g_concurrence "Supplier concurrence?"
+    task inform_suppliers "Inform involved suppliers"
+    task demand_resolution "Demand resolution of conflict"
+    task communicate_old "Communicate with old supplier"
+    task terminate_agreement "Terminate sales agreement"
+    task transmit_meter "Transmit power meter data"
+    task compute_billing "Compute final billing"
+    task send_billing_go "Send final billing to old supplier"
+    and parallel_tail "Parallel tail activities"
+    end end_go "Grid operator process ends"
+  lane old_supplier "Old Supplier"
+    task receive_meter_os "Receive power meter data"
+    task create_bill_customer "Create final billing for customer"
+    task send_bill_customer "Send final billing to customer"
+    task receive_billing_go "Receive final billing from grid operator"
+    end end_old "Old supplier process ends"
+
+flow request -> transmit_data -> receive_data -> enter_data -> compare_data -> check_data
+flow check_data -> g_errors
+flow g_errors -> correct_errors "yes" when="errorsFound"
+flow correct_errors -> check_data
+flow g_errors -> g_exists "no" default
+flow g_exists -> create_customer "no" default
+flow create_customer -> prepare_docs
+flow g_exists -> prepare_docs "yes" when="customerExists"
+flow prepare_docs -> check_docs
+flow check_docs -> g_docs
+flow g_docs -> send_confirmation "yes" when="documentsGenerated"
+flow g_docs -> analyze_issues "no" default
+flow analyze_issues -> regenerate_docs -> check_docs
+flow send_confirmation -> send_request_go -> check_concurrence -> transmit_comment -> g_concurrence
+flow g_concurrence -> inform_suppliers "yes" when="supplierConcurrence"
+flow inform_suppliers -> demand_resolution -> communicate_old -> terminate_agreement -> end_go
+flow g_concurrence -> create_cis_contract "no" default
+flow create_cis_contract -> check_contract -> g_response
+flow g_response -> withdraw
+flow g_response -> confirm
+flow g_response -> timeout
+flow withdraw -> end_withdrawn
+flow confirm -> parallel_tail
+flow timeout -> parallel_tail
+flow parallel_tail -> transmit_meter
+flow parallel_tail -> compute_billing
+flow transmit_meter -> receive_meter_cs -> import_meter -> end_new_customer
+flow transmit_meter -> receive_meter_os -> create_bill_customer -> send_bill_customer
+flow send_bill_customer -> end_old
+flow send_bill_customer -> receive_bill_customer -> end_customer
+flow compute_billing -> send_billing_go
+flow send_billing_go -> receive_billing_go -> end_old
+flow send_billing_go -> end_go
+```
+
+The tok checker reports these problems in it:
+
+- line 47: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (parallel_tail)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

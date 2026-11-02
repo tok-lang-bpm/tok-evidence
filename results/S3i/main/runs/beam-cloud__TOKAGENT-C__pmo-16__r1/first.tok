@@ -1,0 +1,73 @@
+tok 1.0 "Annual audit process"
+
+pool company "Company"
+  lane coordinator "Audit coordinator"
+    start process_started "Audit process initiated"
+    task send_notification "Send notification to regional office"
+    and start_parallel
+  lane regional "Regional office"
+    task prepare_financial "Prepare financial statements"
+    task gather_documents "Gather necessary documents"
+    task submit_documents "Submit documents to central audit team"
+    task provide_clarifications "Provide necessary clarifications"
+    and prep_join
+  lane compliance "Compliance team"
+    task check_updates "Check for regulatory updates"
+  lane central "Central audit team"
+    task review_submission "Review submission"
+    task request_clarifications "Request clarifications"
+    xor discrepancies "Discrepancies found?"
+  lane audit "Audit team"
+    task evaluate_financial "Evaluate financial risks"
+    task evaluate_operational "Evaluate operational risks"
+    task evaluate_compliance "Evaluate compliance risks"
+    and risk_split
+    and risk_join
+    xor high_risk "High risk identified?"
+    task analyze_data "Perform data analysis"
+    task conduct_interviews "Conduct interviews"
+    xor site_needed "Site visit required?"
+    task perform_site_visit "Perform site visit"
+    xor risk_merge
+    xor risk_done
+    task compile_report "Compile audit report"
+    task update_report "Update report"
+    task resubmit_report "Resubmit report"
+    task distribute_report "Distribute final report to executive board"
+    task archive_report "Archive final report"
+    end process_closed "Audit process closed"
+  lane director "Audit director"
+    task review_report "Review audit report"
+    xor approval "Report approved?"
+
+flow process_started -> send_notification -> start_parallel
+flow start_parallel -> prepare_financial
+flow start_parallel -> check_updates
+flow prepare_financial -> gather_documents -> prep_join? 
+# Need separate
+flow gather_documents -> prep_join
+flow check_updates -> prep_join
+flow prep_join -> submit_documents -> review_submission -> discrepancies
+flow discrepancies -> request_clarifications "yes"
+flow request_clarifications -> provide_clarifications -> review_submission
+flow discrepancies -> risk_split "no"
+flow risk_split -> evaluate_financial
+flow risk_split -> evaluate_operational
+flow risk_split -> evaluate_compliance
+flow evaluate_financial -> risk_join
+flow evaluate_operational -> risk_join
+flow evaluate_compliance -> risk_join
+flow risk_join -> high_risk
+flow high_risk -> analyze_data "yes"
+flow analyze_data -> conduct_interviews
+flow conduct_interviews -> site_needed
+flow site_needed -> perform_site_visit "yes"
+flow site_needed -> risk_merge "no"
+flow perform_site_visit -> risk_merge
+flow risk_merge -> risk_done
+flow high_risk -> risk_done "no"
+flow risk_done -> compile_report -> review_report -> approval
+flow approval -> distribute_report "yes"
+flow approval -> update_report "no"
+flow update_report -> resubmit_report -> review_report
+flow distribute_report -> archive_report -> process_closed

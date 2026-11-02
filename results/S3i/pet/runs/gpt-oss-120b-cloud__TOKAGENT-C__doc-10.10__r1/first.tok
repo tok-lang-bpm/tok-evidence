@@ -1,0 +1,38 @@
+tok 1.0 "Fault handling process" executable
+    pool organisation "Organisation"
+      lane fault_detector "Fault Detector"
+        start start "Failure occurrence"
+        task report_failure "Report failure to MPO"
+      lane mpo "MPO"
+        task suspect_fault "MPO suspects fault"
+        task examine_failure "Examine failure"
+        xor confirm "Failure confirmed?"
+        task inform_go_failure "Inform GO about failure"
+        task inform_msp_failure "Inform MSP about failure"
+        and inform_failure_split
+        task fix_fault "Fix fault at measuring device"
+        task share_results "Share repair results with fault detector"
+        and inform_resolution_split
+        task inform_go_resolution "Inform GO about resolution"
+        task inform_msp_resolution "Inform MSP about resolution"
+        end completed "Process completed"
+      lane go "GO"
+        end end_go ""
+      lane msp "MSP"
+        end end_msp ""
+    flow start -> report_failure -> examine_failure
+    flow suspect_fault -> examine_failure
+    flow examine_failure -> confirm
+    flow confirm -> inform_failure_split
+    flow confirm -> end_reject "reject"
+    flow inform_failure_split -> inform_go_failure
+    flow inform_failure_split -> inform_msp_failure
+    flow inform_go_failure -> inform_resolution_split
+    flow inform_msp_failure -> inform_resolution_split
+    flow inform_resolution_split -> fix_fault
+    flow fix_fault -> share_results
+    flow share_results -> inform_resolution_split
+    flow inform_resolution_split -> inform_go_resolution
+    flow inform_resolution_split -> inform_msp_resolution
+    flow inform_go_resolution -> completed
+    flow inform_msp_resolution -> completed

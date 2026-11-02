@@ -1,0 +1,98 @@
+```tok
+tok 1.0 "Meter Operation Process" [executable]
+
+pool org "Organization"
+  lane MPON "MPON"
+    start s_start "Start"
+    send s_report "Report the meter operation to the GO" message="Report"
+    # equipment acquisition (parallel with MPOO)
+    task t_equip_mpon "Perform equipment acquisition and changes"
+    # outcome messages
+    send s_fail "Inform GO about failure of the entire process" message="Failure"
+    send s_success "Inform GO about successful completion of the entire process" message="Success"
+    # end events will be added later
+
+  lane GO "GO"
+    task t_examine "Examine the application of the MPON"
+    xor g_decision "Application decision?"
+    task t_reject "Reject the application of the MPON"
+    end e_rejected "Application rejected"
+    task t_confirm_app "Confirm the application of the MPON"
+    and g_inform_reg
+    task t_inform_mpoo_reg "Inform MPOO about registration confirmation of the MPON"
+    task t_inform_mspo_reg "Inform MSPO about registration confirmation of the MPON"
+    and g_reg_done
+    # split to equipment acquisition
+    and g_equip_split
+    # (receives from MPON later)
+    receive r_failure "Receive failure from MPON" message="Failure"
+    receive r_success "Receive success from MPON" message="Success"
+    # timeout waiting for MPON outcome
+    catch c_deadline "Wait for MPON outcome" timer=PT48H
+    task t_inform_mpon_deadline "Inform MPON about failure of the overall transaction by deadline"
+    # failure handling
+    task t_confirm_failure "Confirm failure of the assignment to the MPON"
+    and g_inform_failure
+    task t_inform_mpoo_fail "Inform MPOO about failure of the assignment of the MPON"
+    task t_inform_mspo_fail "Inform MSPO about failure of the assignment of the MPON"
+    and g_failure_done
+    # success handling
+    task t_assign "Assign the MPON"
+    task t_confirm_assign "Confirm the assignment to the MPON"
+    and g_inform_success
+    task t_inform_mpoo_assign "Inform MPOO about the assignment of the MPON"
+    task t_inform_mspo_assign "Inform MSPO about the assignment of the MPON"
+    task t_inform_sp_assign "Inform SP about the assignment of the MPON"
+    and g_success_done
+    # final end events
+    end e_success "Process completed successfully"
+    end e_failure "Process completed with failure"
+
+  lane MPOO "MPOO"
+    task t_equip_mpoo "Perform equipment acquisition and changes"
+
+  lane MSPO "MSPO"
+    # no internal tasks; only receives informational messages from GO
+
+  lane SP "SP"
+    # no internal tasks; only receives informational messages from GO
+
+# --------------------------------------------------------------------
+# Sequence flows
+flow s_start -> s_report -> t_examine
+flow t_examine -> g_decision
+flow g_decision -> t_reject "reject"
+flow g_decision -> t_confirm_app "confirm"
+flow t_reject -> e_rejected
+flow t_confirm_app -> g_inform_reg
+flow g_inform_reg -> t_inform_mpoo_reg
+flow g_inform_reg -> t_inform_mspo_reg
+flow t_inform_mpoo_reg -> g_reg_done
+flow t_inform_mspo_reg -> g_reg_done
+flow g_reg_done -> g_equip_split
+flow g_equip_split -> t_equip_mpon
+flow g_equip_split -> t_equip_mpoo
+flow t_equip_mpon -> g_equip_split
+flow t_equip_mpoo -> g_equip_split
+flow g_equip_split -> r_failure
+flow g_equip_split -> r_success
+flow g_equip_split -> c_deadline
+flow r_failure -> t_confirm_failure
+flow r_success -> t_assign
+flow c_deadline -> t_inform_mpon_deadline -> t_confirm_failure
+flow t_confirm_failure -> g_inform_failure
+flow g_inform_failure -> t_inform_mpoo_fail
+flow g_inform_failure -> t_inform_mspo_fail
+flow t_inform_mpoo_fail -> g_failure_done
+flow t_inform_mspo_fail -> g_failure_done
+flow g_failure_done -> e_failure
+
+flow t_assign -> t_confirm_assign -> g_inform_success
+flow g_inform_success -> t_inform_mpoo_assign
+flow g_inform_success -> t_inform_mspo_assign
+flow g_inform_success -> t_inform_sp_assign
+flow t_inform_mpoo_assign -> g_success_done
+flow t_inform_mspo_assign -> g_success_done
+flow t_inform_sp_assign -> g_success_done
+flow g_success_done -> e_success
+```

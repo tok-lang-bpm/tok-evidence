@@ -1,0 +1,73 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process of an Office Supply Request starts when any employee of the organization submits an office supply request. Once the requirement is registered, the request is received by the immediate supervisor of the employee requesting the office supplies. The supervisor must approve or ask for a change, or reject the request. If the request is rejected the process will end. If the request is asked to make a change then it is returned to the petitioner / employee who can review the comments for the change request. If the request is approved it will go to the purchase department that will be in charge of making quotations (using a subprocess) and select a vendor. If the vendor is not valid in the system the purchase department will have to choose a different vendor. After a vendor is selected and confirmed, the system will generate and send a purchase order and wait for the product to be delivered and the invoice received. In any case the system will send a notification to let the user know what the result was. In any of the cases, approval, rejection or change required the system will send the user a notification.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Office Supply Request Process"
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start "Office supply request submitted"
+    task submit "Submit office supply request"
+    task register "Register request"
+    task review_change "Review change request"
+  lane supervisor "Supervisor"
+    task receive "Receive request by supervisor"
+    xor supervisor_decision "Supervisor decision?"
+    task approve "Approve request"
+    task ask_change "Ask for change"
+    task reject "Reject request"
+  lane purchase "Purchase Department"
+    sub quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_vendor "Choose different vendor"
+  lane system "System"
+    task generate_po "Generate and send purchase order"
+    and wait_parallel "Wait for delivery and invoice"
+    task product_delivered "Product delivered"
+    task invoice_received "Invoice received"
+    and wait_join "All received"
+    task send_notification "Send notification to user"
+
+end rejected "Request rejected"
+end completed "Request completed"
+
+flow start -> submit -> register -> receive
+flow receive -> supervisor_decision
+flow supervisor_decision -> approve "Approve"
+flow supervisor_decision -> ask_change "Change required"
+flow supervisor_decision -> reject "Reject"
+flow reject -> send_notification -> rejected
+flow ask_change -> review_change -> register
+flow approve -> quotations -> select_vendor -> vendor_valid
+flow vendor_valid -> generate_po "Valid"
+flow vendor_valid -> choose_vendor "Invalid"
+flow choose_vendor -> select_vendor
+flow generate_po -> wait_parallel
+flow wait_parallel -> product_delivered
+flow wait_parallel -> invoice_received
+flow product_delivered -> wait_join
+flow invoice_received -> wait_join
+flow wait_join -> send_notification -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 28: error R031: 'rejected' is declared at top level, but the document has pools; move it into a pool
+- line 29: error R031: 'completed' is declared at top level, but the document has pools; move it into a pool
+- line 36: error R021: sequence flow send_notification -> rejected crosses a process or sub-process boundary
+- line 47: error R021: sequence flow send_notification -> completed crosses a process or sub-process boundary
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,37 @@
+tok 1.0
+
+pool org "Organization"
+  lane procurement "Procurement"
+    start start "Start"
+    task q1 "Query all web shops for parts availability, price and delivery time"
+    task list "Create list of parts per shop"
+    xor decision-shop "Is one shop enough?"
+    task order-single "Order parts from single shop"
+    task order-multiple "Order parts from multiple shops"
+    xor stock-split "Is stock level low?"
+    xor stock-join "Reorder loop join"
+    task reorder-cheapest "Reorder parts (cheapest)"
+    task reorder-fastest "Reorder parts (fastest)"
+    task send-complaint "Send complaint email to friends"
+    end end "End"
+  lane production "Production"
+    task receive "Receive parts batches"
+    task start-building "Start building"
+
+flow start -> q1
+flow q1 -> list
+flow list -> decision-shop
+flow decision-shop -> order-single "yes" when="enough"
+flow decision-shop -> order-multiple "no" default
+flow order-single -> receive
+flow order-multiple -> receive
+flow receive -> start-building
+flow start-building -> stock-split
+flow stock-split -> reorder-cheapest "stock < 5" when="stock < 5"
+flow stock-split -> reorder-fastest "stock < 3" when="stock < 3"
+flow stock-split -> send-complaint "stock = 0" when="stock = 0"
+flow stock-split -> end default
+flow reorder-cheapest -> stock-join
+flow reorder-fastest -> stock-join
+flow stock-join -> stock-split
+flow send-complaint -> end

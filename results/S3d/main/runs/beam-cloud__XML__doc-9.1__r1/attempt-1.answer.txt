@@ -1,0 +1,106 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="process-lanes">
+      <bpmn:lane id="staff" name="Staff">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>initialHandling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deadline1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendAlertSupervisor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAlert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCrmAfter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>newReturnsAfter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deadline2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendMessageSupervisor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endMessage</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endNoReturns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endReconciled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Every weekday morning" />
+    <bpmn:subProcess id="initialHandling" name="Handle defaulting accounts">
+      <bpmn:laneSet id="initial-lanes">
+        <bpmn:lane id="initialStaff" name="Staff">
+          <bpmn:flowNodeRef>initialStart</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>backupDb</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>checkAdTable</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>newRecords</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>checkCrmInitial</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>newReturnsInitial</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>registerDefaulters</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>previouslyAdvised</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>produceTable</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>sendAccountManagement</bpmn:flowNodeRef>
+          <bpmn:flowNodeRef>initialEnd</bpmn:flowNodeRef>
+        </bpmn:lane>
+      </bpmn:laneSet>
+      <bpmn:startEvent id="initialStart" />
+      <bpmn:task id="backupDb" name="Back up the database" />
+      <bpmn:task id="checkAdTable" name="Check the Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="newRecords" name="New records found?" default="flowNoNewRecords" />
+      <bpmn:task id="checkCrmInitial" name="Check the CRM system to see whether new returns have been filed" />
+      <bpmn:exclusiveGateway id="newReturnsInitial" name="New returns exist?" default="flowNoNewReturnsInitial" />
+      <bpmn:task id="registerDefaulters" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="previouslyAdvised" name="Defaulting client codes previously advised?" default="flowPreviouslyAdvised" />
+      <bpmn:task id="produceTable" name="Produce table of defaulting accounts" />
+      <bpmn:task id="sendAccountManagement" name="Send to account management" />
+      <bpmn:endEvent id="initialEnd" name="Initial handling complete" />
+      <bpmn:sequenceFlow id="fi1" sourceRef="initialStart" targetRef="backupDb" />
+      <bpmn:sequenceFlow id="fi2" sourceRef="backupDb" targetRef="checkAdTable" />
+      <bpmn:sequenceFlow id="fi3" sourceRef="checkAdTable" targetRef="newRecords" />
+      <bpmn:sequenceFlow id="fiNewRecords" name="yes" sourceRef="newRecords" targetRef="initialEnd">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newRecordsFound == true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flowNoNewRecords" name="no" sourceRef="newRecords" targetRef="checkCrmInitial" />
+      <bpmn:sequenceFlow id="fi4" sourceRef="checkCrmInitial" targetRef="newReturnsInitial" />
+      <bpmn:sequenceFlow id="fiNewReturns" name="yes" sourceRef="newReturnsInitial" targetRef="registerDefaulters">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturnsExist == true</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flowNoNewReturnsInitial" name="no" sourceRef="newReturnsInitial" targetRef="initialEnd" />
+      <bpmn:sequenceFlow id="fi5" sourceRef="registerDefaulters" targetRef="previouslyAdvised" />
+      <bpmn:sequenceFlow id="flowPreviouslyAdvised" name="yes" sourceRef="previouslyAdvised" targetRef="initialEnd" />
+      <bpmn:sequenceFlow id="flowNotPreviouslyAdvised" name="no" sourceRef="previouslyAdvised" targetRef="produceTable">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">previouslyAdvised == false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="fi6" sourceRef="produceTable" targetRef="sendAccountManagement" />
+      <bpmn:sequenceFlow id="fi7" sourceRef="sendAccountManagement" targetRef="initialEnd" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="deadline1" attachedToRef="initialHandling" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT6H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="sendAlertSupervisor" name="Send an alert to the supervisor" />
+    <bpmn:endEvent id="endAlert" name="Alert sent" />
+    <bpmn:task id="checkCrmAfter" name="Check the CRM system to see whether new returns have been filed" />
+    <bpmn:exclusiveGateway id="newReturnsAfter" name="New returns filed?" default="flowNoNewReturnsAfter" />
+    <bpmn:task id="reconcile" name="Reconcile with the existing account defaulters table" />
+    <bpmn:boundaryEvent id="deadline2" attachedToRef="reconcile" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT1H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="sendMessageSupervisor" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="endMessage" name="Message sent" />
+    <bpmn:endEvent id="endNoReturns" name="No new returns" />
+    <bpmn:endEvent id="endReconciled" name="Reconciliation complete" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="initialHandling" />
+    <bpmn:sequenceFlow id="fDeadline1" sourceRef="deadline1" targetRef="sendAlertSupervisor" />
+    <bpmn:sequenceFlow id="fAlert" sourceRef="sendAlertSupervisor" targetRef="endAlert" />
+    <bpmn:sequenceFlow id="f2" sourceRef="initialHandling" targetRef="checkCrmAfter" />
+    <bpmn:sequenceFlow id="f3" sourceRef="checkCrmAfter" targetRef="newReturnsAfter" />
+    <bpmn:sequenceFlow id="fNewReturnsAfter" name="yes" sourceRef="newReturnsAfter" targetRef="reconcile">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">newReturnsFiled == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowNoNewReturnsAfter" name="no" sourceRef="newReturnsAfter" targetRef="endNoReturns" />
+    <bpmn:sequenceFlow id="f4" sourceRef="reconcile" targetRef="endReconciled" />
+    <bpmn:sequenceFlow id="fDeadline2" sourceRef="deadline2" targetRef="sendMessageSupervisor" />
+    <bpmn:sequenceFlow id="fMessage" sourceRef="sendMessageSupervisor" targetRef="endMessage" />
+  </bpmn:process>
+</bpmn:definitions>
+```

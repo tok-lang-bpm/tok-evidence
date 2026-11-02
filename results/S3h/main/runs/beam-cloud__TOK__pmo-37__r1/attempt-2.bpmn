@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Contract" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Parts" name="Parts" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Contract" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="you" name="You">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enough</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ordermany</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ordered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>below5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reordercheap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>below3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorderfast</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>zero</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complaint</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Contract project started" />
+    <bpmn:task id="query" name="Query all web shops" />
+    <bpmn:task id="find" name="Find out how much they can deliver, at which price, and how long it will take" />
+    <bpmn:task id="create" name="Create a list of parts to order from each shop" />
+    <bpmn:task id="cheapest" name="Always use the cheapest parts" />
+    <bpmn:exclusiveGateway id="enough" name="One shop has enough parts?" default="f-enough-ordermany" />
+    <bpmn:task id="orderone" name="Order from one shop" />
+    <bpmn:task id="ordermany" name="Order from several shops" />
+    <bpmn:exclusiveGateway id="ordered" name="Parts ordered" />
+    <bpmn:intermediateCatchEvent id="parts" name="Parts arrive">
+      <bpmn:messageEventDefinition id="parts-def" messageRef="Message_Parts" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="build" name="Start building" />
+    <bpmn:exclusiveGateway id="below5" name="Stock below 5?" default="f-below5-done" />
+    <bpmn:task id="reordercheap" name="Reorder the cheapest parts" />
+    <bpmn:exclusiveGateway id="below3" name="Stock below 3?" default="f-below3-build" />
+    <bpmn:task id="reorderfast" name="Reorder the fastest parts" />
+    <bpmn:exclusiveGateway id="zero" name="Stock zero?" default="f-zero-build" />
+    <bpmn:task id="mail" name="Write a mail to your friends complaining about the webshops" />
+    <bpmn:endEvent id="done" name="Project completed" />
+    <bpmn:endEvent id="complaint" name="Complaint sent" />
+    <bpmn:sequenceFlow id="f-s-query" sourceRef="s" targetRef="query" />
+    <bpmn:sequenceFlow id="f-query-find" sourceRef="query" targetRef="find" />
+    <bpmn:sequenceFlow id="f-find-create" sourceRef="find" targetRef="create" />
+    <bpmn:sequenceFlow id="f-create-cheapest" sourceRef="create" targetRef="cheapest" />
+    <bpmn:sequenceFlow id="f-cheapest-enough" sourceRef="cheapest" targetRef="enough" />
+    <bpmn:sequenceFlow id="f-enough-orderone" name="yes" sourceRef="enough" targetRef="orderone">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">enoughParts</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-enough-ordermany" name="no" sourceRef="enough" targetRef="ordermany" />
+    <bpmn:sequenceFlow id="f-orderone-ordered" sourceRef="orderone" targetRef="ordered" />
+    <bpmn:sequenceFlow id="f-ordermany-ordered" sourceRef="ordermany" targetRef="ordered" />
+    <bpmn:sequenceFlow id="f-ordered-parts" sourceRef="ordered" targetRef="parts" />
+    <bpmn:sequenceFlow id="f-parts-build" sourceRef="parts" targetRef="build" />
+    <bpmn:sequenceFlow id="f-build-below5" sourceRef="build" targetRef="below5" />
+    <bpmn:sequenceFlow id="f-below5-reordercheap" name="yes" sourceRef="below5" targetRef="reordercheap">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-below5-done" name="no" sourceRef="below5" targetRef="done" />
+    <bpmn:sequenceFlow id="f-reordercheap-below3" sourceRef="reordercheap" targetRef="below3" />
+    <bpmn:sequenceFlow id="f-below3-reorderfast" name="yes" sourceRef="below3" targetRef="reorderfast">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-below3-build" name="no" sourceRef="below3" targetRef="build" />
+    <bpmn:sequenceFlow id="f-reorderfast-zero" sourceRef="reorderfast" targetRef="zero" />
+    <bpmn:sequenceFlow id="f-zero-mail" name="yes" sourceRef="zero" targetRef="mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-zero-build" name="no" sourceRef="zero" targetRef="build" />
+    <bpmn:sequenceFlow id="f-mail-complaint" sourceRef="mail" targetRef="complaint" />
+  </bpmn:process>
+</bpmn:definitions>

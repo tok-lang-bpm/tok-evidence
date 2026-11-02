@@ -1,0 +1,110 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4180,
+  "output_tokens": 1718,
+  "seconds": 6.861903999990318,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create a tok model with a pool for the organisation, lanes for each actor: Head of functional department, Personnel Department, HR department (colleague). Also maybe system? No. So three lanes: head, personnel, hr.\n\nProcess flow: Start -> Head detects personnel requirements (task: \"detect personnel requirements\"? the text: \"When I have detected a number of personnel requirements, I report the vacancy to the Personnel Department.\" So task: \"detect personnel requirements\" (by Head). Then task: \"report vacancy to Personnel Department\" (still Head). Then maybe flow to Personnel Department to \"provide job description for review\". Actually \"Then I wait to get the job description for review before it is advertized.\" So after reporting, Head waits to receive job description. That could be a receive task in Head lane? Or a task in Personnel lane: \"prepare job description\". Then head waits (event). Let's model: after report, flow to Personnel lane task: \"prepare job description\". Then flow back to Head lane task: \"receive job description\". Then decision: \"Is correction needed?\" exclusive gateway. If yes -> Head \"ask for corrections again\" (task). Then back to Personnel \"revise job description\". Then loop? Then back to Head receive? The text: \"Under certain circumstances, I must ask for corrections again, otherwise I approve the job description.\" So after receiving job description, decision: need corrections? If yes, head asks for corrections. Then presumably Personnel revises and sends again. Could model a loop. For simplicity, we can have after \"ask for corrections again\" flow to Personnel \"revise job description\". Then flow back to Head \"receive revised job description\". Then decision again? Might just end after approve.\n\nAlso: \"Sometimes it also happens that the colleague from the HR department still has questions about the tasks and requirements before he can describe the job. Then I am available for clarifications, of course.\" So after Head receives job description, maybe HR may have questions. That's a parallel? Actually it's a possible additional loop: after receiving, decision: HR has questions? If yes -> Head \"provide clarifications\". Then HR \"clarify job description\". Then back to Head? After that, job description proceeds.\n\nSo we need modeling with exclusive gateways and parallel if needed. We can have after receiving, a XOR gateway with three outgoing: (1) corrections needed, (2) HR questions, (3) approve job description.\n\nWe need to ensure each path ends with end event after \"advertize\"? Actually text ends at approve. We'll just end.\n\nThus flow:\n\npool Org\n\nlane head:\n- start event\n- task detect-personnel-requirements\n- task report-vacancy-to-Personnel\n- wait for job description: maybe a receive task \"receive job description\"\n- exclusive gateway G1: decision point after receiving job description\n   - when \"needs correction\": flow to head task \"ask for corrections\"\n   -> flow to Personnel lane task \"revise job description\"\n   -> flow back to head \"receive revised job description\"\n   -> back to G1? could loop, but to avoid infinite, after revision, back to G1 again.\n   - when \"HR has questions\": flow to head task \"provide clarifications\"\n   -> flow to HR lane task \"ask clarification questions\"\n   -> flow back to head maybe \"receive clarification\"? But simplify: after providing clarifications, go back to G1.\n   - default: approve job description (task in head lane \"approve job description\")\n   -> end event\n\nWe'll need to model tasks in other lanes:\n\nPersonnel lane:\n- task \"prepare job description\"\n- task \"revise job description\"\n\nHR lane:\n- task \"ask clarification questions\"\n\nAlso need message flows between pools? Actually only one pool, so just flows.\n\nWe need to define flows with IDs.\n\nIn tok syntax:\n\ntok 1.0\npool org \"Organization\" {\n  lane head \"Head of Functional Department\"\n  lane personnel \"Personnel Department\"\n  lane hr \"HR Department\"\n}\nstart s\ntask detect \"detect personnel requirements\" lane=head\ntask report \"report vacancy to Personnel Department\" lane=head\ntask prepare \"prepare job description\" lane=personnel\ntask receive \"receive job description\" lane=head\nxor decision1 \"Job description decision\" lane=head\ntask ask_corrections \"ask for corrections again\" lane=head\ntask revise \"revise job description\" lane=personnel\ntask provide_clarifications \"provide clarifications\" lane=head\ntask hr_questions \"ask clarification questions\" lane=hr\ntask approve \"approve job description\" lane=head\nend e\n\nNow flows:\n\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corrections when=\"needsCorrection\"\nflow decision1 -> provide_clarifications when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corrections -> revise\nflow revise -> receive\nflow provide_clarifications -> hr_questions\nflow hr_questions -> receive\n\nflow approve -> e\n\nNeed to ensure each flow has unique direction. Also ensure that after revise, it goes back to receive, which then goes to decision again.\n\nAll good.\n\nNow check.\n\nWe must include lane attribute in tasks, but the syntax: In tok, to assign to a lane you put inside the lane block? Actually typical syntax: inside lane block you list nodes. The cheat sheet: inside a pool's { } you can list lanes, each lane has its own block with statements. Or you can prefix with lane= attribute. Simpler: use lane blocks.\n\nThus:\n\npool org \"Organization\" {\n  lane head \"Head of Functional Department\" {\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"job description decision\"\n    task ask_corrections \"ask for corrections again\"\n    task provide_clarifications \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  }\n  lane personnel \"Personnel Department\" {\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  }\n  lane hr \"HR Department\" {\n    task hr_questions \"ask clarification questions\"\n  }\n}\n\nThen flows after the pool block? Usually flows are declared after pools, referencing IDs. Yes.\n\nLet's write full model.\n\nWe'll use IDs: s, d1, r1, p1, etc. Use simple IDs.\n\nIDs:\ns start\ndetect\nreport\nprepare\nreceive\ndecision1\nask_corr\nrevise\nprovide_clar\nhr_q\napprove\ne end\n\nNow flows.\n\nMake sure each element ID unique.\n\nNow we need to ensure exclusive gateway label is \"job description decision\". Use xor.\n\nProceed.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "path": "",
+     "text": "tok 1.0\npool org \"Organization\" {\n  lane head \"Head of Functional Department\" {\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"job description decision\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  }\n  lane personnel \"Personnel Department\" {\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  }\n  lane hr \"HR Department\" {\n    task hr_q \"ask clarification questions\"\n  }\n}\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corr when=\"needsCorrection\"\nflow decision1 -> provide_clar when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corr -> revise\nflow revise -> receive\nflow provide_clar -> hr_q\nflow hr_q -> receive\nflow approve -> e"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5950,
+  "output_tokens": 326,
+  "seconds": 1.27234419999877,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to provide only text param; path empty is okay? In earlier call we gave both path and text which is not allowed. Should give only text. Let's call again with only text.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organization\" {\n  lane head \"Head of Functional Department\" {\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"job description decision\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  }\n  lane personnel \"Personnel Department\" {\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  }\n  lane hr \"HR Department\" {\n    task hr_q \"ask clarification questions\"\n  }\n}\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corr when=\"needsCorrection\"\nflow decision1 -> provide_clar when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corr -> revise\nflow revise -> receive\nflow provide_clar -> hr_q\nflow hr_q -> receive\nflow approve -> e"
+    },
+    "is_error": false,
+    "result": "line 2: error T001: invalid token: unexpected character '{'\nline 3: error T001: invalid token: unexpected character '{'\nline 13: error T001: invalid token: unexpected character '}'\nline 14: error T001: invalid token: unexpected character '{'\nline 17: error T001: invalid token: unexpected character '}'\nline 18: error T001: invalid token: unexpected character '{'\nline 20: error T001: invalid token: unexpected character '}'\nline 21: error T001: invalid token: unexpected character '}'\nline 22: error T003: indentation does not match any open block\n9 error(s), 9 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6490,
+  "output_tokens": 497,
+  "seconds": 1.8175754000258166,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Our syntax is wrong. tok language uses indentation to denote blocks; braces not used. The correct syntax: Header, then pool statement, then indentation for lanes inside pool, then statements.\n\nExample from cheat sheet:\n\npool id \"label\"\n  lane id \"label\"\n    start id\n    task id \"label\"\n    ...\n\nSo we need to remove braces.\n\nLet's rewrite.\n\ntok 1.0\npool org \"Organization\"\n  lane head \"Head of Functional Department\"\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"job description decision\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  lane personnel \"Personnel Department\"\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  lane hr \"HR Department\"\n    task hr_q \"ask clarification questions\"\n\nThen flows as before.\n\nMake sure indentation consistent (2 spaces). Let's produce and check again.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organization\"\n  lane head \"Head of Functional Department\"\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"job description decision\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  lane personnel \"Personnel Department\"\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  lane hr \"HR Department\"\n    task hr_q \"ask clarification questions\"\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corr when=\"needsCorrection\"\nflow decision1 -> provide_clar when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corr -> revise\nflow revise -> receive\nflow provide_clar -> hr_q\nflow hr_q -> receive\nflow approve -> e"
+    },
+    "is_error": false,
+    "result": "line 8: note L020: name of a splitting gateway is not a question (decision1)\n0 error(s), 1 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7086,
+  "output_tokens": 389,
+  "seconds": 1.4826201999967452,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "There's a warning: splitting gateway name not a question. We can change label to a question, e.g., \"Is job description ok?\" Or \"Job description decision?\" Ideally a question. Let's rename xor decision1 label to \"Is job description ready?\" Use question mark.\n\nAlso the gateway id unchanged.\n\nUpdate.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool org \"Organization\"\n  lane head \"Head of Functional Department\"\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"Is job description ready?\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  lane personnel \"Personnel Department\"\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  lane hr \"HR Department\"\n    task hr_q \"ask clarification questions\"\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corr when=\"needsCorrection\"\nflow decision1 -> provide_clar when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corr -> revise\nflow revise -> receive\nflow provide_clar -> hr_q\nflow hr_q -> receive\nflow approve -> e"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 7501,
+  "output_tokens": 227,
+  "seconds": 0.9474471000139602,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0\npool org \"Organization\"\n  lane head \"Head of Functional Department\"\n    start s\n    task detect \"detect personnel requirements\"\n    task report \"report vacancy to Personnel Department\"\n    task receive \"receive job description\"\n    xor decision1 \"Is job description ready?\"\n    task ask_corr \"ask for corrections again\"\n    task provide_clar \"provide clarifications\"\n    task approve \"approve job description\"\n    end e\n  lane personnel \"Personnel Department\"\n    task prepare \"prepare job description\"\n    task revise \"revise job description\"\n  lane hr \"HR Department\"\n    task hr_q \"ask clarification questions\"\nflow s -> detect\nflow detect -> report\nflow report -> prepare\nflow prepare -> receive\nflow receive -> decision1\nflow decision1 -> ask_corr when=\"needsCorrection\"\nflow decision1 -> provide_clar when=\"hrHasQuestions\"\nflow decision1 -> approve default\nflow ask_corr -> revise\nflow revise -> receive\nflow provide_clar -> hr_q\nflow hr_q -> receive\nflow approve -> e\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

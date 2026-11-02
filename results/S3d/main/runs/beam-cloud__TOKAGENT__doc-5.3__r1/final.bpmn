@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Office Supply Request" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="office" name="Office Supply Request" processRef="office-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="office-process" name="Office Supply Request" isExecutable="false">
+    <bpmn:laneSet id="office-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rev</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>revreq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchase" name="Purchase Department">
+        <bpmn:flowNodeRef>quot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>vgw</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>genpo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ri</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pgw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>jgw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notif</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Employee submits office supply request" />
+    <bpmn:task id="rev" name="Review change comments" />
+    <bpmn:task id="revreq" name="Review request" />
+    <bpmn:exclusiveGateway id="decide" name="Approve, change or reject?" default="f-decide-notif" />
+    <bpmn:subProcess id="quot" name="Make quotations">
+      <bpmn:startEvent id="sqs" name="Start" />
+      <bpmn:task id="mqt" name="Make quotations" />
+      <bpmn:endEvent id="sqe" name="End" />
+      <bpmn:sequenceFlow id="f-sqs-mqt" sourceRef="sqs" targetRef="mqt" />
+      <bpmn:sequenceFlow id="f-mqt-sqe" sourceRef="mqt" targetRef="sqe" />
+    </bpmn:subProcess>
+    <bpmn:task id="sel" name="Select vendor" />
+    <bpmn:exclusiveGateway id="vgw" name="Vendor valid?" default="f-vgw-genpo" />
+    <bpmn:task id="reg" name="Register requirement" />
+    <bpmn:task id="genpo" name="Generate and send purchase order" />
+    <bpmn:task id="rd" name="Receive product delivery" />
+    <bpmn:task id="ri" name="Receive invoice" />
+    <bpmn:parallelGateway id="pgw" name="Wait for delivery and invoice" />
+    <bpmn:parallelGateway id="jgw" name="Delivery and invoice received" />
+    <bpmn:task id="notif" name="Send notification to user" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:sequenceFlow id="f-s-reg" sourceRef="s" targetRef="reg" />
+    <bpmn:sequenceFlow id="f-reg-revreq" sourceRef="reg" targetRef="revreq" />
+    <bpmn:sequenceFlow id="f-revreq-decide" sourceRef="revreq" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-notif" name="Reject" sourceRef="decide" targetRef="notif" />
+    <bpmn:sequenceFlow id="f-decide-rev" name="Change required" sourceRef="decide" targetRef="rev">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decide-quot" name="Approve" sourceRef="decide" targetRef="quot">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-rev-notif" sourceRef="rev" targetRef="notif" />
+    <bpmn:sequenceFlow id="f-quot-sel" sourceRef="quot" targetRef="sel" />
+    <bpmn:sequenceFlow id="f-sel-vgw" sourceRef="sel" targetRef="vgw" />
+    <bpmn:sequenceFlow id="f-vgw-genpo" name="Vendor valid" sourceRef="vgw" targetRef="genpo" />
+    <bpmn:sequenceFlow id="f-vgw-sel" name="Vendor not valid" sourceRef="vgw" targetRef="sel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-genpo-pgw" sourceRef="genpo" targetRef="pgw" />
+    <bpmn:sequenceFlow id="f-rd-jgw" sourceRef="rd" targetRef="jgw" />
+    <bpmn:sequenceFlow id="f-ri-jgw" sourceRef="ri" targetRef="jgw" />
+    <bpmn:sequenceFlow id="f-pgw-rd" sourceRef="pgw" targetRef="rd" />
+    <bpmn:sequenceFlow id="f-pgw-ri" sourceRef="pgw" targetRef="ri" />
+    <bpmn:sequenceFlow id="f-jgw-notif" sourceRef="jgw" targetRef="notif" />
+    <bpmn:sequenceFlow id="f-notif-e" sourceRef="notif" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

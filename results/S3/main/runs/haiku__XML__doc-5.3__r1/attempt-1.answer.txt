@@ -1,0 +1,118 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organization" name="Organization" processRef="office-supply-request-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="office-supply-request-process" isExecutable="false">
+    <bpmn:laneSet id="office-supply-request-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>startEmployee</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endChange</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Immediate Supervisor">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>askChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchase" name="Purchase Department">
+        <bpmn:flowNodeRef>quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>selectVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>validVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>differentVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deliveredEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>invoiceEvent</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endRejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generatePO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitPar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinPar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endHandled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="startEmployee" name="Office supply request needed" />
+    <bpmn:task id="submit" name="Submit an office supply request" />
+    <bpmn:task id="register" name="Register the requirement" />
+    <bpmn:task id="receive" name="Receive the request" />
+    <bpmn:exclusiveGateway id="decision" name="Approve, ask for a change, or reject?" />
+    <bpmn:task id="approve" name="Approve the request" />
+    <bpmn:task id="askChange" name="Ask for a change" />
+    <bpmn:task id="reject" name="Reject the request" />
+
+    <bpmn:task id="sendRejection" name="Send notification of the rejection" />
+    <bpmn:endEvent id="endRejected" name="Request rejected" />
+
+    <bpmn:task id="sendChange" name="Send notification of the change required" />
+    <bpmn:task id="review" name="Review the comments for the change request" />
+    <bpmn:endEvent id="endChange" name="Change request reviewed" />
+
+    <bpmn:subProcess id="quotations" name="Make quotations">
+      <bpmn:startEvent id="quotationsStart" />
+      <bpmn:task id="prepareQuotations" name="Prepare the quotations" />
+      <bpmn:endEvent id="quotationsEnd" />
+      <bpmn:sequenceFlow id="q1" sourceRef="quotationsStart" targetRef="prepareQuotations" />
+      <bpmn:sequenceFlow id="q2" sourceRef="prepareQuotations" targetRef="quotationsEnd" />
+    </bpmn:subProcess>
+    <bpmn:exclusiveGateway id="mergeVendor" name="Vendor to select" />
+    <bpmn:task id="selectVendor" name="Select a vendor" />
+    <bpmn:exclusiveGateway id="validVendor" name="Vendor valid in the system?" />
+    <bpmn:task id="differentVendor" name="Choose a different vendor" />
+    <bpmn:task id="confirmVendor" name="Confirm the vendor" />
+
+    <bpmn:task id="generatePO" name="Generate the purchase order" />
+    <bpmn:task id="sendPO" name="Send the purchase order" />
+    <bpmn:parallelGateway id="splitPar" />
+    <bpmn:intermediateCatchEvent id="deliveredEvent" name="Product delivered">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="invoiceEvent" name="Invoice received">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="joinPar" />
+    <bpmn:task id="sendResult" name="Send notification of the result" />
+    <bpmn:endEvent id="endHandled" name="Request handled" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="startEmployee" targetRef="submit" />
+    <bpmn:sequenceFlow id="f2" sourceRef="submit" targetRef="register" />
+    <bpmn:sequenceFlow id="f3" sourceRef="register" targetRef="receive" />
+    <bpmn:sequenceFlow id="f4" sourceRef="receive" targetRef="decision" />
+    <bpmn:sequenceFlow id="f5" name="approved" sourceRef="decision" targetRef="approve" />
+    <bpmn:sequenceFlow id="f6" name="change required" sourceRef="decision" targetRef="askChange" />
+    <bpmn:sequenceFlow id="f7" name="rejected" sourceRef="decision" targetRef="reject" />
+    <bpmn:sequenceFlow id="f8" sourceRef="approve" targetRef="quotations" />
+    <bpmn:sequenceFlow id="f9" sourceRef="quotations" targetRef="mergeVendor" />
+    <bpmn:sequenceFlow id="f10" sourceRef="mergeVendor" targetRef="selectVendor" />
+    <bpmn:sequenceFlow id="f11" sourceRef="selectVendor" targetRef="validVendor" />
+    <bpmn:sequenceFlow id="f12" name="yes" sourceRef="validVendor" targetRef="confirmVendor" />
+    <bpmn:sequenceFlow id="f13" name="no" sourceRef="validVendor" targetRef="differentVendor" />
+    <bpmn:sequenceFlow id="f14" sourceRef="differentVendor" targetRef="mergeVendor" />
+    <bpmn:sequenceFlow id="f15" sourceRef="confirmVendor" targetRef="generatePO" />
+    <bpmn:sequenceFlow id="f16" sourceRef="generatePO" targetRef="sendPO" />
+    <bpmn:sequenceFlow id="f17" sourceRef="sendPO" targetRef="splitPar" />
+    <bpmn:sequenceFlow id="f18" sourceRef="splitPar" targetRef="deliveredEvent" />
+    <bpmn:sequenceFlow id="f19" sourceRef="splitPar" targetRef="invoiceEvent" />
+    <bpmn:sequenceFlow id="f20" sourceRef="deliveredEvent" targetRef="joinPar" />
+    <bpmn:sequenceFlow id="f21" sourceRef="invoiceEvent" targetRef="joinPar" />
+    <bpmn:sequenceFlow id="f22" sourceRef="joinPar" targetRef="sendResult" />
+    <bpmn:sequenceFlow id="f23" sourceRef="sendResult" targetRef="endHandled" />
+    <bpmn:sequenceFlow id="f24" sourceRef="reject" targetRef="sendRejection" />
+    <bpmn:sequenceFlow id="f25" sourceRef="sendRejection" targetRef="endRejected" />
+    <bpmn:sequenceFlow id="f26" sourceRef="askChange" targetRef="sendChange" />
+    <bpmn:sequenceFlow id="f27" sourceRef="sendChange" targetRef="review" />
+    <bpmn:sequenceFlow id="f28" sourceRef="review" targetRef="endChange" />
+  </bpmn:process>
+</bpmn:definitions>
+```

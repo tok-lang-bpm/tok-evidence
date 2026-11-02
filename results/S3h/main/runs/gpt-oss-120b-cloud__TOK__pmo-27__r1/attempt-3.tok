@@ -1,0 +1,57 @@
+tok 1.0 "Work Accident"
+
+pool organisation "Organisation"
+  lane employee "Employee / Employer"
+    start acc_start "Accident occurs"
+    task gather "Gather accident information"
+    xor reporter_type "Reporter type?"
+    # Employee branch
+    task inform_emp "Inform employer immediately"
+    xor self_emp "Self‑employed?"
+    task report_self "Report to Accident Insurance Provider (self‑employed) within 5 days"
+    xor fatal_serious "Fatality or serious injury?"
+    task report_inspector "Report to Labour Inspectorate"
+    xor long_term "Injury >3 days or death?"
+    task report_insurance "Report to Accident Insurance Provider within 5 days"
+    and join_emp_reports
+    end emp_end "Process completed"
+    # School branch
+  lane school "School / Educational Institution"
+    task report_directorate "Report to competent directorate"
+    task school_report_ins "School reports to Accident Insurance Provider (triplicate, within 5 days)"
+    end school_end "Process completed"
+    # Private branch
+  lane private "Private Insured Party"
+    task report_private "Report in writing to private insurer immediately"
+    xor private_fatal "Fatalities?"
+    task report_private_fatal "Report fatalities within 3 days"
+    end private_end "Process completed"
+
+# Flows
+flow acc_start -> gather -> reporter_type
+# Reporter type branches
+flow reporter_type -> inform_emp "Employee"
+flow reporter_type -> report_directorate "School"
+flow reporter_type -> report_private "Private"
+
+# Employee path
+flow inform_emp -> self_emp
+flow self_emp -> report_self "Yes"
+flow self_emp -> fatal_serious "No"
+flow report_self -> join_emp_reports
+flow fatal_serious -> report_inspector "Yes"
+flow fatal_serious -> long_term "No"
+flow report_inspector -> join_emp_reports
+flow long_term -> report_insurance "Yes"
+flow long_term -> join_emp_reports "No"
+flow report_insurance -> join_emp_reports
+flow join_emp_reports -> emp_end
+
+# School path
+flow report_directorate -> school_report_ins -> school_end
+
+# Private path
+flow report_private -> private_fatal
+flow private_fatal -> report_private_fatal "Yes"
+flow private_fatal -> private_end "No"
+flow report_private_fatal -> private_end

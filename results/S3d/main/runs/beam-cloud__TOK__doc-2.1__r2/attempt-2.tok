@@ -1,0 +1,122 @@
+tok 1.0 "Service degradation handling"
+
+pool org "Organisation"
+  lane customer "Customer"
+    start degraded "Service degraded"
+    task perceive "Perceive service degradation"
+    task send_params "Send problem parameters"
+    task receive_customer_report "Receive service performance and problem resolution report"
+    end customer_end "Customer process ended"
+
+  lane cs "Customer Service"
+    task enter_report "Enter problem report into system T"
+    task compare_sla "Compare problem report to customer SLA"
+    task determine_measures "Determine necessary counter measures"
+    task determine_significance "Determine customer significance"
+    xor premium "Customer is premium?"
+    task link_extra "Link to extra problem fix process"
+    xor measures_affected "Counter measures affected?"
+    task reprioritize "Re-prioritize counter measures"
+    task create_detailed "Create detailed problem report"
+    task send_detailed_sm "Send detailed problem report to Service Management"
+    task receive_actual "Receive actual service performance"
+    task receive_resolution "Receive problem resolution report"
+    and cs_start "Trigger concurrent activities"
+    task create_customer_report "Create customer report"
+    task send_customer_report "Send report to customer"
+    and cs_send_split "Send report and notify completion"
+    task report_rebate "Report SLA violation rebate to Billing & Collections"
+    and cs_join "All activities completed"
+    end cs_end "Customer Service process ended"
+
+  lane sm "Service Management"
+    task investigate_analyzable "Investigate whether problem is analyzable"
+    xor analyzable "Problem analyzable by Service Management?"
+    task perform_analysis "Perform analysis"
+    task create_trouble_report_sm "Create trouble report"
+    task send_detailed_rp "Send detailed problem report to Resource Provisioning"
+    task prepare_final "Prepare final status report"
+    xor actions "Counter measures to be taken?"
+    task send_actual_sm "Send actual service performance to Customer Service"
+    task undertake_minor "Undertake corrective actions"
+    task create_resolution "Create problem resolution report"
+    task send_resolution_sm "Send problem resolution report to Customer Service"
+    task create_restoration_request "Create request for automatic resource restoration"
+    task send_restoration_request "Send restoration request to Resource Provisioning" message="Restoration request"
+    task receive_troubleshooting "Receive trouble-shooting report"
+
+  lane rp "Resource Provisioning"
+    task check_problems "Check for possible problems"
+    xor possible_problems "Problems detected?"
+    task create_normal_notification "Create notification about normal service execution"
+    task analyze_problem_rp "Analyze problem"
+    task create_trouble_report_rp "Create trouble report"
+    task create_status_report "Create status report"
+    and rp_split "Send status and wait"
+    task send_status_report "Send status report to Service Management"
+    receive wait "Wait for restoration request" message="Restoration request"
+    boundary wait_timer on=wait timer=P2D
+    task track_errors "Track all possible errors"
+    task undertake_rp "Undertake corrective actions"
+    task create_troubleshooting "Create trouble-shooting report"
+    task send_troubleshooting "Send trouble-shooting report to Service Management"
+    end rp_wait_ended "Resource Provisioning wait ended"
+
+  lane billing "Billing & Collections"
+    task adjust_billing "Adjust billing"
+
+flow degraded -> perceive -> send_params
+flow send_params -> enter_report -> compare_sla -> determine_measures -> determine_significance -> premium
+flow premium -> link_extra "premium" when="premium"
+flow premium -> measures_affected "not premium" default
+flow link_extra -> measures_affected
+flow measures_affected -> reprioritize "affected" when="affected"
+flow measures_affected -> create_detailed "not affected" default
+flow reprioritize -> create_detailed
+flow create_detailed -> send_detailed_sm
+
+flow send_detailed_sm -> investigate_analyzable
+flow investigate_analyzable -> analyzable
+flow analyzable -> perform_analysis "yes" when="analyzable"
+flow analyzable -> send_detailed_rp "no" default
+flow perform_analysis -> create_trouble_report_sm
+flow create_trouble_report_sm -> prepare_final
+flow send_detailed_rp -> check_problems
+
+flow check_problems -> possible_problems
+flow possible_problems -> analyze_problem_rp "yes" when="problemDetected"
+flow possible_problems -> create_normal_notification "no" default
+flow analyze_problem_rp -> create_trouble_report_rp
+flow create_normal_notification -> create_status_report
+flow create_trouble_report_rp -> create_status_report
+flow create_status_report -> rp_split
+flow rp_split -> send_status_report
+flow rp_split -> wait
+flow send_status_report -> prepare_final
+flow wait -> track_errors
+flow wait_timer -> rp_wait_ended
+
+flow prepare_final -> actions
+flow actions -> send_actual_sm "No problem detected" when="noProblem"
+flow actions -> undertake_minor "Minor corrective actions" when="minor"
+flow actions -> create_restoration_request "Automatic restoration required" default
+flow send_actual_sm -> receive_actual
+flow undertake_minor -> create_resolution
+flow create_restoration_request -> send_restoration_request
+flow send_restoration_request -> track_errors
+flow track_errors -> undertake_rp -> create_troubleshooting -> send_troubleshooting
+flow send_troubleshooting -> receive_troubleshooting
+flow receive_troubleshooting -> create_resolution
+flow create_resolution -> send_resolution_sm
+flow send_resolution_sm -> receive_resolution
+
+flow receive_actual -> cs_start
+flow receive_resolution -> cs_start
+flow cs_start -> create_customer_report
+flow cs_start -> report_rebate
+flow create_customer_report -> send_customer_report -> cs_send_split
+flow cs_send_split -> receive_customer_report
+flow cs_send_split -> cs_join
+flow report_rebate -> adjust_billing -> cs_join
+flow cs_join -> cs_end
+flow receive_customer_report -> customer_end

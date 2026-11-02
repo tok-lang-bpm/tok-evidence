@@ -1,0 +1,87 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organization" processRef="office-supply-process"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="office-supply-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="employeeLane" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submitRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewChangeComments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resubmitRequest</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisorLane" name="Supervisor">
+        <bpmn:flowNodeRef>receiveRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>supervisorDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchaseLane" name="Purchase Department">
+        <bpmn:flowNodeRef>quotationSubprocess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="systemLane" name="System">
+        <bpmn:flowNodeRef>registerRequirement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generatePO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitDelivery</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyUser</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endProcess</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Office supply request submitted"/>
+    <bpmn:task id="submitRequest" name="Submit office supply request"/>
+    <bpmn:task id="registerRequirement" name="Register requirement"/>
+    <bpmn:task id="receiveRequest" name="Receive request"/>
+    <bpmn:exclusiveGateway id="supervisorDecision" name="Supervisor decision"/>
+
+    <bpmn:task id="reviewChangeComments" name="Review change comments"/>
+    <bpmn:task id="resubmitRequest" name="Resubmit request"/>
+
+    <bpmn:subProcess id="quotationSubprocess" name="Make quotations and select vendor">
+      <bpmn:startEvent id="subStart"/>
+      <bpmn:task id="makeQuotations" name="Make quotations"/>
+      <bpmn:task id="selectVendor" name="Select vendor"/>
+      <bpmn:exclusiveGateway id="vendorValidGateway" name="Vendor valid?"/>
+      <bpmn:task id="chooseDifferentVendor" name="Choose different vendor"/>
+      <bpmn:endEvent id="subEnd"/>
+
+      <!-- Subprocess sequence flows -->
+      <bpmn:sequenceFlow id="sf1" sourceRef="subStart" targetRef="makeQuotations"/>
+      <bpmn:sequenceFlow id="sf2" sourceRef="makeQuotations" targetRef="selectVendor"/>
+      <bpmn:sequenceFlow id="sf3" sourceRef="selectVendor" targetRef="vendorValidGateway"/>
+      <bpmn:sequenceFlow id="sf4" name="valid" sourceRef="vendorValidGateway" targetRef="subEnd"/>
+      <bpmn:sequenceFlow id="sf5" name="invalid" sourceRef="vendorValidGateway" targetRef="chooseDifferentVendor"/>
+      <bpmn:sequenceFlow id="sf6" sourceRef="chooseDifferentVendor" targetRef="selectVendor"/>
+    </bpmn:subProcess>
+
+    <bpmn:task id="generatePO" name="Generate and send purchase order"/>
+    <bpmn:task id="waitDelivery" name="Wait for product delivery and invoice receipt"/>
+    <bpmn:task id="notifyUser" name="Send notification to user"/>
+    <bpmn:endEvent id="endProcess" name="Process completed"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="submitRequest"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="submitRequest" targetRef="registerRequirement"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="registerRequirement" targetRef="receiveRequest"/>
+    <bpmn:sequenceFlow id="f4" sourceRef="receiveRequest" targetRef="supervisorDecision"/>
+
+    <bpmn:sequenceFlow id="fReject" name="reject" sourceRef="supervisorDecision" targetRef="notifyUser"/>
+    <bpmn:sequenceFlow id="fChange" name="change" sourceRef="supervisorDecision" targetRef="reviewChangeComments"/>
+    <bpmn:sequenceFlow id="fApprove" name="approve" sourceRef="supervisorDecision" targetRef="quotationSubprocess"/>
+
+    <bpmn:sequenceFlow id="fReviewToResubmit" sourceRef="reviewChangeComments" targetRef="resubmitRequest"/>
+    <bpmn:sequenceFlow id="fResubmitToReceive" sourceRef="resubmitRequest" targetRef="receiveRequest"/>
+
+    <bpmn:sequenceFlow id="fSubToGeneratePO" sourceRef="quotationSubprocess" targetRef="generatePO"/>
+    <bpmn:sequenceFlow id="fGenerateToWait" sourceRef="generatePO" targetRef="waitDelivery"/>
+    <bpmn:sequenceFlow id="fWaitToNotify" sourceRef="waitDelivery" targetRef="notifyUser"/>
+
+    <bpmn:sequenceFlow id="fNotifyToEnd" sourceRef="notifyUser" targetRef="endProcess"/>
+  </bpmn:process>
+</bpmn:definitions>
+```

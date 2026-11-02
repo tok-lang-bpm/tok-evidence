@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organization" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_offer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reply_dec</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update_decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive_decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move_admin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request_docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer_no_answer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout_update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout_archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end3</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="admin" name="Administration">
+        <bpmn:flowNodeRef>complete_admin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="send_offer" name="Send Mortgage offer to customer" />
+    <bpmn:task id="wait_reply" name="Wait for customer reply" />
+    <bpmn:exclusiveGateway id="reply_dec" name="Customer reply?" />
+    <bpmn:task id="update_decline" name="Update case details" />
+    <bpmn:task id="archive_decline" name="Archive case prior to cancellation" />
+    <bpmn:task id="move_admin" name="Move case to administration for completion" />
+    <bpmn:task id="request_docs" name="Generate message to customer requesting outstanding documents" />
+    <bpmn:task id="receive_docs" name="Receive customer documents" />
+    <bpmn:boundaryEvent id="timer_no_answer" attachedToRef="receive_docs">
+      <bpmn:timerEventDefinition id="timer_no_answer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="timeout_update" name="Update case details" />
+    <bpmn:task id="timeout_archive" name="Archive case prior to cancellation" />
+    <bpmn:endEvent id="end1" name="End" />
+    <bpmn:endEvent id="end2" name="End" />
+    <bpmn:endEvent id="end3" name="End" />
+    <bpmn:task id="complete_admin" name="Complete case" />
+    <bpmn:sequenceFlow id="f-start-send_offer" sourceRef="start" targetRef="send_offer" />
+    <bpmn:sequenceFlow id="f-send_offer-wait_reply" sourceRef="send_offer" targetRef="wait_reply" />
+    <bpmn:sequenceFlow id="f-wait_reply-reply_dec" sourceRef="wait_reply" targetRef="reply_dec" />
+    <bpmn:sequenceFlow id="f-reply_dec-update_decline" name="decline" sourceRef="reply_dec" targetRef="update_decline">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reply = "decline"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-update_decline-archive_decline" sourceRef="update_decline" targetRef="archive_decline" />
+    <bpmn:sequenceFlow id="f-archive_decline-end1" sourceRef="archive_decline" targetRef="end1" />
+    <bpmn:sequenceFlow id="f-reply_dec-move_admin" name="complete_all" sourceRef="reply_dec" targetRef="move_admin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reply = "complete_all"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-move_admin-complete_admin" sourceRef="move_admin" targetRef="complete_admin" />
+    <bpmn:sequenceFlow id="f-complete_admin-end2" sourceRef="complete_admin" targetRef="end2" />
+    <bpmn:sequenceFlow id="f-reply_dec-request_docs" name="incomplete" sourceRef="reply_dec" targetRef="request_docs">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reply = "incomplete"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-request_docs-receive_docs" sourceRef="request_docs" targetRef="receive_docs" />
+    <bpmn:sequenceFlow id="f-receive_docs-move_admin" sourceRef="receive_docs" targetRef="move_admin" />
+    <bpmn:sequenceFlow id="f-timer_no_answer-timeout_update" sourceRef="timer_no_answer" targetRef="timeout_update" />
+    <bpmn:sequenceFlow id="f-timeout_update-timeout_archive" sourceRef="timeout_update" targetRef="timeout_archive" />
+    <bpmn:sequenceFlow id="f-timeout_archive-end3" sourceRef="timeout_archive" targetRef="end3" />
+  </bpmn:process>
+</bpmn:definitions>

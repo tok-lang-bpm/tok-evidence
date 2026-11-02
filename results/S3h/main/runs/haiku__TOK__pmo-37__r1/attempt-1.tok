@@ -1,0 +1,42 @@
+tok 1.0 "Contract"
+
+pool company "Contract project"
+  lane contractor "Contractor"
+    start needed "Parts needed for the contract project"
+    task query "Query all web shops for quantity, price and delivery time"
+    task choose "Choose the cheapest parts"
+    xor enough "One shop has enough parts?"
+    task order_one "Order the parts from one shop"
+    task order_several "Order the parts from several shops"
+    xor ordered
+    task list "Create a list of the parts ordered from each shop"
+    catch first "First parts arrive" message="Parts batch arrived"
+    and split
+    xor loop_in
+    task check "Check the stock level of each part"
+    xor stock "Stock level of a part?"
+    task mail "Write a mail to friends complaining about the web shops"
+    task reorder_fast "Reorder the part from the fastest web shop"
+    task reorder_cheap "Reorder the part from the cheapest web shop"
+    xor stock_done
+    catch next "Next parts batch arrives" message="Parts batch arrived"
+    task build "Build the contract"
+    end finished "Contract built" terminate
+
+flow needed -> query -> choose -> enough
+flow enough -> order_one "yes" when="one_shop_enough = true"
+flow enough -> order_several "no" default
+flow order_one -> ordered
+flow order_several -> ordered
+flow ordered -> list -> first -> split
+flow split -> build -> finished
+flow split -> loop_in
+flow loop_in -> check -> stock
+flow stock -> mail "zero" when="stock = 0"
+flow stock -> reorder_fast "below 3" when="stock > 0 and stock < 3"
+flow stock -> reorder_cheap "below 5" when="stock >= 3 and stock < 5"
+flow stock -> stock_done "otherwise" default
+flow mail -> stock_done
+flow reorder_fast -> stock_done
+flow reorder_cheap -> stock_done
+flow stock_done -> next -> loop_in

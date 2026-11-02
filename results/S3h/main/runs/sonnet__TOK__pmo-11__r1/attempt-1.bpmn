@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Subscription lifecycle" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Subscription organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Subscription lifecycle" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>signedup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>signup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelreq</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>generate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancels</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="support" name="Support team">
+        <bpmn:flowNodeRef>process</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>refund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>charges</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>applied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deactivate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>settle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="signedup" name="Customer signs up" />
+    <bpmn:task id="signup" name="Enter personal and payment information" />
+    <bpmn:task id="cancelreq" name="Submit the cancellation request" />
+    <bpmn:task id="generate" name="Generate the account" />
+    <bpmn:task id="assign" name="Assign access" />
+    <bpmn:task id="billing" name="Trigger automated billing cycles" />
+    <bpmn:task id="updates" name="Send updates, product enhancements and renewal notifications" />
+    <bpmn:exclusiveGateway id="cancels" name="Does the customer cancel?" default="f-cancels-updates" />
+    <bpmn:task id="process" name="Process the cancellation request" />
+    <bpmn:exclusiveGateway id="terms" name="Is a refund due under the terms?" default="f-terms-charges" />
+    <bpmn:task id="refund" name="Apply the refund" />
+    <bpmn:task id="charges" name="Apply the charges" />
+    <bpmn:exclusiveGateway id="applied" />
+    <bpmn:task id="deactivate" name="Deactivate the subscription" />
+    <bpmn:task id="settle" name="Settle the final account balance" />
+    <bpmn:endEvent id="done" name="Subscription closed" />
+    <bpmn:sequenceFlow id="f-signedup-signup" sourceRef="signedup" targetRef="signup" />
+    <bpmn:sequenceFlow id="f-signup-generate" sourceRef="signup" targetRef="generate" />
+    <bpmn:sequenceFlow id="f-generate-assign" sourceRef="generate" targetRef="assign" />
+    <bpmn:sequenceFlow id="f-assign-billing" sourceRef="assign" targetRef="billing" />
+    <bpmn:sequenceFlow id="f-billing-updates" sourceRef="billing" targetRef="updates" />
+    <bpmn:sequenceFlow id="f-updates-cancels" sourceRef="updates" targetRef="cancels" />
+    <bpmn:sequenceFlow id="f-cancels-updates" name="no" sourceRef="cancels" targetRef="updates" />
+    <bpmn:sequenceFlow id="f-cancels-cancelreq" name="yes" sourceRef="cancels" targetRef="cancelreq">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">cancel = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-cancelreq-process" sourceRef="cancelreq" targetRef="process" />
+    <bpmn:sequenceFlow id="f-process-terms" sourceRef="process" targetRef="terms" />
+    <bpmn:sequenceFlow id="f-terms-refund" name="yes" sourceRef="terms" targetRef="refund">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">refundDue = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-terms-charges" name="no" sourceRef="terms" targetRef="charges" />
+    <bpmn:sequenceFlow id="f-refund-applied" sourceRef="refund" targetRef="applied" />
+    <bpmn:sequenceFlow id="f-charges-applied" sourceRef="charges" targetRef="applied" />
+    <bpmn:sequenceFlow id="f-applied-deactivate" sourceRef="applied" targetRef="deactivate" />
+    <bpmn:sequenceFlow id="f-deactivate-settle" sourceRef="deactivate" targetRef="settle" />
+    <bpmn:sequenceFlow id="f-settle-done" sourceRef="settle" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

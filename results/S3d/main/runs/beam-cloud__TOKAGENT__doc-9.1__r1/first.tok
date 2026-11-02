@@ -1,0 +1,60 @@
+tok 1.0 "Account Defaulter Process"
+
+pool org "Organisation"
+  lane staff "Staff"
+    start s "Every weekday morning"
+    sub sp1 "Morning defaulter processing"
+      start sp1_start "Start morning processing"
+      task backup "Back up database"
+      task check_defaulter "Check Account Defaulter table for new records"
+      xor gw_new "New records found?"
+      task check_crm1 "Check CRM system for new returns"
+      xor gw_returns1 "New returns exist?"
+      task register "Register all defaulting accounts and customers"
+      xor gw_advised "Defaulting client codes previously advised?"
+      task produce_table "Produce table of defaulting accounts"
+      task send_acct_mgmt "Send defaulting accounts table to account management"
+      end sp1_end "Defaulter report completed"
+    boundary b1 "Send alert deadline" on=sp1 timer=PT6H30M noninterrupting
+    task alert_supervisor1 "Send alert to supervisor"
+    end e_alert1 "Alert sent"
+    sub sp2 "Reconciliation processing"
+      start sp2_start "Start reconciliation"
+      task check_crm2 "Check CRM system for new returns"
+      xor gw_returns2 "New returns filed?"
+      task reconcile "Reconcile with existing account defaulters table"
+      end sp2_end "Reconciliation completed"
+    boundary b2 "Send message deadline" on=sp2 timer=PT4H noninterrupting
+    task send_msg_supervisor "Send message to supervisor"
+    end e_msg "Message sent"
+    end e_end "End"
+
+flow sp1_start -> backup
+flow backup -> check_defaulter
+flow check_defaulter -> gw_new
+flow gw_new -> check_crm1 "No new records" when="newRecords = false"
+flow gw_new -> sp1_end "New records found" default
+flow check_crm1 -> gw_returns1
+flow gw_returns1 -> register "New returns exist" when="newReturns = true"
+flow gw_returns1 -> sp1_end "No new returns" default
+flow register -> gw_advised
+flow gw_advised -> produce_table "Not previously advised" when="advised = false"
+flow gw_advised -> sp1_end "Previously advised" default
+flow produce_table -> send_acct_mgmt
+flow send_acct_mgmt -> sp1_end
+
+flow b1 -> alert_supervisor1
+flow alert_supervisor1 -> e_alert1
+
+flow s -> sp1
+flow sp1 -> sp2
+flow sp2 -> e_end
+
+flow b2 -> send_msg_supervisor
+flow send_msg_supervisor -> e_msg
+
+flow sp2_start -> check_crm2
+flow check_crm2 -> gw_returns2
+flow gw_returns2 -> reconcile "New returns filed" when="newReturns2 = true"
+flow gw_returns2 -> sp2_end "No new returns" default
+flow reconcile -> sp2_end

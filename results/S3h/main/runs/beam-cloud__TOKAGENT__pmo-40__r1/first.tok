@@ -1,0 +1,24 @@
+tok 1.0 "OEE"
+
+pool oee "OEE"
+  lane system "System"
+    start s "Start"
+    task collect "Collect relevant information from machine"
+    task calculate "Calculate OEE"
+    xor check "OEE below threshold?"
+    task stop "Stop machine"
+    task email "Send email to engineer"
+    catch restart "Machine restarted" message="Machine restarted"
+    eventsub disconnected "Machine disconnected"
+      start disconnected_start "Machine disconnected" message="Machine disconnected"
+      end disconnected_end "Process stopped" terminate
+      flow disconnected_start -> disconnected_end
+
+    flow s -> collect
+    flow collect -> calculate
+    flow calculate -> check
+    flow check -> stop "yes" when="oee < threshold"
+    flow stop -> email
+    flow email -> restart
+    flow restart -> collect
+    flow check -> collect "no" default

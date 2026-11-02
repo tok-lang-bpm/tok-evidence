@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process_1" isExecutable="false">
+    <bpmn:laneSet id="laneSet_1">
+      <bpmn:lane id="lane_employee" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_inform_employer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_after_inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_employee</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_employer" name="Employer">
+        <bpmn:flowNodeRef>gw_after_inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_fatal_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_labour_inspectorate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_insurance_employer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg_join_reports</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_employer</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_selfemployed" name="Self‑employed Person">
+        <bpmn:flowNodeRef>gw_selfemployed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_insurance_self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_self</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_school" name="School/University">
+        <bpmn:flowNodeRef>gw_school</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_directorate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_insurance_school</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg_join_school_reports</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_school</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_labour" name="Labour Inspectorate">
+        <bpmn:flowNodeRef>task_report_labour_inspectorate</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_insurance" name="Accident Insurance Provider">
+        <bpmn:flowNodeRef>task_report_insurance_employer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_insurance_self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_insurance_school</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Accident or incident occurs" />
+    <bpmn:exclusiveGateway id="gw_selfemployed" name="Reporter type?" />
+    <bpmn:sequenceFlow id="f_start_self" sourceRef="start" targetRef="gw_selfemployed" />
+    <bpmn:sequenceFlow id="f_self_yes" name="Self‑employed" sourceRef="gw_selfemployed" targetRef="task_report_insurance_self" />
+    <bpmn:task id="task_report_insurance_self" name="Report to accident insurance provider" />
+    <bpmn:sequenceFlow id="f_self_end" sourceRef="task_report_insurance_self" targetRef="end_self" />
+    <bpmn:endEvent id="end_self" name="Self‑employed reporting completed" />
+    <bpmn:sequenceFlow id="f_self_no" name="Employee" sourceRef="gw_selfemployed" targetRef="task_inform_employer" />
+    <bpmn:task id="task_inform_employer" name="Inform employer" />
+    <bpmn:sequenceFlow id="f_inform_to_gw" sourceRef="task_inform_employer" targetRef="gw_after_inform" />
+    <bpmn:exclusiveGateway id="gw_after_inform" name="Is accident fatal or serious?" />
+    <bpmn:sequenceFlow id="f_after_inform_yes" name="Yes" sourceRef="gw_after_inform" targetRef="gw_fatal_decision" />
+    <bpmn:exclusiveGateway id="gw_fatal_decision" name="Reporting required?" />
+    <bpmn:sequenceFlow id="f_fatal_yes" name="Report" sourceRef="gw_fatal_decision" targetRef="pg_split_reports" />
+    <bpmn:parallelGateway id="pg_split_reports" />
+    <bpmn:sequenceFlow id="f_to_labour" sourceRef="pg_split_reports" targetRef="task_report_labour_inspectorate" />
+    <bpmn:task id="task_report_labour_inspectorate" name="Report to Labour Inspectorate" />
+    <bpmn:sequenceFlow id="f_labour_to_join" sourceRef="task_report_labour_inspectorate" targetRef="pg_join_reports" />
+    <bpmn:sequenceFlow id="f_to_insurance" sourceRef="pg_split_reports" targetRef="task_report_insurance_employer" />
+    <bpmn:task id="task_report_insurance_employer" name="Report to accident insurance provider" />
+    <bpmn:sequenceFlow id="f_insurance_to_join" sourceRef="task_report_insurance_employer" targetRef="pg_join_reports" />
+    <bpmn:parallelGateway id="pg_join_reports" />
+    <bpmn:sequenceFlow id="f_join_to_end" sourceRef="pg_join_reports" targetRef="end_employer" />
+    <bpmn:endEvent id="end_employer" name="Employer reporting completed" />
+    <bpmn:sequenceFlow id="f_after_inform_no" name="No" sourceRef="gw_after_inform" targetRef="end_employee" />
+    <bpmn:endEvent id="end_employee" name="Employee reporting completed" />
+    <!-- School path -->
+    <bpmn:sequenceFlow id="f_start_school" name="Student/Child" sourceRef="start" targetRef="gw_school" />
+    <bpmn:exclusiveGateway id="gw_school" name="Reporter is school/student?" />
+    <bpmn:sequenceFlow id="f_school_yes" name="Yes" sourceRef="gw_school" targetRef="task_report_directorate" />
+    <bpmn:task id="task_report_directorate" name="Report to competent directorate" />
+    <bpmn:sequenceFlow id="f_dir_to_insurance" sourceRef="task_report_directorate" targetRef="task_report_insurance_school" />
+    <bpmn:task id="task_report_insurance_school" name="Report to accident insurance provider (school)" />
+    <bpmn:sequenceFlow id="f_ins_school_to_pg" sourceRef="task_report_insurance_school" targetRef="pg_join_school_reports" />
+    <bpmn:parallelGateway id="pg_join_school_reports" />
+    <bpmn:sequenceFlow id="f_pg_school_to_end" sourceRef="pg_join_school_reports" targetRef="end_school" />
+    <bpmn:endEvent id="end_school" name="School reporting completed" />
+    <bpmn:sequenceFlow id="f_school_no" name="No" sourceRef="gw_school" targetRef="gw_selfemployed" />
+  </bpmn:process>
+</bpmn:definitions>

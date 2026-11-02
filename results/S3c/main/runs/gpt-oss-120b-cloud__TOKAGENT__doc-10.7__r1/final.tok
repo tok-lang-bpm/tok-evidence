@@ -1,0 +1,30 @@
+tok 1.0 "MSPN Assignment Process"
+
+pool org "Organisation"
+  lane mspn "MSPN"
+    start start1 "Start"
+    task register_measurement "The MSPN registers the measurement at the GO"
+  lane go "GO"
+    task examine_application "The GO examines the application of the MSPN"
+    xor decision_approve "Application approved?"
+    task reject_application "The GO rejects the application of the MSPN"
+    task assign_mspn "The GO assigns the MSPN"
+    and parallel_inform "Inform parties"
+    task inform_mspo "The GO informs the MSPO about the assignment of MSPN"
+    task inform_mpo "The GO informs the MPO about the assignment of the MSPN"
+    task inform_sp "The GO informs the SP about the assignment of MSPN"
+    and join_inform "Join informs"
+    end end_success "End"
+    end end_reject "End"
+
+flow start1 -> register_measurement -> examine_application -> decision_approve
+flow decision_approve -> reject_application "reject" default
+flow decision_approve -> assign_mspn "confirm" when="true"
+flow assign_mspn -> parallel_inform
+flow parallel_inform -> inform_mspo
+flow parallel_inform -> inform_mpo
+flow parallel_inform -> inform_sp
+flow inform_mspo -> join_inform
+flow inform_mpo -> join_inform
+flow inform_sp -> join_inform -> end_success
+flow reject_application -> end_reject

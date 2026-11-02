@@ -1,0 +1,64 @@
+tok 1.0 "Intake workflow"
+
+pool institute "Mental health care institute"
+  lane secretary "Secretarial office"
+    start notice "Notice by telephone received"
+    task inquire "Inquire after the name and residence of the patient"
+    task putthrough "Put the doctor through to the nursing officer"
+    task storeinfo "Store the information in the information system"
+    task printinfo "Print the information"
+    xor isnew "New patient?"
+    task createfile "Create a patient file"
+    xor newmerge
+    task storefile "Store the registration form and the print in the patient file"
+    task cards "Produce two registration cards"
+    task addlist "Add the patient to the list of new notices"
+    task storeassign "Store the assignment in the information system"
+    task passcards "Pass the registration cards to the first and second intaker"
+    and split
+    xor needfile "Medical file required?"
+    task letter "Prepare and send a letter to the family doctor"
+    task receivecopy "Receive the copy of the medical file"
+    task informsecond "Inform the second intaker"
+    task addcopy "Add the copy to the patient file"
+    xor filemerge
+    task typetapes "Type out the tapes"
+    task addtapes "Add the typed information to the patient file"
+    and join
+    task statuslist "Put the patient on the list of patients that reach this status"
+    task providelist "Provide the team-leader with the list of patients"
+    end done "Intake procedure ended"
+  lane nurse "Nursing officer"
+    task fullinquiry "Make a full inquiry into the mental, health and social state of the patient"
+    task record "Record the information on a registration form"
+    task handin "Hand in the registration form at the secretarial office"
+  lane teamleader "Team-leader"
+    task assign "Assign the new patients to the first and second intaker"
+    task assignlist "Record the assignments on an assignment list"
+    task determine "Determine whether the medical file is required"
+    task handlist "Hand the assignment list to the secretarial office"
+    task plan "Formulate the treatment plan"
+  lane first "First intaker"
+    task planfirst "Plan a meeting with the patient"
+    task examine "Examine the patient using the standard checklist"
+    task notes "Register additional observations in a personal notebook"
+    task copynotes "Put a copy of the notes in the patient file"
+    task addchecklist "Add the standard checklist to the patient file"
+  lane second "Second intaker"
+    task plansecond "Plan the first meeting with the patient"
+    task meet "Hold the meeting with the patient"
+    task dictate "Record the observations with a dictaphone"
+
+flow notice -> inquire -> putthrough -> fullinquiry -> record -> handin -> storeinfo -> printinfo -> isnew
+flow isnew -> createfile "yes" when="newPatient = true"
+flow isnew -> newmerge "no" default
+flow createfile -> newmerge
+flow newmerge -> storefile -> cards -> addlist -> assign -> assignlist -> determine -> handlist -> storeassign -> passcards -> split
+flow split -> needfile
+flow split -> planfirst
+flow needfile -> letter "yes" when="medicalFileRequired = true"
+flow needfile -> filemerge "no" default
+flow letter -> receivecopy -> informsecond -> addcopy -> filemerge
+flow filemerge -> plansecond -> meet -> dictate -> typetapes -> addtapes -> join
+flow planfirst -> examine -> notes -> copynotes -> addchecklist -> join
+flow join -> statuslist -> providelist -> plan -> done

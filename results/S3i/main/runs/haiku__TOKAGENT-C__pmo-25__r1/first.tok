@@ -1,0 +1,40 @@
+tok 1.0 "Find a Job"
+
+pool seeker "Find a Job"
+  lane jobseeker "Job seeker"
+    start started "Job search started"
+    task report "Report the companies you wrote job applications to"
+    task rate_company "Rate the company"
+    xor low_rating "Company rated C or less?"
+    end ended "Job search ended"
+  lane company "Company"
+    task confirm "Confirm the receipt of the job application"
+    task rate_application "Rate the job application"
+    task negotiate "Negotiate a job interview"
+    xor wants "Company wants you to work for them?"
+    end rejected "Application not pursued"
+    task probation "Enter the probation phase"
+    and split_review
+    task rate_seeker "Rate the job applicant"
+    and join_review
+    xor permanent "Job becomes permanent?"
+    end not_permanent "Probation ended"
+  lane system "System"
+    task send_offers "Send new potential job offers"
+    task send_later "Send job offers without reporting"
+    end offers "Job offers continue"
+
+flow started -> report -> send_offers -> confirm -> rate_application -> negotiate -> wants
+flow wants -> rejected "no"
+flow wants -> probation "yes"
+flow probation -> split_review
+flow split_review -> rate_company
+flow split_review -> rate_seeker
+flow rate_company -> join_review
+flow rate_seeker -> join_review
+flow join_review -> permanent
+flow permanent -> not_permanent "no"
+flow permanent -> low_rating "yes"
+flow low_rating -> send_later "C or less"
+flow low_rating -> ended "better than C"
+flow send_later -> offers

@@ -1,0 +1,74 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: LAN Party
+
+You are planning a LAN party for 10 friends, so the first thing you have to do is to send invitations to these 10 friends.
+Next, you have to find out which games they want to play.
+As soon as you have received a list of games, you can appoint a date when the LAN party is going to happen.
+If 8 or more people agree on this date, you are good to continue.
+Else, you have to appoint another date, until 8 people are free to join you.
+While you find a date, you can find out if you have all the games your guests want to play.
+If some are missing, download them.
+Next, you should find out how much beer your friends will require.
+If you do not have enough, buy what's missing.
+After that, you can enjoy the LAN party.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "LAN Party"
+
+pool org "LAN party organisation"
+  lane host "Host"
+    start planned "LAN party planned"
+    task invite "Send invitations to the 10 friends"
+    task findgames "Find out which games the friends want to play"
+    and split
+    xor dateMerge
+    task appoint "Appoint a date for the LAN party"
+    xor enough "8 or more people agree on the date?"
+    task checkgames "Find out if you have all the games the guests want to play"
+    xor missing "Some games missing?"
+    task download "Download the missing games"
+    xor gamesMerge
+    and join
+    task findbeer "Find out how much beer the friends will require"
+    xor beerEnough "Enough beer?"
+    task buybeer "Buy the missing beer"
+    xor beerMerge
+    task enjoy "Enjoy the LAN party"
+    end done "LAN party held"
+
+flow planned -> invite -> findgames -> split
+flow split -> dateMerge
+flow split -> checkgames
+flow dateMerge -> appoint -> enough
+flow enough -> join "yes" when="agreed >= 8"
+flow enough -> dateMerge "no" default
+flow checkgames -> missing
+flow missing -> download "yes"
+flow missing -> gamesMerge "no" default
+flow download -> gamesMerge
+flow gamesMerge -> join
+flow join -> findbeer -> beerEnough
+flow beerEnough -> buybeer "no"
+flow beerEnough -> beerMerge "yes" default
+flow buybeer -> beerMerge
+flow beerMerge -> enjoy -> done
+```
+
+The tok checker reports these problems in it:
+
+- line 31: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-missing-download)
+- line 36: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-beerEnough-buybeer)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,43 @@
+tok 1.0 "Contract"
+
+pool org "Organisation"
+  lane procurement "Procurement"
+    start start "Contract start"
+    task query "Query web shops"
+    task assess "Find delivery, price, and lead time"
+    task create_list "Create list of parts to order from each shop"
+    xor check_stock "Single shop sufficient?"
+    task order_single "Order parts from single shop"
+    task order_multiple "Order parts from several shops"
+    task wait_arrival "Wait for first parts arrival"
+    task start_build "Start building"
+    xor stock_check "Stock level check"
+    task reorder_cheapest "Reorder cheapest parts"
+    task reorder_fastest "Reorder fastest parts"
+    task complain_mail "Write complaint mail to friends"
+    end end_success "Contract completed"
+    end end_complain "Complaint sent"
+
+    flow start -> query
+    flow query -> assess
+    flow assess -> create_list
+    flow create_list -> check_stock
+
+    flow check_stock -> order_single "yes"
+    flow check_stock -> order_multiple "no"
+
+    flow order_single -> wait_arrival
+    flow order_multiple -> wait_arrival
+
+    flow wait_arrival -> start_build
+
+    flow start_build -> stock_check
+
+    flow stock_check -> reorder_cheapest when="stock < 5 and stock >= 3"
+    flow stock_check -> reorder_fastest when="stock < 3 and stock > 0"
+    flow stock_check -> complain_mail when="stock = 0"
+    flow stock_check -> end_success when="stock >= 5"
+
+    flow reorder_cheapest -> wait_arrival
+    flow reorder_fastest -> wait_arrival
+    flow complain_mail -> end_complain

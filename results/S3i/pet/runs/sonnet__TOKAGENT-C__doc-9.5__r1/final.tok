@@ -1,0 +1,45 @@
+tok 1.0 "Expense report"
+
+pool org "Organisation"
+  lane employee "Employee"
+    start received "Expense report received"
+    task resubmit "Re-submit the expense report"
+    end resubmitted "Report re-submitted"
+  lane system "Finance system"
+    sub handle "Process the expense report"
+      start s "Start"
+      xor hasacc "Employee has an account?"
+      task create "Create a new account"
+      xor m1
+      task review "Review the report for automatic approval"
+      xor small "Amount under $200?"
+      task approve "Approve the report by supervisor"
+      xor m2
+      xor ok "Approved?"
+      task reject "Send the rejection notice by email"
+      task pay "Transfer the reimbursement to the direct deposit account"
+      end e1 "Report rejected"
+      end e2 "Reimbursement paid"
+      flow s -> hasacc
+      flow hasacc -> create "no"
+      flow hasacc -> m1 "yes"
+      flow create -> m1
+      flow m1 -> review -> small
+      flow small -> m2 "yes"
+      flow small -> approve "no"
+      flow approve -> m2
+      flow m2 -> ok
+      flow ok -> reject "no"
+      flow ok -> pay "yes"
+      flow reject -> e1
+      flow pay -> e2
+    boundary t7 "7 days" on=handle timer=P7D noninterrupting
+    boundary t30 "30 days" on=handle timer=P30D
+    task progress "Send the approval in progress email"
+    task cancel "Send the cancellation notice by email"
+    end done "Report processed"
+    end inprog "Reminder sent"
+
+flow received -> handle -> done
+flow t7 -> progress -> inprog
+flow t30 -> cancel -> resubmit -> resubmitted

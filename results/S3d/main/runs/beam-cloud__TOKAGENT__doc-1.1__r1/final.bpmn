@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Customized bicycles" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Small company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Customized bicycles" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="sales" name="Sales department">
+        <bpmn:flowNodeRef>orderReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shipBicycle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderRejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orderShipped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="storehouse" name="Storehouse">
+        <bpmn:flowNodeRef>processParts</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineering" name="Engineering department">
+        <bpmn:flowNodeRef>prepareAssembly</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assembleBicycle</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="orderReceived" name="Order received" />
+    <bpmn:exclusiveGateway id="orderDecision" name="Order accepted?" default="f-orderDecision-orderRejected" />
+    <bpmn:parallelGateway id="split" name="Inform departments" />
+    <bpmn:parallelGateway id="join" name="All work done" />
+    <bpmn:task id="shipBicycle" name="Ship bicycle" />
+    <bpmn:endEvent id="orderRejected" name="Order rejected" />
+    <bpmn:endEvent id="orderShipped" name="Order shipped" />
+    <bpmn:subProcess id="processParts" name="Process part list">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:startEvent id="partStart" name="Start part" />
+      <bpmn:task id="checkQuantity" name="Check required quantity" />
+      <bpmn:exclusiveGateway id="partAvailable" name="Part available?" default="f-partAvailable-backOrderPart" />
+      <bpmn:task id="reservePart" name="Reserve part" />
+      <bpmn:task id="backOrderPart" name="Back-order part" />
+      <bpmn:endEvent id="partEnd" name="Part processed" />
+      <bpmn:sequenceFlow id="f-partStart-checkQuantity" sourceRef="partStart" targetRef="checkQuantity" />
+      <bpmn:sequenceFlow id="f-checkQuantity-partAvailable" sourceRef="checkQuantity" targetRef="partAvailable" />
+      <bpmn:sequenceFlow id="f-partAvailable-reservePart" name="yes" sourceRef="partAvailable" targetRef="reservePart">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-partAvailable-backOrderPart" name="no" sourceRef="partAvailable" targetRef="backOrderPart" />
+      <bpmn:sequenceFlow id="f-reservePart-partEnd" sourceRef="reservePart" targetRef="partEnd" />
+      <bpmn:sequenceFlow id="f-backOrderPart-partEnd" sourceRef="backOrderPart" targetRef="partEnd" />
+    </bpmn:subProcess>
+    <bpmn:task id="prepareAssembly" name="Prepare assembling" />
+    <bpmn:task id="assembleBicycle" name="Assemble bicycle" />
+    <bpmn:sequenceFlow id="f-orderReceived-orderDecision" sourceRef="orderReceived" targetRef="orderDecision" />
+    <bpmn:sequenceFlow id="f-orderDecision-orderRejected" name="no" sourceRef="orderDecision" targetRef="orderRejected" />
+    <bpmn:sequenceFlow id="f-orderDecision-split" name="yes" sourceRef="orderDecision" targetRef="split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-split-processParts" sourceRef="split" targetRef="processParts" />
+    <bpmn:sequenceFlow id="f-split-prepareAssembly" sourceRef="split" targetRef="prepareAssembly" />
+    <bpmn:sequenceFlow id="f-processParts-join" sourceRef="processParts" targetRef="join" />
+    <bpmn:sequenceFlow id="f-prepareAssembly-join" sourceRef="prepareAssembly" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-assembleBicycle" sourceRef="join" targetRef="assembleBicycle" />
+    <bpmn:sequenceFlow id="f-assembleBicycle-shipBicycle" sourceRef="assembleBicycle" targetRef="shipBicycle" />
+    <bpmn:sequenceFlow id="f-shipBicycle-orderShipped" sourceRef="shipBicycle" targetRef="orderShipped" />
+  </bpmn:process>
+</bpmn:definitions>

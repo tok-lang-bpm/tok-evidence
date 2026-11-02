@@ -1,0 +1,50 @@
+tok 1.0 "Equipment Change Process"
+
+pool org "Organisation"
+  lane MPON "MPON"
+    start start "Start"
+    task notify_intent "Notify MPOO about equipment change intentions"
+    xor final_reading_choice "Final reading performer"
+    task final_reading_mpon "Perform final reading"
+    xor dismount_choice "Old equipment dismount performer"
+    task dismount_old_mpon "Dismount old equipment"
+    task mount_new "Mount new device"
+    task read_meter "Read meter count from installed meter"
+    task send_final_values "Send final reading values to GO"
+    task tell_go "Tell GO about device changes, master data and meter count at installation"
+    end end "End"
+
+  lane MPOO "MPOO"
+    xor self_dismount_choice "Self dismounting decision"
+    task announce_self "Announce self dismounting to MPON"
+    task notify_no_self "Notify MPON about no self-dismounting of MPOO"
+    xor self_dismount_merge "Self dismounting merge"
+    xor final_reading_merge "Final reading merge"
+    task final_reading_mpoo "Perform final reading"
+    xor dismount_merge "Old equipment dismount merge"
+    task dismount_old_mpoo "Dismount old equipment"
+
+  lane GO "GO"
+    task notify_msp "Notify MSP about device changes, master data, meter count at dismounting and meter count at installation"
+
+flow start -> notify_intent -> self_dismount_choice
+flow self_dismount_choice -> announce_self
+flow self_dismount_choice -> notify_no_self
+flow announce_self -> self_dismount_merge
+flow notify_no_self -> self_dismount_merge
+flow self_dismount_merge -> final_reading_choice
+flow final_reading_choice -> final_reading_mpon
+flow final_reading_choice -> final_reading_mpoo
+flow final_reading_mpon -> final_reading_merge
+flow final_reading_mpoo -> final_reading_merge
+flow final_reading_merge -> dismount_choice
+flow dismount_choice -> dismount_old_mpon
+flow dismount_choice -> dismount_old_mpoo
+flow dismount_old_mpon -> dismount_merge
+flow dismount_old_mpoo -> dismount_merge
+flow dismount_merge -> mount_new
+flow mount_new -> read_meter
+flow read_meter -> send_final_values
+flow send_final_values -> tell_go
+flow tell_go -> notify_msp
+flow notify_msp -> end

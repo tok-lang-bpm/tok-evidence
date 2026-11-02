@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Job Search Organisation" processRef="job-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="job-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="laneApplicant" name="Applicant">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>negotiate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rateComp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endOffers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endOffersNoReport</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCompany" name="Company">
+        <bpmn:flowNodeRef>confirmRate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rateApp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwLowRating</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneSystem" name="System">
+        <bpmn:flowNodeRef>sendOffers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffersNoReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwInterview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwPermanent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwRatingSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwRatingJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start job search" />
+    
+    <bpmn:task id="report" name="Report job applications to companies" />
+    
+    <bpmn:task id="sendOffers" name="Send potential job offers" />
+    
+    <bpmn:task id="confirmRate" name="Confirm receipt and rate application" />
+    
+    <bpmn:exclusiveGateway id="gwOffer" name="Company offers job?" />
+    
+    <bpmn:task id="probation" name="Enter probation phase" />
+    
+    <bpmn:parallelGateway id="gwRatingSplit" />
+    
+    <bpmn:task id="rateComp" name="Rate company" />
+    <bpmn:task id="rateApp" name="Rate applicant" />
+    
+    <bpmn:parallelGateway id="gwRatingJoin" />
+    
+    <bpmn:intermediateCatchEvent id="waitReview" name="Wait 1 year to view reviews">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">P1Y</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    
+    <bpmn:exclusiveGateway id="gwPermanent" name="Job permanent?" />
+    
+    <bpmn:exclusiveGateway id="gwLowRating" name="Rating ≤ C?" />
+    
+    <bpmn:task id="sendOffersNoReport" name="Send potential job offers (no report)" />
+    
+    <bpmn:endEvent id="endSuccess" name="Process ends (permanent job)" />
+    <bpmn:endEvent id="endOffers" name="No job offered – process ends" />
+    <bpmn:endEvent id="endOffersNoReport" name="Continuing offers (no report) – process ends" />
+    
+    <bpmn:exclusiveGateway id="gwInterview" name="Negotiate interview?" />
+    
+    <bpmn:task id="negotiate" name="Negotiate job interview" />
+    
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="report" />
+    <bpmn:sequenceFlow id="f2" sourceRef="report" targetRef="sendOffers" />
+    <bpmn:sequenceFlow id="f3" sourceRef="sendOffers" targetRef="confirmRate" />
+    <bpmn:sequenceFlow id="f4" sourceRef="confirmRate" targetRef="gwOffer" />
+    
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="gwOffer" targetRef="probation" />
+    <bpmn:sequenceFlow id="f6" name="no" sourceRef="gwOffer" targetRef="endOffers" />
+    
+    <bpmn:sequenceFlow id="f7" sourceRef="probation" targetRef="gwRatingSplit" />
+    <bpmn:sequenceFlow id="f8" sourceRef="gwRatingSplit" targetRef="rateComp" />
+    <bpmn:sequenceFlow id="f9" sourceRef="gwRatingSplit" targetRef="rateApp" />
+    <bpmn:sequenceFlow id="f10" sourceRef="rateComp" targetRef="gwRatingJoin" />
+    <bpmn:sequenceFlow id="f11" sourceRef="rateApp" targetRef="gwRatingJoin" />
+    <bpmn:sequenceFlow id="f12" sourceRef="gwRatingJoin" targetRef="waitReview" />
+    <bpmn:sequenceFlow id="f13" sourceRef="waitReview" targetRef="gwPermanent" />
+    
+    <bpmn:sequenceFlow id="f14" name="yes" sourceRef="gwPermanent" targetRef="gwLowRating" />
+    <bpmn:sequenceFlow id="f15" name="no" sourceRef="gwPermanent" targetRef="sendOffers" />
+    
+    <bpmn:sequenceFlow id="f16" name="yes" sourceRef="gwLowRating" targetRef="sendOffersNoReport" />
+    <bpmn:sequenceFlow id="f17" name="no" sourceRef="gwLowRating" targetRef="endSuccess" />
+    
+    <bpmn:sequenceFlow id="f18" sourceRef="sendOffersNoReport" targetRef="endOffersNoReport" />
+    
+    <bpmn:sequenceFlow id="f19" sourceRef="probation" targetRef="gwInterview" />
+    <bpmn:sequenceFlow id="f20" sourceRef="gwInterview" targetRef="negotiate" />
+    <bpmn:sequenceFlow id="f21" sourceRef="gwInterview" targetRef="probation" />
+    <bpmn:sequenceFlow id="f22" sourceRef="negotiate" targetRef="probation" />
+    
+  </bpmn:process>
+</bpmn:definitions>

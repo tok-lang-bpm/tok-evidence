@@ -1,0 +1,46 @@
+tok 1.0 "Find a Job"
+
+pool office "Job platform"
+  lane applicant "Job applicant"
+    start started "Job search started"
+    task write "Write job applications"
+    task report "Report the companies you applied to"
+    task negotiate "Negotiate the job interview"
+    task enter "Enter the probation phase"
+    and split-rate
+    task rate-company "Rate the company"
+    and join-rate
+    xor rated "Rated the company C or less?"
+  lane company "Company"
+    task confirm "Confirm receipt of the job application"
+    task rate-app "Rate the job application"
+    xor hire "Company wants to hire you?"
+    task employ "Offer employment"
+    task rate-applicant "Rate the applicant"
+    xor permanent "Job becomes permanent?"
+    end ended "Job search ended"
+  lane system "Job platform system"
+    task send-offers "Send new potential job offers"
+    catch wait-year "One year has passed" timer=P365D
+    task show-reviews "Show the company reviews to job applicants"
+    and reviews
+    task continue-offers "Continue sending job offers without reporting"
+    end end-reviews "Reviews shown to applicants"
+    end end-continued "Job offers continue"
+
+flow started -> write -> report -> confirm -> rate-app -> send-offers -> negotiate -> hire
+flow hire -> employ "yes"
+flow hire -> write "no"
+flow employ -> enter -> split-rate
+flow split-rate -> rate-company
+flow split-rate -> rate-applicant
+flow rate-company -> join-rate
+flow rate-applicant -> join-rate
+flow join-rate -> reviews
+flow reviews -> wait-year -> show-reviews -> end-reviews
+flow reviews -> permanent
+flow permanent -> rated "yes"
+flow permanent -> report "no"
+flow rated -> continue-offers "no"
+flow rated -> ended "yes"
+flow continue-offers -> end-continued

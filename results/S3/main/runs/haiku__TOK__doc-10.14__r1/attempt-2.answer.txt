@@ -1,0 +1,53 @@
+```tok
+tok 1.0 "Invoice handling for metering point operations"
+
+pool market "Organisation"
+  lane mpoo "MPOO"
+    start begin "Billing started"
+    xor which "Which bill is sent?"
+    task send_mpoo_temp "Send the bill for the temporary continuation of the metering point operations"
+    task send_mpoo_equip "Send the bill for the equipment acquisition"
+    xor equip_split "Examined by MPON or GO?"
+  lane mspo "MSPO"
+    task send_mspo_temp "Send the bill for the temporary continuation of the measurement"
+    task send_mspo_read "Send the bill for additional readings"
+  lane go "GO"
+    task exam_temp_mpo "Examine the bill for the temporary continuation of the metering point operations"
+    task exam_temp_ms "Examine the bill for the temporary continuation of the measurement"
+    task exam_read "Examine the bill for additional readings"
+    task exam_go_equip "Examine the bill for the equipment acquisition"
+    xor examined "Bill examined"
+    xor decide "Invoice confirmed or rejected?"
+    task confirm_go "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_go "Reject the invoice of the MPOO or the MSPO"
+    end ok_end "Invoice confirmed"
+    end rej_end "Invoice rejected"
+  lane mpon "MPON"
+    task exam_mpon_equip "Examine the bill for the equipment acquisition"
+    task confirm_mpon "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_mpon "Reject the invoice of the MPOO or the MSPO"
+
+flow begin -> which
+flow which -> send_mpoo_temp "temporary continuation of the metering point operations"
+flow which -> send_mspo_temp "temporary continuation of the measurement"
+flow which -> send_mspo_read "additional readings"
+flow which -> send_mpoo_equip "equipment acquisition"
+
+flow send_mpoo_temp -> exam_temp_mpo -> examined
+flow send_mspo_temp -> exam_temp_ms -> examined
+flow send_mspo_read -> exam_read -> examined
+flow send_mpoo_equip -> equip_split
+flow equip_split -> exam_mpon_equip "examined by MPON" -> examined
+flow equip_split -> exam_go_equip "examined by GO" -> examined
+
+flow examined -> decide
+flow decide -> confirm_go "confirmed by GO"
+flow decide -> confirm_mpon "confirmed by MPON"
+flow decide -> reject_go "rejected by GO"
+flow decide -> reject_mpon "rejected by MPON"
+
+flow confirm_go -> ok_end
+flow confirm_mpon -> ok_end
+flow reject_go -> rej_end
+flow reject_mpon -> rej_end
+```

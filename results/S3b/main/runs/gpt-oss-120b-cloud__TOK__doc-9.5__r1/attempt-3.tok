@@ -1,0 +1,44 @@
+tok 1.0 "Expense Report Processing"
+
+pool org "Organization"
+  lane employee "Employee"
+    task resubmit "Employee re-submit expense report"
+  lane system "System"
+    start start "Expense report received"
+    task checkAcc "Check employee account"
+    xor hasAcc "Employee has account?"
+    task createAcc "Create new account"
+    task review "Review report for automatic approval"
+    xor amountCheck "Amount under $200?"
+    task autoApprove "Auto approve"
+    task reimburse "Reimburse to direct deposit"
+    task sendProgress "Send approval in progress email"
+    task sendCancel "Send cancellation email"
+    end completed "Process completed"
+    end rejected "Process rejected"
+    boundary prog "7-day timer" on=reimburse timer=P7D [noninterrupting]
+    boundary canc "30-day timer" on=reimburse timer=P30D
+  lane supervisor "Supervisor"
+    task supApprove "Supervisor approval"
+    xor supDecision "Supervisor approves?"
+    task sendRej "Send rejection email"
+
+flow start -> checkAcc
+flow checkAcc -> hasAcc
+flow hasAcc -> createAcc "no"
+flow hasAcc -> review "yes"
+flow createAcc -> review
+flow review -> amountCheck
+flow amountCheck -> autoApprove "yes"
+flow amountCheck -> supApprove "no"
+flow autoApprove -> reimburse
+flow supApprove -> supDecision
+flow supDecision -> reimburse "yes"
+flow supDecision -> sendRej "no"
+flow sendRej -> rejected
+flow reimburse -> completed
+flow prog -> sendProgress
+flow sendProgress -> completed
+flow canc -> sendCancel
+flow sendCancel -> resubmit
+flow resubmit -> start

@@ -1,0 +1,54 @@
+tok 1.0 "Office Supply Request"
+
+pool org "Organisation"
+  lane employee "Employee"
+    start needed "Office supplies needed"
+    task submit "Submit the office supply request"
+    task reviewcomments "Review the change comments"
+  lane supervisor "Supervisor"
+    xor reviewmerge
+    task review "Review the request"
+    xor decision "Decision?"
+  lane purchase "Purchase department"
+    sub quotations "Make quotations"
+      start qstart "Quotations needed"
+      task requestq "Request quotations from vendors"
+      task collectq "Collect the quotations"
+      end qend "Quotations made"
+    task select "Select a vendor"
+    task choose "Choose a different vendor"
+  lane system "System"
+    task register "Register the request"
+    task notifyreject "Send rejection notification"
+    task notifychange "Send change request notification"
+    task notifyapprove "Send approval notification"
+    xor vendormerge
+    task validate "Validate the vendor"
+    xor valid "Vendor valid in the system?"
+    task generate "Generate the purchase order"
+    task sendpo "Send the purchase order"
+    and wait
+    receive product "Receive the product" message="Product delivery"
+    receive invoice "Receive the invoice" message="Invoice"
+    and received
+    task notifyresult "Send result notification"
+    end rejected "Request rejected"
+    end completed "Request fulfilled"
+
+flow needed -> submit -> register -> reviewmerge -> review -> decision
+flow decision -> notifyreject "rejected"
+flow decision -> notifychange "change requested"
+flow decision -> notifyapprove "approved"
+flow notifyreject -> rejected
+flow notifychange -> reviewcomments -> reviewmerge
+flow notifyapprove -> quotations -> select -> vendormerge -> validate -> valid
+flow valid -> generate "yes"
+flow valid -> choose "no"
+flow choose -> vendormerge
+flow generate -> sendpo -> wait
+flow wait -> product
+flow wait -> invoice
+flow product -> received
+flow invoice -> received
+flow received -> notifyresult -> completed
+flow qstart -> requestq -> collectq -> qend

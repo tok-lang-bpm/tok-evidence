@@ -1,0 +1,55 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The GO requests the measurements to the MSP. The MSP checks the received request. The MSP denies the request of the GO or the MSP performs the measurement. The MSP informs the GO about the failure of the reading or the MSP transmits the measured values to the GO. The GO processes the measured values. The GO sends the changed values to the MSP. The GO transmit the readings to the SP.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Measurement request handling"
+
+pool org "Organisation"
+  lane go "GO"
+    start request_needed "Measurements needed"
+    task request_measurements "Request the measurements from the MSP"
+    task process_values "Process the measured values"
+    task send_changed "Send the changed values to the MSP"
+    task transmit_readings "Transmit the readings to the SP"
+    end transmitted "Readings transmitted"
+    end reading_failed "Reading failure handled"
+  lane msp "MSP"
+    task check_request "Check the received request"
+    xor request_ok "Request valid?"
+    task deny_request "Deny the request of the GO"
+    task perform_measurement "Perform the measurement"
+    xor measurement_ok "Measurement successful?"
+    task inform_failure "Inform the GO about the failure of the reading"
+    task transmit_values "Transmit the measured values to the GO"
+    xor values_returned "Values returned?"
+    task receive_changed "Receive the changed values"
+
+flow request_needed -> request_measurements -> check_request -> request_ok
+flow request_ok -> deny_request "no"
+flow request_ok -> perform_measurement "yes"
+flow deny_request -> reading_failed
+flow perform_measurement -> measurement_ok
+flow measurement_ok -> inform_failure "no"
+flow measurement_ok -> transmit_values "yes"
+flow inform_failure -> reading_failed
+flow transmit_values -> process_values -> send_changed -> receive_changed -> transmit_readings -> transmitted
+```
+
+The tok checker reports these problems in it:
+
+- line 20: warning W041: element not reachable from a start event (values_returned)
+- line 20: warning W042: path without an end event (element without outgoing flow) (values_returned)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

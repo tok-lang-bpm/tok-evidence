@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Work accident reporting" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Work accident reporting" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>occurred</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="employer" name="Employer">
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>is_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>not_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>kind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>severe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>labour</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sev_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>incap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>insurer_rep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>incap_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>closed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>nonwork</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="school" name="School or university">
+        <bpmn:flowNodeRef>school_rep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>school_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="selfemp" name="Self-employed person">
+        <bpmn:flowNodeRef>self_rep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>self_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="provider" name="Accident insurance provider">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="occurred" name="Accident or near-miss occurs" />
+    <bpmn:task id="inform" name="Inform the employer immediately" />
+    <bpmn:task id="record" name="Record the accident or near-miss" />
+    <bpmn:exclusiveGateway id="is_work" name="Work accident?" />
+    <bpmn:task id="not_work" name="Document the case as not a work accident" />
+    <bpmn:exclusiveGateway id="kind" name="Reported by a school or university, or by a self-employed person?" default="f-kind-fork" />
+    <bpmn:parallelGateway id="fork" />
+    <bpmn:exclusiveGateway id="severe" name="Fatality or serious injury?" />
+    <bpmn:task id="labour" name="Report the accident to the Labour Inspectorate immediately" />
+    <bpmn:exclusiveGateway id="sev_join" />
+    <bpmn:exclusiveGateway id="incap" name="Killed or unable to work for three days?" />
+    <bpmn:task id="insurer_rep" name="Report the accident to the accident insurance provider within five days" />
+    <bpmn:exclusiveGateway id="incap_join" />
+    <bpmn:parallelGateway id="join" />
+    <bpmn:endEvent id="closed" name="Accident documented" />
+    <bpmn:endEvent id="nonwork" name="Non-work case documented" />
+    <bpmn:task id="school_rep" name="Report the accident to the competent directorate and the accident insurance provider in triplicate within five days" />
+    <bpmn:endEvent id="school_done" name="School report filed" />
+    <bpmn:task id="self_rep" name="Report the accident to the accident insurance provider in good time" />
+    <bpmn:endEvent id="self_done" name="Own accident reported" />
+    <bpmn:task id="register" name="Register the work accident" />
+    <bpmn:sequenceFlow id="f-occurred-inform" sourceRef="occurred" targetRef="inform" />
+    <bpmn:sequenceFlow id="f-inform-record" sourceRef="inform" targetRef="record" />
+    <bpmn:sequenceFlow id="f-record-is_work" sourceRef="record" targetRef="is_work" />
+    <bpmn:sequenceFlow id="f-is_work-not_work" name="no" sourceRef="is_work" targetRef="not_work" />
+    <bpmn:sequenceFlow id="f-is_work-kind" name="yes" sourceRef="is_work" targetRef="kind" />
+    <bpmn:sequenceFlow id="f-not_work-nonwork" sourceRef="not_work" targetRef="nonwork" />
+    <bpmn:sequenceFlow id="f-kind-school_rep" name="school or university" sourceRef="kind" targetRef="school_rep">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reporter = "school"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-kind-self_rep" name="self-employed" sourceRef="kind" targetRef="self_rep">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reporter = "self-employed"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-kind-fork" name="employer" sourceRef="kind" targetRef="fork" />
+    <bpmn:sequenceFlow id="f-school_rep-school_done" sourceRef="school_rep" targetRef="school_done" />
+    <bpmn:sequenceFlow id="f-self_rep-self_done" sourceRef="self_rep" targetRef="self_done" />
+    <bpmn:sequenceFlow id="f-fork-severe" sourceRef="fork" targetRef="severe" />
+    <bpmn:sequenceFlow id="f-fork-incap" sourceRef="fork" targetRef="incap" />
+    <bpmn:sequenceFlow id="f-severe-labour" name="yes" sourceRef="severe" targetRef="labour" />
+    <bpmn:sequenceFlow id="f-severe-sev_join" name="no" sourceRef="severe" targetRef="sev_join" />
+    <bpmn:sequenceFlow id="f-labour-sev_join" sourceRef="labour" targetRef="sev_join" />
+    <bpmn:sequenceFlow id="f-sev_join-join" sourceRef="sev_join" targetRef="join" />
+    <bpmn:sequenceFlow id="f-incap-insurer_rep" name="yes" sourceRef="incap" targetRef="insurer_rep" />
+    <bpmn:sequenceFlow id="f-incap-incap_join" name="no" sourceRef="incap" targetRef="incap_join" />
+    <bpmn:sequenceFlow id="f-insurer_rep-register" sourceRef="insurer_rep" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-incap_join" sourceRef="register" targetRef="incap_join" />
+    <bpmn:sequenceFlow id="f-incap_join-join" sourceRef="incap_join" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-closed" sourceRef="join" targetRef="closed" />
+  </bpmn:process>
+</bpmn:definitions>

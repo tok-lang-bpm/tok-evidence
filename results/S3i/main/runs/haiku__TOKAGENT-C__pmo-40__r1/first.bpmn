@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Machine_restarted" name="Machine restarted" />
+  <bpmn:message id="Message_Machine_disconnected" name="Machine disconnected" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="plant" name="Plant" processRef="plant-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="plant-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="plant-lanes">
+      <bpmn:lane id="system" name="Monitoring system">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>low</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineer" name="Engineer">
+        <bpmn:flowNodeRef>restart</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Measurement started" />
+    <bpmn:task id="collect" name="Collect the data from the machine" />
+    <bpmn:task id="calc" name="Calculate the OEE" />
+    <bpmn:exclusiveGateway id="low" name="OEE below the limit?" />
+    <bpmn:task id="stop" name="Stop the machine" />
+    <bpmn:task id="mail" name="Send an email to the engineer" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted">
+      <bpmn:messageEventDefinition id="restarted-def" messageRef="Message_Machine_restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:boundaryEvent id="disc" name="Machine disconnected" attachedToRef="collect">
+      <bpmn:messageEventDefinition id="disc-def" messageRef="Message_Machine_disconnected" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="stopped" name="Process stopped" />
+    <bpmn:task id="restart" name="Restart the machine" />
+    <bpmn:sequenceFlow id="f-begin-collect" sourceRef="begin" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calc" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-low" sourceRef="calc" targetRef="low" />
+    <bpmn:sequenceFlow id="f-low-stop" name="yes" sourceRef="low" targetRef="stop" />
+    <bpmn:sequenceFlow id="f-low-collect" name="no" sourceRef="low" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-stop-mail" sourceRef="stop" targetRef="mail" />
+    <bpmn:sequenceFlow id="f-mail-restart" sourceRef="mail" targetRef="restart" />
+    <bpmn:sequenceFlow id="f-restart-restarted" sourceRef="restart" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f-restarted-collect" sourceRef="restarted" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-disc-stopped" sourceRef="disc" targetRef="stopped" />
+  </bpmn:process>
+</bpmn:definitions>

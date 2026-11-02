@@ -1,0 +1,48 @@
+tok 1.0 "Custom Bicycle Manufacturing"
+
+pool company "Custom Bicycle Company"
+  lane sales "Sales Department"
+    start receive_order "Receive order"
+    xor order_accept "Order accepted?"
+    task reject_order "Reject order"
+    end order_rejected "Order rejected"
+    task accept_order "Accept order"
+    task inform_storehouse "Inform storehouse"
+    task inform_engineering "Inform engineering"
+    and split_parallel "Parallel split"
+    and join_parallel "Parallel join"
+    task ship_bicycle "Ship bicycle"
+    end process_completed "Process completed"
+
+  lane storehouse "Storehouse"
+    xor part_available "Part available?"
+    task reserve_part "Reserve part"
+    task back_order_part "Back-order part"
+    xor more_parts "More parts?"
+    end parts_processed "Parts processed"
+
+  lane engineering "Engineering Department"
+    task prepare_assembly "Prepare assembly"
+    task assemble_bicycle "Assemble bicycle"
+
+# Sequence flows
+flow receive_order -> order_accept
+flow order_accept -> reject_order "no"
+flow order_accept -> accept_order "yes"
+flow reject_order -> order_rejected
+flow accept_order -> inform_storehouse
+flow inform_storehouse -> inform_engineering
+flow inform_engineering -> split_parallel
+flow split_parallel -> part_available           # storehouse branch
+flow split_parallel -> prepare_assembly          # engineering branch
+flow part_available -> reserve_part when="available"
+flow part_available -> back_order_part when="not available"
+flow reserve_part -> more_parts
+flow back_order_part -> more_parts
+flow more_parts -> part_available when="more"
+flow more_parts -> parts_processed default
+flow parts_processed -> join_parallel
+flow prepare_assembly -> join_parallel
+flow join_parallel -> assemble_bicycle
+flow assemble_bicycle -> ship_bicycle
+flow ship_bicycle -> process_completed

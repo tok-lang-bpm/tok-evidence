@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE_Secretariat" name="Secretariat">
+        <bpmn:flowNodeRef>start1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveInvoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forwardToAccounting</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_Accounting" name="Accounting Employee">
+        <bpmn:flowNodeRef>identifySuppliersCreateInvoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkItemsNoteCostCenters</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendDocketAndCopy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resolveInconsistency</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resolveComplaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paymentInstructionAndClose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_CostMgr" name="Cost Center Manager">
+        <bpmn:flowNodeRef>reviewInvoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>markAccurate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejectPosition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gMore</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_Commercial" name="Commercial Manager">
+        <bpmn:flowNodeRef>forwardToCommercial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>commercialAudit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gComplaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gAmount</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="LANE_Board" name="Board">
+        <bpmn:flowNodeRef>boardReview</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start1" name="Invoices received (paper/fax)" />
+    <bpmn:task id="receiveInvoice" name="Receive invoices on paper or fax" />
+    <bpmn:task id="forwardToAccounting" name="Forward invoice after visual inspection to accounting employee" />
+    <bpmn:task id="identifySuppliersCreateInvoice" name="Identify charging suppliers and create new invoice instance" />
+    <bpmn:task id="checkItemsNoteCostCenters" name="Check invoice items and note cost centers on docket" />
+    <bpmn:task id="sendDocketAndCopy" name="Send docket and copy of invoice to first cost center manager" />
+    <bpmn:task id="reviewInvoice" name="Review invoice for accuracy" />
+    <bpmn:exclusiveGateway id="gDecision" name="Is position accurate?" />
+    <bpmn:task id="markAccurate" name="Mark position as accurate (AP) on docket" />
+    <bpmn:task id="rejectPosition" name="Reject position with note on docket" />
+    <bpmn:task id="resolveInconsistency" name="Resolve inconsistency with vendor" />
+    <bpmn:exclusiveGateway id="gMore" name="More cost center managers?" />
+    <bpmn:task id="forwardToCommercial" name="Forward invoice copy to commercial manager" />
+    <bpmn:task id="commercialAudit" name="Perform commercial audit and approve payment" />
+    <bpmn:exclusiveGateway id="gComplaint" name="Complaint during commercial audit?" />
+    <bpmn:task id="resolveComplaint" name="Resolve complaint with supplier" />
+    <bpmn:exclusiveGateway id="gAmount" name="Amount > EUR 20?" />
+    <bpmn:task id="boardReview" name="Board review (4‑eyes principle)" />
+    <bpmn:task id="paymentInstructionAndClose" name="Give payment instructions and close invoice instance" />
+    <bpmn:endEvent id="end1" name="Process completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start1" targetRef="receiveInvoice" />
+    <bpmn:sequenceFlow id="f2" sourceRef="receiveInvoice" targetRef="forwardToAccounting" />
+    <bpmn:sequenceFlow id="f3" sourceRef="forwardToAccounting" targetRef="identifySuppliersCreateInvoice" />
+    <bpmn:sequenceFlow id="f4" sourceRef="identifySuppliersCreateInvoice" targetRef="checkItemsNoteCostCenters" />
+    <bpmn:sequenceFlow id="f5" sourceRef="checkItemsNoteCostCenters" targetRef="sendDocketAndCopy" />
+    <bpmn:sequenceFlow id="f6" sourceRef="sendDocketAndCopy" targetRef="reviewInvoice" />
+    <bpmn:sequenceFlow id="f7" sourceRef="reviewInvoice" targetRef="gDecision" />
+    <bpmn:sequenceFlow id="f8" sourceRef="gDecision" targetRef="markAccurate" name="yes" />
+    <bpmn:sequenceFlow id="f9" sourceRef="gDecision" targetRef="rejectPosition" name="no" />
+    <bpmn:sequenceFlow id="f10" sourceRef="markAccurate" targetRef="gMore" />
+    <bpmn:sequenceFlow id="f11" sourceRef="rejectPosition" targetRef="resolveInconsistency" />
+    <bpmn:sequenceFlow id="f12" sourceRef="resolveInconsistency" targetRef="reviewInvoice" />
+    <bpmn:sequenceFlow id="f13" sourceRef="gMore" targetRef="reviewInvoice" name="yes" />
+    <bpmn:sequenceFlow id="f14" sourceRef="gMore" targetRef="forwardToCommercial" name="no" />
+    <bpmn:sequenceFlow id="f15" sourceRef="forwardToCommercial" targetRef="commercialAudit" />
+    <bpmn:sequenceFlow id="f16" sourceRef="commercialAudit" targetRef="gComplaint" />
+    <bpmn:sequenceFlow id="f17" sourceRef="gComplaint" targetRef="resolveComplaint" name="yes" />
+    <bpmn:sequenceFlow id="f18" sourceRef="resolveComplaint" targetRef="commercialAudit" />
+    <bpmn:sequenceFlow id="f19" sourceRef="gComplaint" targetRef="gAmount" name="no" />
+    <bpmn:sequenceFlow id="f20" sourceRef="gAmount" targetRef="boardReview" name="yes" />
+    <bpmn:sequenceFlow id="f21" sourceRef="gAmount" targetRef="paymentInstructionAndClose" name="no" />
+    <bpmn:sequenceFlow id="f22" sourceRef="boardReview" targetRef="paymentInstructionAndClose" />
+    <bpmn:sequenceFlow id="f23" sourceRef="paymentInstructionAndClose" targetRef="end1" />
+  </bpmn:process>
+</bpmn:definitions>

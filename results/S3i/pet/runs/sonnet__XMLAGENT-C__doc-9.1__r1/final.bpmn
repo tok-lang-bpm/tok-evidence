@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="OPS" name="Operations">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endA1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endA2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Weekday morning" />
+    <bpmn:subProcess id="sp1" name="Process new defaulting accounts">
+      <bpmn:startEvent id="s1" />
+      <bpmn:task id="backup" name="Back up the database" />
+      <bpmn:task id="checkTable" name="Check the Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="g1" name="New records found?" />
+      <bpmn:task id="crm1" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="g2" name="New returns exist?" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="g3" name="Client codes previously advised?" />
+      <bpmn:task id="produce" name="Produce another table of defaulting accounts" />
+      <bpmn:task id="send" name="Send the table to account management" />
+      <bpmn:exclusiveGateway id="m1" />
+      <bpmn:exclusiveGateway id="m2" />
+      <bpmn:endEvent id="e1" name="First part completed" />
+      <bpmn:sequenceFlow id="a1" sourceRef="s1" targetRef="backup" />
+      <bpmn:sequenceFlow id="a2" sourceRef="backup" targetRef="checkTable" />
+      <bpmn:sequenceFlow id="a3" sourceRef="checkTable" targetRef="g1" />
+      <bpmn:sequenceFlow id="a4" name="yes" sourceRef="g1" targetRef="m2" />
+      <bpmn:sequenceFlow id="a5" name="no" sourceRef="g1" targetRef="crm1" />
+      <bpmn:sequenceFlow id="a6" sourceRef="crm1" targetRef="g2" />
+      <bpmn:sequenceFlow id="a7" name="no" sourceRef="g2" targetRef="m2" />
+      <bpmn:sequenceFlow id="a8" name="yes" sourceRef="g2" targetRef="register" />
+      <bpmn:sequenceFlow id="a9" sourceRef="register" targetRef="g3" />
+      <bpmn:sequenceFlow id="a10" name="no" sourceRef="g3" targetRef="produce" />
+      <bpmn:sequenceFlow id="a11" name="yes" sourceRef="g3" targetRef="m1" />
+      <bpmn:sequenceFlow id="a12" sourceRef="produce" targetRef="send" />
+      <bpmn:sequenceFlow id="a13" sourceRef="send" targetRef="m1" />
+      <bpmn:sequenceFlow id="a14" sourceRef="m1" targetRef="m2" />
+      <bpmn:sequenceFlow id="a15" sourceRef="m2" targetRef="e1" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="t1" name="2:30 pm" cancelActivity="false" attachedToRef="sp1">
+      <bpmn:timerEventDefinition><bpmn:timeDate>14:30</bpmn:timeDate></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert1" name="Send an alert to the supervisor" />
+    <bpmn:endEvent id="endA1" name="Supervisor alerted" />
+    <bpmn:subProcess id="sp2" name="Reconcile new returns">
+      <bpmn:startEvent id="s2" />
+      <bpmn:task id="crm2" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="h1" name="New returns filed?" />
+      <bpmn:task id="reconcile" name="Reconcile with the existing account defaulters table" />
+      <bpmn:exclusiveGateway id="hm" />
+      <bpmn:endEvent id="e2" name="Second part completed" />
+      <bpmn:sequenceFlow id="b1" sourceRef="s2" targetRef="crm2" />
+      <bpmn:sequenceFlow id="b2" sourceRef="crm2" targetRef="h1" />
+      <bpmn:sequenceFlow id="b3" name="yes" sourceRef="h1" targetRef="reconcile" />
+      <bpmn:sequenceFlow id="b4" name="no" sourceRef="h1" targetRef="hm" />
+      <bpmn:sequenceFlow id="b5" sourceRef="reconcile" targetRef="hm" />
+      <bpmn:sequenceFlow id="b6" sourceRef="hm" targetRef="e2" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="t2" name="4:00 pm" cancelActivity="false" attachedToRef="sp2">
+      <bpmn:timerEventDefinition><bpmn:timeDate>16:00</bpmn:timeDate></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert2" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="endA2" name="Supervisor messaged" />
+    <bpmn:endEvent id="done" name="Process completed" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sp1" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sp1" targetRef="sp2" />
+    <bpmn:sequenceFlow id="f3" sourceRef="sp2" targetRef="done" />
+    <bpmn:sequenceFlow id="f4" sourceRef="t1" targetRef="alert1" />
+    <bpmn:sequenceFlow id="f5" sourceRef="alert1" targetRef="endA1" />
+    <bpmn:sequenceFlow id="f6" sourceRef="t2" targetRef="alert2" />
+    <bpmn:sequenceFlow id="f7" sourceRef="alert2" targetRef="endA2" />
+  </bpmn:process>
+</bpmn:definitions>

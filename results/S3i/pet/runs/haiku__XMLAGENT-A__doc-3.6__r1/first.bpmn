@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_UpdatedForms" name="Updated forms" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Org" name="Organization" processRef="ClaimsNotification" />
+  </bpmn:collaboration>
+  <bpmn:process id="ClaimsNotification" isExecutable="false">
+    <bpmn:laneSet id="LaneSet">
+      <bpmn:lane id="Lane_Dept" name="Claims department">
+        <bpmn:flowNodeRef>Start_Claim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckInsured</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Insured</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformRejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EvaluateSeverity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Type</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendSimpleForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendComplexForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_JoinForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_JoinCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckCompleteness</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InformUpdate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_UpdatedForms</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Claimant" name="Claimant">
+        <bpmn:flowNodeRef>Task_ReturnForms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_UpdateForms</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="Claims Management system">
+        <bpmn:flowNodeRef>Task_RegisterClaim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Notification</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Claim" name="Claim received" />
+    <bpmn:task id="Task_CheckInsured" name="Check whether claimant is insured" />
+    <bpmn:exclusiveGateway id="Gw_Insured" name="Claimant insured?" default="F04" />
+    <bpmn:task id="Task_InformRejection" name="Inform claimant that claim must be rejected" />
+    <bpmn:endEvent id="End_Rejected" name="Claim rejected" />
+    <bpmn:task id="Task_EvaluateSeverity" name="Evaluate severity of claim" />
+    <bpmn:exclusiveGateway id="Gw_Type" name="Simple or complex claim?" />
+    <bpmn:task id="Task_SendSimpleForms" name="Send simple claim forms" />
+    <bpmn:task id="Task_SendComplexForms" name="Send complex claim forms" />
+    <bpmn:exclusiveGateway id="Gw_JoinForms" />
+    <bpmn:task id="Task_ReturnForms" name="Return forms" />
+    <bpmn:exclusiveGateway id="Gw_JoinCheck" />
+    <bpmn:task id="Task_CheckCompleteness" name="Check forms for completeness" />
+    <bpmn:exclusiveGateway id="Gw_Complete" name="Forms provide all relevant details?" default="F15" />
+    <bpmn:task id="Task_RegisterClaim" name="Register claim in Claims Management system" />
+    <bpmn:endEvent id="End_Notification" name="Claims Notification process ended" />
+    <bpmn:task id="Task_InformUpdate" name="Inform claimant to update forms" />
+    <bpmn:task id="Task_UpdateForms" name="Update forms" />
+    <bpmn:intermediateCatchEvent id="Catch_UpdatedForms" name="Updated forms received">
+      <bpmn:messageEventDefinition messageRef="Msg_UpdatedForms" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:sequenceFlow id="F01" sourceRef="Start_Claim" targetRef="Task_CheckInsured" />
+    <bpmn:sequenceFlow id="F02" sourceRef="Task_CheckInsured" targetRef="Gw_Insured" />
+    <bpmn:sequenceFlow id="F03" name="yes" sourceRef="Gw_Insured" targetRef="Task_EvaluateSeverity" />
+    <bpmn:sequenceFlow id="F04" name="no" sourceRef="Gw_Insured" targetRef="Task_InformRejection" />
+    <bpmn:sequenceFlow id="F05" sourceRef="Task_InformRejection" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F06" sourceRef="Task_EvaluateSeverity" targetRef="Gw_Type" />
+    <bpmn:sequenceFlow id="F07" name="simple" sourceRef="Gw_Type" targetRef="Task_SendSimpleForms" />
+    <bpmn:sequenceFlow id="F08" name="complex" sourceRef="Gw_Type" targetRef="Task_SendComplexForms" />
+    <bpmn:sequenceFlow id="F09" sourceRef="Task_SendSimpleForms" targetRef="Gw_JoinForms" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_SendComplexForms" targetRef="Gw_JoinForms" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Gw_JoinForms" targetRef="Task_ReturnForms" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Task_ReturnForms" targetRef="Gw_JoinCheck" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Gw_JoinCheck" targetRef="Task_CheckCompleteness" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Task_CheckCompleteness" targetRef="Gw_Complete" />
+    <bpmn:sequenceFlow id="F15" name="no" sourceRef="Gw_Complete" targetRef="Task_InformUpdate" />
+    <bpmn:sequenceFlow id="F16" name="yes" sourceRef="Gw_Complete" targetRef="Task_RegisterClaim" />
+    <bpmn:sequenceFlow id="F17" sourceRef="Task_RegisterClaim" targetRef="End_Notification" />
+    <bpmn:sequenceFlow id="F18" sourceRef="Task_InformUpdate" targetRef="Task_UpdateForms" />
+    <bpmn:sequenceFlow id="F19" sourceRef="Task_UpdateForms" targetRef="Catch_UpdatedForms" />
+    <bpmn:sequenceFlow id="F20" sourceRef="Catch_UpdatedForms" targetRef="Gw_JoinCheck" />
+  </bpmn:process>
+</bpmn:definitions>

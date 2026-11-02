@@ -1,0 +1,32 @@
+tok 1.0 "Mortgage offer"
+
+pool bank "Bank"
+  lane csr "Customer Service Representative"
+    start begin "Offer needed"
+    send offer "Send the mortgage offer" message="Mortgage offer"
+    eventgw wait
+    catch declined "Customer declines" message="Decline"
+    catch returned "Customer returns documents" message="Offer documents"
+    catch timeout "2 weeks pass" timer=P14D
+    xor complete "All prerequisite documents provided?"
+    task move "Move the case to administration"
+    send request "Request the outstanding documents" message="Request for documents"
+    xor join
+    task update "Update the case details"
+    task archive "Archive the work"
+    end cancelled "Case cancelled"
+    end completed "Case moved to administration"
+    end requested "Documents requested"
+
+flow begin -> offer -> wait
+flow wait -> declined
+flow wait -> returned
+flow wait -> timeout
+flow declined -> join
+flow timeout -> join
+flow join -> update -> archive -> cancelled
+flow returned -> complete
+flow complete -> move "yes"
+flow complete -> request "no"
+flow move -> completed
+flow request -> requested

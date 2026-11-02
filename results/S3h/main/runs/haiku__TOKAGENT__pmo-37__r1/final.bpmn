@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Contract" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Parts_delivered" name="Parts delivered" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Contract project" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Contract" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="buyer" name="Buyer">
+        <bpmn:flowNodeRef>parts-needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>query-shops</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parts-list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>one-shop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-one</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-several</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>orders-placed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-cheapest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder-fastest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>write-mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="builder" name="Builder">
+        <bpmn:flowNodeRef>first-parts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>build</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock-level</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock-checked</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>building-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>contract-built</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="parts-needed" name="Parts needed for the contract" />
+    <bpmn:task id="query-shops" name="Query web shops for stock, price and delivery time" />
+    <bpmn:task id="parts-list" name="Create list of parts per web shop" />
+    <bpmn:exclusiveGateway id="one-shop" name="Enough parts from one web shop?" default="f-one-shop-order-several" />
+    <bpmn:task id="order-one" name="Order cheapest parts from one web shop" />
+    <bpmn:task id="order-several" name="Order cheapest parts from several web shops" />
+    <bpmn:exclusiveGateway id="orders-placed" />
+    <bpmn:task id="reorder-cheapest" name="Reorder cheapest parts" />
+    <bpmn:task id="reorder-fastest" name="Reorder fastest parts" />
+    <bpmn:task id="write-mail" name="Write mail to friends complaining about web shops" />
+    <bpmn:intermediateCatchEvent id="first-parts" name="First parts arrive">
+      <bpmn:messageEventDefinition id="first-parts-def" messageRef="Message_Parts_delivered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="build" name="Start building" />
+    <bpmn:task id="check-stock" name="Check stock of each part" />
+    <bpmn:exclusiveGateway id="stock-level" name="Stock level of a part?" default="f-stock-level-stock-checked" />
+    <bpmn:exclusiveGateway id="stock-checked" />
+    <bpmn:exclusiveGateway id="building-done" name="Building finished?" default="f-building-done-check-stock" />
+    <bpmn:endEvent id="contract-built" name="Contract built" />
+    <bpmn:sequenceFlow id="f-parts-needed-query-shops" sourceRef="parts-needed" targetRef="query-shops" />
+    <bpmn:sequenceFlow id="f-query-shops-parts-list" sourceRef="query-shops" targetRef="parts-list" />
+    <bpmn:sequenceFlow id="f-parts-list-one-shop" sourceRef="parts-list" targetRef="one-shop" />
+    <bpmn:sequenceFlow id="f-one-shop-order-one" name="yes" sourceRef="one-shop" targetRef="order-one">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">enough_one_shop = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-one-shop-order-several" name="no" sourceRef="one-shop" targetRef="order-several" />
+    <bpmn:sequenceFlow id="f-order-one-orders-placed" sourceRef="order-one" targetRef="orders-placed" />
+    <bpmn:sequenceFlow id="f-order-several-orders-placed" sourceRef="order-several" targetRef="orders-placed" />
+    <bpmn:sequenceFlow id="f-orders-placed-first-parts" sourceRef="orders-placed" targetRef="first-parts" />
+    <bpmn:sequenceFlow id="f-first-parts-build" sourceRef="first-parts" targetRef="build" />
+    <bpmn:sequenceFlow id="f-build-check-stock" sourceRef="build" targetRef="check-stock" />
+    <bpmn:sequenceFlow id="f-check-stock-stock-level" sourceRef="check-stock" targetRef="stock-level" />
+    <bpmn:sequenceFlow id="f-stock-level-write-mail" name="zero" sourceRef="stock-level" targetRef="write-mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock = 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-level-reorder-fastest" name="below 3" sourceRef="stock-level" targetRef="reorder-fastest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &gt; 0 and stock &lt; 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-level-reorder-cheapest" name="below 5" sourceRef="stock-level" targetRef="reorder-cheapest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock &gt;= 3 and stock &lt; 5</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-level-stock-checked" name="5 or more" sourceRef="stock-level" targetRef="stock-checked" />
+    <bpmn:sequenceFlow id="f-write-mail-stock-checked" sourceRef="write-mail" targetRef="stock-checked" />
+    <bpmn:sequenceFlow id="f-reorder-fastest-stock-checked" sourceRef="reorder-fastest" targetRef="stock-checked" />
+    <bpmn:sequenceFlow id="f-reorder-cheapest-stock-checked" sourceRef="reorder-cheapest" targetRef="stock-checked" />
+    <bpmn:sequenceFlow id="f-stock-checked-building-done" sourceRef="stock-checked" targetRef="building-done" />
+    <bpmn:sequenceFlow id="f-building-done-contract-built" name="yes" sourceRef="building-done" targetRef="contract-built">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">building_finished = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-building-done-check-stock" name="no" sourceRef="building-done" targetRef="check-stock" />
+  </bpmn:process>
+</bpmn:definitions>

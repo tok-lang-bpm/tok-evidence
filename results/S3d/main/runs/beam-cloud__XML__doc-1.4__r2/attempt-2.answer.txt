@@ -1,0 +1,81 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="ipo-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="ipo-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="company-lane" name="Company">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select-underwriters</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="underwriters-lane" name="Underwriters">
+        <bpmn:flowNodeRef>facts-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide-advice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare-registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register-check-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>register-issue-sec</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-blue-sky</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registration-joined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>firm-up-price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arrange-road-show</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-clearance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fix-issue-price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reason-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-commitment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offer-public</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>issue-handled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>issue-not-handled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>issue-not-offered</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Decision to go public" />
+    <bpmn:task id="select-underwriters" name="Select the underwriters" />
+    <bpmn:exclusiveGateway id="facts-gateway" name="Facts presented fairly?" default="no-facts-flow" />
+    <bpmn:task id="provide-advice" name="Provide procedural and financial advice" />
+    <bpmn:task id="prepare-registration" name="Prepare registration statement" />
+    <bpmn:parallelGateway id="register-check-gateway" />
+    <bpmn:task id="register-issue-sec" name="Register the issue with the SEC" />
+    <bpmn:task id="check-blue-sky" name="Check blue-sky laws" />
+    <bpmn:parallelGateway id="registration-joined" />
+    <bpmn:task id="firm-up-price" name="Firm up the issue price" />
+    <bpmn:task id="arrange-road-show" name="Arrange a road show" />
+    <bpmn:intermediateCatchEvent id="receive-clearance" name="Receive clearance from the SEC">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="fix-issue-price" name="Fix the issue price" />
+    <bpmn:exclusiveGateway id="reason-gateway" name="Reason not to do it?" default="reason-found-flow" />
+    <bpmn:task id="enter-commitment" name="Enter into a firm commitment to buy the stock" />
+    <bpmn:task id="offer-public" name="Offer it to the public" />
+    <bpmn:endEvent id="issue-handled" name="Issue handled" />
+    <bpmn:endEvent id="issue-not-handled" name="Issue not handled" />
+    <bpmn:endEvent id="issue-not-offered" name="Issue not offered" />
+
+    <bpmn:sequenceFlow id="start-to-select" sourceRef="start" targetRef="select-underwriters" />
+    <bpmn:sequenceFlow id="select-to-facts" sourceRef="select-underwriters" targetRef="facts-gateway" />
+    <bpmn:sequenceFlow id="facts-yes" name="yes" sourceRef="facts-gateway" targetRef="provide-advice">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">factsPresentedFairly</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="no-facts-flow" name="no" sourceRef="facts-gateway" targetRef="issue-not-handled" />
+    <bpmn:sequenceFlow id="advice-to-prepare" sourceRef="provide-advice" targetRef="prepare-registration" />
+    <bpmn:sequenceFlow id="prepare-to-split" sourceRef="prepare-registration" targetRef="register-check-gateway" />
+    <bpmn:sequenceFlow id="split-to-register" sourceRef="register-check-gateway" targetRef="register-issue-sec" />
+    <bpmn:sequenceFlow id="split-to-check" sourceRef="register-check-gateway" targetRef="check-blue-sky" />
+    <bpmn:sequenceFlow id="register-to-join" sourceRef="register-issue-sec" targetRef="registration-joined" />
+    <bpmn:sequenceFlow id="check-to-join" sourceRef="check-blue-sky" targetRef="registration-joined" />
+    <bpmn:sequenceFlow id="join-to-firm-up" sourceRef="registration-joined" targetRef="firm-up-price" />
+    <bpmn:sequenceFlow id="firm-up-to-road-show" sourceRef="firm-up-price" targetRef="arrange-road-show" />
+    <bpmn:sequenceFlow id="road-show-to-clearance" sourceRef="arrange-road-show" targetRef="receive-clearance" />
+    <bpmn:sequenceFlow id="clearance-to-fix" sourceRef="receive-clearance" targetRef="fix-issue-price" />
+    <bpmn:sequenceFlow id="fix-to-reason" sourceRef="fix-issue-price" targetRef="reason-gateway" />
+    <bpmn:sequenceFlow id="no-reason-flow" name="no reason" sourceRef="reason-gateway" targetRef="enter-commitment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reasonFound == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="reason-found-flow" name="reason found" sourceRef="reason-gateway" targetRef="issue-not-offered" />
+    <bpmn:sequenceFlow id="commitment-to-offer" sourceRef="enter-commitment" targetRef="offer-public" />
+    <bpmn:sequenceFlow id="offer-to-handled" sourceRef="offer-public" targetRef="issue-handled" />
+  </bpmn:process>
+</bpmn:definitions>
+```

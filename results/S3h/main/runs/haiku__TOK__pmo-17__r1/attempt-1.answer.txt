@@ -1,0 +1,76 @@
+```tok
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane customer "Customer"
+    start placed "Order placed"
+    task place "Place the order"
+    catch delivered "Delivery confirmed" message="Delivery confirmation"
+    xor reported "Issues reported?"
+  lane system "Order system"
+    task record "Record the order details"
+    task pay "Process the payment"
+    xor paid "Payment successful?"
+    task notifyfail "Notify the customer about the failed payment"
+    end failed "Process ended"
+    task stock "Check the stock availability"
+    xor instock "All items in stock?"
+    task backorder "Initiate a back-order"
+    task delay "Inform the customer about the delay"
+    xor avail "Items available"
+    task updinv "Update the inventory levels"
+    task sendconf "Send the shipping confirmation"
+    task followup "Send a follow-up email for feedback"
+    task refund "Process a refund or replacement"
+    end done "Order completed"
+    end returned "Return processed"
+  lane warehouse "Warehouse"
+    task receiveback "Receive the back-order"
+    task pick "Pick the items from the warehouse"
+    task qc "Perform quality control on the picked items"
+    xor giftq "Gift wrapping requested?"
+    task gift "Gift wrap the order"
+    xor giftmerge "Gift wrapping done"
+    task pack "Package the order"
+    task receiveret "Receive the returned items"
+    task inspect "Inspect the returned items"
+  lane shipping "Shipping department"
+    and readyfork
+    task docs "Prepare the shipping documents and labels"
+    xor intl "International order?"
+    task customs "Prepare the customs documentation"
+    xor intlmerge "Documentation done"
+    and readyjoin
+    task dispatch "Dispatch the order"
+    and dispatchfork
+    and dispatchjoin
+    task retlabel "Send a return shipping label"
+
+flow placed -> place -> record -> pay -> paid
+flow paid -> notifyfail "nie"
+flow notifyfail -> failed
+flow paid -> stock "tak"
+flow stock -> instock
+flow instock -> avail "tak"
+flow instock -> backorder "nie"
+flow backorder -> delay -> receiveback -> avail
+flow avail -> pick -> qc -> readyfork
+flow readyfork -> giftq
+flow giftq -> gift "tak"
+flow giftq -> giftmerge "nie"
+flow gift -> giftmerge
+flow giftmerge -> pack -> readyjoin
+flow readyfork -> docs -> intl
+flow intl -> customs "tak"
+flow intl -> intlmerge "nie"
+flow customs -> intlmerge
+flow intlmerge -> readyjoin
+flow readyjoin -> dispatch -> dispatchfork
+flow dispatchfork -> sendconf -> dispatchjoin
+flow dispatchfork -> updinv -> dispatchjoin
+flow dispatchjoin -> delivered -> reported
+flow reported -> followup "nie"
+flow followup -> done
+flow reported -> retlabel "tak"
+flow retlabel -> receiveret -> inspect -> refund -> returned
+```

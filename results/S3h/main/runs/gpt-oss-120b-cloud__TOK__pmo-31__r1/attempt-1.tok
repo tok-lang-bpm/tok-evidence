@@ -1,0 +1,51 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizz "Blizzard"
+  lane user "User"
+    start S "Start character generation"
+    task T_names "Come up with good character names"
+    task T_enter_account "Enter account information"
+    task T_click_link "Click confirmation link"
+    task T_select_payment "Select payment method"
+    task T_enter_cc "Enter credit card information"
+    task T_enter_bank "Enter IBAN and BIC numbers"
+    task T_log_in "Log into the game"
+    task T_select_rc "Select realm, race and class"
+    task T_enter_name "Enter character name"
+    task T_send_expansion "Send expansion message"
+  lane system "System"
+    task T_check_battle "Check battle.net account"
+    task T_check_sub "Check WoW subscription"
+    task T_send_confirm "Send confirmation and selfies"
+
+    xor G_have_account "Battle.net account?"
+    xor G_have_subscription "Active WoW subscription?"
+    xor G_payment_method "Payment method?"
+    xor G_name_available "Name available?"
+    and G_parallel_split
+    and G_parallel_join
+
+flow S -> G_parallel_split
+flow G_parallel_split -> T_check_battle
+flow G_parallel_split -> T_names
+
+flow T_check_battle -> G_have_account
+
+flow G_have_account "yes" -> T_check_sub
+flow G_have_account "no" -> T_enter_account -> T_click_link -> T_check_sub
+
+flow T_check_sub -> G_have_subscription
+
+flow G_have_subscription "yes" -> T_log_in
+flow G_have_subscription "no" -> T_select_payment -> G_payment_method
+
+flow G_payment_method "credit card" -> T_enter_cc -> T_log_in
+flow G_payment_method "bank account" -> T_enter_bank -> T_log_in
+
+flow T_log_in -> T_select_rc -> G_parallel_join
+flow T_names -> G_parallel_join
+
+flow G_parallel_join -> T_enter_name -> G_name_available
+
+flow G_name_available "no" -> T_enter_name
+flow G_name_available "yes" -> T_send_confirm -> T_send_expansion -> end E "Character creation completed"

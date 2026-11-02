@@ -1,0 +1,84 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+If the MPOO sends the bill for the temporary continuation of the metering point operations to the GO, the GO examines the bill. If the MSPO sends the bill for the temporary continuation of the measurement to the GO, the GO examines the bill. If the MSPO sends the bill for additional readings to the GO, the GO examines the bill. If the MPOO sends the bill for the equipment acquisition to the MPON or the GO, the MPON or the GO examines the bill. The GO or the MPON confirms the invoice with payment advice to the MPOO or the MSPO, or the GO or the MPON rejects the invoice of the MPOO or the MSPO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Billing Process"
+
+pool org "Organisation"
+  lane process "Process"
+    start S "Start"
+    xor X1 "Which bill is sent?"
+    xor X2 "Recipient of equipment acquisition bill?"
+    end CONFIRMED "Process confirmed"
+    end REJECTED "Process rejected"
+
+  lane MPOO "MPOO"
+    task SEND_TEMP_CONT "send bill for temporary continuation of metering point operations"
+    task SEND_EQUIP "send bill for equipment acquisition"
+
+  lane MSPO "MSPO"
+    task SEND_TEMP_MEAS "send bill for temporary continuation of measurement"
+    task SEND_ADDIT_READINGS "send bill for additional readings"
+
+  lane GO "GO"
+    task EXAMINE_GO "examine bill"
+    xor CONFIRM_GO "Confirm invoice?"
+    task CONFIRM_INVOICE_GO "confirm invoice with payment advice"
+    task REJECT_INVOICE_GO "reject invoice"
+
+  lane MPON "MPON"
+    task EXAMINE_MPON "examine bill"
+    xor CONFIRM_MPON "Confirm invoice?"
+    task CONFIRM_INVOICE_MPON "confirm invoice with payment advice"
+    task REJECT_INVOICE_MPON "reject invoice"
+
+flow S -> X1
+flow X1 -> SEND_TEMP_CONT
+flow X1 -> SEND_TEMP_MEAS
+flow X1 -> SEND_ADDIT_READINGS
+flow X1 -> SEND_EQUIP
+
+flow SEND_TEMP_CONT -> EXAMINE_GO
+flow SEND_TEMP_MEAS -> EXAMINE_GO
+flow SEND_ADDIT_READINGS -> EXAMINE_GO
+flow SEND_EQUIP -> X2
+
+flow X2 -> EXAMINE_GO
+flow X2 -> EXAMINE_MPON
+
+flow EXAMINE_GO -> CONFIRM_GO
+flow EXAMINE_MPON -> CONFIRM_MPON
+
+flow CONFIRM_GO -> CONFIRM_INVOICE_GO "confirm"
+flow CONFIRM_GO -> REJECT_INVOICE_GO "reject"
+flow CONFIRM_MPON -> CONFIRM_INVOICE_MPON "confirm"
+flow CONFIRM_MPON -> REJECT_INVOICE_MPON "reject"
+
+flow CONFIRM_INVOICE_GO -> CONFIRMED
+flow REJECT_INVOICE_GO -> REJECTED
+flow CONFIRM_INVOICE_MPON -> CONFIRMED
+flow REJECT_INVOICE_MPON -> REJECTED
+```
+
+The tok checker reports these problems in it:
+
+- line 32: warning W021: branch of an XOR/OR split without label, condition or default status (f-X1-SEND_TEMP_CONT)
+- line 33: warning W021: branch of an XOR/OR split without label, condition or default status (f-X1-SEND_TEMP_MEAS)
+- line 34: warning W021: branch of an XOR/OR split without label, condition or default status (f-X1-SEND_ADDIT_READINGS)
+- line 35: warning W021: branch of an XOR/OR split without label, condition or default status (f-X1-SEND_EQUIP)
+- line 42: warning W021: branch of an XOR/OR split without label, condition or default status (f-X2-EXAMINE_GO)
+- line 43: warning W021: branch of an XOR/OR split without label, condition or default status (f-X2-EXAMINE_MPON)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

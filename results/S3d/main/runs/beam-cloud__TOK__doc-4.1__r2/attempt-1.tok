@@ -1,0 +1,81 @@
+tok 1.0 "Mental health intake"
+
+pool institute "Mental health care institute"
+  lane familyDoctor "Family doctor"
+    start telephone "Notice by telephone"
+    task sendCopy "Send copy of medical file"
+  lane secretarial "Secretarial office"
+    task inquire "Inquire name and residence"
+    task putThrough "Put doctor through to nursing officer"
+    task storeInfo "Store information in information system"
+    task printInfo "Print information"
+    xor newPatient "New patient?"
+    task createFile "Create patient file"
+    task storeForm "Store registration form and print in patient file"
+    task produceCards "Produce registration cards"
+    task addList "Add new patient to list of new notices"
+    task storeAssign "Store assignments in information system"
+    task passCards "Pass registration cards to intakers"
+    and splitAfterCards "Pass registration cards"
+    xor required "Medical file required?"
+    task sendLetter "Prepare and send letter requesting medical file"
+    task receiveCopy "Receive copy of medical file"
+    task informIntaker "Inform second intaker"
+    task addCopy "Add copy to patient file"
+    xor mergeRequired "Medical file required?"
+    task typeTapes "Type out tapes"
+    task addTapes "Add typed information to patient file"
+    and meetingsDone "First and second meetings completed"
+    task putStatus "Put patient on list of patients that reach this status"
+    task provideList "Provide team-leader with list of patients"
+  lane nursing "Nursing officer"
+    task fullInquiry "Make full inquiry"
+    task recordForm "Record information on registration form"
+    task handForm "Hand in registration form"
+  lane firstIntaker "First intaker"
+    task planFirst "Plan meeting with patient"
+    task examine "Examine patient using standard checklist"
+    task registerObserv "Register additional observations in personal notebook"
+    task copyNotes "Put copy of notes in patient file"
+    task addChecklist "Add standard checklist to patient file"
+  lane secondIntaker "Second intaker"
+    task planSecond "Plan first meeting"
+    task meetSecond "Meet with patient"
+    task recordDict "Record observations on dictaphone"
+  lane teamLeader "Team-leader"
+    task staffMeeting "Hold staff meeting"
+    task assign "Assign patients to intakers"
+    task recordAssign "Record assignments on assignment list"
+    task determineFile "Determine whether medical file is required"
+    task meetingPlan "Hold staff meeting"
+    task formulate "Formulate treatment plan"
+    end completed "Intake completed"
+  lane psychiatrist "Attending psychiatrist"
+    note psyc "Participates in formulating the treatment plan" on=formulate
+
+flow telephone -> inquire -> putThrough -> fullInquiry -> recordForm -> handForm -> storeInfo -> printInfo
+flow printInfo -> newPatient
+flow newPatient -> createFile "yes" when="isNew"
+flow newPatient -> storeForm "no" default
+flow createFile -> storeForm
+flow storeForm -> produceCards -> addList
+flow addList -> staffMeeting -> assign -> recordAssign -> determineFile -> storeAssign -> passCards
+flow passCards -> splitAfterCards
+flow splitAfterCards -> planFirst
+flow splitAfterCards -> required
+flow required -> sendLetter "yes" when="fileRequired"
+flow required -> mergeRequired "no" default
+flow sendLetter -> sendCopy
+flow sendCopy -> receiveCopy
+flow receiveCopy -> informIntaker
+flow informIntaker -> addCopy
+flow addCopy -> mergeRequired
+flow mergeRequired -> planSecond
+flow planFirst -> examine -> registerObserv -> copyNotes -> addChecklist
+flow planSecond -> meetSecond -> recordDict
+flow recordDict -> typeTapes
+flow typeTapes -> addTapes
+flow addChecklist -> meetingsDone
+flow addTapes -> meetingsDone
+flow meetingsDone -> putStatus -> provideList
+flow provideList -> meetingPlan -> formulate -> completed

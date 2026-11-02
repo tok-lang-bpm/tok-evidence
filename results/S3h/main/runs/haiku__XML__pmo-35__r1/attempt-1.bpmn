@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="workshop" name="Chainsaw workshop" processRef="chainsaw-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="chainsaw-process" isExecutable="false">
+    <bpmn:laneSet id="chainsaw-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tell</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evaluate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gate-likes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminate-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="producer" name="Producer">
+        <bpmn:flowNodeRef>PS1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>PS2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-a</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-b</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>PJ1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parts-arrive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-first-saw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gate-finished</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>PJ-saw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>produce-rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Customer wants a custom chainsaw" />
+    <bpmn:task id="tell" name="Tell the chainsaw properties" />
+    <bpmn:parallelGateway id="PS1" />
+    <bpmn:parallelGateway id="PS2" />
+    <bpmn:task id="order-a" name="Order the parts from one online source" />
+    <bpmn:task id="order-b" name="Order the parts from another online source" />
+    <bpmn:parallelGateway id="PJ1" />
+    <bpmn:intermediateCatchEvent id="parts-arrive" name="Parts arrive" />
+    <bpmn:task id="inspect" name="Inspect all parts manually" />
+    <bpmn:task id="assemble" name="Assemble the parts" />
+    <bpmn:task id="send-first-saw" name="Send the first saw to the customer" />
+    <bpmn:intermediateCatchEvent id="wait-update" name="Wait for the next update">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="send-update" name="Send an update to the customer" />
+    <bpmn:exclusiveGateway id="gate-finished" name="First saw finished?" />
+    <bpmn:parallelGateway id="PJ-saw" />
+    <bpmn:task id="evaluate" name="Evaluate the first saw" />
+    <bpmn:exclusiveGateway id="gate-likes" name="Customer likes the saw?" />
+    <bpmn:task id="produce-rest" name="Produce the rest of the order" />
+    <bpmn:endEvent id="end-completed" name="Order completed" />
+    <bpmn:endEvent id="terminate-end" name="Rest of the order not produced">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="tell" />
+    <bpmn:sequenceFlow id="f2" sourceRef="tell" targetRef="PS1" />
+    <bpmn:sequenceFlow id="f3" sourceRef="PS1" targetRef="PS2" />
+    <bpmn:sequenceFlow id="f4" sourceRef="PS1" targetRef="wait-update" />
+    <bpmn:sequenceFlow id="f5" sourceRef="PS2" targetRef="order-a" />
+    <bpmn:sequenceFlow id="f6" sourceRef="PS2" targetRef="order-b" />
+    <bpmn:sequenceFlow id="f7" sourceRef="order-a" targetRef="PJ1" />
+    <bpmn:sequenceFlow id="f8" sourceRef="order-b" targetRef="PJ1" />
+    <bpmn:sequenceFlow id="f9" sourceRef="PJ1" targetRef="parts-arrive" />
+    <bpmn:sequenceFlow id="f10" sourceRef="parts-arrive" targetRef="inspect" />
+    <bpmn:sequenceFlow id="f11" sourceRef="inspect" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f12" sourceRef="assemble" targetRef="send-first-saw" />
+    <bpmn:sequenceFlow id="f13" sourceRef="send-first-saw" targetRef="PJ-saw" />
+    <bpmn:sequenceFlow id="f14" sourceRef="wait-update" targetRef="send-update" />
+    <bpmn:sequenceFlow id="f15" sourceRef="send-update" targetRef="gate-finished" />
+    <bpmn:sequenceFlow id="f16" name="no" sourceRef="gate-finished" targetRef="wait-update">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">first saw not finished</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f17" name="yes" sourceRef="gate-finished" targetRef="PJ-saw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">first saw finished</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f18" sourceRef="PJ-saw" targetRef="evaluate" />
+    <bpmn:sequenceFlow id="f19" sourceRef="evaluate" targetRef="gate-likes" />
+    <bpmn:sequenceFlow id="f20" name="yes" sourceRef="gate-likes" targetRef="produce-rest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">customer likes the saw</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f21" name="no" sourceRef="gate-likes" targetRef="terminate-end">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">customer does not like the saw</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f22" sourceRef="produce-rest" targetRef="end-completed" />
+  </bpmn:process>
+</bpmn:definitions>

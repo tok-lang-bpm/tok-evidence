@@ -1,0 +1,123 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The process is initiated by a switch-over request. In doing so, the customer transmits his data to the customer service department of the company. Customer service is a shared service center between the departments Sales and Distribution. The customer data is received by customer service and based on this data a customer data object is entered into the CRM system. After customer data has been entered it should then be compared with the internal customer data base and checked for completeness and plausibility. In case of any errors these should be corrected on the basis of a simple error list. The comparison of data is done to prevent individual customer data being stored multiple times. In case the customer does not exist in the customer data base, a new customer object is being created which will remain the data object of interest during the rest of the process flow. This object consists of data elements such as the customer's name and address and the assigned power gauge. The generated customer object is then used, in combination with other customer data to prepare the contract documents for the power supplier switch (including data such as bank connection, information on the selected rate, requested date of switch-over). In the following an automated check of the contract documents is carried out within the CIS (customer information system) in order to confirm their successful generation. In case of a negative response, i.e. the contract documents are not (or incorrectly) generated, the causing issues are being analyzed and resolved. Subsequently the contract documents are generated once again. In case of a positive response a confirmation document is sent out to the customer stating that the switch-over to the new supplier can be executed. A request to the grid operator is automatically sent out by the CIS. It puts the question whether the customer may be supplied by the selected supplier in the future. The switch-over request is checked by the grid operator for supplier concurrence, and the grid operator transmits a response comment. In the case of supplier concurrence the grid operator would inform all involved suppliers and demand the resolution of the conflict. The grid operator communicates with the old supplier and carries out the termination of the sales agreement between the customer and the old supplier (i.e. the customer service (of the new supplier) does not have to interact with the old supplier regarding termination). If there are not any objections by the grid operator (i.e. no supplier concurrence), customer service creates a CIS contract. The customer then has the chance to check the contract details and based on this check may decide to either withdraw from the switch contract or confirm it. Depending on the customer's acceptance / rejection the process flow at customer service either ends (in case of withdrawal) or continues (in case of a confirmation). An additional constraint is that the customer can only withdraw from the offered contract within 7 days after the 7th day the contract will be regarded as accepted and the process continues. The confirmation message by the customer is therefore not absolutely necessary (as it will count as accepted after 7 days in any way) but it can speed up the switch process. On the switch-date, but no later than 10 days after power supply has begun, the grid operator transmits the power meter data to the customer service and the old supplier via messages containing a services consumption report. At the same time, the grid operator computes the final billing based on the meter data and sends it to the old supplier. Likewise the old supplier creates and sends the final billing to the customer. For the customer as well as the grid operator the process ends then. After receiving the meter data customer service imports the meter data to systems that require the information. The process of winning a new customer ends here.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Customer switch-over"
+
+pool supplier "New supplier"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit "Transmit customer data to customer service"
+    task checkDetails "Check contract details"
+    eventgw decide ["Decide within 7 days?"]
+    catch withdraw "Withdraw from contract" message="withdrawal"
+    catch confirm "Confirm contract" message="confirmation"
+    catch timer7 "7 days elapsed" timer=P7D
+    end withdrawn "Switch contract withdrawn"
+    task receiveBillCust "Receive final billing"
+    end custEnd "Switch process ended for customer"
+  lane cs "Customer service"
+    task receiveData "Receive customer data"
+    task enter "Enter customer data object into CRM system"
+    task compare "Compare customer data with internal customer database"
+    task check "Check completeness and plausibility of customer data"
+    xor errors ["Errors found?"]
+    task correct "Correct errors based on simple error list"
+    xor errorsMerged
+    xor exists ["Customer exists in customer database?"]
+    task createCust "Create new customer object"
+    xor existsMerged
+    task prepare "Prepare contract documents with customer object, bank connection, rate and requested switch-over date"
+    task analyze "Analyze and resolve causing issues"
+    task confirmDoc "Send confirmation document to customer"
+    task createContract "Create CIS contract"
+    xor acceptMerged
+    task importMeter "Import meter data into systems that require the information"
+    end won "New customer won"
+  lane cis "CIS"
+    task checkDocs "Automatically check contract documents"
+    xor docsOk ["Documents generated successfully?"]
+    task regenerate "Generate contract documents again"
+    task sendRequest "Automatically send switch-over request to grid operator"
+  lane grid "Grid operator"
+    task checkRequest "Check switch-over request for supplier concurrence"
+    task respond "Transmit response comment"
+    xor concur ["Supplier concurrence?"]
+    task informSup "Inform all involved suppliers"
+    task demand "Demand resolution of the conflict"
+    task communicate "Communicate with old supplier"
+    task terminate "Carry out termination of sales agreement"
+    xor concurMerged
+    and meterSplit
+    task transmitMeter "Transmit power meter data consumption report"
+    task computeBill "Compute final billing based on meter data"
+    task sendBill "Send final billing to old supplier"
+    and billSplit
+    and meterOut
+    end gridEnd "Switch process ended for grid operator"
+  lane old "Old supplier"
+    task resolve "Resolve the conflict"
+    task receiveMeter "Receive power meter data"
+    task receiveBill "Receive final billing from grid operator"
+    and oldJoin
+    task createBill "Create final billing for customer"
+    task sendBillCust "Send final billing to customer"
+    and oldSplit
+    end oldEnd "Final billing sent"
+
+flow request -> transmit -> receiveData -> enter -> compare -> check -> errors
+flow errors -> correct "yes"
+flow errors -> errorsMerged "no"
+flow correct -> errorsMerged
+flow errorsMerged -> exists
+flow exists -> createCust "no"
+flow exists -> existsMerged "yes"
+flow createCust -> existsMerged
+flow existsMerged -> prepare -> checkDocs -> docsOk
+flow docsOk -> confirmDoc "yes"
+flow docsOk -> analyze "no"
+flow analyze -> regenerate -> checkDocs
+flow confirmDoc -> sendRequest -> checkRequest -> respond -> concur
+flow concur -> informSup "yes"
+flow concur -> concurMerged "no"
+flow informSup -> demand -> resolve -> communicate -> terminate -> concurMerged
+flow concurMerged -> createContract -> checkDetails -> decide
+flow decide -> withdraw
+flow decide -> confirm
+flow decide -> timer7
+flow withdraw -> withdrawn
+flow confirm -> acceptMerged
+flow timer7 -> acceptMerged
+flow acceptMerged -> meterSplit
+flow meterSplit -> transmitMeter -> meterOut
+flow meterSplit -> computeBill -> sendBill -> billSplit
+flow meterOut -> importMeter -> won
+flow meterOut -> receiveMeter -> oldJoin
+flow billSplit -> gridEnd
+flow billSplit -> receiveBill -> oldJoin
+flow oldJoin -> createBill -> sendBillCust -> oldSplit
+flow oldSplit -> oldEnd
+flow oldSplit -> receiveBillCust -> custEnd
+```
+
+The tok checker reports these problems in it:
+
+- line 8: error T001: invalid token: unexpected character '['
+- line 20: error T001: invalid token: unexpected character '['
+- line 23: error T001: invalid token: unexpected character '['
+- line 35: error T001: invalid token: unexpected character '['
+- line 41: error T001: invalid token: unexpected character '['
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

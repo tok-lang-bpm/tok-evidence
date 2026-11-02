@@ -1,0 +1,62 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+When a claim is received, it is first checked whether the claimant is insured by the organization. If not, the claimant is informed that the claim must be rejected. Otherwise, the severity of the claim is evaluated. Based on the outcome (simple or complex claims), relevant forms are sent to the claimant. Once the forms are returned, they are checked for completeness. If the forms provide all relevant details, the claim is registered in the Claims Management system, which ends the Claims Notification process. Otherwise, the claimant is informed to update the forms. Upon reception of the updated forms, they are checked again.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Claims Notification process"
+
+pool org "Organisation"
+  lane claimant "Claimant"
+    catch forms_returned "Forms returned" message="forms"
+    catch updated_forms_returned "Updated forms returned" message="updated_forms"
+  lane organisation "Organisation"
+    start received "Claim received" message="claim"
+    task check_insured "Check if claimant is insured"
+    xor insured "Claimant insured?"
+    task inform_rejected "Inform claimant of rejection"
+    task evaluate_severity "Evaluate claim severity"
+    xor severity "Simple or complex claim?"
+    send send_forms "Send relevant forms to claimant" message="forms"
+    task check_forms "Check forms for completeness"
+    xor complete "Forms complete?"
+    task inform_update "Inform claimant to update forms"
+    end rejected "Claim rejected"
+  lane claims_management "Claims Management system"
+    task register "Register claim in Claims Management system"
+    end registered "Claims Notification process ended"
+
+flow received -> check_insured -> insured
+flow insured -> evaluate_severity "yes"
+flow insured -> inform_rejected "no" default
+flow inform_rejected -> rejected
+flow evaluate_severity -> severity
+flow severity -> send_forms "simple"
+flow severity -> send_forms "complex"
+flow send_forms -> forms_returned
+flow forms_returned -> check_forms
+flow check_forms -> complete
+flow complete -> register "yes"
+flow complete -> inform_update "no" default
+flow inform_update -> updated_forms_returned
+flow updated_forms_returned -> check_forms
+flow register -> registered
+```
+
+The tok checker reports these problems in it:
+
+- line 24: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-insured-evaluate_severity)
+- line 29: warning W023: sequence flow repeats another one (same source, target and condition) (f-severity-send_forms-2)
+- line 33: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-complete-register)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

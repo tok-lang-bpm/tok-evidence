@@ -1,0 +1,291 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4381,
+  "output_tokens": 2334,
+  "seconds": 9.340344600001117,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model the process described. The description is about checking requirements, organizing accommodation and bank account (negotiation), visa steps etc. We need to create a BPMN process in tok.\n\nActors: The description mentions \"you\" (the applicant) presumably. Also representation offices, maybe \"applicant\". Could have lane \"Applicant\" and lane \"Representation\". Since there are two participants: applicant and representation office (could be a system). Use one pool for organisation (maybe the whole process). We'll create two lanes: Applicant and Representation.\n\nActivities: \"Check the requirements for working and living in Austria\" - start event maybe \"Start\". Then \"Organize accommodation and bank account\" (negotiation). Then \"Complete visa application\" includes many substeps: collect visa application form, travel document, passport photo, health insurance, proof of means, other evidence, ensure no grounds for refusal. Could be modeled as a series of tasks; maybe a parallel gateway for gathering documents? But description: include list of required documents; could be a sub-process \"Gather visa documents\". Then decision: \"Are all required documents ready?\" If yes, \"Submit visa application to representation\". Then representation processes: decision \"Is visa approved?\" If yes, \"Receive visa\". Else, \"Request additional documents\" and loop back.\n\nAlso mention type D visa etc. Might be complex but we keep simple.\n\nParallel: Organize accommodation and bank account could occur in parallel with visa preparation? It says \"Create a process that assists you for a combination of the steps.\" Could be parallel: do accommodation and bank account negotiation while preparing visa. So we can have an AND split after start: one branch for \"Organize accommodation and bank account\", another branch for \"Prepare visa documents\". Then join.\n\nWithin visa preparation, after gathering docs, decision to \"Submit visa application\". Then representation processing.\n\nWe'll need start and end events for each path.\n\nLet's draft.\n\nHeader: tok 1.0 \"Work and Live in Austria\" [executable]\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and1 \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    # parallel branch for visa\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa + 3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel, invitation, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    # if yes\n    task submit_visa_application \"Submit visa application to representation\"\n    # representation lane tasks\n    lane representation \"Representation\"\n      task review_application \"Review visa application\"\n      xor visa_decision \"Visa approved?\"\n      task issue_visa \"Issue visa\"\n      task request_additional_documents \"Request additional documents\"\n    # back to applicant for additional docs loop\n    flow start1 -> check_requirements -> and1\n    flow and1 -> organize_accommodation_bank\n    flow and1 -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\n    flow visa_docs_ready \"yes\" -> submit_visa_application\n    flow visa_docs_ready \"no\" -> request_additional_documents\n    # after request, loop back to collect docs? could go to collect_visa_form again, but simplify: back to collect_visa_form\n    flow request_additional_documents -> collect_visa_form\n    flow submit_visa_application -> review_application\n    flow review_application -> visa_decision\n    flow visa_decision \"yes\" -> issue_visa\n    flow visa_decision \"no\" -> request_additional_documents\n    # after issue, join parallel\n    and and_join \"Join\"\n    flow issue_visa -> and_join\n    flow organize_accommodation_bank -> and_join\n    end end1 \"Process completed\"\n    flow and_join -> end1\n\nNeed to ensure flows defined correctly, start flows maybe not needed since we used flow statements. Must list all flows referencing IDs. Let's assign IDs.\n\nIDs:\n\nstart1, check_requirements, and1, organize_accommodation_bank, collect_visa_form, collect_travel_document, collect_passport_photo, collect_health_insurance, collect_means_of_subsistence, collect_other_evidence, visa_docs_ready, submit_visa_application, review_application, visa_decision, issue_visa, request_additional_documents, and_join, end1.\n\nWe need to ensure flow syntax: flow A -> B -> C etc can be multiple. For branching we need separate flows with label.\n\nDefine flows separate lines.\n\nNow produce model.\n\nBut we need to ensure each element is inside correct lane. In tok, indentation: lane block contains nodes. So we need to put all applicant tasks inside lane applicant block, representation tasks inside its lane.\n\nParallel gateway and_join maybe also in applicant lane? Could be in pool.\n\nWe also need start event inside lane applicant.\n\nLet's craft.\n\nPotential errors: need to declare gates: \"and\" for parallel, \"xor\" for exclusive. Provide IDs.\n\nWe need to ensure each flow uses IDs that exist.\n\nAlso note we have \"and1\" and \"and_join\". For parallel, need matching type 'and' for split and join with same ID? Usually you create two separate gateways with same ID? In tok, you can have separate IDs. But they need to be both 'and' type; join matches by flow convergence.\n\nMake sure to connect start to and1? Actually we have start -> check_requirements -> and1 (parallel split). Then after and1 we need two outgoing flows: one to organize_accommodation_bank, another to beginning of visa doc gathering chain.\n\nIn tok, we can define flow statements like \"flow and1 -> organize_accommodation_bank\" etc.\n\nLet's draft final tok:\n\ntok 1.0 \"Work and Live in Austria\" [executable]\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1\n\nCheck for errors: Need to ensure that flow statements are allowed to include multiple arrows; yes.\n\nPotential warnings: duplicate IDs? No.\n\nPotential error: The gateway ids must be unique: and_split and and_join distinct.\n\nAll tasks inside proper lanes.\n\nNow test with tool.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Work and Live in Austria\" [executable]\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 6801,
+  "output_tokens": 545,
+  "seconds": 2.243156100012129,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool requires either text or path, not both. I gave both path (empty) and text. Need only text. Let's call again with only text parameter.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\" [executable]\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 3: error P005: the document must start with a header such as 'tok 1.0'\nline 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 7561,
+  "output_tokens": 928,
+  "seconds": 11.610768499987898,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We have syntax errors. The header line is \"tok 1.0 \\\"Work and Live in Austria\\\" [executable]\". In tok, header is like: tok 1.0 \"Title\" [executable]. That's okay. But error says unexpected character '[' at line 1, meaning perhaps header attribute syntax expects brackets after? Actually cheat sheet: `tok 1.0 \"Title\" [executable]`. So square brackets allowed as flags. Should be okay. Maybe need no space before '['? It's fine. But error indicates token '[' unexpected, maybe missing flag name? In header, flags are just identifiers without key=, like [executable]. That's allowed.\n\nBut perhaps need to include process name after title? Not required.\n\nMaybe the tool expects token after header to be type? Actually header: `tok 1.0 \"Title\" [executable]`. Should be fine.\n\nBut error also says P005: document must start with header such as 'tok 1.0'. It didn't recognize header because of the bracket token problem.\n\nMaybe the tool version expects header without brackets for flags? Let's try without [executable] to simplify. Also maybe need to include version tag? Not required.\n\nLet's try header: `tok 1.0 \"Work and Live in Austria\"`.\n\nAlso flow syntax: I used -\\> escape but actual needed `->` (no backslashes). The backslashes were due to JSON escaping? In the string, we typed \"\\u003e\" for >. That's okay; but the tool sees literal `-\\u003e`? Actually the source includes `-\\u003e` that appears as \"-\\u003e\" not \"->\". Need to write \"->\". In JSON string, we can just put \"->\". So we should not escape >.\n\nThus we need to provide plain \"->\". Let's rewrite flow lines with \"->\".\n\nAlso need to ensure flow lines with label: `flow visa_docs_ready \"yes\" -> submit_visa_application`. That's fine.\n\nNow produce corrected model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 8665,
+  "output_tokens": 699,
+  "seconds": 2.882340300013311,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The flow lines still have escaped arrows due to JSON \\u003e again. In JSON string we need to escape backslash for arrow? Actually we are sending JSON with string value containing \"->\". This should be fine; we don't need to escape >. But we used \"\\u003e\" which is \">\" character encoded. That's okay, but the tool sees literal \"\\u003e\"? Possibly the JSON parser converts it to \">\" before passing to tool, so should be fine. However token shows \"-\\u003e\". Wait we have \"-\\u003e\" because we typed \"-\\u003e\". Actually we used \"-\\u003e\" to avoid \"->\"? That is wrong. Need simply \"->\". Let's write \"->\". Also need spaces? \"flow start1 -> check_requirements -> and_split\". Let's rewrite flows accordingly.\n\nAlso we must ensure no leading dash. Let's rewrite whole flow lines without escapes.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9540,
+  "output_tokens": 597,
+  "seconds": 9.474995299999136,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Seems still using \"-\\u003e\". I wrote \"-\\u003e\". Need to write \"->\" (without dash). Actually flow syntax is \"flow A -> B\". So should be \"flow start1 -> check_requirements -> and_split\". I mistakenly kept dash and arrow. Let's correct.\n\nAlso remove escaped > inside description? That is okay, but maybe we can just use \">\" plain.\n\nLet's rewrite flow lines correctly.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 10313,
+  "output_tokens": 574,
+  "seconds": 2.7455209999752697,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It still shows \"-\\u003e\". My flow lines still contain \"-\\u003e\". Need to replace with \"->\". Let's edit manually.\n\nAlso note that in the JSON string, a backslash is needed to escape quotes but not arrow. So just write \"->\". Let's produce final model string without any escapes.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 11063,
+  "output_tokens": 586,
+  "seconds": 3.1830438999750186,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It still sees \"-\\u003e\". My JSON string still includes \"-\\u003e\". I need to actually write \"->\". The escape sequence for \">\" is not needed. I wrote \"-\\u003e\" because I used dash already. Let's replace with \"->\". So flow start1 -> check_requirements -> and_split.\n\nLet's rewrite entire model with proper arrows.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 8,
+  "input_tokens": 11825,
+  "output_tokens": 642,
+  "seconds": 2.5984792999806814,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The issue persists. Probably the dash '-' is being interpreted as part of the flow token: the flow syntax expects \"flow A -> B\". I have \"flow start1 -\\u003e check_requirements -\\u003e and_split\". That's still dash then arrow encoded. Should be \"flow start1 -> check_requirements -> and_split\". So write exactly \"->\". Let's remove the dash before arrow.\n\nAlso escape issue: The JSON string includes \"\\u003e\" for \">\", but we can just use \">\" directly; the JSON will handle it. Let's use \"->\". Write \" -> \" not \"-\\u003e\". Let's rewrite.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 9,
+  "input_tokens": 12643,
+  "output_tokens": 921,
+  "seconds": 11.31479980002041,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It still shows \"-\\u003e\". I think my editor replaced \"->\" with \"-\\u003e\". The JSON string contains \"-\\u003e\". Probably because I typed \"->\" but JSON escaped the \">\"? Actually \">\" doesn't need escaping; maybe the system automatically escapes as \"\\u003e\". The issue is the dash before the arrow still present. My flow line: \"flow start1 -> check_requirements -> and_split\". That would be \"flow start1 -\\u003e check_requirements -\\u003e and_split\". The tool expects \"->\". It sees \"-\\u003e\" (dash + escaped >). That's not correct token; should be \"->\". So we need to avoid dash before arrow. It seems my spaces cause dash? Actually \"->\" is two characters hyphen and greater-than. That's correct token. But after JSON escape, hyphen remains hyphen, greater-than becomes \\u003e. So token becomes \"-\\u003e\". The parser likely expects literal \"->\" not escaped. So need to avoid escaping greater-than: we can use HTML entity? But better to use Unicode directly \"→\"? Not.\n\nMaybe the tool's JSON parser decodes \\u003e to \">\", so token becomes \"->\". Wait hyphen + \">\" = \"->\". So after decoding, it should be correct. But diagnostics still show \"-\\u003e\". It might be showing original source before decoding. Maybe the tool doesn't accept escaped >; it expects raw >. So we need to include raw >. In JSON, raw \">\" is fine; no need to escape. So we must ensure the string contains \">\" not \"\\u003e\". My representation uses \"\\u003e\". Let's replace with \">\" directly.\n\nAlso for the text description, I used \\u003e for greater-than inside task labels. That's okay but not needed. Use \">\" directly.\n\nLet's rewrite whole text with plain \">\" characters. Also ensure no backslashes.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 10,
+  "input_tokens": 13740,
+  "output_tokens": 703,
+  "seconds": 3.5075834000017494,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Still same. Perhaps the flow syntax does not allow multiple arrows in one line? Wait example: `flow start -> task1 -> task2`. That's allowed. But maybe need separate flow statements for each segment? However example in cheat sheet shows chain: `flow A -> B -> C`. So should be fine.\n\nMaybe the dash is being interpreted as part of token because we have leading dash before the arrow? In my line \"flow start1 -\\u003e check_requirements -\\u003e and_split\", there is a space before dash, but token is \"-\\u003e\". Should be \"->\". So maybe the tool expects exactly \"->\" without Unicode escape. Using raw \"->\" may work. Let's try plain \"->\". Need to ensure JSON string contains \"->\". Let's manually write \"->\". Use double hyphen? No.\n\nI'll construct string with literal \"->\". The JSON will keep it as \"->\". Let's write.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form -> collect_travel_document -> collect_passport_photo -> collect_health_insurance -> collect_means_of_subsistence -> collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 28: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 11,
+  "input_tokens": 14619,
+  "output_tokens": 956,
+  "seconds": 3.746587300003739,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It seems the tool is still seeing \"-\\u003e\". Perhaps the JSON string literal conversion still escapes > as \\u003e automatically because of security? The output shows still \"-\\u003e\". Likely the system automatically escapes >. In that case we cannot use \"->\"? But example in cheat sheet uses \"->\". How would that be encoded? Possibly they use raw \"->\" and the system retains it. Maybe the problem is that our flow lines have leading spaces before arrow? No.\n\nWait the error line numbers refer to lines 28 etc. Let's count lines: The flow start lines are after tasks. Perhaps the issue is that flow statements cannot have spaces before arrow? Example: \"flow A -> B -> C\". That's exact.\n\nOur line: \"flow start1 -\\u003e check_requirements -\\u003e and_split\". After JSON decoding, becomes \"flow start1 -> check_requirements -> and_split\". Should be fine. But the diagnostic still says expecting '->', meaning it didn't recognize token. Maybe the token is not recognized because there is a dash before arrow? Actually token is \"->\". That's correct. Maybe the system requires no spaces around arrow? But example has spaces.\n\nMaybe the hyphen is being interpreted as separate token due to being encoded as separate character? Actually the arrow token is a single token consisting of hyphen followed by greater-than. So should be recognized. Something else might be wrong: maybe flow lines cannot have labels with spaces? But the error is specific to '->'.\n\nCould be that flow statements must be separate per pair, not chain? But cheat sheet shows chain is allowed. However maybe my version of tool requires each flow to be separate: first \"flow start1 -> check_requirements\", second \"flow check_requirements -> and_split\". That would avoid chain. Let's try that.\n\nWe'll write each flow as separate statements.\n\nAlso need to define flows for parallel branches separately.\n\nLet's rewrite flows with single arrows per line.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements\nflow check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form\nflow collect_visa_form -> collect_travel_document\nflow collect_travel_document -> collect_passport_photo\nflow collect_passport_photo -> collect_health_insurance\nflow collect_health_insurance -> collect_means_of_subsistence\nflow collect_means_of_subsistence -> collect_other_evidence\nflow collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready \"yes\" -> submit_visa_application\nflow visa_docs_ready \"no\" -> request_additional_documents\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision \"yes\" -> issue_visa\nflow visa_decision \"no\" -> request_additional_documents\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "line 35: error P008: malformed flow line: expected '->'\nline 36: error P008: malformed flow line: expected '->'\nline 39: error P008: malformed flow line: expected '->'\nline 40: error P008: malformed flow line: expected '->'\n4 error(s), 4 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 12,
+  "input_tokens": 15751,
+  "output_tokens": 837,
+  "seconds": 3.1519081000005826,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Now errors at lines with labeled flows: \"flow visa_docs_ready \\\"yes\\\" -> submit_visa_application\". Maybe syntax for labeled flow is `flow G -> D \"tak\" when=\"condition\"` per cheat sheet. That means label after arrow, not before condition? Actually example: `flow G -> D \"tak\" when=\"amount > 100\"`. So label after target, before when. So our syntax with `\"yes\"` after source is maybe wrong. Should be: `flow visa_docs_ready -> submit_visa_application \"yes\"`? The example: source -> target \"label\". So we need flow source -> target \"yes\". Let's adjust.\n\nSimilarly for \"no\".\n\nAlso the earlier lines maybe still have dash issue. The first flow lines still have \"-\\u003e\". Let's replace with \"->\". Again same issue. We need raw \"->\". But due to JSON escaping it's turning into \"-\\u003e\". Perhaps we need to avoid Unicode arrow encoding by using backticks? Not.\n\nMaybe the system automatically escapes \">\" to \\u003e but that's okay; token should be \"->\". Yet earlier errors later correspond to lines with label maybe. Let's fix label syntax first, then see if \"->\" errors persist.\n\nWe'll rewrite flows with label after target.\n\nAlso ensure we use correct syntax for default flows? Not needed.\n\nLet's rewrite flow lines.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Work and Live in Austria\"\n\npool org \"Austria Relocation Process\"\n  lane applicant \"Applicant\"\n    start start1 \"Start\"\n    task check_requirements \"Check requirements for working and living in Austria\"\n    and and_split \"Parallel preparation\"\n    task organize_accommodation_bank \"Organize accommodation and bank account (negotiation)\"\n    task collect_visa_form \"Collect visa application form\"\n    task collect_travel_document \"Collect travel document (valid > visa +3 months, 2 empty pages, issued <10 years)\"\n    task collect_passport_photo \"Collect passport photo (35x45mm, criteria)\"\n    task collect_health_insurance \"Collect travel health insurance (30,000 Euro, Schengen)\"\n    task collect_means_of_subsistence \"Collect proof of sufficient means of subsistence\"\n    task collect_other_evidence \"Collect other evidence (hotel reservations, invitations, etc.)\"\n    xor visa_docs_ready \"All visa documents ready?\"\n    task submit_visa_application \"Submit visa application to representation\"\n    and and_join \"Join preparation\"\n    end end1 \"Process completed\"\n  lane representation \"Representation\"\n    task review_application \"Review visa application\"\n    xor visa_decision \"Visa approved?\"\n    task issue_visa \"Issue visa\"\n    task request_additional_documents \"Request additional documents\"\n\nflow start1 -> check_requirements\nflow check_requirements -> and_split\nflow and_split -> organize_accommodation_bank\nflow and_split -> collect_visa_form\nflow collect_visa_form -> collect_travel_document\nflow collect_travel_document -> collect_passport_photo\nflow collect_passport_photo -> collect_health_insurance\nflow collect_health_insurance -> collect_means_of_subsistence\nflow collect_means_of_subsistence -> collect_other_evidence\nflow collect_other_evidence -> visa_docs_ready\nflow visa_docs_ready -> submit_visa_application \"yes\"\nflow visa_docs_ready -> request_additional_documents \"no\"\nflow submit_visa_application -> review_application\nflow review_application -> visa_decision\nflow visa_decision -> issue_visa \"yes\"\nflow visa_decision -> request_additional_documents \"no\"\nflow request_additional_documents -> collect_visa_form\nflow issue_visa -> and_join\nflow organize_accommodation_bank -> and_join\nflow and_join -> end1"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ }
+]

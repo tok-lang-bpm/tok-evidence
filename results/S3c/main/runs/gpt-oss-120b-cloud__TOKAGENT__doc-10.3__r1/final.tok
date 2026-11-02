@@ -1,0 +1,50 @@
+tok 1.0
+
+pool go_pool "GO Organization"
+  lane go "GO"
+    start start "Start"
+    task verify_dereg "verifies the deregistration"
+    xor decision_dereg "Decision on deregistration"
+    task reject "rejects the deregistration"
+    task prelim_confirm "preliminarily confirms the deregistration"
+    task prepare_readmission "prepares the readmission of the measuring point"
+    xor decision_oblige "GO may oblige continuation"
+    task bind_continue "binds the MPOO to continue the operation"
+    and split_equipment "Equipment actions"
+    task equipment_acquisition "performs equipment acquisition"
+    task equipment_changes "performs equipment changes"
+    and join_equipment
+    task assign_mpo "assigns the GO as MPO"
+    task inform_mpoo "informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "informs the MSPO about the assignment of the GO"
+    task inform_sp "informs the SP about the assignment of the GO"
+    end end "End"
+  lane mpoo "MPOO"
+    task deregister_mpoo "deregisters at the GO"
+    task confirm_continue "confirms the continuation"
+  lane mspo "MSPO"
+    # no specific tasks in this process
+  lane sp "SP"
+    # no specific tasks in this process
+
+flow start -> deregister_mpoo
+flow deregister_mpoo -> verify_dereg
+flow verify_dereg -> decision_dereg
+flow decision_dereg -> reject default
+flow decision_dereg -> prelim_confirm when="confirm"
+flow prelim_confirm -> prepare_readmission
+flow prepare_readmission -> decision_oblige
+flow decision_oblige -> bind_continue when="oblige"
+flow decision_oblige -> split_equipment default
+flow bind_continue -> confirm_continue
+flow confirm_continue -> split_equipment
+flow split_equipment -> equipment_acquisition
+flow split_equipment -> equipment_changes
+flow equipment_acquisition -> join_equipment
+flow equipment_changes -> join_equipment
+flow join_equipment -> assign_mpo
+flow assign_mpo -> inform_mpoo
+flow inform_mpoo -> inform_mspo
+flow inform_mspo -> inform_sp
+flow inform_sp -> end
+flow reject -> end

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Complaint handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="office" name="Organisation" processRef="office-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="office-process" name="Complaint handling" isExecutable="false">
+    <bpmn:laneSet id="office-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>file</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback_xor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ended</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="service" name="Customer service">
+        <bpmn:flowNodeRef>log</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mark</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="team" name="Investigation team">
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>refund</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="finance" name="Financial team">
+        <bpmn:flowNodeRef>reimburse</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Complaint needed" />
+    <bpmn:task id="file" name="File a complaint" />
+    <bpmn:task id="feedback" name="Provide feedback on satisfaction" />
+    <bpmn:exclusiveGateway id="feedback_xor" name="Provide feedback?" default="f-feedback_xor-ended" />
+    <bpmn:endEvent id="ended" name="Process ended" />
+    <bpmn:task id="log" name="Log the complaint" />
+    <bpmn:task id="assign" name="Assign the complaint to the relevant department" />
+    <bpmn:task id="mark" name="Mark the complaint as resolved" />
+    <bpmn:task id="review" name="Review the details" />
+    <bpmn:task id="determine" name="Determine whether the complaint is valid and a refund is justified" />
+    <bpmn:task id="notify" name="Notify the customer with the decision" />
+    <bpmn:exclusiveGateway id="refund" name="Refund approved?" default="f-refund-mark" />
+    <bpmn:task id="reimburse" name="Process the reimbursement" />
+    <bpmn:sequenceFlow id="f-needed-file" sourceRef="needed" targetRef="file" />
+    <bpmn:sequenceFlow id="f-file-log" sourceRef="file" targetRef="log" />
+    <bpmn:sequenceFlow id="f-log-assign" sourceRef="log" targetRef="assign" />
+    <bpmn:sequenceFlow id="f-assign-review" sourceRef="assign" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-determine" sourceRef="review" targetRef="determine" />
+    <bpmn:sequenceFlow id="f-determine-notify" sourceRef="determine" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-refund" sourceRef="notify" targetRef="refund" />
+    <bpmn:sequenceFlow id="f-refund-reimburse" name="yes" sourceRef="refund" targetRef="reimburse">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">refundApproved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-refund-mark" name="no" sourceRef="refund" targetRef="mark" />
+    <bpmn:sequenceFlow id="f-reimburse-mark" sourceRef="reimburse" targetRef="mark" />
+    <bpmn:sequenceFlow id="f-mark-feedback_xor" sourceRef="mark" targetRef="feedback_xor" />
+    <bpmn:sequenceFlow id="f-feedback_xor-feedback" name="yes" sourceRef="feedback_xor" targetRef="feedback">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">provideFeedback</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-feedback_xor-ended" name="no" sourceRef="feedback_xor" targetRef="ended" />
+    <bpmn:sequenceFlow id="f-feedback-ended" sourceRef="feedback" targetRef="ended" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,78 @@
+tok 1.0 "Annual audit process"
+
+pool company "Multinational company"
+  lane audit-coordinator "Audit coordinator"
+    start start "Audit process initiated"
+    task initiate "Initiate audit process"
+    task notify "Send notification to regional office"
+  lane regional-office "Regional office"
+    task prepare "Prepare financial statements"
+    task gather "Gather necessary documents"
+    task submit "Submit documents to central audit team"
+    task provide "Provide necessary clarifications"
+  lane compliance-team "Compliance team"
+    task check-reg "Check regulatory updates"
+  lane central-audit-team "Central audit team"
+    task review "Review submission"
+    task request-clar "Request clarifications"
+    and par-start "Concurrent checks start"
+    and par-end "Concurrent checks end"
+    and risk-split "Risk evaluation start"
+    task risk-fin "Evaluate financial risks"
+    task risk-ops "Evaluate operational risks"
+    task risk-comp "Evaluate compliance risks"
+    and risk-join "Risk evaluation end"
+    xor high-risk "High risk identified?"
+    task data-analysis "Perform data analysis"
+    task interviews "Conduct interviews"
+    xor site-gate "Site visit required?"
+    task site-visit "Conduct site visit"
+    xor site-merge "Site visit merge"
+    xor risk-merge "Risk branch merge"
+    task compile "Compile audit report"
+    task update "Update audit report"
+    task distribute "Distribute final report to executive board"
+    task archive "Archive audit report"
+    end end "Audit process closed"
+  lane audit-director "Audit director"
+    task review-report "Review audit report"
+    xor approve-gate "Approve report?"
+
+flow start -> initiate
+flow initiate -> notify
+flow notify -> par-start
+flow par-start -> prepare
+flow par-start -> check-reg
+flow prepare -> gather
+flow gather -> par-end
+flow check-reg -> par-end
+flow par-end -> submit
+flow submit -> review
+flow review -> disc
+flow disc -> request-clar "Discrepancies found" when=""
+flow disc -> risk-split "No discrepancies" default
+flow request-clar -> provide
+flow provide -> review
+flow risk-split -> risk-fin
+flow risk-split -> risk-ops
+flow risk-split -> risk-comp
+flow risk-fin -> risk-join
+flow risk-ops -> risk-join
+flow risk-comp -> risk-join
+flow risk-join -> high-risk
+flow high-risk -> data-analysis "High risk identified" when=""
+flow high-risk -> risk-merge "No high risk" default
+flow data-analysis -> interviews
+flow interviews -> site-gate
+flow site-gate -> site-visit "Site visit required" when=""
+flow site-gate -> site-merge "No site visit" default
+flow site-visit -> site-merge
+flow site-merge -> risk-merge
+flow risk-merge -> compile
+flow compile -> review-report
+flow review-report -> approve-gate
+flow approve-gate -> distribute "Approved" default
+flow approve-gate -> update "Revisions required" when=""
+flow update -> review-report
+flow distribute -> archive
+flow archive -> end

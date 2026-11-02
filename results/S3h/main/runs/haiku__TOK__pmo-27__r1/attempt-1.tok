@@ -1,0 +1,51 @@
+tok 1.0 "Work accident reporting"
+
+pool org "Organisation"
+  lane employee "Employee"
+    start occurred "Accident or near-miss occurs"
+    task inform "Inform the employer immediately"
+  lane employer "Employer"
+    task record "Record the accident or near-miss"
+    xor is_work "Work accident?"
+    task not_work "Document the case as not a work accident"
+    xor kind "Reported by a school or university, or by a self-employed person?"
+    and fork
+    xor severe "Fatality or serious injury?"
+    task labour "Report the accident to the Labour Inspectorate immediately"
+    xor sev_join
+    xor incap "Killed or unable to work for three days?"
+    task insurer_rep "Report the accident to the accident insurance provider within five days"
+    xor incap_join
+    and join
+    end closed "Accident documented"
+    end nonwork "Non-work case documented"
+  lane school "School or university"
+    task school_rep "Report the accident to the competent directorate and the accident insurance provider in triplicate within five days"
+    end school_done "School report filed"
+  lane selfemp "Self-employed person"
+    task self_rep "Report the accident to the accident insurance provider in good time"
+    end self_done "Own accident reported"
+  lane provider "Accident insurance provider"
+    task register "Register the work accident"
+
+flow occurred -> inform -> record -> is_work
+flow is_work -> not_work "no"
+flow is_work -> kind "yes"
+flow not_work -> nonwork
+flow kind -> school_rep "school or university"
+flow kind -> self_rep "self-employed"
+flow kind -> fork "employer" default
+flow school_rep -> school_done
+flow self_rep -> self_done
+flow fork -> severe
+flow fork -> incap
+flow severe -> labour "yes"
+flow severe -> sev_join "no"
+flow labour -> sev_join
+flow sev_join -> join
+flow incap -> insurer_rep "yes"
+flow incap -> incap_join "no"
+flow insurer_rep -> register
+flow register -> incap_join
+flow incap_join -> join
+flow join -> closed

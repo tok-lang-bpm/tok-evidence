@@ -1,0 +1,40 @@
+tok 1.0 "Mortgage offer handling"
+
+pool org "Mortgage organisation"
+  lane csr "Customer Service Representative"
+    start s "Case started"
+    send offer "Send mortgage offer" message="Mortgage offer"
+    eventgw wait "Wait for reply"
+    catch decline "Customer declines mortgage" message="Mortgage declined"
+    catch docs "Completed offer documents received" message="Completed offer documents"
+    catch timeout "No answer after 2 weeks" timer=P14D
+    xor dj "Merge"
+    task upd "Update case details"
+    task arch "Archive case"
+    end cancel "Mortgage cancelled"
+    xor docs-check "All prerequisite documents attached?"
+    task move "Move case to administration"
+    send req "Request outstanding documents" message="Outstanding documents request"
+    end missing "Outstanding documents requested"
+  lane adm "Administration"
+    task complete "Complete case"
+    end done "Case completed"
+
+pool cust "Customer"
+
+flow s -> offer -> wait
+flow wait -> decline
+flow wait -> docs
+flow wait -> timeout
+flow decline -> dj
+flow timeout -> dj -> upd -> arch -> cancel
+flow docs -> docs-check
+flow docs-check -> move "Yes" when="all_prerequisites_attached = true"
+flow docs-check -> req "No" default
+flow req -> missing
+flow move -> complete -> done
+
+message offer -> cust "Mortgage offer"
+message cust -> decline "Mortgage declined"
+message cust -> docs "Completed offer documents"
+message req -> cust "Outstanding documents request"

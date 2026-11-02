@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_expansion" name="Expansion released" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_blizzard" name="Blizzard Online Character Generator" processRef="Process_character" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_character" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_player" name="Player">
+        <bpmn:flowNodeRef>Start_creation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_names</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_clickLink</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_selectPayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterCard</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterIban</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_selectRealm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_enterName</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_system" name="Blizzard system">
+        <bpmn:flowNodeRef>Task_checkAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_accountExists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_mergeAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_checkSubscription</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_subscriptionActive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_paymentChoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_mergePayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_nameAvailable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_expansion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_sendExpansion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_expansion</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_creation" name="Character creation started" />
+    <bpmn:parallelGateway id="Gw_split" name="Setup and name ideas" />
+    <bpmn:task id="Task_names" name="Come up with character names" />
+
+    <bpmn:task id="Task_checkAccount" name="Check whether a battle.net account exists" />
+    <bpmn:exclusiveGateway id="Gw_accountExists" name="Battle.net account exists?" default="Flow_accountNo" />
+    <bpmn:task id="Task_enterAccount" name="Enter account information" />
+    <bpmn:task id="Task_clickLink" name="Click the link in the confirmation mail" />
+    <bpmn:exclusiveGateway id="Gw_mergeAccount" />
+
+    <bpmn:task id="Task_checkSubscription" name="Check for an active WoW subscription" />
+    <bpmn:exclusiveGateway id="Gw_subscriptionActive" name="Active WoW subscription?" default="Flow_subscriptionNo" />
+    <bpmn:task id="Task_selectPayment" name="Select payment method" />
+    <bpmn:exclusiveGateway id="Gw_paymentChoice" name="Payment method?" default="Flow_bankAccount" />
+    <bpmn:task id="Task_enterCard" name="Enter credit card information" />
+    <bpmn:task id="Task_enterIban" name="Enter IBAN and BIC numbers" />
+    <bpmn:exclusiveGateway id="Gw_mergePayment" />
+
+    <bpmn:task id="Task_login" name="Log into the game" />
+    <bpmn:task id="Task_selectRealm" name="Select realm, race and class" />
+
+    <bpmn:parallelGateway id="Gw_join" />
+    <bpmn:task id="Task_enterName" name="Enter a character name" />
+    <bpmn:exclusiveGateway id="Gw_nameAvailable" name="Name still available?" default="Flow_nameTaken" />
+    <bpmn:task id="Task_confirm" name="Send confirmation and character selfies" />
+    <bpmn:intermediateCatchEvent id="Catch_expansion" name="Expansion released">
+      <bpmn:messageEventDefinition messageRef="Msg_expansion" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_sendExpansion" name="Send expansion message" />
+    <bpmn:endEvent id="End_expansion" name="Expansion message sent" />
+
+    <bpmn:sequenceFlow id="Flow_start" sourceRef="Start_creation" targetRef="Gw_split" />
+    <bpmn:sequenceFlow id="Flow_splitNames" sourceRef="Gw_split" targetRef="Task_names" />
+    <bpmn:sequenceFlow id="Flow_splitAccount" sourceRef="Gw_split" targetRef="Task_checkAccount" />
+    <bpmn:sequenceFlow id="Flow_namesJoin" sourceRef="Task_names" targetRef="Gw_join" />
+
+    <bpmn:sequenceFlow id="Flow_checkAccount" sourceRef="Task_checkAccount" targetRef="Gw_accountExists" />
+    <bpmn:sequenceFlow id="Flow_accountYes" name="yes" sourceRef="Gw_accountExists" targetRef="Gw_mergeAccount" />
+    <bpmn:sequenceFlow id="Flow_accountNo" name="no" sourceRef="Gw_accountExists" targetRef="Task_enterAccount" />
+    <bpmn:sequenceFlow id="Flow_enterAccount" sourceRef="Task_enterAccount" targetRef="Task_clickLink" />
+    <bpmn:sequenceFlow id="Flow_clickLink" sourceRef="Task_clickLink" targetRef="Gw_mergeAccount" />
+    <bpmn:sequenceFlow id="Flow_accountDone" sourceRef="Gw_mergeAccount" targetRef="Task_checkSubscription" />
+
+    <bpmn:sequenceFlow id="Flow_checkSubscription" sourceRef="Task_checkSubscription" targetRef="Gw_subscriptionActive" />
+    <bpmn:sequenceFlow id="Flow_subscriptionYes" name="yes" sourceRef="Gw_subscriptionActive" targetRef="Gw_mergePayment" />
+    <bpmn:sequenceFlow id="Flow_subscriptionNo" name="no" sourceRef="Gw_subscriptionActive" targetRef="Task_selectPayment" />
+    <bpmn:sequenceFlow id="Flow_selectPayment" sourceRef="Task_selectPayment" targetRef="Gw_paymentChoice" />
+    <bpmn:sequenceFlow id="Flow_card" name="credit card" sourceRef="Gw_paymentChoice" targetRef="Task_enterCard">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=paymentMethod = "credit card"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_bankAccount" name="bank account" sourceRef="Gw_paymentChoice" targetRef="Task_enterIban" />
+    <bpmn:sequenceFlow id="Flow_cardDone" sourceRef="Task_enterCard" targetRef="Gw_mergePayment" />
+    <bpmn:sequenceFlow id="Flow_ibanDone" sourceRef="Task_enterIban" targetRef="Gw_mergePayment" />
+    <bpmn:sequenceFlow id="Flow_paymentDone" sourceRef="Gw_mergePayment" targetRef="Task_login" />
+
+    <bpmn:sequenceFlow id="Flow_login" sourceRef="Task_login" targetRef="Task_selectRealm" />
+    <bpmn:sequenceFlow id="Flow_realmJoin" sourceRef="Task_selectRealm" targetRef="Gw_join" />
+
+    <bpmn:sequenceFlow id="Flow_join" sourceRef="Gw_join" targetRef="Task_enterName" />
+    <bpmn:sequenceFlow id="Flow_nameEntered" sourceRef="Task_enterName" targetRef="Gw_nameAvailable" />
+    <bpmn:sequenceFlow id="Flow_nameFree" name="yes" sourceRef="Gw_nameAvailable" targetRef="Task_confirm" />
+    <bpmn:sequenceFlow id="Flow_nameTaken" name="no" sourceRef="Gw_nameAvailable" targetRef="Task_enterName" />
+    <bpmn:sequenceFlow id="Flow_confirmed" sourceRef="Task_confirm" targetRef="Catch_expansion" />
+    <bpmn:sequenceFlow id="Flow_expansion" sourceRef="Catch_expansion" targetRef="Task_sendExpansion" />
+    <bpmn:sequenceFlow id="Flow_end" sourceRef="Task_sendExpansion" targetRef="End_expansion" />
+  </bpmn:process>
+</bpmn:definitions>

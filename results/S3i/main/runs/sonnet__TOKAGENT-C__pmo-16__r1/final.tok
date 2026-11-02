@@ -1,0 +1,70 @@
+tok 1.0 "Annual audit"
+
+pool company "Company"
+  lane coordinator "Audit coordinator"
+    start begin "Audit initiated"
+    task notify "Send notification to the regional office"
+  lane regional "Regional office"
+    and split
+    task prepare "Prepare financial statements and gather documents"
+    and joined
+    task submit "Submit the documents to the central audit team"
+    task clarify "Provide clarifications"
+  lane compliance "Compliance team"
+    task updates "Check regulatory updates"
+  lane audit "Central audit team"
+    xor reviewIn
+    task review "Review the submission"
+    xor issues "Discrepancies found?"
+    task request "Request clarifications from the regional office"
+    task assess "Conduct risk assessment"
+    and riskSplit
+    task fin "Evaluate financial risks"
+    task oper "Evaluate operational risks"
+    task comp "Evaluate compliance risks"
+    and riskJoin
+    xor high "High risk identified?"
+    task analysis "Analyse data"
+    task interviews "Conduct interviews"
+    xor site "Site visit needed?"
+    task visit "Conduct site visit"
+    xor siteEnd
+    xor riskEnd
+    task compile "Compile the audit report"
+    task update "Update the report"
+  lane director "Audit director"
+    task approveReview "Review the report"
+    xor approved "Report approved?"
+    and distSplit
+    task distribute "Distribute the final report to the executive board"
+    task archive "Archive the final report"
+    and distJoin
+    end done "Audit process closed"
+
+flow begin -> notify -> split
+flow split -> prepare -> joined
+flow split -> updates -> joined
+flow joined -> submit -> reviewIn -> review -> issues
+flow issues -> request "yes"
+flow request -> clarify -> reviewIn
+flow issues -> assess "no"
+flow assess -> riskSplit
+flow riskSplit -> fin -> riskJoin
+flow riskSplit -> oper -> riskJoin
+flow riskSplit -> comp -> riskJoin
+flow riskJoin -> high
+flow high -> analysis "yes"
+flow analysis -> interviews -> site
+flow site -> visit "yes"
+flow visit -> siteEnd
+flow site -> siteEnd "no"
+flow siteEnd -> riskEnd
+flow high -> riskEnd "no"
+flow riskEnd -> compile -> approveReview
+flow approveReview -> approved
+flow approved -> update "no"
+flow update -> approveReview
+flow approved -> distSplit "yes"
+flow distSplit -> distribute -> distJoin
+flow distSplit -> archive -> distJoin
+flow distJoin -> done

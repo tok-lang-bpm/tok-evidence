@@ -1,0 +1,80 @@
+tok 1.0 "University enrollment process"
+
+pool university "University"
+  lane prospective_student "Prospective Student"
+    start start_enrollment "Start enrollment"
+    task submit_application "Submit application online"
+  lane admissions_office "Admissions Office"
+    task review_application "Review application and supporting documents"
+    xor missing_documents "Documents missing?"
+    task notify_missing "Notify applicant to provide missing items"
+  lane admissions_committee "Admissions Committee"
+    task evaluate_application "Evaluate application"
+  lane finance "Finance Department"
+    task process_fees "Process application fees or waivers"
+  lane student "Student"
+    and eval_split
+    and eval_join
+    xor acceptance "Application accepted?"
+    task send_acceptance "Send acceptance letter"
+    task send_rejection "Send rejection letter"
+    xor confirm_enrollment "Student confirms enrollment?"
+    and post_confirm_split
+    and post_confirm_join
+    task cancel_application "Cancel application"
+    task receive_orientation "Receive orientation materials"
+    task obtain_id_card "Obtain student ID card"
+    task create_study_plan "Create study plan"
+    xor international_student "Is student international?"
+    task assist_visa "Assist with visa processing"
+    xor grievance "Student has grievance?"
+    task submit_appeal "Submit appeal form"
+    task meet_appeals "Meet with appeals committee"
+    task await_decision "Await decision"
+    xor semester_merge
+    xor another_semester "Another semester?"
+    end end_process "Process ends"
+  lane it "IT Department"
+    task setup_accounts "Set up student accounts for email, online portals, and library access"
+  lane academic_advisor "Academic Advisor"
+    task meet_advisor "Meet with academic advisor"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve schedule conflicts"
+    task begin_classes "Begin attending classes"
+    task add_drop_courses "Add or drop courses"
+    task post_grades "Post grades"
+    task review_grades "Review grades online"
+
+flow start_enrollment -> submit_application -> review_application -> missing_documents
+flow missing_documents -> notify_missing "yes"
+flow notify_missing -> review_application
+flow missing_documents -> eval_split "no"
+flow eval_split -> evaluate_application
+flow eval_split -> process_fees
+flow evaluate_application -> eval_join
+flow process_fees -> eval_join
+flow eval_join -> acceptance
+flow acceptance -> send_acceptance "yes"
+flow acceptance -> send_rejection "no"
+flow send_acceptance -> confirm_enrollment
+flow send_rejection -> end_process
+flow confirm_enrollment -> post_confirm_split "yes"
+flow confirm_enrollment -> cancel_application "no"
+flow post_confirm_split -> receive_orientation
+flow post_confirm_split -> setup_accounts
+flow receive_orientation -> post_confirm_join
+flow setup_accounts -> post_confirm_join
+flow post_confirm_join -> obtain_id_card
+flow obtain_id_card -> create_study_plan
+flow create_study_plan -> international_student
+flow international_student -> assist_visa "yes"
+flow international_student -> meet_advisor "no"
+flow assist_visa -> meet_advisor
+flow meet_advisor -> select_courses -> resolve_conflicts -> begin_classes -> add_drop_courses -> post_grades -> review_grades -> grievance
+flow grievance -> submit_appeal "yes"
+flow grievance -> semester_merge "no"
+flow submit_appeal -> meet_appeals -> await_decision -> semester_merge
+flow semester_merge -> another_semester
+flow another_semester -> add_drop_courses "yes"
+flow another_semester -> end_process "no"
+flow cancel_application -> end_process

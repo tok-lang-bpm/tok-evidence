@@ -1,0 +1,72 @@
+tok 1.0 "Annual Audit Process" [executable]
+    pool company "Multinational Company"
+      lane coordinator "Audit Coordinator"
+        start s0 "Audit process start"
+        task t_notify "send notification to regional office"
+      lane regional "Regional Office"
+        task t_prepare "prepare financial statements and gather documents"
+        task t_submit "submit documents to central audit team"
+        task t_provideClar "provide clarifications"
+      lane compliance "Compliance Team"
+        task t_checkReg "check regulatory updates"
+      lane central "Central Audit Team"
+        task t_review "review submission"
+        xor xor_discrep "discrepancies found?"
+        task t_requestClar "request clarifications from regional office"
+        task t_investigate "launch detailed investigation"
+        task t_dataAnalysis "perform data analysis"
+        task t_interviews "conduct interviews"
+        task t_siteVisits "perform site visits"
+        task t_compile "compile audit report"
+        task t_update "update audit report"
+        and and_prep
+        and and_prep_join
+        and and_risk
+        and and_risk_join
+        xor xor_highRisk "high risk identified?"
+        and and_invest
+        and and_invest_join
+        and and_final
+        and and_final_join
+      lane director "Audit Director"
+        task t_directorReview "review audit report"
+        xor xor_approval "approve report?"
+      # risk evaluation tasks (could be in central lane)
+        task t_finRisk "evaluate financial risks"
+        task t_operRisk "evaluate operational risks"
+        task t_compRisk "evaluate compliance risks"
+
+    flow s0 -> t_notify -> and_prep
+    flow and_prep -> t_prepare
+    flow and_prep -> t_checkReg
+    flow t_prepare -> and_prep_join
+    flow t_checkReg -> and_prep_join
+    flow and_prep_join -> t_submit -> t_review -> xor_discrep
+    flow xor_discrep "yes" -> t_requestClar
+    flow xor_discrep "no" -> and_risk
+    flow t_requestClar -> t_provideClar -> t_review
+    flow and_risk -> t_finRisk
+    flow and_risk -> t_operRisk
+    flow and_risk -> t_compRisk
+    flow t_finRisk -> and_risk_join
+    flow t_operRisk -> and_risk_join
+    flow t_compRisk -> and_risk_join
+    flow and_risk_join -> xor_highRisk
+    flow xor_highRisk "yes" -> t_investigate
+    flow xor_highRisk "no" -> t_compile
+    flow t_investigate -> and_invest
+    flow and_invest -> t_dataAnalysis
+    flow and_invest -> t_interviews
+    flow and_invest -> t_siteVisits
+    flow t_dataAnalysis -> and_invest_join
+    flow t_interviews -> and_invest_join
+    flow t_siteVisits -> and_invest_join
+    flow and_invest_join -> t_compile
+    flow t_compile -> t_directorReview -> xor_approval
+    flow xor_approval "yes" -> and_final
+    flow xor_approval "no" -> t_update -> t_directorReview
+    flow and_final -> t_distribute
+    flow and_final -> t_archive
+    flow t_distribute -> and_final_join
+    flow t_archive -> and_final_join
+    flow and_final_join -> end endClosed "audit process closed"

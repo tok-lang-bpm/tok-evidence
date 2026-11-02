@@ -1,0 +1,87 @@
+tok 1.0
+
+pool org "E-commerce Company" {
+  lane system "System" {
+    start start "Order Placed"
+    task record-order "System records order details"
+    task notify-failure "Customer is notified of payment failure"
+    task send-confirm "System sends shipping confirmation to the customer"
+    task update-inventory "System updates the inventory levels"
+    task follow-up "Follow-up email for feedback is sent"
+    task send-return-label "Sending a return shipping label"
+    end end-failure "Process ends after payment failure"
+    end end-success "Process ends successfully"
+    end end-returns "Returns process completed"
+    xor gw-payment "Payment successful?"
+    xor gw-issue "Customer reports any issues upon delivery?"
+    and gw-parallel "Packaging and shipping documents in parallel"
+    and gw-join "Ready for dispatch"
+  }
+  lane payment "Payment" {
+    task process-payment "Payment processing begins"
+  }
+  lane inventory "Inventory" {
+    task check-stock "Inventory system checks stock availability"
+    xor gw-stock "Items in stock?"
+    task backorder "Back-order is initiated and customer informed about delay"
+    task wait-backorder "Back-order received and items available"
+  }
+  lane warehouse "Warehouse" {
+    task pick-items "In-stock items are picked from the warehouse"
+  }
+  lane quality "Quality Control" {
+    task quality-check "Quality control checks are performed on the picked items"
+  }
+  lane packaging "Packaging" {
+    task packaging "Packaging is done, including gift wrapping if requested"
+  }
+  lane shipping "Shipping" {
+    task prepare-docs "Shipping department prepares shipping documents and labels"
+    xor gw-international "Order is international?"
+    task customs-docs "Customs documentation is prepared"
+    task dispatch "Order is dispatched"
+  }
+  lane returns "Returns" {
+    task receive-return "Receiving returned items"
+    task inspect-return "Inspecting returned items"
+    xor gw-refund "Refund or replacement?"
+    task process-refund "Processing a refund"
+    task process-replacement "Processing a replacement"
+  }
+
+  // Flows
+  flow start -> record-order
+  flow record-order -> process-payment
+  flow process-payment -> gw-payment
+  flow gw-payment -> notify-failure "no" when="paymentFailed"
+  flow gw-payment -> check-stock "yes" when="paymentSucceeded"
+  flow notify-failure -> end-failure
+  flow check-stock -> gw-stock
+  flow gw-stock -> backorder "no" when="outOfStock"
+  flow gw-stock -> pick-items "yes" when="inStock"
+  flow backorder -> wait-backorder
+  flow wait-backorder -> pick-items
+  flow pick-items -> quality-check
+  flow quality-check -> gw-parallel
+  flow gw-parallel -> packaging
+  flow gw-parallel -> prepare-docs
+  flow packaging -> gw-join
+  flow prepare-docs -> gw-international
+  flow gw-international -> customs-docs "yes" when="isInternational"
+  flow gw-international -> gw-join "no" default
+  flow customs-docs -> gw-join
+  flow gw-join -> dispatch
+  flow dispatch -> send-confirm
+  flow send-confirm -> update-inventory
+  flow update-inventory -> follow-up
+  flow follow-up -> gw-issue
+  flow gw-issue -> send-return-label "yes" when="issueReported"
+  flow gw-issue -> end-success "no" default
+  flow send-return-label -> receive-return
+  flow receive-return -> inspect-return
+  flow inspect-return -> gw-refund
+  flow gw-refund -> process-refund "refund" when="refund"
+  flow gw-refund -> process-replacement "replacement" when="replacement"
+  flow process-refund -> end-returns
+  flow process-replacement -> end-returns
+}

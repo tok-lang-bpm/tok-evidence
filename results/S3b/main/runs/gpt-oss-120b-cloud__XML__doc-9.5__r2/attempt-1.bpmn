@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="employeeLane" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="systemLane" name="System">
+        <bpmn:flowNodeRef>pgStart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAmount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>autoApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pgJoinApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwApprovalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRejectionEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg7Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendApprovalInProgressEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg7Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimbursement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendCancellationEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCancellation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisorLane" name="Supervisor">
+        <bpmn:flowNodeRef>supervisorApprove</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Expense Report received" />
+    <bpmn:parallelGateway id="pgStart" />
+    <bpmn:exclusiveGateway id="gwAccount" name="Account exists?" />
+    <bpmn:task id="createAccount" name="Create new account" />
+    <bpmn:task id="reviewReport" name="Review expense report" />
+    <bpmn:exclusiveGateway id="gwAmount" name="Amount under $200?" />
+    <bpmn:task id="autoApprove" name="Auto approve expense report" />
+    <bpmn:task id="supervisorApprove" name="Supervisor approve expense report" />
+    <bpmn:parallelGateway id="pgJoinApproval" />
+    <bpmn:exclusiveGateway id="gwApprovalResult" name="Approved?" />
+    <bpmn:task id="sendRejectionEmail" name="Send rejection notice email" />
+    <bpmn:parallelGateway id="pg7Split" />
+    <bpmn:intermediateCatchEvent id="timer7" name="7‑day timer">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT168H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="sendApprovalInProgressEmail" name="Send approval in progress email" />
+    <bpmn:parallelGateway id="pg7Join" />
+    <bpmn:task id="reimbursement" name="Reimburse employee" />
+    <bpmn:endEvent id="endSuccess" name="Process completed" />
+    <bpmn:intermediateCatchEvent id="timer30" name="30‑day timer">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="sendCancellationEmail" name="Send cancellation email" />
+    <bpmn:endEvent id="endCancellation" name="Process cancelled" />
+    <bpmn:endEvent id="endRejection" name="Process rejected" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f0" sourceRef="start" targetRef="pgStart" />
+    <bpmn:sequenceFlow id="f1" sourceRef="pgStart" targetRef="gwAccount" />
+    <bpmn:sequenceFlow id="f30a" sourceRef="pgStart" targetRef="timer30" />
+    <bpmn:sequenceFlow id="f30b" sourceRef="timer30" targetRef="sendCancellationEmail" />
+    <bpmn:sequenceFlow id="f30c" sourceRef="sendCancellationEmail" targetRef="endCancellation" />
+    <bpmn:sequenceFlow id="f2_no" sourceRef="gwAccount" targetRef="createAccount" name="no">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">not accountExists</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f2_yes" sourceRef="gwAccount" targetRef="reviewReport" name="yes">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">accountExists</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f3" sourceRef="createAccount" targetRef="reviewReport" />
+    <bpmn:sequenceFlow id="f4" sourceRef="reviewReport" targetRef="gwAmount" />
+    <bpmn:sequenceFlow id="f5_under" sourceRef="gwAmount" targetRef="autoApprove" name="under $200">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">amount &lt; 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5_over" sourceRef="gwAmount" targetRef="supervisorApprove" name="≥ $200">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">amount &gt;= 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6a" sourceRef="autoApprove" targetRef="pgJoinApproval" />
+    <bpmn:sequenceFlow id="f6b" sourceRef="supervisorApprove" targetRef="pgJoinApproval" />
+    <bpmn:sequenceFlow id="f7" sourceRef="pgJoinApproval" targetRef="gwApprovalResult" />
+    <bpmn:sequenceFlow id="f8_reject" sourceRef="gwApprovalResult" targetRef="sendRejectionEmail" name="rejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">not approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f8_approve" sourceRef="gwApprovalResult" targetRef="pg7Split" name="approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f9" sourceRef="sendRejectionEmail" targetRef="endRejection" />
+    <bpmn:sequenceFlow id="f10_reimb" sourceRef="pg7Split" targetRef="reimbursement" />
+    <bpmn:sequenceFlow id="f10_timer" sourceRef="pg7Split" targetRef="timer7" />
+    <bpmn:sequenceFlow id="f11" sourceRef="timer7" targetRef="sendApprovalInProgressEmail" />
+    <bpmn:sequenceFlow id="f12" sourceRef="sendApprovalInProgressEmail" targetRef="pg7Join" />
+    <bpmn:sequenceFlow id="f13" sourceRef="reimbursement" targetRef="pg7Join" />
+    <bpmn:sequenceFlow id="f14" sourceRef="pg7Join" targetRef="endSuccess" />
+  </bpmn:process>
+</bpmn:definitions>

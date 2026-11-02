@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool" name="Car Service" processRef="car-service-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="car-service-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane-owner" name="Car owner">
+        <bpmn:flowNodeRef>task-go-to-service</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-30-days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-pay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-app" name="Police app (system)">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-check-registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-fine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-status</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-repair-finished</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-fined</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-mechanic" name="Car service mechanic">
+        <bpmn:flowNodeRef>task-enter-problems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-repair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-enter-repair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task-next-service</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Service necessary" />
+    <bpmn:task id="task-check-registration" name="Check whether car is still registered" />
+    <bpmn:exclusiveGateway id="gw-registered" name="Car still registered?" />
+    <bpmn:task id="task-notify" name="Notify car owner" />
+    <bpmn:task id="task-go-to-service" name="Go to car service facility" />
+    <bpmn:boundaryEvent id="timer-30-days" name="30 days passed" attachedToRef="task-go-to-service">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="task-fine" name="Fine car owner" />
+    <bpmn:endEvent id="end-fined" name="Car owner fined" />
+    <bpmn:endEvent id="end-cancelled" name="Service reminder ended" />
+    <bpmn:task id="task-enter-problems" name="Enter car problems for reference" />
+    <bpmn:parallelGateway id="gw-split" name="Split" />
+    <bpmn:task id="task-repair" name="Repair car" />
+    <bpmn:task id="task-enter-repair" name="Enter successful repair and Pickerl" />
+    <bpmn:task id="task-status" name="Send status update via email" />
+    <bpmn:exclusiveGateway id="gw-repair-finished" name="Repair done?" />
+    <bpmn:parallelGateway id="gw-join" name="Join" />
+    <bpmn:task id="task-pay" name="Pay repair through app" />
+    <bpmn:task id="task-next-service" name="Enter time for next service" />
+    <bpmn:endEvent id="end-done" name="Next service scheduled" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="task-check-registration" />
+    <bpmn:sequenceFlow id="f2" sourceRef="task-check-registration" targetRef="gw-registered" />
+    <bpmn:sequenceFlow id="f3" name="yes" sourceRef="gw-registered" targetRef="task-notify" />
+    <bpmn:sequenceFlow id="f4" name="no" sourceRef="gw-registered" targetRef="end-cancelled" />
+    <bpmn:sequenceFlow id="f5" sourceRef="task-notify" targetRef="task-go-to-service" />
+    <bpmn:sequenceFlow id="f6" sourceRef="task-go-to-service" targetRef="task-enter-problems" />
+    <bpmn:sequenceFlow id="f7" sourceRef="timer-30-days" targetRef="task-fine" />
+    <bpmn:sequenceFlow id="f8" sourceRef="task-fine" targetRef="end-fined" />
+    <bpmn:sequenceFlow id="f9" sourceRef="task-enter-problems" targetRef="gw-split" />
+    <bpmn:sequenceFlow id="f10" sourceRef="gw-split" targetRef="task-repair" />
+    <bpmn:sequenceFlow id="f11" sourceRef="gw-split" targetRef="task-status" />
+    <bpmn:sequenceFlow id="f12" sourceRef="task-repair" targetRef="task-enter-repair" />
+    <bpmn:sequenceFlow id="f13" sourceRef="task-enter-repair" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f14" sourceRef="task-status" targetRef="gw-repair-finished" />
+    <bpmn:sequenceFlow id="f15" name="no" sourceRef="gw-repair-finished" targetRef="task-status" />
+    <bpmn:sequenceFlow id="f16" name="yes" sourceRef="gw-repair-finished" targetRef="gw-join" />
+    <bpmn:sequenceFlow id="f17" sourceRef="gw-join" targetRef="task-pay" />
+    <bpmn:sequenceFlow id="f18" sourceRef="task-pay" targetRef="task-next-service" />
+    <bpmn:sequenceFlow id="f19" sourceRef="task-next-service" targetRef="end-done" />
+  </bpmn:process>
+</bpmn:definitions>

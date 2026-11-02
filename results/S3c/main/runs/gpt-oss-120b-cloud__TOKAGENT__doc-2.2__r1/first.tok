@@ -1,0 +1,119 @@
+tok 1.0
+
+pool company "Company" {
+  lane customer_service "Customer Service"
+  lane crm "CRM System"
+  lane cis "CIS"
+  lane grid "Grid Operator"
+  lane old_supplier "Old Supplier"
+  lane customer "Customer"
+}
+
+// Customer Service lane
+lane customer_service {
+  start start_event "Switch-over request" message="SwitchOverRequest"
+  task receive_customer_data "receive customer data"
+  task prepare_contract_documents "prepare contract documents"
+  task send_confirmation_document "send confirmation document to customer"
+  task create_cis_contract "create CIS contract"
+  task customer_withdraws "customer withdraws from switch contract"
+  task customer_confirms "customer confirms contract"
+  task receive_meter_data_customer_service "receive meter data from grid operator"
+  task import_meter_data "import meter data to systems"
+  end end_success "Process end"
+  end end_withdraw "Process withdrawn"
+}
+
+// CRM lane
+lane crm {
+  task enter_customer_data "enter customer data into CRM system"
+  task compare_customer_data "compare data with internal database"
+  task create_customer_object "create new customer object"
+}
+
+// CIS lane
+lane cis {
+  task automated_contract_check "automated contract check"
+  task analyze_contract_issues "analyze contract issues"
+  task send_grid_request "send request to grid operator"
+}
+
+// Grid Operator lane
+lane grid {
+  task check_supplier_concurrence "check supplier concurrence"
+  task inform_and_resolve_conflict "inform suppliers and resolve conflict"
+  task send_meter_data_customer_service "send meter data to customer service"
+  task send_meter_data_old_supplier "send meter data to old supplier"
+  task compute_final_billing "compute final billing"
+  task send_final_billing_old_supplier "send final billing to old supplier"
+}
+
+// Old Supplier lane
+lane old_supplier {
+  task receive_meter_data_old_supplier "receive meter data from grid operator"
+  task receive_final_billing_old_supplier "receive final billing from grid operator"
+  task create_final_billing "create final billing for customer"
+  task send_final_billing_customer "send final billing to customer"
+}
+
+// Customer lane
+lane customer {
+  task customer_checks_contract "customer checks contract"
+}
+
+// Gateways
+xor g_errors "Data errors?"
+flow g_errors -> correct_errors "errors" when="errors"
+flow g_errors -> compare_customer_data "no errors" default
+
+xor g_exists "Customer exists?"
+flow g_exists -> create_customer_object "no" when="notExists"
+flow g_exists -> prepare_contract_documents "yes" default
+
+xor g_contract_ok "Contract documents ok?"
+flow g_contract_ok -> analyze_contract_issues "invalid" when="invalid"
+flow g_contract_ok -> send_confirmation_document "valid" default
+
+xor g_concurrence "Supplier concurrence?"
+flow g_concurrence -> inform_and_resolve_conflict "yes" when="yes"
+flow g_concurrence -> create_cis_contract "no" default
+
+xor g_withdraw "Customer decision"
+flow g_withdraw -> customer_withdraws "withdraw" when="withdraw"
+flow g_withdraw -> customer_confirms "confirm" default
+
+and split_post "After confirmation"
+and join_post "End join"
+
+// Flows
+flow start_event -> receive_customer_data
+flow receive_customer_data -> enter_customer_data
+flow enter_customer_data -> compare_customer_data
+flow correct_errors -> compare_customer_data
+flow compare_customer_data -> g_errors
+flow create_customer_object -> prepare_contract_documents
+flow prepare_contract_documents -> automated_contract_check
+flow automated_contract_check -> g_contract_ok
+flow analyze_contract_issues -> prepare_contract_documents
+flow send_confirmation_document -> send_grid_request
+flow send_grid_request -> check_supplier_concurrence
+flow check_supplier_concurrence -> g_concurrence
+flow inform_and_resolve_conflict -> create_cis_contract
+flow create_cis_contract -> customer_checks_contract
+flow customer_checks_contract -> g_withdraw
+flow customer_withdraws -> end_withdraw
+flow customer_confirms -> split_post
+flow split_post -> send_meter_data_customer_service
+flow split_post -> send_meter_data_old_supplier
+flow split_post -> compute_final_billing
+flow send_meter_data_customer_service -> receive_meter_data_customer_service
+flow receive_meter_data_customer_service -> import_meter_data
+flow import_meter_data -> join_post
+flow send_meter_data_old_supplier -> receive_meter_data_old_supplier
+flow receive_meter_data_old_supplier -> join_post
+flow compute_final_billing -> send_final_billing_old_supplier
+flow send_final_billing_old_supplier -> receive_final_billing_old_supplier
+flow receive_final_billing_old_supplier -> create_final_billing
+flow create_final_billing -> send_final_billing_customer
+flow send_final_billing_customer -> join_post
+flow join_post -> end_success

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="ClaimProcess" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="ClaimProcess" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANESET">
+      <bpmn:lane id="Lane_ClaimsOfficer" name="Claims Officer">
+        <bpmn:flowNodeRef>StartEvent_ClaimRegistered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ExamineClaim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_WriteRecommendation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_SeniorOfficer" name="Senior Claims Officer">
+        <bpmn:flowNodeRef>Task_CheckRecommendation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_RecommendationOK</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_ProcessCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_ClaimRegistered" name="Claim registered" />
+    <bpmn:task id="Task_ExamineClaim" name="Examine claim" />
+    <bpmn:task id="Task_WriteRecommendation" name="Write settlement recommendation" />
+    <bpmn:task id="Task_CheckRecommendation" name="Check recommendation" />
+    <bpmn:exclusiveGateway id="Gateway_RecommendationOK" name="Recommendation OK?" />
+    <bpmn:endEvent id="EndEvent_ProcessCompleted" name="Claim handling proceeds" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_Start_Examine"
+                       sourceRef="StartEvent_ClaimRegistered"
+                       targetRef="Task_ExamineClaim" />
+    <bpmn:sequenceFlow id="Flow_Examine_Write"
+                       sourceRef="Task_ExamineClaim"
+                       targetRef="Task_WriteRecommendation" />
+    <bpmn:sequenceFlow id="Flow_Write_Check"
+                       sourceRef="Task_WriteRecommendation"
+                       targetRef="Task_CheckRecommendation" />
+    <bpmn:sequenceFlow id="Flow_Check_Gateway"
+                       sourceRef="Task_CheckRecommendation"
+                       targetRef="Gateway_RecommendationOK" />
+    <!-- OK branch -->
+    <bpmn:sequenceFlow id="Flow_OK_End"
+                       name="OK"
+                       sourceRef="Gateway_RecommendationOK"
+                       targetRef="EndEvent_ProcessCompleted" />
+    <!-- Not OK branch loops back -->
+    <bpmn:sequenceFlow id="Flow_NotOK_Loop"
+                       name="Not OK"
+                       sourceRef="Gateway_RecommendationOK"
+                       targetRef="Task_WriteRecommendation" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,39 @@
+```tok
+tok 1.0 "Room Service Process"
+
+pool hotel "The Evanstonian"
+  lane guest "Guest"
+    start S0 "guest calls room service"
+  lane manager "Room-service manager"
+    task T_take_order "take down the order"
+    task T_submit_ticket "submit order ticket to kitchen"
+    task T_give_to_sommelier "give order to sommelier"
+    task T_assign_order "assign order to waiter"
+  lane kitchen "Kitchen"
+    task K_prepare_food "prepare food"
+  lane sommelier "Sommelier"
+    task SM_fetch_wine "fetch wine and prepare alcoholic beverages"
+  lane waiter "Waiter"
+    task W_ready_cart "ready cart and prepare nonalcoholic drinks"
+    and PG_split "Parallel split"
+    and PG_join "Parallel join"
+    task W_deliver "deliver food, wine and cart to guest's room"
+    task W_return "return to room-service station"
+    xor G_pending "another order pending?"
+    task W_wait_billing "wait to do billing"
+    task W_debit "debit guest's account"
+    end E_end "order completed"
+
+flow S0 -> T_take_order -> T_submit_ticket -> T_give_to_sommelier -> T_assign_order -> PG_split
+flow PG_split -> K_prepare_food
+flow PG_split -> SM_fetch_wine
+flow PG_split -> W_ready_cart
+flow K_prepare_food -> PG_join
+flow SM_fetch_wine -> PG_join
+flow W_ready_cart -> PG_join
+flow PG_join -> W_deliver -> W_return -> G_pending
+flow G_pending -> W_wait_billing "yes"
+flow W_wait_billing -> W_debit
+flow G_pending -> W_debit "no"
+flow W_debit -> E_end
+```

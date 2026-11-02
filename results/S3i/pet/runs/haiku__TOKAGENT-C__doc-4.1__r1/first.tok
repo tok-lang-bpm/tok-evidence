@@ -1,0 +1,68 @@
+tok 1.0 "Intake procedure"
+
+pool office "Mental health care institute"
+  lane family "Family doctor"
+    start notice "Need for mental treatment noticed"
+    task notify "Notify the institute by telephone"
+    task sendCopy "Send a copy of the medical file"
+  lane secretariat "Secretarial office"
+    task inquire "Inquire after the name and residence of the patient"
+    task connect "Put the doctor through to the nursing officer"
+    task storeInfo "Store the information of the form in the information system"
+    task printInfo "Print the information from the information system"
+    xor newPatient "New patient?"
+    task createFile "Create a patient file"
+    xor newJoin
+    task fileForms "Store the registration form and the print in the patient file"
+    task cards "Produce two registration cards"
+    task addNotices "Add the new patient to the list of new notices"
+    task storeAssign "Store the assignment of each patient in the information system"
+    and splitA
+    task passCards "Pass the registration cards to the first and second intaker"
+    xor fileReq "Medical file required?"
+    task letter "Prepare and send a letter requesting a copy of the medical file"
+    task receiveCopy "Receive the copy of the medical file"
+    task informSecond "Inform the second intaker"
+    task addCopy "Add the copy to the patient file"
+    xor fileJoin
+    task typeTapes "Type out the dictaphone tapes"
+    task addTapes "Add the typed information to the patient file"
+    and meetJoin
+    task putList "Put the patient on the list of patients that reach this status"
+    task provideList "Provide the team-leader with a list of these patients"
+  lane nursing "Nursing officer"
+    task inquiry "Make a full inquiry into the mental, health and social state of the patient"
+    task regForm "Record the information on a registration form"
+    task handIn "Hand in the registration form at the secretarial office"
+  lane team "Team-leader"
+    task staffMeeting "Hold the staff meeting of the medical team on Wednesday"
+    task assign "Assign each new patient to a first and a second intaker"
+    task determine "Determine whether the medical file is required"
+    task recordList "Record the assignments on the assignment list"
+    task treatment "Formulate the treatment plan with the intakers and the psychiatrist"
+    end done "Intake procedure ended"
+  lane first "First intaker (social-medical worker)"
+    task planMeet1 "Plan a meeting with the patient"
+    task examine "Examine the patient using the standard checklist"
+    task notebook "Register additional observations in a personal notebook"
+    task notesFile "Put a copy of the notes in the patient file"
+    task checklistFile "Add the standard checklist to the patient file"
+  lane second "Second intaker (physician)"
+    task planMeet2 "Plan the first meeting with the patient"
+    task meet2 "Meet the patient"
+    task dictate "Record observations on a dictaphone"
+
+note nFiles "Patient files are kept at the secretarial office and may not leave the building" on=createFile
+note nCard "An intaker keeps the registration card with him during visits and at the office" on=passCards
+
+flow notice -> notify -> inquire -> connect -> inquiry -> regForm -> handIn -> storeInfo -> printInfo -> newPatient
+flow newPatient -> createFile "yes"
+flow newPatient -> newJoin "no"
+flow createFile -> newJoin -> fileForms -> cards -> addNotices -> staffMeeting -> assign -> determine -> recordList -> storeAssign -> splitA
+flow splitA -> passCards -> planMeet1 -> examine -> notebook -> notesFile -> checklistFile -> meetJoin
+flow splitA -> fileReq
+flow fileReq -> letter "yes"
+flow fileReq -> fileJoin "no"
+flow letter -> sendCopy -> receiveCopy -> informSecond -> addCopy -> fileJoin
+flow fileJoin -> planMeet2 -> meet2 -> dictate -> typeTapes -> addTapes -> meetJoin
+flow meetJoin -> putList -> provideList -> treatment -> done

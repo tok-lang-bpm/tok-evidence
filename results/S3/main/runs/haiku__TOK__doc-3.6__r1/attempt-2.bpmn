@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Claims notification" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Forms_returned" name="Forms returned" />
+  <bpmn:message id="Message_Updated_forms_received" name="Updated forms received" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Claims notification" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="clerk" name="Claims department">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_insured</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>insured</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evaluate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>kind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updated</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="claimant" name="Claimant">
+        <bpmn:flowNodeRef>return_forms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update_forms</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Claims Management system">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ended</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Claim received" />
+    <bpmn:task id="check_insured" name="Check whether the claimant is insured" />
+    <bpmn:exclusiveGateway id="insured" name="Claimant insured?" default="f-insured-inform_reject" />
+    <bpmn:task id="inform_reject" name="Inform the claimant that the claim must be rejected" />
+    <bpmn:endEvent id="rejected" name="Claim rejected" />
+    <bpmn:task id="evaluate" name="Evaluate the severity of the claim" />
+    <bpmn:exclusiveGateway id="kind" name="Simple or complex claim?" default="f-kind-send_forms-2" />
+    <bpmn:task id="send_forms" name="Send the relevant forms to the claimant" />
+    <bpmn:intermediateCatchEvent id="returned" name="Forms returned">
+      <bpmn:messageEventDefinition id="returned-def" messageRef="Message_Forms_returned" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="reviewed" />
+    <bpmn:task id="check_forms" name="Check the forms for completeness" />
+    <bpmn:exclusiveGateway id="complete" name="Forms provide all relevant details?" default="f-complete-inform_update" />
+    <bpmn:task id="inform_update" name="Inform the claimant to update the forms" />
+    <bpmn:intermediateCatchEvent id="updated" name="Updated forms received">
+      <bpmn:messageEventDefinition id="updated-def" messageRef="Message_Updated_forms_received" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="return_forms" name="Return the forms" />
+    <bpmn:task id="update_forms" name="Update the forms" />
+    <bpmn:task id="register" name="Register the claim in the Claims Management system" />
+    <bpmn:endEvent id="ended" name="Claims Notification process ended" />
+    <bpmn:sequenceFlow id="f-received-check_insured" sourceRef="received" targetRef="check_insured" />
+    <bpmn:sequenceFlow id="f-check_insured-insured" sourceRef="check_insured" targetRef="insured" />
+    <bpmn:sequenceFlow id="f-insured-evaluate" name="yes" sourceRef="insured" targetRef="evaluate">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">insured = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-insured-inform_reject" name="no" sourceRef="insured" targetRef="inform_reject" />
+    <bpmn:sequenceFlow id="f-inform_reject-rejected" sourceRef="inform_reject" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-evaluate-kind" sourceRef="evaluate" targetRef="kind" />
+    <bpmn:sequenceFlow id="f-kind-send_forms" name="simple claim" sourceRef="kind" targetRef="send_forms">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">claim_type = "simple"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-kind-send_forms-2" name="complex claim" sourceRef="kind" targetRef="send_forms" />
+    <bpmn:sequenceFlow id="f-send_forms-return_forms" sourceRef="send_forms" targetRef="return_forms" />
+    <bpmn:sequenceFlow id="f-return_forms-returned" sourceRef="return_forms" targetRef="returned" />
+    <bpmn:sequenceFlow id="f-returned-reviewed" sourceRef="returned" targetRef="reviewed" />
+    <bpmn:sequenceFlow id="f-inform_update-update_forms" sourceRef="inform_update" targetRef="update_forms" />
+    <bpmn:sequenceFlow id="f-update_forms-updated" sourceRef="update_forms" targetRef="updated" />
+    <bpmn:sequenceFlow id="f-updated-reviewed" sourceRef="updated" targetRef="reviewed" />
+    <bpmn:sequenceFlow id="f-reviewed-check_forms" sourceRef="reviewed" targetRef="check_forms" />
+    <bpmn:sequenceFlow id="f-check_forms-complete" sourceRef="check_forms" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-complete-register" name="yes" sourceRef="complete" targetRef="register">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">complete = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-complete-inform_update" name="no" sourceRef="complete" targetRef="inform_update" />
+    <bpmn:sequenceFlow id="f-register-ended" sourceRef="register" targetRef="ended" />
+  </bpmn:process>
+</bpmn:definitions>

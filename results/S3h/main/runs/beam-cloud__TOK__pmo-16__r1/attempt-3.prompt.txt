@@ -1,0 +1,115 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+In a multinational company's annual audit process, the audit coordinator initiates the audit process by sending a notification to the regional office.
+The regional office prepares financial statements and gathers necessary documents.
+Concurrently, the compliance team checks for any regulatory updates that might affect the audit.
+Afterward, the regional office submits the documents to the central audit team.
+The central audit team reviews the submission.
+If discrepancies are found, they request clarifications from the regional office.
+The regional office provides the necessary clarifications.
+Once all documents are reviewed without issues, the audit team conducts a risk assessment.
+The risk assessment includes evaluating financial risks, operational risks, and compliance risks, which can be done in any order but must all be completed.
+If high risk is identified, then a detailed investigation is launched.
+The investigation includes data analysis, interviews, and, in certain cases, site visits.
+After all risks are addressed, the audit team compiles the audit report.
+The report is reviewed by the audit director.
+The audit director may approve the report or send it back for revisions.
+If revisions are required, the audit team updates the report accordingly and resubmits it to be reviewed again by the audit director.
+Once approved, the final report is distributed to the executive board and archived.
+The entire audit process is then closed.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Annual audit process"
+
+pool company "Company"
+  lane audit_coordinator "Audit coordinator"
+    start audit_initiated "Audit initiated"
+    task send_notification "Send notification"
+    and par_preparation
+  lane regional_office "Regional office"
+    task prepare_statements "Prepare financial statements"
+    task gather_documents "Gather necessary documents"
+    task submit_documents "Submit documents"
+    task provide_clarifications "Provide clarifications"
+  lane compliance_team "Compliance team"
+    task check_updates "Check regulatory updates"
+  lane central_audit_team "Central audit team"
+    and par_review_ready
+    task review_submission "Review submission"
+    task request_clarifications "Request clarifications"
+    xor gw_discrepancies "Discrepancies found?"
+  lane audit_team "Audit team"
+    adhoc risk_assessment "Risk assessment"
+      task evaluate_financial "Evaluate financial risks"
+      task evaluate_operational "Evaluate operational risks"
+      task evaluate_compliance "Evaluate compliance risks"
+    xor gw_high_risk "High risk identified?"
+    task analyze_data "Analyze data"
+    task conduct_interviews "Conduct interviews"
+    task conduct_site_visits "Conduct site visits"
+    xor gw_site_visit "Site visit needed?"
+    xor gw_site_merge
+    xor gw_high_merge
+    task compile_report "Compile audit report"
+    task update_report "Update audit report"
+    task resubmit_report "Resubmit audit report"
+    task distribute_report "Distribute final report"
+    task archive_report "Archive audit report"
+    end audit_closed "Audit process closed"
+  lane audit_director "Audit director"
+    task review_report "Review audit report"
+    xor gw_report_decision "Report approved?"
+
+flow audit_initiated -> send_notification
+flow send_notification -> par_preparation
+flow par_preparation -> prepare_statements
+flow par_preparation -> check_updates
+flow prepare_statements -> gather_documents
+flow gather_documents -> submit_documents
+flow submit_documents -> par_review_ready
+flow check_updates -> par_review_ready
+flow par_review_ready -> review_submission
+flow review_submission -> gw_discrepancies
+flow gw_discrepancies -> request_clarifications "yes"
+flow request_clarifications -> provide_clarifications
+flow provide_clarifications -> review_submission
+flow gw_discrepancies -> risk_assessment "no" default
+flow risk_assessment -> gw_high_risk
+flow gw_high_risk -> analyze_data "yes"
+flow gw_high_risk -> gw_high_merge "no" default
+flow analyze_data -> conduct_interviews
+flow conduct_interviews -> gw_site_visit
+flow gw_site_visit -> conduct_site_visits "yes"
+flow gw_site_visit -> gw_site_merge "no" default
+flow conduct_site_visits -> gw_site_merge
+flow gw_site_merge -> gw_high_merge
+flow gw_high_merge -> compile_report
+flow compile_report -> review_report
+flow review_report -> gw_report_decision
+flow gw_report_decision -> distribute_report "approved"
+flow distribute_report -> archive_report
+flow archive_report -> audit_closed
+flow gw_report_decision -> update_report "revisions" default
+flow update_report -> resubmit_report
+flow resubmit_report -> review_report
+```
+
+The tok checker reports these problems in it:
+
+- line 52: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-gw_discrepancies-request_clarifications)
+- line 57: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-gw_high_risk-analyze_data)
+- line 61: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-gw_site_visit-conduct_site_visits)
+- line 68: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-gw_report_decision-distribute_report)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

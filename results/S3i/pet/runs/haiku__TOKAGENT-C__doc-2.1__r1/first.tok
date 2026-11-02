@@ -1,0 +1,119 @@
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start perceive "Customer perceives degraded service"
+    task sendList "Send list of problem parameters"
+    task receiveReport "Receive service performance and problem resolution report"
+    end custEnd "Customer process ends"
+  lane cs "Customer Service"
+    task enterReport "Enter problem report into system T"
+    task compareSla "Compare problem report with customer SLA"
+    task determineCm "Determine counter measures and their priorities"
+    task signif "Determine customer significance"
+    xor premium "Customer premium?"
+    task linkFix "Link to extra problem fix process"
+    end handedOver "Problem handed over to fix process"
+    xor significant "Significance affects counter measures?"
+    task reprio "Re-prioritize counter measures"
+    xor mergeCs
+    task detailed "Create detailed problem report"
+    task sendDetailed "Send detailed problem report to Service Management"
+    xor mergeResp
+    task receiveResp "Receive actual service performance or problem resolution report"
+    and andCs
+    task createCust "Create report for the customer"
+    task sendCust "Send report to the customer"
+    task reportRebate "Report SLA violation rebate to Billing & Collections"
+    and joinCs
+    end csEnd "Customer Service process ends"
+  lane sm "Service Management"
+    task receiveDetailed "Receive detailed problem report"
+    task investigate "Investigate whether problem is analyzable"
+    xor analyzable "Analyzable by Service Management?"
+    task analyzeSm "Analyze the problem"
+    task createTroubleSm "Create trouble report"
+    task sendToRp "Send detailed problem report to Resource Provisioning"
+    task receiveStatus "Receive status report"
+    xor mergeSm
+    task prepareFinal "Prepare final status report"
+    task determineSmCm "Determine counter measures from final status report"
+    xor cmChoice "Which counter measures are required?"
+    task sendPerf "Send actual service performance to Customer Service"
+    and perfSplit
+    end smEnd1 "Service Management path ends"
+    task correct "Undertake minor corrective actions"
+    task createRestore "Create request for automatic resource restoration"
+    task sendRestore "Send request for automatic resource restoration"
+    and andR
+    task receiveTsr "Receive trouble-shooting report"
+    xor mergeRes
+    task createResolution "Create problem resolution report"
+    task sendResolution "Send problem resolution report to Customer Service"
+    and resSplit
+    end smEnd2 "Service Management path ends"
+  lane rp "Resource Provisioning"
+    task receiveRp "Receive detailed problem report"
+    xor problemCheck "Problem detected?"
+    task normalNotice "Create notification of normal service execution"
+    task analyzeRp "Analyze the problem"
+    task createTroubleRp "Create trouble report"
+    xor mergeRp
+    task includeStatus "Include trouble report or notification in status report"
+    and splitRp
+    task sendStatus "Send status report to Service Management"
+    xor mergeWait
+    receive waitRestore "Wait for restoration request" message="Restoration request"
+    boundary timeout on=waitRestore timer=P2D
+    end rpTimeout "Resource Provisioning terminates process"
+    task trackErrors "Track all possible errors"
+    task correctAll "Undertake all necessary corrective actions"
+    task troubleShoot "Create trouble-shooting report"
+    task sendTsr "Send trouble-shooting report to Service Management"
+    and tsrSplit
+    end rpEnd "Resource Provisioning process ends"
+
+flow perceive -> sendList -> enterReport -> compareSla -> determineCm -> signif -> premium
+flow premium -> linkFix "yes"
+flow linkFix -> handedOver
+flow premium -> significant "no" default
+flow significant -> reprio "yes"
+flow significant -> mergeCs "no" default
+flow reprio -> mergeCs
+flow mergeCs -> detailed -> sendDetailed -> receiveDetailed -> investigate -> analyzable
+flow analyzable -> analyzeSm "yes"
+flow analyzable -> sendToRp "no" default
+flow analyzeSm -> createTroubleSm -> mergeSm
+flow sendToRp -> receiveRp -> problemCheck
+flow problemCheck -> analyzeRp "yes"
+flow problemCheck -> normalNotice "no" default
+flow analyzeRp -> createTroubleRp -> mergeRp
+flow normalNotice -> mergeRp
+flow mergeRp -> includeStatus -> splitRp
+flow splitRp -> sendStatus
+flow sendStatus -> receiveStatus -> mergeSm
+flow splitRp -> mergeWait
+flow mergeWait -> waitRestore -> trackErrors -> correctAll -> troubleShoot -> sendTsr -> tsrSplit
+flow tsrSplit -> rpEnd
+flow tsrSplit -> receiveTsr
+flow timeout -> rpTimeout
+flow mergeSm -> prepareFinal -> determineSmCm -> cmChoice
+flow cmChoice -> sendPerf "no problem"
+flow sendPerf -> perfSplit
+flow perfSplit -> smEnd1
+flow perfSplit -> mergeResp
+flow cmChoice -> correct "minor"
+flow correct -> mergeRes
+flow cmChoice -> createRestore "restoration"
+flow createRestore -> sendRestore -> andR
+flow andR -> mergeWait
+flow andR -> receiveTsr
+flow receiveTsr -> mergeRes
+flow mergeRes -> createResolution -> sendResolution -> resSplit
+flow resSplit -> smEnd2
+flow resSplit -> mergeResp
+flow mergeResp -> receiveResp -> andCs
+flow andCs -> createCust -> sendCust -> joinCs
+flow andCs -> reportRebate -> joinCs
+flow joinCs -> csEnd
+flow sendCust -> receiveReport -> custEnd

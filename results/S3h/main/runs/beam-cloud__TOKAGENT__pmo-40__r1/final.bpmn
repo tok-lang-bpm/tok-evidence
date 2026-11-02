@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Machine_restarted" name="Machine restarted" />
+  <bpmn:message id="Message_Machine_disconnected" name="Machine disconnected" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="oee" name="OEE" processRef="oee-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="oee-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="oee-lanes">
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disconnected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:subProcess id="monitoring" name="Monitor machine">
+      <bpmn:standardLoopCharacteristics>
+        <bpmn:loopCondition xsi:type="bpmn:tFormalExpression">true</bpmn:loopCondition>
+      </bpmn:standardLoopCharacteristics>
+      <bpmn:startEvent id="ms" name="Start monitoring" />
+      <bpmn:task id="collect" name="Collect relevant information from machine" />
+      <bpmn:task id="calculate" name="Calculate OEE" />
+      <bpmn:exclusiveGateway id="check" name="OEE below threshold?" default="f-check-ms_end" />
+      <bpmn:task id="stop" name="Stop machine" />
+      <bpmn:task id="email" name="Send email to engineer" />
+      <bpmn:intermediateCatchEvent id="restart" name="Machine restarted">
+        <bpmn:messageEventDefinition id="restart-def" messageRef="Message_Machine_restarted" />
+      </bpmn:intermediateCatchEvent>
+      <bpmn:endEvent id="ms_end" name="Monitoring period ended" />
+      <bpmn:sequenceFlow id="f-ms-collect" sourceRef="ms" targetRef="collect" />
+      <bpmn:sequenceFlow id="f-collect-calculate" sourceRef="collect" targetRef="calculate" />
+      <bpmn:sequenceFlow id="f-calculate-check" sourceRef="calculate" targetRef="check" />
+      <bpmn:sequenceFlow id="f-check-stop" name="yes" sourceRef="check" targetRef="stop">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oee &lt; threshold</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-stop-email" sourceRef="stop" targetRef="email" />
+      <bpmn:sequenceFlow id="f-email-restart" sourceRef="email" targetRef="restart" />
+      <bpmn:sequenceFlow id="f-restart-ms_end" sourceRef="restart" targetRef="ms_end" />
+      <bpmn:sequenceFlow id="f-check-ms_end" name="no" sourceRef="check" targetRef="ms_end" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="disconnected" name="Machine disconnected" attachedToRef="monitoring">
+      <bpmn:messageEventDefinition id="disconnected-def" messageRef="Message_Machine_disconnected" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="e" name="Process stopped">
+      <bpmn:terminateEventDefinition id="e-def" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="f-s-monitoring" sourceRef="s" targetRef="monitoring" />
+    <bpmn:sequenceFlow id="f-monitoring-e" sourceRef="monitoring" targetRef="e" />
+    <bpmn:sequenceFlow id="f-disconnected-e" sourceRef="disconnected" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

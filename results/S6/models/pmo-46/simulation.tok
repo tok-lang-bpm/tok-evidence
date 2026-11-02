@@ -1,0 +1,48 @@
+tok 0.1 id=Definitions_1 process=Process_1 namespace=http://www.omg.org/spec/BPMN/20100524/MODEL
+
+service ServiceTask_1 "Read order" duration="exp(10m)"
+service ServiceTask_2 "Check if product is in stock" duration="exp(10m)"
+service ServiceTask_3 "Reorder from wholesaler" duration="exp(10m)"
+service ServiceTask_4 "Waiting until arrives (handling system)" duration="exp(10m)"
+service ServiceTask_5 "Demand delivery delay penalty from the wholesaler" duration="exp(10m)"
+manual ManualTask_1 "Withdraw the Product from warehouse" duration="exp(10m)"
+manual ManualTask_2 "Register in stock management system" duration="exp(10m)"
+manual ManualTask_3 "Check if the whole order is ready for shipment" duration="exp(10m)"
+manual ManualTask_4 "Packing the products" duration="exp(10m)"
+manual ManualTask_5 "Shipping the order" duration="exp(10m)"
+manual ManualTask_6 "Courier is requested" duration="exp(10m)"
+xor ExclusiveGateway_1 "Is in stock?"
+xor ExclusiveGateway_2 "Arrived after more than ten days?"
+xor ExclusiveGateway_3 "Order is ready for shipment?"
+xor ExclusiveGateway_4
+xor ExclusiveGateway_5
+and ParallelGateway_1
+and ParallelGateway_2
+start StartEvent_1 "Storage management"
+end EndEvent_1 "Order was shipped"
+
+flow StartEvent_1 -> ServiceTask_1 id=SequenceFlow_1
+flow ServiceTask_1 -> ExclusiveGateway_5 id=SequenceFlow_2
+flow ServiceTask_2 -> ExclusiveGateway_1 id=SequenceFlow_3
+flow ExclusiveGateway_1 -> ManualTask_1 "Yes" id=SequenceFlow_4 p=0.500
+flow ExclusiveGateway_1 -> ServiceTask_3 "No" id=SequenceFlow_5 p=0.500
+flow ServiceTask_3 -> ServiceTask_4 id=SequenceFlow_6
+flow ServiceTask_4 -> ExclusiveGateway_2 id=SequenceFlow_7
+flow ServiceTask_5 -> ExclusiveGateway_4 id=SequenceFlow_8
+flow ExclusiveGateway_2 -> ServiceTask_5 "Yes" id=SequenceFlow_9 p=0.500
+flow ManualTask_1 -> ManualTask_3 id=SequenceFlow_10
+flow ManualTask_2 -> ManualTask_3 id=SequenceFlow_11
+flow ManualTask_3 -> ExclusiveGateway_3 id=SequenceFlow_12
+flow ManualTask_5 -> EndEvent_1 id=SequenceFlow_13
+flow ExclusiveGateway_4 -> ManualTask_2 id=SequenceFlow_14
+flow ExclusiveGateway_5 -> ServiceTask_2 id=SequenceFlow_15
+flow ExclusiveGateway_3 -> ExclusiveGateway_5 "No" id=SequenceFlow_16 p=0.500
+flow ExclusiveGateway_2 -> ExclusiveGateway_4 "No" id=SequenceFlow_17 p=0.500
+flow ParallelGateway_2 -> ManualTask_5 id=SequenceFlow_18
+flow ParallelGateway_1 -> ManualTask_6 id=SequenceFlow_19
+flow ExclusiveGateway_3 -> ParallelGateway_1 "Yes" id=SequenceFlow_20 p=0.500
+flow ManualTask_4 -> ParallelGateway_2 id=SequenceFlow_21
+flow ManualTask_6 -> ParallelGateway_2 id=SequenceFlow_22
+flow ParallelGateway_1 -> ManualTask_4 id=SequenceFlow_23
+
+simulate cases=500 seed=20261031 arrival="exp(1h)"

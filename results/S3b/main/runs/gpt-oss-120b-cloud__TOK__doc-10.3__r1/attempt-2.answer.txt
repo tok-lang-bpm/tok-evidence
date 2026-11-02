@@ -1,0 +1,50 @@
+```tok
+tok 1.0 "MPOO deregistration process"
+
+pool org "Organization"
+  lane mpoo "MPOO"
+    start s_start "Start deregistration"
+    task t_deregister "MPOO deregisters at the GO"
+    end e_end "Process completed"
+
+  lane go "GO"
+    task t_verify "GO verifies the deregistration"
+    xor g_decision "GO decision on deregistration"
+    task t_reject "GO rejects the deregistration of the MPOO"
+    end e_reject "Deregistration rejected"
+    task t_confirm "GO preliminarily confirms the deregistration of the MPOO"
+    task t_prepare "GO prepares the readmission of the measuring point"
+    xor g_obligation "GO obliges MPOO to continue?"
+    task t_bind "GO binds the MPOO to continue the operation"
+    task t_mpoo_confirm "MPOO confirms the continuation to the MPOO"
+    and g_equipment_split "Equipment activities"
+    task t_acquire "GO performs equipment acquisition"
+    task t_change "GO performs equipment changes"
+    and g_equipment_join "Equipment join"
+    task t_assign "GO assigns the GO as MPO"
+    task t_inform_mpoo "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    and g_inform_split "Inform parties"
+    task t_inform_mspo "GO informs the MSPO about the assignment of the GO"
+    task t_inform_sp "GO informs the SP about the assignment of the GO"
+    and g_inform_join "Inform join"
+    end e_complete "Process completed"
+
+  lane mspo "MSPO"
+    # receives information (modeled in GO lane)
+
+  lane sp "SP"
+    # receives information (modeled in GO lane)
+
+# Sequence flows
+flow s_start -> t_deregister -> t_verify -> g_decision
+flow g_decision -> t_reject -> e_reject
+flow g_decision -> t_confirm -> t_prepare -> g_obligation
+flow g_obligation -> t_bind -> t_mpoo_confirm -> g_equipment_split
+flow g_obligation -> g_equipment_split "no"
+flow g_equipment_split -> t_acquire -> g_equipment_join
+flow g_equipment_split -> t_change -> g_equipment_join
+flow g_equipment_join -> t_assign -> t_inform_mpoo -> g_inform_split
+flow g_inform_split -> t_inform_mspo -> g_inform_join
+flow g_inform_split -> t_inform_sp -> g_inform_join
+flow g_inform_join -> e_complete
+```

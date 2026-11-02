@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Farming Bot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_List_update_requested" name="List update requested" />
+  <bpmn:signal id="Signal_Milestone_reached" name="Milestone reached" />
+  <bpmn:signal id="Signal_Natural_disaster_strikes" name="Natural disaster strikes" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="game" name="Farming bot game" processRef="game-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="game-process" name="Farming Bot" isExecutable="false">
+    <bpmn:laneSet id="game-lanes">
+      <bpmn:lane id="player" name="Player">
+        <bpmn:flowNodeRef>wanted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prefs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prioritise</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>depend</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prefsdone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>brag</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shared</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finished</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bot" name="Farming bot">
+        <bpmn:flowNodeRef>farm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>milestone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notified</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disaster</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recovered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>change</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="wanted" name="Player wants a farming bot" />
+    <bpmn:task id="find" name="Find out the wanted resources" />
+    <bpmn:parallelGateway id="prefs" />
+    <bpmn:task id="prioritise" name="Set the urgency of the resources" />
+    <bpmn:task id="depend" name="Define the dependencies of the resources" />
+    <bpmn:parallelGateway id="prefsdone" />
+    <bpmn:task id="update" name="Update the list of resources" />
+    <bpmn:endEvent id="updated" name="List updated" />
+    <bpmn:inclusiveGateway id="share" name="Share the result?" default="f-share-shared" />
+    <bpmn:task id="brag" name="Brag to selected friends" />
+    <bpmn:task id="send" name="Send materials to friends" />
+    <bpmn:inclusiveGateway id="shared" />
+    <bpmn:endEvent id="finished" name="Farming finished" />
+    <bpmn:task id="farm" name="Farm the resources" />
+    <bpmn:boundaryEvent id="milestone" attachedToRef="farm" cancelActivity="false">
+      <bpmn:signalEventDefinition id="milestone-def" signalRef="Signal_Milestone_reached" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="notify" name="Notify the player" />
+    <bpmn:endEvent id="notified" name="Player notified" />
+    <bpmn:boundaryEvent id="disaster" attachedToRef="farm" cancelActivity="false">
+      <bpmn:signalEventDefinition id="disaster-def" signalRef="Signal_Natural_disaster_strikes" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="recover" name="Recover from the disaster" />
+    <bpmn:endEvent id="recovered" name="Bot recovered" />
+    <bpmn:boundaryEvent id="change" attachedToRef="farm" cancelActivity="false">
+      <bpmn:messageEventDefinition id="change-def" messageRef="Message_List_update_requested" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-wanted-find" sourceRef="wanted" targetRef="find" />
+    <bpmn:sequenceFlow id="f-find-prefs" sourceRef="find" targetRef="prefs" />
+    <bpmn:sequenceFlow id="f-prefs-prioritise" sourceRef="prefs" targetRef="prioritise" />
+    <bpmn:sequenceFlow id="f-prefs-depend" sourceRef="prefs" targetRef="depend" />
+    <bpmn:sequenceFlow id="f-prioritise-prefsdone" sourceRef="prioritise" targetRef="prefsdone" />
+    <bpmn:sequenceFlow id="f-depend-prefsdone" sourceRef="depend" targetRef="prefsdone" />
+    <bpmn:sequenceFlow id="f-prefsdone-farm" sourceRef="prefsdone" targetRef="farm" />
+    <bpmn:sequenceFlow id="f-milestone-notify" sourceRef="milestone" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-notified" sourceRef="notify" targetRef="notified" />
+    <bpmn:sequenceFlow id="f-disaster-recover" sourceRef="disaster" targetRef="recover" />
+    <bpmn:sequenceFlow id="f-recover-recovered" sourceRef="recover" targetRef="recovered" />
+    <bpmn:sequenceFlow id="f-change-update" sourceRef="change" targetRef="update" />
+    <bpmn:sequenceFlow id="f-update-updated" sourceRef="update" targetRef="updated" />
+    <bpmn:sequenceFlow id="f-farm-share" sourceRef="farm" targetRef="share" />
+    <bpmn:sequenceFlow id="f-share-brag" name="brag" sourceRef="share" targetRef="brag">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">brag = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-share-send" name="send materials" sourceRef="share" targetRef="send">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">sendMaterials = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-share-shared" name="neither" sourceRef="share" targetRef="shared" />
+    <bpmn:sequenceFlow id="f-brag-shared" sourceRef="brag" targetRef="shared" />
+    <bpmn:sequenceFlow id="f-send-shared" sourceRef="send" targetRef="shared" />
+    <bpmn:sequenceFlow id="f-shared-finished" sourceRef="shared" targetRef="finished" />
+  </bpmn:process>
+</bpmn:definitions>

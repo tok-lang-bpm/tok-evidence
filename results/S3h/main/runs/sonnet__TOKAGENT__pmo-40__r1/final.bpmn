@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Restart" name="Restart" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="sys" name="OEE system">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>m</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:exclusiveGateway id="m" />
+    <bpmn:task id="collect" name="Collect machine information" />
+    <bpmn:task id="calc" name="Calculate OEE" />
+    <bpmn:exclusiveGateway id="g1" name="OEE below limit?" default="f-g1-g2" />
+    <bpmn:task id="stop" name="Stop machine" />
+    <bpmn:task id="mail" name="Send email to engineer" />
+    <bpmn:intermediateCatchEvent id="restart" name="Machine restarted">
+      <bpmn:messageEventDefinition id="restart-def" messageRef="Message_Restart" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="g2" name="Machine disconnected?" default="f-g2-m" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:sequenceFlow id="f-s-m" sourceRef="s" targetRef="m" />
+    <bpmn:sequenceFlow id="f-m-collect" sourceRef="m" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calc" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-g1" sourceRef="calc" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-stop" name="yes" sourceRef="g1" targetRef="stop">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oee &lt; limit</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g1-g2" name="no" sourceRef="g1" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-stop-mail" sourceRef="stop" targetRef="mail" />
+    <bpmn:sequenceFlow id="f-mail-restart" sourceRef="mail" targetRef="restart" />
+    <bpmn:sequenceFlow id="f-restart-m" sourceRef="restart" targetRef="m" />
+    <bpmn:sequenceFlow id="f-g2-e" name="yes" sourceRef="g2" targetRef="e">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">disconnected = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g2-m" name="no" sourceRef="g2" targetRef="m" />
+  </bpmn:process>
+</bpmn:definitions>

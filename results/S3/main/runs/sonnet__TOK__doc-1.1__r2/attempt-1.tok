@@ -1,0 +1,47 @@
+tok 1.0 "Customized bicycle order"
+
+pool company "Bicycle company"
+  lane sales "Sales department"
+    start received "Order received"
+    xor decision "Accept the order?"
+    task reject "Reject the order"
+    end rejected "Order rejected"
+    task accept "Accept the order"
+    and split
+    task informstore "Inform the storehouse"
+    task informeng "Inform the engineering department"
+    task ship "Ship the bicycle to the customer"
+    end shipped "Bicycle shipped"
+  lane storehouse "Storehouse"
+    sub parts "Process the part list" sequential
+      start item "Part list item"
+      task checkqty "Check the required quantity of the part"
+      xor avail "Part available in-house?"
+      task reserve "Reserve the part"
+      task backorder "Back-order the part"
+      xor availjoin
+      end itemdone "Item processed"
+  lane engineering "Engineering department"
+    task prepare "Prepare the assembling of the bicycle"
+    and join
+    task assemble "Assemble the bicycle"
+
+flow received -> decision
+flow decision -> reject "reject" 
+flow decision -> accept "accept"
+flow reject -> rejected
+flow accept -> split
+flow split -> informstore
+flow split -> informeng
+flow informstore -> parts
+flow informeng -> prepare
+flow parts -> join
+flow prepare -> join
+flow join -> assemble -> ship -> shipped
+
+flow item -> checkqty -> avail
+flow avail -> reserve "yes"
+flow avail -> backorder "no"
+flow reserve -> availjoin
+flow backorder -> availjoin
+flow availjoin -> itemdone

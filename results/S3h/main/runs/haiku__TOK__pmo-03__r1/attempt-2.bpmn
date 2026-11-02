@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Inventory restock" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="store" name="Warehouse or store" processRef="store-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="store-process" name="Inventory restock" isExecutable="false">
+    <bpmn:laneSet id="store-lanes">
+      <bpmn:lane id="staff" name="Warehouse staff">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>threshold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>trigger</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shelve</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Inventory system">
+        <bpmn:flowNodeRef>alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>levels</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="procurement" name="Procurement team">
+        <bpmn:flowNodeRef>order</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Inventory monitoring begins" />
+    <bpmn:task id="monitor" name="Monitor inventory levels" />
+    <bpmn:exclusiveGateway id="threshold" name="Stock reached threshold?" default="f-threshold-monitor" />
+    <bpmn:exclusiveGateway id="trigger" name="Automated alert or manual check?" />
+    <bpmn:task id="check" name="Perform manual stock check" />
+    <bpmn:exclusiveGateway id="reorder" name="Reorder signalled" />
+    <bpmn:task id="receive" name="Receive the stock" />
+    <bpmn:task id="inspect" name="Inspect stock quality" />
+    <bpmn:task id="record" name="Record stock in the system" />
+    <bpmn:task id="shelve" name="Place stock on shelves or in storage" />
+    <bpmn:task id="alert" name="Generate automated alert" />
+    <bpmn:task id="dates" name="Update inventory system with expected delivery dates" />
+    <bpmn:task id="levels" name="Update inventory levels after restock" />
+    <bpmn:endEvent id="done" name="Inventory levels updated" />
+    <bpmn:task id="order" name="Place order with suppliers considering cost, delivery time and supplier reliability" />
+    <bpmn:sequenceFlow id="f-begin-monitor" sourceRef="begin" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-monitor-threshold" sourceRef="monitor" targetRef="threshold" />
+    <bpmn:sequenceFlow id="f-threshold-trigger" name="yes" sourceRef="threshold" targetRef="trigger">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stock_reached = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-threshold-monitor" name="no" sourceRef="threshold" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-trigger-alert" name="automated alert" sourceRef="trigger" targetRef="alert" />
+    <bpmn:sequenceFlow id="f-trigger-check" name="manual check" sourceRef="trigger" targetRef="check" />
+    <bpmn:sequenceFlow id="f-alert-reorder" sourceRef="alert" targetRef="reorder" />
+    <bpmn:sequenceFlow id="f-check-reorder" sourceRef="check" targetRef="reorder" />
+    <bpmn:sequenceFlow id="f-reorder-order" sourceRef="reorder" targetRef="order" />
+    <bpmn:sequenceFlow id="f-order-dates" sourceRef="order" targetRef="dates" />
+    <bpmn:sequenceFlow id="f-dates-receive" sourceRef="dates" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-inspect" sourceRef="receive" targetRef="inspect" />
+    <bpmn:sequenceFlow id="f-inspect-record" sourceRef="inspect" targetRef="record" />
+    <bpmn:sequenceFlow id="f-record-shelve" sourceRef="record" targetRef="shelve" />
+    <bpmn:sequenceFlow id="f-shelve-levels" sourceRef="shelve" targetRef="levels" />
+    <bpmn:sequenceFlow id="f-levels-done" sourceRef="levels" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

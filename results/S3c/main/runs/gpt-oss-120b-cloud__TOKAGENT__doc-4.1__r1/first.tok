@@ -1,0 +1,121 @@
+tok 1.0
+
+pool institute "Mental Health Care Institute" {
+  lane secretarial "Secretarial Office"
+  lane family_doctor "Family Doctor"
+  lane nursing_officer "Nursing Officer"
+  lane first_intaker "First Intaker (Social-Medical Worker)"
+  lane second_intaker "Second Intaker (Physician)"
+  lane team_leader "Team Leader"
+  lane psychiatrist "Psychiatrist"
+}
+
+start s0 "Intake workflow starts"
+
+task notice_by_telephone "Family Doctor gives telephone notice" lane=family_doctor
+
+task inquire_name_residence "Secretarial inquires name and residence" lane=secretarial
+
+task put_doctor_through "Put doctor through to nursing officer" lane=secretarial
+
+task full_inquiry "Nursing officer makes full inquiry" lane=nursing_officer
+
+task record_registration_form "Record information on registration form" lane=nursing_officer
+
+task hand_form "Hand registration form to secretarial office" lane=secretarial
+
+task store_info_and_print "Store info in system and print" lane=secretarial
+
+task create_patient_file "Create patient file for new patient" lane=secretarial
+
+task store_form_and_print "Store form and print in patient file" lane=secretarial
+
+task produce_registration_cards "Produce two registration cards" lane=secretarial
+
+task add_to_new_notices "Add patient to list of new notices" lane=secretarial
+
+event timer wait_until_wednesday "Wait until Wednesday staff meeting" lane=secretarial
+
+task staff_meeting "Staff meeting of medical team" lane=team_leader
+
+task assign_intakers "Team leader assigns intakers" lane=team_leader
+
+task record_assignment_list "Record assignment list" lane=secretarial
+
+task hand_assignment_list "Hand assignment list to secretarial office" lane=secretarial
+
+xor g_medical_file "Medical file required?"
+
+task prepare_letter "Prepare and send letter to family doctor" lane=secretarial
+
+task receive_copy "Receive copy of medical file" lane=secretarial
+
+task inform_second "Inform second intaker and add copy to file" lane=secretarial
+
+xor g_after_file "After file handling"
+
+and p_split
+
+task plan_first "First intaker plans meeting" lane=first_intaker
+
+task plan_second "Second intaker plans meeting" lane=second_intaker
+
+and p_join
+
+task first_meeting "First intaker conducts meeting and fills checklist" lane=first_intaker
+
+task add_first_docs "Add notes and checklist to patient file" lane=secretarial
+
+task second_meeting "Second intaker conducts meeting" lane=second_intaker
+
+task record_dictaphone "Physician records dictaphone" lane=second_intaker
+
+task typeout_dictaphone "Secretarial types out dictaphone and adds to file" lane=secretarial
+
+task add_second_docs "Add second intaker documents to patient file" lane=secretarial
+
+task record_completed "Record patient on completed intake list" lane=secretarial
+
+task provide_list "Provide completed list to team leader for staff meeting" lane=secretarial
+
+task treatment_plan "First and second intaker with team leader and psychiatrist formulate treatment plan" lane=team_leader
+
+end e0
+
+flow s0 -> notice_by_telephone
+flow notice_by_telephone -> inquire_name_residence
+flow inquire_name_residence -> put_doctor_through
+flow put_doctor_through -> full_inquiry
+flow full_inquiry -> record_registration_form
+flow record_registration_form -> hand_form
+flow hand_form -> store_info_and_print
+flow store_info_and_print -> create_patient_file
+flow create_patient_file -> store_form_and_print
+flow store_form_and_print -> produce_registration_cards
+flow produce_registration_cards -> add_to_new_notices
+flow add_to_new_notices -> wait_until_wednesday
+flow wait_until_wednesday -> staff_meeting
+flow staff_meeting -> assign_intakers
+flow assign_intakers -> record_assignment_list
+flow record_assignment_list -> hand_assignment_list
+flow hand_assignment_list -> g_medical_file
+flow g_medical_file -> prepare_letter when="required"
+flow g_medical_file -> g_after_file default
+flow prepare_letter -> receive_copy
+flow receive_copy -> inform_second
+flow inform_second -> g_after_file
+flow g_after_file -> p_split
+flow p_split -> plan_first
+flow p_split -> plan_second
+flow plan_first -> first_meeting
+flow first_meeting -> add_first_docs
+flow add_first_docs -> p_join
+flow plan_second -> second_meeting
+flow second_meeting -> record_dictaphone
+flow record_dictaphone -> typeout_dictaphone
+flow typeout_dictaphone -> add_second_docs
+flow add_second_docs -> p_join
+flow p_join -> record_completed
+flow record_completed -> provide_list
+flow provide_list -> treatment_plan
+flow treatment_plan -> e0

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="Process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Customer" name="Customer">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CustomerFeedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Risk" name="Risk Assessment System">
+        <bpmn:flowNodeRef>Task_RiskService</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ApproveLoan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DenyLoan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Approver" name="Approver Web Service">
+        <bpmn:flowNodeRef>Task_SendToApprover</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_1" name="Receive customer request for a loan amount" />
+    <bpmn:task id="Task_RiskService" name="Invoke risk assessment Web service" />
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Decision after risk assessment" />
+    <bpmn:task id="Task_ApproveLoan" name="Approve loan" />
+    <bpmn:task id="Task_DenyLoan" name="Deny loan" />
+    <bpmn:task id="Task_SendToApprover" name="Send request to approver Web service" />
+    <bpmn:exclusiveGateway id="Gw_Merge" name="Merge decision outcomes" />
+    <bpmn:task id="Task_CustomerFeedback" name="Customer receives feedback" />
+    <bpmn:endEvent id="End_1" name="Process completed" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_RiskService" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_RiskService" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="Flow_3" name="small &amp; low risk" sourceRef="Gw_Decision" targetRef="Task_ApproveLoan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">loanAmount &lt; 10000 &amp;&amp; risk == 'low'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" name="high risk" sourceRef="Gw_Decision" targetRef="Task_DenyLoan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">risk == 'high'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" name="other" sourceRef="Gw_Decision" targetRef="Task_SendToApprover">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!(loanAmount &lt; 10000 &amp;&amp; risk == 'low') &amp;&amp; !(risk == 'high')</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_ApproveLoan" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_DenyLoan" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_SendToApprover" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Gw_Merge" targetRef="Task_CustomerFeedback" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_CustomerFeedback" targetRef="End_1" />
+  </bpmn:process>
+</bpmn:definitions>

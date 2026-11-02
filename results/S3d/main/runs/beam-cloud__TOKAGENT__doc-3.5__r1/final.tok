@@ -1,0 +1,35 @@
+tok 1.0 "Mail registration"
+
+pool org "Organisation"
+  lane mail_processing_unit "Mail Processing Unit"
+    start start "Start"
+    task collect-mail "Collect mail"
+    task sort-unopened-mail "Sort unopened mail into business areas"
+    task distribute-mail "Distribute mail"
+  lane registry "Registry"
+    task open-sort-mail "Open and sort mail into groups"
+    task register-mail "Register mail in incoming register"
+  lane assistant "Assistant Registry Manager"
+    task quality-check "Perform quality check"
+    xor compliant "Mail compliant?"
+    task compile-requisition "Compile list of requisition"
+    task send-back "Send back to party"
+    task capture-matter-details "Capture matter details"
+    task put-receipt "Put receipt and copied documents into envelope"
+    task post-party "Post to party"
+    end end-rejected "End"
+  lane cashier "Cashier"
+    task take-fees "Take applicable fees"
+    task capture-party "Capture party details"
+    task print-file "Print physical court file"
+    and split "Parallel activities"
+    and join "Join"
+    end end-ok "End"
+
+flow start -> collect-mail -> sort-unopened-mail -> distribute-mail -> open-sort-mail -> register-mail -> quality-check -> compliant
+flow compliant -> compile-requisition "Not compliant" when="compliant = false"
+flow compliant -> capture-matter-details "Compliant" default
+flow compile-requisition -> send-back -> end-rejected
+flow capture-matter-details -> take-fees -> split
+flow split -> put-receipt -> post-party -> join
+flow split -> capture-party -> print-file -> join -> end-ok

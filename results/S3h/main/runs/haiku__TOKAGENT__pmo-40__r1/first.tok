@@ -1,0 +1,23 @@
+tok 1.0 "OEE"
+
+pool plant "Production"
+  lane machine "Machine"
+    task stop-machine "Stop machine"
+    task restart-machine "Restart machine"
+  lane system "OEE monitoring system"
+    start begin "Start measuring"
+    task collect "Collect machine data"
+    boundary disconnect "Machine disconnected" on=collect message="Machine disconnected"
+    task calc "Calculate OEE"
+    xor oee-ok "OEE below limit?"
+    task send-mail "Send email to engineer"
+    catch restarted "Machine restarted" message="Machine restarted"
+    end stopped "Process stopped"
+  lane engineer "Engineer"
+    task check-machine "Check machine"
+
+flow begin -> collect -> calc -> oee-ok
+flow oee-ok -> stop-machine "yes" when=""
+flow oee-ok -> collect "no" default
+flow stop-machine -> send-mail -> check-machine -> restart-machine -> restarted -> collect
+flow disconnect -> stopped

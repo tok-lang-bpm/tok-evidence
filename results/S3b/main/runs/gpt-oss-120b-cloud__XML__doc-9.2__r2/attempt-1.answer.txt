@@ -1,0 +1,77 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_waitSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_replyType</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_updateDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_archiveDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_generateRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_updateTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_archiveTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_docsCheck</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_customer" name="Customer">
+        <bpmn:flowNodeRef>customerReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer2weeks</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_admin" name="Administration">
+        <bpmn:flowNodeRef>task_moveAdmin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="sendOffer" name="Send Mortgage offer to customer" />
+    <bpmn:parallelGateway id="gw_waitSplit" />
+    <bpmn:intermediateCatchEvent id="customerReply" name="Customer reply">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timer2weeks" name="2 weeks elapsed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT2W</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gateway_replyType" name="Reply type?" />
+    <bpmn:task id="task_updateDecline" name="Update case details" />
+    <bpmn:task id="task_archiveDecline" name="Archive case prior to cancellation" />
+    <bpmn:endEvent id="endDecline" name="Case archived and cancelled" />
+    <bpmn:exclusiveGateway id="gateway_docsCheck" name="All prerequisite documents provided?" />
+    <bpmn:task id="task_moveAdmin" name="Move case to administration for completion" />
+    <bpmn:endEvent id="endAdmin" name="Case moved to administration" />
+    <bpmn:task id="task_generateRequest" name="Generate message requesting outstanding documents" />
+    <bpmn:task id="task_updateTimeout" name="Update case details" />
+    <bpmn:task id="task_archiveTimeout" name="Archive case prior to cancellation" />
+    <bpmn:endEvent id="endTimeout" name="Case archived and cancelled (no reply)" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sendOffer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendOffer" targetRef="gw_waitSplit" />
+    <bpmn:sequenceFlow id="f3" sourceRef="gw_waitSplit" targetRef="customerReply" />
+    <bpmn:sequenceFlow id="f4" sourceRef="gw_waitSplit" targetRef="timer2weeks" />
+    <bpmn:sequenceFlow id="f5" sourceRef="customerReply" targetRef="gateway_replyType" />
+    <bpmn:sequenceFlow id="f6" sourceRef="gateway_replyType" name="decline" targetRef="task_updateDecline" />
+    <bpmn:sequenceFlow id="f7" sourceRef="gateway_replyType" name="accept" targetRef="gateway_docsCheck" />
+    <bpmn:sequenceFlow id="f8" sourceRef="task_updateDecline" targetRef="task_archiveDecline" />
+    <bpmn:sequenceFlow id="f9" sourceRef="task_archiveDecline" targetRef="endDecline" />
+    <bpmn:sequenceFlow id="f10" sourceRef="gateway_docsCheck" name="yes" targetRef="task_moveAdmin" />
+    <bpmn:sequenceFlow id="f11" sourceRef="gateway_docsCheck" name="no" targetRef="task_generateRequest" />
+    <bpmn:sequenceFlow id="f12" sourceRef="task_moveAdmin" targetRef="endAdmin" />
+    <bpmn:sequenceFlow id="f13" sourceRef="task_generateRequest" targetRef="customerReply" />
+    <bpmn:sequenceFlow id="f14" sourceRef="timer2weeks" targetRef="task_updateTimeout" />
+    <bpmn:sequenceFlow id="f15" sourceRef="task_updateTimeout" targetRef="task_archiveTimeout" />
+    <bpmn:sequenceFlow id="f16" sourceRef="task_archiveTimeout" targetRef="endTimeout" />
+  </bpmn:process>
+</bpmn:definitions>
+```

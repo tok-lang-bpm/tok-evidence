@@ -1,0 +1,39 @@
+tok 1.0 "Car Service"
+
+pool car "Car service"
+  lane police "Police app"
+    start started "Service completed"
+    task check-reg "Check car registration"
+    xor registered "Car still registered?"
+    task notify "Notify car owner"
+    end not-required "Service not required"
+    task send-status "Send status update by email"
+    end status-sent "Status update sent"
+    task fine "Issue fine"
+    end fined "Car owner fined"
+  lane owner "Car owner"
+    task go-service "Bring car to service"
+    boundary fine-timer "No service after 30 days" on=go-service timer=P30D
+    task wait-repair "Wait for repair"
+    boundary status-timer "Every day" noninterrupting on=wait-repair timer=R/P1D
+    task pay "Pay repair in app"
+  lane mechanic "Mechanic"
+    task enter-problems "Enter car problems"
+    and repair-split
+    task repair "Repair car"
+    and repair-join
+    task enter-success "Enter successful repair and hand over Pickerl"
+    task enter-next "Enter time of next service"
+    end done "Next service scheduled"
+
+flow started -> check-reg -> registered
+flow registered -> not-required "No" default
+flow registered -> notify "Yes" when=""
+flow notify -> go-service -> enter-problems
+flow fine-timer -> fine -> fined
+flow status-timer -> send-status -> status-sent
+flow enter-problems -> repair-split
+flow repair-split -> wait-repair
+flow repair-split -> repair
+flow wait-repair -> repair-join
+flow repair -> repair-join -> pay -> enter-success -> enter-next -> done

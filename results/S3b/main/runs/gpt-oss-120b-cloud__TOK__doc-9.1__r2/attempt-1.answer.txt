@@ -1,0 +1,66 @@
+```tok
+tok 1.0 "Defaulter Processing" [executable]
+
+pool org "Organization"
+  lane db "Database"
+    start start1 "Start"
+    task backup "Back up the database"
+    task check_new "Check for new records in Account Defaulter table"
+    xor new_records "New records?"
+    end no_new_records "Process ends – new records found"
+
+  lane crm "CRM System"
+    task check_crm1 "Check CRM system for new returns (first check)"
+    xor new_returns1 "New returns exist?"
+    end no_returns1 "Process ends – no returns (first check)"
+    task check_crm2 "Check CRM system for new returns (second check)"
+    xor new_returns2 "New returns exist?"
+    task reconcile "Reconcile with existing account defaulters table"
+    xor deadline2 "Completed by 16:00?"
+    task alert_supervisor2 "Send alert to supervisor (deadline missed)"
+    end end_success "Process completed successfully"
+    end end_alert2 "Process ended – deadline 2 missed"
+    end end_no_returns2 "Process ends – no returns (second check)"
+
+  lane am "Account Management"
+    task register_accounts "Register defaulting accounts and customers"
+    xor not_advised "Client codes not previously advised?"
+    task produce_table "Produce table of defaulting accounts"
+    task send_table "Send table to account management"
+    xor deadline1 "Completed by 14:30?"
+    task alert_supervisor1 "Send alert to supervisor (deadline missed)"
+    end end_alert1 "Process ended – deadline 1 missed"
+
+  lane supervisor "Supervisor"
+    # (tasks used only for alerts; they belong to this lane)
+    task alert_supervisor1 "Send alert to supervisor (deadline missed)"
+    task alert_supervisor2 "Send alert to supervisor (deadline missed)"
+
+flow start1 -> backup -> check_new -> new_records
+flow new_records -> no_new_records "yes"
+flow new_records -> check_crm1 "no"
+
+flow check_crm1 -> new_returns1
+flow new_returns1 -> no_returns1 "no"
+flow new_returns1 -> register_accounts "yes"
+
+flow register_accounts -> not_advised
+flow not_advised -> produce_table "yes"
+flow produce_table -> send_table -> deadline1
+flow not_advised -> deadline1 "no"
+
+flow deadline1 -> alert_supervisor1 "no"
+flow deadline1 -> check_crm2 "yes"
+
+flow alert_supervisor1 -> check_crm2
+
+flow check_crm2 -> new_returns2
+flow new_returns2 -> end_no_returns2 "no"
+flow new_returns2 -> reconcile "yes"
+
+flow reconcile -> deadline2
+flow deadline2 -> end_success "yes"
+flow deadline2 -> alert_supervisor2 "no"
+
+flow alert_supervisor2 -> end_alert2
+```

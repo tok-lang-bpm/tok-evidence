@@ -1,0 +1,213 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+The process is initiated by a switch-over request. In doing so, the customer transmits his data to the customer service department of the company. Customer service is a shared service center between the departments Sales and Distribution. The customer data is received by customer service and based on this data a customer data object is entered into the CRM system. After customer data has been entered it should then be compared with the internal customer data base and checked for completeness and plausibility. In case of any errors these should be corrected on the basis of a simple error list. The comparison of data is done to prevent individual customer data being stored multiple times. In case the customer does not exist in the customer data base, a new customer object is being created which will remain the data object of interest during the rest of the process flow. This object consists of data elements such as the customer's name and address and the assigned power gauge. The generated customer object is then used, in combination with other customer data to prepare the contract documents for the power supplier switch (including data such as bank connection, information on the selected rate, requested date of switch-over). In the following an automated check of the contract documents is carried out within the CIS (customer information system) in order to confirm their successful generation. In case of a negative response, i.e. the contract documents are not (or incorrectly) generated, the causing issues are being analyzed and resolved. Subsequently the contract documents are generated once again. In case of a positive response a confirmation document is sent out to the customer stating that the switch-over to the new supplier can be executed. A request to the grid operator is automatically sent out by the CIS. It puts the question whether the customer may be supplied by the selected supplier in the future. The switch-over request is checked by the grid operator for supplier concurrence, and the grid operator transmits a response comment. In the case of supplier concurrence the grid operator would inform all involved suppliers and demand the resolution of the conflict. The grid operator communicates with the old supplier and carries out the termination of the sales agreement between the customer and the old supplier (i.e. the customer service (of the new supplier) does not have to interact with the old supplier regarding termination). If there are not any objections by the grid operator (i.e. no supplier concurrence), customer service creates a CIS contract. The customer then has the chance to check the contract details and based on this check may decide to either withdraw from the switch contract or confirm it. Depending on the customer's acceptance / rejection the process flow at customer service either ends (in case of withdrawal) or continues (in case of a confirmation). An additional constraint is that the customer can only withdraw from the offered contract within 7 days after the 7th day the contract will be regarded as accepted and the process continues. The confirmation message by the customer is therefore not absolutely necessary (as it will count as accepted after 7 days in any way) but it can speed up the switch process. On the switch-date, but no later than 10 days after power supply has begun, the grid operator transmits the power meter data to the customer service and the old supplier via messages containing a services consumption report. At the same time, the grid operator computes the final billing based on the meter data and sends it to the old supplier. Likewise the old supplier creates and sends the final billing to the customer. For the customer as well as the grid operator the process ends then. After receiving the meter data customer service imports the meter data to systems that require the information. The process of winning a new customer ends here.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msg-withdrawal" name="Withdrawal" />
+  <bpmn:message id="msg-confirmation" name="Confirmation" />
+
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane-customer" name="Customer">
+        <bpmn:flowNodeRef>start-request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit-data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-contract-details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customer-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-customer-service" name="Customer service">
+        <bpmn:flowNodeRef>receive-data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compare-data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-data</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct-errors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-customer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare-contract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze-resolve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>regenerate-contract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-confirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-cis-contract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>import-meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>errors-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>exists-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>event-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accept-merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>withdrawal-catch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmation-catch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-7days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>withdraw-end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>process-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-cis" name="CIS">
+        <bpmn:flowNodeRef>cis-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generated-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-grid-request</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-grid" name="Grid operator">
+        <bpmn:flowNodeRef>check-concurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit-response</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>concurrence-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-suppliers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>demand-resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>communicate-old</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminate-agreement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conflict-end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>grid-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit-meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compute-billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-billing-old</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>grid-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>grid-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane-old-supplier" name="Old supplier">
+        <bpmn:flowNodeRef>create-final-billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-final-customer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oldsupplier-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start-request" name="Switch-over request" />
+
+    <bpmn:task id="transmit-data" name="Transmit customer data" />
+    <bpmn:task id="check-contract-details" name="Check contract details" />
+    <bpmn:endEvent id="customer-end" name="Customer process ends" />
+
+    <bpmn:task id="receive-data" name="Receive customer data" />
+    <bpmn:task id="enter-data" name="Enter customer data object into CRM system" />
+    <bpmn:task id="compare-data" name="Compare customer data with internal customer data base" />
+    <bpmn:task id="check-data" name="Check customer data for completeness and plausibility" />
+    <bpmn:task id="correct-errors" name="Correct errors" />
+    <bpmn:task id="create-customer" name="Create new customer object" />
+    <bpmn:task id="prepare-contract" name="Prepare contract documents for power supplier switch" />
+    <bpmn:task id="analyze-resolve" name="Analyze and resolve issues" />
+    <bpmn:task id="regenerate-contract" name="Generate contract documents again" />
+    <bpmn:task id="send-confirmation" name="Send confirmation document to customer" />
+    <bpmn:task id="create-cis-contract" name="Create CIS contract" />
+    <bpmn:task id="import-meter" name="Import meter data into systems that require the information" />
+    <bpmn:exclusiveGateway id="errors-gateway" name="Errors found?" default="f9" />
+    <bpmn:exclusiveGateway id="exists-gateway" name="Customer exists in data base?" default="f12" />
+    <bpmn:eventBasedGateway id="event-gateway" name="Customer decision?" />
+    <bpmn:exclusiveGateway id="accept-merge" name="Contract accepted" />
+    <bpmn:intermediateCatchEvent id="withdrawal-catch" name="Withdrawal received">
+      <bpmn:messageEventDefinition messageRef="msg-withdrawal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="confirmation-catch" name="Confirmation received">
+      <bpmn:messageEventDefinition messageRef="msg-confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timer-7days" name="7 days elapsed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="withdraw-end" name="Switch contract withdrawn" />
+    <bpmn:endEvent id="process-end" name="Process of winning a new customer ends" />
+
+    <bpmn:task id="cis-check" name="Carry out automated check of contract documents" />
+    <bpmn:exclusiveGateway id="generated-gateway" name="Contract documents generated?" default="f18" />
+    <bpmn:task id="send-grid-request" name="Send request to grid operator" />
+
+    <bpmn:task id="check-concurrence" name="Check switch-over request for supplier concurrence" />
+    <bpmn:task id="transmit-response" name="Transmit response comment" />
+    <bpmn:exclusiveGateway id="concurrence-gateway" name="Supplier concurrence?" default="f28" />
+    <bpmn:task id="inform-suppliers" name="Inform involved suppliers" />
+    <bpmn:task id="demand-resolution" name="Demand resolution of conflict" />
+    <bpmn:task id="communicate-old" name="Communicate with old supplier" />
+    <bpmn:task id="terminate-agreement" name="Carry out termination of sales agreement" />
+    <bpmn:endEvent id="conflict-end" name="Supplier concurrence resolved" />
+    <bpmn:parallelGateway id="grid-split" name="Split" />
+    <bpmn:task id="transmit-meter" name="Transmit power meter data" />
+    <bpmn:task id="compute-billing" name="Compute final billing" />
+    <bpmn:task id="send-billing-old" name="Send final billing to old supplier" />
+    <bpmn:parallelGateway id="grid-join" name="Join" />
+    <bpmn:endEvent id="grid-end" name="Grid operator process ends" />
+
+    <bpmn:task id="create-final-billing" name="Create final billing" />
+    <bpmn:task id="send-final-customer" name="Send final billing to customer" />
+    <bpmn:endEvent id="oldsupplier-end" name="Old supplier process ends" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start-request" targetRef="transmit-data" />
+    <bpmn:sequenceFlow id="f2" sourceRef="transmit-data" targetRef="receive-data" />
+
+    <bpmn:sequenceFlow id="f3" sourceRef="receive-data" targetRef="enter-data" />
+    <bpmn:sequenceFlow id="f4" sourceRef="enter-data" targetRef="compare-data" />
+    <bpmn:sequenceFlow id="f5" sourceRef="compare-data" targetRef="check-data" />
+    <bpmn:sequenceFlow id="f6" sourceRef="check-data" targetRef="errors-gateway" />
+    <bpmn:sequenceFlow id="f7" name="yes" sourceRef="errors-gateway" targetRef="correct-errors" />
+    <bpmn:sequenceFlow id="f8" sourceRef="correct-errors" targetRef="compare-data" />
+    <bpmn:sequenceFlow id="f9" name="no" sourceRef="errors-gateway" targetRef="exists-gateway" />
+    <bpmn:sequenceFlow id="f10" name="no" sourceRef="exists-gateway" targetRef="create-customer" />
+    <bpmn:sequenceFlow id="f11" sourceRef="create-customer" targetRef="prepare-contract" />
+    <bpmn:sequenceFlow id="f12" name="yes" sourceRef="exists-gateway" targetRef="prepare-contract" />
+    <bpmn:sequenceFlow id="f13" sourceRef="prepare-contract" targetRef="cis-check" />
+
+    <bpmn:sequenceFlow id="f14" sourceRef="cis-check" targetRef="generated-gateway" />
+    <bpmn:sequenceFlow id="f15" name="no" sourceRef="generated-gateway" targetRef="analyze-resolve" />
+    <bpmn:sequenceFlow id="f16" sourceRef="analyze-resolve" targetRef="regenerate-contract" />
+    <bpmn:sequenceFlow id="f17" sourceRef="regenerate-contract" targetRef="cis-check" />
+    <bpmn:sequenceFlow id="f18" name="yes" sourceRef="generated-gateway" targetRef="send-confirmation" />
+    <bpmn:sequenceFlow id="f19" sourceRef="send-confirmation" targetRef="send-grid-request" />
+
+    <bpmn:sequenceFlow id="f20" sourceRef="send-grid-request" targetRef="check-concurrence" />
+    <bpmn:sequenceFlow id="f21" sourceRef="check-concurrence" targetRef="transmit-response" />
+    <bpmn:sequenceFlow id="f22" sourceRef="transmit-response" targetRef="concurrence-gateway" />
+    <bpmn:sequenceFlow id="f23" name="yes" sourceRef="concurrence-gateway" targetRef="inform-suppliers" />
+    <bpmn:sequenceFlow id="f24" sourceRef="inform-suppliers" targetRef="demand-resolution" />
+    <bpmn:sequenceFlow id="f25" sourceRef="demand-resolution" targetRef="communicate-old" />
+    <bpmn:sequenceFlow id="f26" sourceRef="communicate-old" targetRef="terminate-agreement" />
+    <bpmn:sequenceFlow id="f27" sourceRef="terminate-agreement" targetRef="conflict-end" />
+    <bpmn:sequenceFlow id="f28" name="no" sourceRef="concurrence-gateway" targetRef="create-cis-contract" />
+
+    <bpmn:sequenceFlow id="f29" sourceRef="create-cis-contract" targetRef="check-contract-details" />
+    <bpmn:sequenceFlow id="f30" sourceRef="check-contract-details" targetRef="event-gateway" />
+    <bpmn:sequenceFlow id="f31" sourceRef="event-gateway" targetRef="withdrawal-catch" />
+    <bpmn:sequenceFlow id="f32" sourceRef="event-gateway" targetRef="confirmation-catch" />
+    <bpmn:sequenceFlow id="f33" sourceRef="event-gateway" targetRef="timer-7days" />
+    <bpmn:sequenceFlow id="f34" sourceRef="withdrawal-catch" targetRef="withdraw-end" />
+    <bpmn:sequenceFlow id="f35" sourceRef="confirmation-catch" targetRef="accept-merge" />
+    <bpmn:sequenceFlow id="f36" sourceRef="timer-7days" targetRef="accept-merge" />
+    <bpmn:sequenceFlow id="f37" sourceRef="accept-merge" targetRef="grid-split" />
+
+    <bpmn:sequenceFlow id="f38" sourceRef="grid-split" targetRef="transmit-meter" />
+    <bpmn:sequenceFlow id="f39" sourceRef="grid-split" targetRef="compute-billing" />
+    <bpmn:sequenceFlow id="f40" sourceRef="compute-billing" targetRef="send-billing-old" />
+    <bpmn:sequenceFlow id="f41" sourceRef="send-billing-old" targetRef="grid-join" />
+    <bpmn:sequenceFlow id="f42" sourceRef="transmit-meter" targetRef="grid-join" />
+    <bpmn:sequenceFlow id="f43" sourceRef="transmit-meter" targetRef="import-meter" />
+    <bpmn:sequenceFlow id="f44" sourceRef="transmit-meter" targetRef="create-final-billing" />
+    <bpmn:sequenceFlow id="f46" sourceRef="import-meter" targetRef="process-end" />
+    <bpmn:sequenceFlow id="f47" sourceRef="create-final-billing" targetRef="send-final-customer" />
+    <bpmn:sequenceFlow id="f48" sourceRef="send-final-customer" targetRef="customer-end" />
+    <bpmn:sequenceFlow id="f49" sourceRef="send-final-customer" targetRef="oldsupplier-end" />
+    <bpmn:sequenceFlow id="f50" sourceRef="grid-join" targetRef="grid-end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: f7: Sequence flow is missing condition
+- conditional-flows: f10: Sequence flow is missing condition
+- conditional-flows: f15: Sequence flow is missing condition
+- conditional-flows: f23: Sequence flow is missing condition
+- no-implicit-split: transmit-meter: Flow splits implicitly
+- no-implicit-split: send-final-customer: Flow splits implicitly
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

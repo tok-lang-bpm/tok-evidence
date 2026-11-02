@@ -1,0 +1,39 @@
+tok 1.0 "Subscription service"
+
+pool org "Organisation"
+  lane customer "Customer"
+    start s "Customer signs up"
+    task signup "Sign up for subscription"
+    task receive "Receive regular updates, product enhancements, or renewal notifications"
+    task submitCancel "Submit cancellation request"
+    xor gCancel "Customer decides to cancel?"
+  lane system "System"
+    and gSplit "Generate account, assign access, and trigger billing"
+    task genAccount "Generate account"
+    task assignAccess "Assign access"
+    task triggerBilling "Trigger automated billing cycles"
+    and gJoin "Account, access and billing ready"
+  lane support "Support team"
+    task processCancel "Process cancellation request"
+    xor gTerms "Refund or charge?"
+    task refund "Apply refund"
+    task charge "Apply charge"
+    xor gTermsJoin "Refunds and charges applied"
+    task deactivate "Deactivate subscription"
+    task settle "Settle final account balance"
+    end e "Subscription deactivated and final balance settled"
+
+flow s -> signup -> gSplit
+flow gSplit -> genAccount
+flow gSplit -> assignAccess
+flow gSplit -> triggerBilling
+flow genAccount -> gJoin
+flow assignAccess -> gJoin
+flow triggerBilling -> gJoin -> receive -> gCancel
+flow gCancel -> submitCancel "Yes" when="cancel = true"
+flow gCancel -> receive "No" default
+flow submitCancel -> processCancel -> gTerms
+flow gTerms -> refund "Refund" when="terms = \"refund\""
+flow gTerms -> charge "Charge" default
+flow refund -> gTermsJoin
+flow charge -> gTermsJoin -> deactivate -> settle -> e

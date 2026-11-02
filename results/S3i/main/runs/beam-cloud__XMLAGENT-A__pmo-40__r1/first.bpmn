@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgRestart" name="Machine restarted" />
+  <bpmn:message id="msgDisconnected" name="Machine disconnected" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneSystem" name="OEE System">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwBelow</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopMachine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchRestart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>subDisconnect</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneEngineer" name="Engineer" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="collect" name="Collect relevant information from a machine" />
+    <bpmn:task id="calc" name="Calculate OEE" />
+    <bpmn:exclusiveGateway id="gwBelow" name="OEE below threshold?" />
+    <bpmn:task id="stopMachine" name="Stop the machine" />
+    <bpmn:task id="sendEmail" name="Send an email to an engineer" />
+    <bpmn:intermediateCatchEvent id="catchRestart" name="Machine restarted">
+      <bpmn:messageEventDefinition messageRef="msgRestart" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:subProcess id="subDisconnect" name="Handle machine disconnection" triggeredByEvent="true">
+      <bpmn:startEvent id="discStart" name="Machine disconnected" isInterrupting="true">
+        <bpmn:messageEventDefinition messageRef="msgDisconnected" />
+      </bpmn:startEvent>
+      <bpmn:endEvent id="discEnd" name="Process stopped">
+        <bpmn:terminateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="discFlow" sourceRef="discStart" targetRef="discEnd" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="collect" />
+    <bpmn:sequenceFlow id="f2" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f3" sourceRef="calc" targetRef="gwBelow" />
+    <bpmn:sequenceFlow id="fYes" name="yes" sourceRef="gwBelow" targetRef="stopMachine" />
+    <bpmn:sequenceFlow id="fNo" name="no" sourceRef="gwBelow" targetRef="collect" />
+    <bpmn:sequenceFlow id="f4" sourceRef="stopMachine" targetRef="sendEmail" />
+    <bpmn:sequenceFlow id="f5" sourceRef="sendEmail" targetRef="catchRestart" />
+    <bpmn:sequenceFlow id="f6" sourceRef="catchRestart" targetRef="collect" />
+  </bpmn:process>
+</bpmn:definitions>

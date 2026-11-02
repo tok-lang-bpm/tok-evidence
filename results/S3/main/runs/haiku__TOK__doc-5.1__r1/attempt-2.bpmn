@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Loan approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="bank" name="Loan approval process" processRef="bank-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="bank-process" name="Loan approval" isExecutable="false">
+    <bpmn:laneSet id="bank-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Loan system">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>highrisk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>small</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendapp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merged</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendfb</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk" name="Risk assessment service">
+        <bpmn:flowNodeRef>assess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="approver" name="Approver service">
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Loan request needed" />
+    <bpmn:task id="submit" name="Submit the request for a loan amount" />
+    <bpmn:task id="feedback" name="Receive the feedback" />
+    <bpmn:endEvent id="informed" name="Customer informed" />
+    <bpmn:task id="receive" name="Receive the customer request" />
+    <bpmn:exclusiveGateway id="highrisk" name="Customer high risk?" default="f-highrisk-small" />
+    <bpmn:exclusiveGateway id="small" name="Loan small and customer low risk?" default="f-small-sendapp" />
+    <bpmn:task id="approve" name="Approve the loan" />
+    <bpmn:task id="deny" name="Deny the loan" />
+    <bpmn:task id="sendapp" name="Send the request to the approver service" />
+    <bpmn:exclusiveGateway id="merged" name="Decision reached?" />
+    <bpmn:task id="sendfb" name="Send the feedback to the customer" />
+    <bpmn:serviceTask id="assess" name="Assess the loan request" />
+    <bpmn:serviceTask id="decide" name="Decide on the loan request" />
+    <bpmn:sequenceFlow id="f-needed-submit" sourceRef="needed" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-receive" sourceRef="submit" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-assess" sourceRef="receive" targetRef="assess" />
+    <bpmn:sequenceFlow id="f-assess-highrisk" sourceRef="assess" targetRef="highrisk" />
+    <bpmn:sequenceFlow id="f-highrisk-deny" name="tak" sourceRef="highrisk" targetRef="deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">highRisk</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-highrisk-small" name="nie" sourceRef="highrisk" targetRef="small" />
+    <bpmn:sequenceFlow id="f-small-approve" name="tak" sourceRef="small" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">smallLoan and lowRisk</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-small-sendapp" name="nie" sourceRef="small" targetRef="sendapp" />
+    <bpmn:sequenceFlow id="f-approve-merged" sourceRef="approve" targetRef="merged" />
+    <bpmn:sequenceFlow id="f-deny-merged" sourceRef="deny" targetRef="merged" />
+    <bpmn:sequenceFlow id="f-sendapp-decide" sourceRef="sendapp" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-merged" sourceRef="decide" targetRef="merged" />
+    <bpmn:sequenceFlow id="f-merged-sendfb" sourceRef="merged" targetRef="sendfb" />
+    <bpmn:sequenceFlow id="f-sendfb-feedback" sourceRef="sendfb" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f-feedback-informed" sourceRef="feedback" targetRef="informed" />
+  </bpmn:process>
+</bpmn:definitions>

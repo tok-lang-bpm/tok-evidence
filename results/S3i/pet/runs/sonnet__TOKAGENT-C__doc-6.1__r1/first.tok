@@ -1,0 +1,51 @@
+tok 1.0 "Invoice approval"
+
+pool acme "ACME AG"
+  lane sec "Secretariat"
+    start s "Invoice received"
+    task receive "Receive the invoice"
+    task inspect "Inspect the invoice visually"
+    task forward "Forward the invoice to the accounting employee"
+  lane acc "Accounting employee"
+    task identify "Identify the supplier and create the invoice instance"
+    task checkitems "Check the invoice items and note cost centers on the docket"
+    xor sendm
+    task send "Send the docket and invoice copy to the cost center manager"
+    task clarify "Clarify the inconsistencies with the vendor"
+    task forwardcm "Forward the invoice copy to the commercial manager"
+    xor payjoin
+    task resolve "Resolve the complaint with the supplier"
+    xor auditm
+    task pay "Give payment instructions"
+    task close "Close the instance"
+    end e "Invoice processed"
+  lane ccm "Cost center manager"
+    task review "Review the invoice content"
+    xor ok "Everything in order?"
+    task ap "Note the AP code on the docket"
+    xor more "All positions marked AP?"
+    task reject "Reject the AP with a note and statement"
+  lane com "Commercial manager"
+    task audit "Make the commercial audit"
+    xor complaint "Complaint?"
+    task approve "Issue the approval for payment"
+    xor big "Amount exceeds EUR 20?"
+  lane board "Board"
+    task boardcheck "Check the invoice again"
+
+flow s -> receive -> inspect -> forward -> identify -> checkitems -> sendm -> send -> review -> ok
+flow ok -> ap "yes"
+flow ok -> reject "no"
+flow ap -> more
+flow more -> review "no"
+flow more -> forwardcm "yes"
+flow reject -> clarify -> sendm
+flow forwardcm -> auditm -> audit -> complaint
+flow complaint -> resolve "yes"
+flow resolve -> auditm
+flow complaint -> approve "no"
+flow approve -> big
+flow big -> boardcheck "yes"
+flow big -> payjoin "no" default
+flow boardcheck -> payjoin
+flow payjoin -> pay -> close -> e

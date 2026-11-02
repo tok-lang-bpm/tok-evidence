@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mortgage offer handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Mortgage_offer" name="Mortgage offer" />
+  <bpmn:message id="Message_Decline" name="Decline" />
+  <bpmn:message id="Message_Documents_returned" name="Documents returned" />
+  <bpmn:message id="Message_Outstanding_documents_requested" name="Outstanding documents requested" />
+  <bpmn:message id="Message_Mortgage_declined" name="Mortgage declined" />
+  <bpmn:message id="Message_Offer_documents_returned" name="Offer documents returned" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Mortgage company" processRef="org-process" />
+    <bpmn:participant id="customer" name="Customer" processRef="customer-process" />
+    <bpmn:messageFlow id="m-send-receive" name="Mortgage offer" sourceRef="send" targetRef="receive" messageRef="Message_Mortgage_offer" />
+    <bpmn:messageFlow id="m-decline-declined" name="Decline" sourceRef="decline" targetRef="declined" messageRef="Message_Decline" />
+    <bpmn:messageFlow id="m-return-returned" name="Documents returned" sourceRef="return" targetRef="returned" messageRef="Message_Documents_returned" />
+    <bpmn:messageFlow id="m-request-customer" name="Outstanding documents requested" sourceRef="request" targetRef="customer" messageRef="Message_Outstanding_documents_requested" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mortgage company" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>opened</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>declined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>requested</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="admin" name="Administration">
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="opened" name="Mortgage case started" />
+    <bpmn:task id="send" name="Send the mortgage offer" />
+    <bpmn:eventBasedGateway id="wait" name="Wait for reply" />
+    <bpmn:intermediateCatchEvent id="declined" name="Mortgage declined">
+      <bpmn:messageEventDefinition id="declined-def" messageRef="Message_Mortgage_declined" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="returned" name="Offer documents returned">
+      <bpmn:messageEventDefinition id="returned-def" messageRef="Message_Offer_documents_returned" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timeout" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition id="timeout-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="merge" />
+    <bpmn:task id="update" name="Update the case details" />
+    <bpmn:task id="archive" name="Archive the work" />
+    <bpmn:task id="cancel" name="Cancel the case" />
+    <bpmn:endEvent id="cancelled" name="Case cancelled" />
+    <bpmn:exclusiveGateway id="docs" name="All prerequisite documents provided?" />
+    <bpmn:task id="move" name="Move the case to administration" />
+    <bpmn:task id="request" name="Send a message requesting the outstanding documents" />
+    <bpmn:endEvent id="requested" name="Outstanding documents requested" />
+    <bpmn:task id="complete" name="Complete the case" />
+    <bpmn:endEvent id="done" name="Case completed" />
+    <bpmn:sequenceFlow id="f-opened-send" sourceRef="opened" targetRef="send" />
+    <bpmn:sequenceFlow id="f-send-wait" sourceRef="send" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-declined" sourceRef="wait" targetRef="declined" />
+    <bpmn:sequenceFlow id="f-wait-returned" sourceRef="wait" targetRef="returned" />
+    <bpmn:sequenceFlow id="f-wait-timeout" sourceRef="wait" targetRef="timeout" />
+    <bpmn:sequenceFlow id="f-declined-merge" sourceRef="declined" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-timeout-merge" sourceRef="timeout" targetRef="merge" />
+    <bpmn:sequenceFlow id="f-merge-update" sourceRef="merge" targetRef="update" />
+    <bpmn:sequenceFlow id="f-update-archive" sourceRef="update" targetRef="archive" />
+    <bpmn:sequenceFlow id="f-archive-cancel" sourceRef="archive" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f-cancel-cancelled" sourceRef="cancel" targetRef="cancelled" />
+    <bpmn:sequenceFlow id="f-returned-docs" sourceRef="returned" targetRef="docs" />
+    <bpmn:sequenceFlow id="f-docs-request" name="no" sourceRef="docs" targetRef="request" />
+    <bpmn:sequenceFlow id="f-docs-move" name="yes" sourceRef="docs" targetRef="move" />
+    <bpmn:sequenceFlow id="f-move-complete" sourceRef="move" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-complete-done" sourceRef="complete" targetRef="done" />
+    <bpmn:sequenceFlow id="f-request-requested" sourceRef="request" targetRef="requested" />
+  </bpmn:process>
+  <bpmn:process id="customer-process" name="Customer" isExecutable="false">
+    <bpmn:laneSet id="customer-lanes">
+      <bpmn:lane id="client" name="Customer">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="receive" name="Receive the mortgage offer" />
+    <bpmn:task id="decline" name="Decline the mortgage" />
+    <bpmn:task id="return" name="Return the completed offer documents with all prerequisite documents" />
+  </bpmn:process>
+</bpmn:definitions>

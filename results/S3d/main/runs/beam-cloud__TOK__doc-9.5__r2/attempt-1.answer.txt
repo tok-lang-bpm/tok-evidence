@@ -1,0 +1,43 @@
+```tok
+tok 1.0 "Expense report processing"
+
+pool organisation "Organisation"
+  lane finance "Finance"
+    start received "Expense Report received"
+    xor hasAccount "Employee has account?"
+    task createAccount "Create new account"
+    xor accountJoin "Account ready"
+    task review "Review report for automatic approval"
+    xor amount "Amount under $200?"
+    xor approvalJoin "Approval complete"
+    task sendReimbursement "Send reimbursement to bank account"
+    task sendRejection "Send rejection notice by email"
+    task sendInProgress "Send approval in progress email"
+    task sendCancellation "Send cancellation notice by email"
+    end reimbursed "Reimbursement completed"
+    end rejected "Rejection notice sent"
+    end inProgress "Approval in progress notice sent"
+    end cancelled "Re-submit expense report"
+  lane supervisor "Supervisor"
+    task approve "Approve expense report"
+    xor approvalResult "Approved?"
+    boundary progress "Approval in progress" on=approve timer=P7D noninterrupting
+    boundary timeout "Process timeout" on=approve timer=P30D
+
+flow received -> hasAccount
+flow hasAccount -> createAccount "No"
+flow hasAccount -> accountJoin "Yes" default
+flow createAccount -> accountJoin
+flow accountJoin -> review
+flow review -> amount
+flow amount -> approve "No" when="amount >= 200"
+flow amount -> approvalJoin "Yes" default
+flow approve -> approvalResult
+flow approvalResult -> approvalJoin "Approved"
+flow approvalResult -> sendRejection "Rejected" default
+flow approvalJoin -> sendReimbursement
+flow sendReimbursement -> reimbursed
+flow sendRejection -> rejected
+flow progress -> sendInProgress -> inProgress
+flow timeout -> sendCancellation -> cancelled
+```

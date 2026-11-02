@@ -1,0 +1,83 @@
+tok 1.0 "Work Accident"
+
+pool org "Organisation"
+  lane insured "Insured person"
+    start s1 "Accident or near-miss occurs"
+    xor g_what "What is to be reported?"
+    task t_inform "Inform employer immediately of accident or near-miss"
+    task t_risk "Report serious risk or defect in protection systems"
+    end e_risk "Risk or defect reported"
+    xor g_priv "Private insurance?"
+    task t_private "Report accident in writing immediately to private insurer"
+    xor g_pf "Fatality?"
+    task t_pf "Report fatality to private insurer within three days"
+    xor g_m4
+  lane employer "Employer"
+    task t_check "Check whether accident is a work accident"
+    xor g_wa "Work accident?"
+    task t_outside "Check whether accident counts as work accident outside professional activity"
+    xor g_out "Counts as work accident outside professional activity?"
+    task t_record "Record accident information"
+    task t_norec "Record near-miss or non-work accident"
+    end e_norec "Non-work accident or near-miss recorded"
+    and g_split
+    xor g_sev "Fatality or serious injury not reported to emergency services?"
+    task t_li "Report to Labour Inspectorate immediately"
+    xor g_m1
+    xor g_ins "Killed or unable to work for three days?"
+    task t_ins "Report accident to accident insurance provider within five days"
+    xor g_m2
+    and g_join
+    end e_done "Accident documented and reported"
+  lane school "School or university"
+    xor g_school "Insured person physically injured or killed?"
+    task t_school "Report accident in triplicate within five days"
+    xor g_m3
+
+pool labour "Labour Inspectorate"
+
+pool insurer "Accident insurance provider"
+
+pool private "Private insurer"
+
+flow s1 -> g_what
+flow g_what -> t_inform "accident or near-miss" when=""
+flow g_what -> t_risk "serious risk or defect" when=""
+flow t_risk -> e_risk
+flow t_inform -> t_check -> g_wa
+flow g_wa -> t_record "yes" when="is_work_accident"
+flow g_wa -> t_outside "no" default
+flow t_outside -> g_out
+flow g_out -> t_record "yes" when="counts_as_work_accident_outside_work"
+flow g_out -> t_norec "no" default
+flow t_norec -> e_norec
+flow t_record -> g_split
+flow g_split -> g_sev
+flow g_split -> g_ins
+flow g_split -> g_school
+flow g_split -> g_priv
+flow g_sev -> t_li "yes" when="fatal_or_serious_unreported"
+flow g_sev -> g_m1 "no" default
+flow t_li -> g_m1
+flow g_ins -> t_ins "yes" when="killed_or_unable_3_days"
+flow g_ins -> g_m2 "no" default
+flow t_ins -> g_m2
+flow g_school -> t_school "yes" when="physically_injured_or_killed"
+flow g_school -> g_m3 "no" default
+flow t_school -> g_m3
+flow g_priv -> t_private "yes" when="private_insurance"
+flow g_priv -> g_m4 "no" default
+flow t_private -> g_pf
+flow g_pf -> t_pf "yes" when="fatality"
+flow g_pf -> g_m4 "no" default
+flow t_pf -> g_m4
+flow g_m1 -> g_join
+flow g_m2 -> g_join
+flow g_m3 -> g_join
+flow g_m4 -> g_join -> e_done
+
+message t_li -> labour "Report fatality or serious injury"
+message t_ins -> insurer "Report accident"
+message t_school -> insurer "Report accident in triplicate"
+message t_private -> private "Report accident in writing"
+message t_pf -> private "Report fatality"

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organization" processRef="Process_OfficeSupply" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_OfficeSupply" isExecutable="false">
+    <bpmn:laneSet id="LANESET">
+      <bpmn:lane id="lane_employee" name="Employee">
+        <bpmn:flowNodeRef>startEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submitRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewChangeComments</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>registerRequirement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reviewRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>supervisorDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRejectionNotification</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendChangeRequiredNotification</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_purchase" name="Purchase Department">
+        <bpmn:flowNodeRef>makeQuotationsSelectVendor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_system" name="System">
+        <bpmn:flowNodeRef>generateAndSendPurchaseOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendResultNotification</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="startEvent" name="Office Supply Request submitted" />
+    <bpmn:task id="submitRequest" name="Submit office supply request" />
+    <bpmn:task id="registerRequirement" name="Register requirement" />
+    <bpmn:task id="reviewRequest" name="Review office supply request" />
+    <bpmn:exclusiveGateway id="supervisorDecision" name="Supervisor decision" />
+    <bpmn:task id="sendRejectionNotification" name="Send rejection notification" />
+    <bpmn:endEvent id="rejectionEnd" name="Process ended (rejected)" />
+    <bpmn:task id="sendChangeRequiredNotification" name="Send change required notification" />
+    <bpmn:task id="reviewChangeComments" name="Review change request comments" />
+    <bpmn:subProcess id="makeQuotationsSelectVendor" name="Make quotations and select vendor">
+      <bpmn:startEvent id="subStart" name="Subprocess start" />
+      <bpmn:task id="makeQuotations" name="Make quotations" />
+      <bpmn:task id="selectVendor" name="Select vendor" />
+      <bpmn:exclusiveGateway id="vendorValid" name="Vendor valid?" />
+      <bpmn:task id="chooseDifferentVendor" name="Choose a different vendor" />
+      <bpmn:endEvent id="subEnd" name="Vendor selected" />
+      <bpmn:sequenceFlow id="sf1" sourceRef="subStart" targetRef="makeQuotations" />
+      <bpmn:sequenceFlow id="sf2" sourceRef="makeQuotations" targetRef="selectVendor" />
+      <bpmn:sequenceFlow id="sf3" sourceRef="selectVendor" targetRef="vendorValid" />
+      <bpmn:sequenceFlow id="sf4" name="yes" sourceRef="vendorValid" targetRef="subEnd" />
+      <bpmn:sequenceFlow id="sf5" name="no" sourceRef="vendorValid" targetRef="chooseDifferentVendor" />
+      <bpmn:sequenceFlow id="sf6" sourceRef="chooseDifferentVendor" targetRef="selectVendor" />
+    </bpmn:subProcess>
+    <bpmn:task id="generateAndSendPurchaseOrder" name="Generate and send purchase order, wait for delivery and invoice" />
+    <bpmn:task id="sendResultNotification" name="Send result notification" />
+    <bpmn:endEvent id="processEnd" name="Process completed" />
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="startEvent" targetRef="submitRequest" />
+    <bpmn:sequenceFlow id="f2" sourceRef="submitRequest" targetRef="registerRequirement" />
+    <bpmn:sequenceFlow id="f3" sourceRef="registerRequirement" targetRef="reviewRequest" />
+    <bpmn:sequenceFlow id="f4" sourceRef="reviewRequest" targetRef="supervisorDecision" />
+    <bpmn:sequenceFlow id="f5" name="Reject" sourceRef="supervisorDecision" targetRef="sendRejectionNotification" />
+    <bpmn:sequenceFlow id="f6" sourceRef="sendRejectionNotification" targetRef="rejectionEnd" />
+    <bpmn:sequenceFlow id="f7" name="Change required" sourceRef="supervisorDecision" targetRef="sendChangeRequiredNotification" />
+    <bpmn:sequenceFlow id="f8" sourceRef="sendChangeRequiredNotification" targetRef="reviewChangeComments" />
+    <bpmn:sequenceFlow id="f9" sourceRef="reviewChangeComments" targetRef="reviewRequest" />
+    <bpmn:sequenceFlow id="f10" name="Approve" sourceRef="supervisorDecision" targetRef="makeQuotationsSelectVendor" />
+    <bpmn:sequenceFlow id="f11" sourceRef="makeQuotationsSelectVendor" targetRef="generateAndSendPurchaseOrder" />
+    <bpmn:sequenceFlow id="f12" sourceRef="generateAndSendPurchaseOrder" targetRef="sendResultNotification" />
+    <bpmn:sequenceFlow id="f13" sourceRef="sendResultNotification" targetRef="processEnd" />
+  </bpmn:process>
+</bpmn:definitions>

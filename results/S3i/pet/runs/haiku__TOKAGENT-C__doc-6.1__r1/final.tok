@@ -1,0 +1,59 @@
+tok 1.0 "Invoice verification at ACME AG"
+
+pool acme "ACME AG"
+  lane sec "Secretariat"
+    start received "Invoice received on paper or by fax"
+    task inspect "Inspect the invoice visually"
+    task forward "Forward the invoice to accounting"
+  lane acc "Accounting employee"
+    task create "Create the invoice instance in ACME Financial Accounting"
+    task checkItems "Check the invoice items"
+    task docket "Note the cost centers and cost center managers on the docket"
+    task sendFirst "Send the docket and the copy of the invoice to the first cost center manager"
+    xor merge1
+    task clarify "Clarify the inconsistencies with the vendor"
+    xor consultNeeded "Consultation with the cost center managers needed?"
+    task consult "Consult the cost center managers by telephone or e-mail"
+    xor merge2
+    task resend "Send the copy of the invoice to the cost center managers again"
+    task forwardCM "Forward the copy of the invoice to the commercial manager"
+    task resolve "Resolve the complaint with the supplier"
+    task payInstr "Give the payment instructions"
+    task close "Close the instance in ACME Financial Accounting"
+    end done "Invoice paid and instance closed"
+  lane cc "Cost center manager"
+    task review "Review the invoice items for accuracy"
+    xor accurate "Position accurate?"
+    task markAP "Mark the position AP on the docket"
+    task reject "Reject the position with a note and explanation on the docket"
+    xor more "More cost center managers on the docket?"
+  lane cm "Commercial manager"
+    task audit "Perform the commercial audit"
+    xor complaint "Complaint during the commercial audit?"
+    task approve "Issue the approval for payment"
+    xor over20 "Amount above EUR 20?"
+    xor merge3
+    task returnCopy "Return the copy of the invoice and the docket to accounting in the signature file"
+  lane board "Board"
+    task boardCheck "Check the invoice again (four-eyes principle)"
+
+flow received -> inspect -> forward -> create -> checkItems -> docket -> sendFirst -> merge1 -> review -> accurate
+flow accurate -> markAP "yes"
+flow accurate -> reject "no"
+flow markAP -> more
+flow more -> merge1 "yes"
+flow more -> forwardCM "no"
+flow reject -> clarify -> consultNeeded
+flow consultNeeded -> consult "yes"
+flow consultNeeded -> merge2 "no"
+flow consult -> merge2
+flow merge2 -> resend -> merge1
+flow forwardCM -> audit -> complaint
+flow complaint -> resolve "yes"
+flow resolve -> audit
+flow complaint -> approve "no"
+flow approve -> over20
+flow over20 -> boardCheck "yes"
+flow over20 -> merge3 "no"
+flow boardCheck -> merge3
+flow merge3 -> returnCopy -> payInstr -> close -> done

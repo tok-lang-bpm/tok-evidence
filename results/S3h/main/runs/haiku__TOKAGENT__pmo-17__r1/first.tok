@@ -1,0 +1,71 @@
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane cust "Customer"
+    start s0 "Order process started"
+    task place "Place order"
+    catch delivered "Delivery confirmed" message="Delivery confirmed"
+    xor issues "Issue reported on delivery?"
+  lane sys "Order system"
+    task record "Record order details"
+    task pay "Process payment"
+    xor paid "Payment successful?"
+    task notify-fail "Notify customer of payment failure"
+    end payment-failed "Process ended: payment failed"
+    task check "Check stock availability"
+    xor stock "Items in stock?"
+    task backorder "Initiate back-order"
+    task inform "Inform customer about the delay"
+    xor avail "All required items in stock"
+    and split-work "Start warehouse and shipping work"
+    task confirm "Send shipping confirmation"
+    task inventory "Update inventory levels"
+    task feedback "Send follow-up feedback email"
+    end order-done "Order completed"
+    sub returns "Returns process"
+      start return-start "Return initiated"
+      task ret-label "Send return shipping label"
+      task ret-receive "Receive returned items"
+      task ret-inspect "Inspect returned items"
+      task ret-refund "Process refund or replacement"
+      end return-done "Return processed"
+      flow return-start -> ret-label -> ret-receive -> ret-inspect -> ret-refund -> return-done
+    end returns-done "Returns processed"
+  lane wh "Warehouse"
+    catch received "Back-order received" message="Back-order received"
+    task pick "Pick items from warehouse"
+    task qc "Perform quality control"
+    xor giftq "Gift wrapping requested?"
+    task gift "Gift wrap items"
+    xor gift-join "Packaging"
+    task pack "Pack order"
+  lane ship "Shipping department"
+    task docs "Prepare shipping documents and labels"
+    xor intl "International order?"
+    task customs "Prepare customs documentation"
+    xor intl-join "Customs documentation done"
+    and join-ready "Packaging and shipping documents ready"
+    task dispatch "Dispatch order"
+
+flow s0 -> place -> record -> pay -> paid
+flow paid -> notify-fail "no" when="payment_successful = false"
+flow paid -> check "yes" when="payment_successful = true"
+flow notify-fail -> payment-failed
+flow check -> stock
+flow stock -> backorder "no" when="all_in_stock = false"
+flow stock -> avail "yes" when="all_in_stock = true"
+flow backorder -> inform -> received -> avail
+flow avail -> split-work
+flow split-work -> pick -> qc -> giftq
+flow giftq -> gift "yes" when="gift_wrap_requested = true"
+flow giftq -> gift-join "no" when="gift_wrap_requested = false"
+flow gift -> gift-join -> pack -> join-ready
+flow split-work -> docs -> intl
+flow intl -> customs "yes" when="international_order = true"
+flow intl -> intl-join "no" when="international_order = false"
+flow customs -> intl-join -> join-ready
+flow join-ready -> dispatch -> confirm -> inventory -> delivered -> issues
+flow issues -> returns "yes" when="issue_reported = true"
+flow issues -> feedback "no" when="issue_reported = false"
+flow feedback -> order-done
+flow returns -> returns-done

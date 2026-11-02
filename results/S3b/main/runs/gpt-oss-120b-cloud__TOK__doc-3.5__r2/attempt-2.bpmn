@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Mail processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mail processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mpunit" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mp_sort</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mp_distribute</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="registry" name="Registry">
+        <bpmn:flowNodeRef>reg_open</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reg_sort</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reg_register</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="arm" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>arm_quality</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>quality_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arm_compile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arm_send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arm_capture</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arm_envelope</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arm_post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>success_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cashier" name="Cashier">
+        <bpmn:flowNodeRef>cashier_fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cashier_capture</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cashier_print</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_split</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Mail collected" />
+    <bpmn:task id="mp_sort" name="Sort unopened mail into business areas" />
+    <bpmn:task id="mp_distribute" name="Distribute mail" />
+    <bpmn:task id="reg_open" name="Open mail" />
+    <bpmn:task id="reg_sort" name="Sort mail into groups for distribution" />
+    <bpmn:task id="reg_register" name="Register in manual incoming Mail Register" />
+    <bpmn:task id="arm_quality" name="Perform quality check" />
+    <bpmn:exclusiveGateway id="quality_check" name="Mail compliant?" />
+    <bpmn:task id="arm_compile" name="Compile rejection list" />
+    <bpmn:task id="arm_send" name="Send rejection list back to party" />
+    <bpmn:task id="arm_capture" name="Capture matter details and provide to Cashier" />
+    <bpmn:task id="arm_envelope" name="Put receipt and documents into envelope" />
+    <bpmn:task id="arm_post" name="Post envelope to party" />
+    <bpmn:parallelGateway id="parallel_join" name="Parallel join" />
+    <bpmn:endEvent id="success_end" name="Process completed" />
+    <bpmn:endEvent id="reject_end" name="Process ended - rejection" />
+    <bpmn:task id="cashier_fees" name="Take applicable fees" />
+    <bpmn:task id="cashier_capture" name="Capture Party Details" />
+    <bpmn:task id="cashier_print" name="Print Physical Court File" />
+    <bpmn:parallelGateway id="parallel_split" name="Parallel split" />
+    <bpmn:sequenceFlow id="f-start-mp_sort" sourceRef="start" targetRef="mp_sort" />
+    <bpmn:sequenceFlow id="f-mp_sort-mp_distribute" sourceRef="mp_sort" targetRef="mp_distribute" />
+    <bpmn:sequenceFlow id="f-mp_distribute-reg_open" sourceRef="mp_distribute" targetRef="reg_open" />
+    <bpmn:sequenceFlow id="f-reg_open-reg_sort" sourceRef="reg_open" targetRef="reg_sort" />
+    <bpmn:sequenceFlow id="f-reg_sort-reg_register" sourceRef="reg_sort" targetRef="reg_register" />
+    <bpmn:sequenceFlow id="f-reg_register-arm_quality" sourceRef="reg_register" targetRef="arm_quality" />
+    <bpmn:sequenceFlow id="f-arm_quality-quality_check" sourceRef="arm_quality" targetRef="quality_check" />
+    <bpmn:sequenceFlow id="f-quality_check-arm_compile" name="no" sourceRef="quality_check" targetRef="arm_compile" />
+    <bpmn:sequenceFlow id="f-quality_check-arm_capture" name="yes" sourceRef="quality_check" targetRef="arm_capture" />
+    <bpmn:sequenceFlow id="f-arm_compile-arm_send" sourceRef="arm_compile" targetRef="arm_send" />
+    <bpmn:sequenceFlow id="f-arm_send-reject_end" sourceRef="arm_send" targetRef="reject_end" />
+    <bpmn:sequenceFlow id="f-arm_capture-cashier_fees" sourceRef="arm_capture" targetRef="cashier_fees" />
+    <bpmn:sequenceFlow id="f-cashier_fees-parallel_split" sourceRef="cashier_fees" targetRef="parallel_split" />
+    <bpmn:sequenceFlow id="f-parallel_split-arm_envelope" sourceRef="parallel_split" targetRef="arm_envelope" />
+    <bpmn:sequenceFlow id="f-parallel_split-cashier_capture" sourceRef="parallel_split" targetRef="cashier_capture" />
+    <bpmn:sequenceFlow id="f-arm_envelope-arm_post" sourceRef="arm_envelope" targetRef="arm_post" />
+    <bpmn:sequenceFlow id="f-arm_post-parallel_join" sourceRef="arm_post" targetRef="parallel_join" />
+    <bpmn:sequenceFlow id="f-cashier_capture-cashier_print" sourceRef="cashier_capture" targetRef="cashier_print" />
+    <bpmn:sequenceFlow id="f-cashier_print-parallel_join" sourceRef="cashier_print" targetRef="parallel_join" />
+    <bpmn:sequenceFlow id="f-parallel_join-success_end" sourceRef="parallel_join" targetRef="success_end" />
+  </bpmn:process>
+</bpmn:definitions>

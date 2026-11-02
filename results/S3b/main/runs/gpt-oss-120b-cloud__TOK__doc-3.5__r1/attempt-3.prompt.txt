@@ -1,0 +1,69 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Mail from the party is collected on a daily basis by the Mail Processing Unit. Within this unit, the Mail Clerk sorts the unopened mail into the various business areas. The mail is then distributed. When the mail is received by the Registry, it is opened and sorted into groups for distribution, and thus registered in a manual incoming Mail Register. Afterwards, the Assistant Registry Manager within the Registry performs a quality check. If the mail is not compliant, a list of requisition explaining the reason for rejection is compiled and sent back to the party. Otherwise, the matter details (types of action) are captured and provided to the Cashier, who takes the applicable fees attached to the mail. At this point, the Assistant Registry Manager puts the receipt and copied documents into an envelope and posts it to the party. Meantime, the Cashier captures the Party Details and prints the Physical Court File.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Mail processing"
+
+pool org "Organization"
+  lane mail_processing "Mail Processing Unit"
+    start start "Mail collected"
+    task collect "Collect mail from the party"
+    task sort_unopened "Sort unopened mail into business areas"
+    task distribute "Distribute mail"
+    flow start -> collect -> sort_unopened -> distribute
+
+  lane registry "Registry"
+    task receive "Receive mail"
+    task open_sort "Open and sort mail into groups"
+    task register "Register mail in manual incoming Mail Register"
+    task quality_check "Perform quality check"
+    xor compliant "Mail compliant?"
+    task compile_rejection "Compile rejection list"
+    task send_rejection "Send rejection list to party"
+    task capture_details "Capture matter details and provide to Cashier"
+    and split "Parallel split"
+    task prepare_envelope "Prepare envelope with receipt and documents and post to party"
+    and join "Parallel join"
+    end completed "Process completed"
+    end rejected "Process ended – mail rejected"
+
+  lane cashier "Cashier"
+    task take_fees "Take applicable fees"
+    task capture_party "Capture Party Details"
+    task print_file "Print Physical Court File"
+
+# Cross‑lane flows
+flow distribute -> receive
+flow receive -> open_sort -> register -> quality_check -> compliant
+
+# Decision branches
+flow compliant "yes" -> capture_details
+flow compliant "no" -> compile_rejection -> send_rejection -> rejected
+
+# Parallel processing for compliant mail
+flow capture_details -> split
+flow split -> take_fees
+flow split -> prepare_envelope
+flow take_fees -> capture_party -> print_file -> join
+flow prepare_envelope -> join
+flow join -> completed
+```
+
+The tok checker reports these problems in it:
+
+- line 36: error P008: malformed flow line: expected '->'
+- line 37: error P008: malformed flow line: expected '->'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

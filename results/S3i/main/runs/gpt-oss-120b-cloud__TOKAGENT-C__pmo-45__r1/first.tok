@@ -1,0 +1,48 @@
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online Shop"
+  lane customer "Customer"
+    start start "Start"
+    task login "log into the E-Shop system"
+    task select "select product"
+    task add "add product to shopping cart"
+    task save "save product"
+    task pay_data "enter payment data"
+    task ship_addr "enter shipping address"
+    task bill_addr "enter billing address"
+    end login_failed "Login failed"
+    end done "Process completed"
+  lane system "E-Shop System"
+    task check "check credentials"
+    task finish "finish order"
+    task shipment "prepare shipment"
+    task finalize "finalize order"
+  lane bank "Bank"
+    task confirm "confirm payment"
+
+  xor login_gate "Login successful?"
+  xor all_selected "All products selected?"
+  xor address_equal "Shipping address equals billing address?"
+  and payment_parallel "Payment parallel"
+  and overall_parallel "Overall parallel"
+  and join_all "Join all"
+
+  flow start -> login -> check -> login_gate
+  flow login_gate "yes" -> select
+  flow login_gate "no" -> login_failed
+  flow select -> add -> save -> all_selected
+  flow all_selected "no" -> select
+  flow all_selected "yes" -> finish
+  flow finish -> overall_parallel
+  flow overall_parallel -> shipment
+  flow overall_parallel -> payment_parallel
+  flow payment_parallel -> pay_data
+  flow pay_data -> payment_parallel
+  flow payment_parallel -> ship_addr
+  flow ship_addr -> address_equal
+  flow address_equal "no" -> bill_addr
+  flow address_equal "yes" -> confirm
+  flow bill_addr -> confirm
+  flow confirm -> join_all
+  flow shipment -> join_all
+  flow join_all -> finalize -> done

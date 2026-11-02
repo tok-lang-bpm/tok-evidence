@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organization" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mail_processing_unit" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>start_event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mail_clerk" name="Mail Clerk">
+        <bpmn:flowNodeRef>sort_unopened_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distribute_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="registry" name="Registry">
+        <bpmn:flowNodeRef>receive_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>open_sort_register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>quality_check</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="assistant_registry_manager" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>gw_compliant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compile_rejection_list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_matter_details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_parallel_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>envelope_and_post</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_parallel_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cashier" name="Cashier">
+        <bpmn:flowNodeRef>take_fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capture_party_details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print_court_file</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_event" name="Start" />
+    <bpmn:task id="collect_mail" name="Collect mail from the party" />
+    <bpmn:task id="sort_unopened_mail" name="Sort unopened mail into business areas" />
+    <bpmn:task id="distribute_mail" name="Distribute mail" />
+    <bpmn:task id="receive_mail" name="Receive mail" />
+    <bpmn:task id="open_sort_register" name="Open and sort mail into groups and register in incoming Mail Register" />
+    <bpmn:task id="quality_check" name="Perform quality check" />
+    <bpmn:exclusiveGateway id="gw_compliant" name="Mail compliant?" default="f-gw_compliant-capture_matter_details" />
+    <bpmn:task id="compile_rejection_list" name="Compile list of requisition explaining reason for rejection and send back to party" />
+    <bpmn:endEvent id="end_reject" name="End" />
+    <bpmn:task id="capture_matter_details" name="Capture matter details and provide to Cashier" />
+    <bpmn:parallelGateway id="gw_parallel_split" name="Parallel split" />
+    <bpmn:task id="envelope_and_post" name="Put receipt and copied documents into an envelope and post to the party" />
+    <bpmn:parallelGateway id="gw_parallel_join" name="Parallel join" />
+    <bpmn:endEvent id="end_success" name="End" />
+    <bpmn:task id="take_fees" name="Take applicable fees attached to the mail" />
+    <bpmn:task id="capture_party_details" name="Capture Party Details" />
+    <bpmn:task id="print_court_file" name="Print Physical Court File" />
+    <bpmn:sequenceFlow id="f-start_event-collect_mail" sourceRef="start_event" targetRef="collect_mail" />
+    <bpmn:sequenceFlow id="f-collect_mail-sort_unopened_mail" sourceRef="collect_mail" targetRef="sort_unopened_mail" />
+    <bpmn:sequenceFlow id="f-sort_unopened_mail-distribute_mail" sourceRef="sort_unopened_mail" targetRef="distribute_mail" />
+    <bpmn:sequenceFlow id="f-distribute_mail-receive_mail" sourceRef="distribute_mail" targetRef="receive_mail" />
+    <bpmn:sequenceFlow id="f-receive_mail-open_sort_register" sourceRef="receive_mail" targetRef="open_sort_register" />
+    <bpmn:sequenceFlow id="f-open_sort_register-quality_check" sourceRef="open_sort_register" targetRef="quality_check" />
+    <bpmn:sequenceFlow id="f-quality_check-gw_compliant" sourceRef="quality_check" targetRef="gw_compliant" />
+    <bpmn:sequenceFlow id="f-gw_compliant-compile_rejection_list" name="No" sourceRef="gw_compliant" targetRef="compile_rejection_list">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">compliant = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_compliant-capture_matter_details" name="Yes" sourceRef="gw_compliant" targetRef="capture_matter_details" />
+    <bpmn:sequenceFlow id="f-compile_rejection_list-end_reject" sourceRef="compile_rejection_list" targetRef="end_reject" />
+    <bpmn:sequenceFlow id="f-capture_matter_details-take_fees" sourceRef="capture_matter_details" targetRef="take_fees" />
+    <bpmn:sequenceFlow id="f-take_fees-gw_parallel_split" sourceRef="take_fees" targetRef="gw_parallel_split" />
+    <bpmn:sequenceFlow id="f-gw_parallel_split-envelope_and_post" sourceRef="gw_parallel_split" targetRef="envelope_and_post" />
+    <bpmn:sequenceFlow id="f-gw_parallel_split-capture_party_details" sourceRef="gw_parallel_split" targetRef="capture_party_details" />
+    <bpmn:sequenceFlow id="f-capture_party_details-print_court_file" sourceRef="capture_party_details" targetRef="print_court_file" />
+    <bpmn:sequenceFlow id="f-print_court_file-gw_parallel_join" sourceRef="print_court_file" targetRef="gw_parallel_join" />
+    <bpmn:sequenceFlow id="f-envelope_and_post-gw_parallel_join" sourceRef="envelope_and_post" targetRef="gw_parallel_join" />
+    <bpmn:sequenceFlow id="f-gw_parallel_join-end_success" sourceRef="gw_parallel_join" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

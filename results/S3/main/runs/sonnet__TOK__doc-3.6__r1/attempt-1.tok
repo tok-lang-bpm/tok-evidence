@@ -1,0 +1,37 @@
+tok 1.0 "Claims Notification"
+
+pool org "Insurance organization"
+  lane handler "Claims handler"
+    start received "Claim received"
+    task checkins "Check whether the claimant is insured"
+    xor insured "Claimant insured?"
+    task informrej "Inform the claimant that the claim must be rejected"
+    end rejected "Claim rejected"
+    task evaluate "Evaluate the severity of the claim"
+    xor severity "Simple or complex claim?"
+    task sendsimple "Send simple claim forms to the claimant"
+    task sendcomplex "Send complex claim forms to the claimant"
+    xor joinforms
+    receive getforms "Receive the returned forms" message="Returned forms"
+    task checkforms "Check the forms for completeness"
+    xor complete "Forms complete?"
+    task informupd "Inform the claimant to update the forms"
+    receive getupdated "Receive the updated forms" message="Updated forms"
+  lane system "Claims Management system"
+    task register "Register the claim"
+    end done "Claim registered"
+
+flow received -> checkins -> insured
+flow insured -> informrej "no"
+flow insured -> evaluate "yes"
+flow informrej -> rejected
+flow evaluate -> severity
+flow severity -> sendsimple "simple"
+flow severity -> sendcomplex "complex"
+flow sendsimple -> joinforms
+flow sendcomplex -> joinforms
+flow joinforms -> getforms -> checkforms -> complete
+flow complete -> register "yes"
+flow complete -> informupd "no"
+flow register -> done
+flow informupd -> getupdated -> checkforms

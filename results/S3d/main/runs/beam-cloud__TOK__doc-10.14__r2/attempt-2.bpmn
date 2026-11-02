@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Bill handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Bill handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_temp_ops</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_equip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>recipient</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>which</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmed_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected_go</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="ms" name="MSPO">
+        <bpmn:flowNodeRef>send_temp_meas</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_add</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>examine_mp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide_mp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm_mp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject_mp</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Bill process started" />
+    <bpmn:task id="send_temp_ops" name="Send the bill for the temporary continuation of the metering point operations to the GO" />
+    <bpmn:task id="send_equip" name="Send the bill for the equipment acquisition to the MPON or the GO" />
+    <bpmn:exclusiveGateway id="recipient" name="MPON or GO?" />
+    <bpmn:exclusiveGateway id="which" name="Which bill?" />
+    <bpmn:task id="examine_go" name="Examine the bill" />
+    <bpmn:exclusiveGateway id="decide_go" name="Confirm or reject?" />
+    <bpmn:task id="confirm_go" name="Confirm the invoice with payment advice to the MPOO or the MSPO" />
+    <bpmn:task id="reject_go" name="Reject the invoice of the MPOO or the MSPO" />
+    <bpmn:endEvent id="confirmed_go" name="Invoice confirmed" />
+    <bpmn:endEvent id="rejected_go" name="Invoice rejected" />
+    <bpmn:task id="send_temp_meas" name="Send the bill for the temporary continuation of the measurement to the GO" />
+    <bpmn:task id="send_add" name="Send the bill for additional readings to the GO" />
+    <bpmn:task id="examine_mp" name="Examine the bill" />
+    <bpmn:exclusiveGateway id="decide_mp" name="Confirm or reject?" />
+    <bpmn:task id="confirm_mp" name="Confirm the invoice with payment advice to the MPOO or the MSPO" />
+    <bpmn:task id="reject_mp" name="Reject the invoice of the MPOO or the MSPO" />
+    <bpmn:sequenceFlow id="f-s-which" sourceRef="s" targetRef="which" />
+    <bpmn:sequenceFlow id="f-which-send_temp_ops" name="MPOO temporary operations" sourceRef="which" targetRef="send_temp_ops" />
+    <bpmn:sequenceFlow id="f-which-send_temp_meas" name="MSPO temporary measurement" sourceRef="which" targetRef="send_temp_meas" />
+    <bpmn:sequenceFlow id="f-which-send_add" name="MSPO additional readings" sourceRef="which" targetRef="send_add" />
+    <bpmn:sequenceFlow id="f-which-send_equip" name="MPOO equipment acquisition" sourceRef="which" targetRef="send_equip" />
+    <bpmn:sequenceFlow id="f-send_temp_ops-examine_go" sourceRef="send_temp_ops" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f-send_temp_meas-examine_go" sourceRef="send_temp_meas" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f-send_add-examine_go" sourceRef="send_add" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f-send_equip-recipient" sourceRef="send_equip" targetRef="recipient" />
+    <bpmn:sequenceFlow id="f-recipient-examine_mp" name="MPON" sourceRef="recipient" targetRef="examine_mp" />
+    <bpmn:sequenceFlow id="f-recipient-examine_go" name="GO" sourceRef="recipient" targetRef="examine_go" />
+    <bpmn:sequenceFlow id="f-examine_go-decide_go" sourceRef="examine_go" targetRef="decide_go" />
+    <bpmn:sequenceFlow id="f-examine_mp-decide_mp" sourceRef="examine_mp" targetRef="decide_mp" />
+    <bpmn:sequenceFlow id="f-decide_go-confirm_go" name="Confirm" sourceRef="decide_go" targetRef="confirm_go" />
+    <bpmn:sequenceFlow id="f-decide_go-reject_go" name="Reject" sourceRef="decide_go" targetRef="reject_go" />
+    <bpmn:sequenceFlow id="f-confirm_go-confirmed_go" sourceRef="confirm_go" targetRef="confirmed_go" />
+    <bpmn:sequenceFlow id="f-reject_go-rejected_go" sourceRef="reject_go" targetRef="rejected_go" />
+    <bpmn:sequenceFlow id="f-decide_mp-confirm_mp" name="Confirm" sourceRef="decide_mp" targetRef="confirm_mp" />
+    <bpmn:sequenceFlow id="f-decide_mp-reject_mp" name="Reject" sourceRef="decide_mp" targetRef="reject_mp" />
+    <bpmn:sequenceFlow id="f-confirm_mp-confirmed_go" sourceRef="confirm_mp" targetRef="confirmed_go" />
+    <bpmn:sequenceFlow id="f-reject_mp-rejected_go" sourceRef="reject_mp" targetRef="rejected_go" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,100 @@
+tok 1.0 "Intake workflow"
+
+pool institute "Mental Health Care Institute"
+  lane family_doctor "Family doctor"
+    start needed "Notice needed"
+    task notice "Notice by telephone"
+    task send_copy "Send a copy of the medical file"
+  lane secretarial "Secretarial office"
+    task inquire "Inquire after the name and residence of the patient"
+    task put_through "Put the doctor through to the nursing officer"
+    task store "Store the information on the form in the information system"
+    task print "Print the information"
+    xor new_patient "New patient?"
+    task create_file "Create a patient file"
+    xor new_patient_join "New patient checked?"
+    task store_docs "Store the registration form and the print in the patient file"
+    task produce_cards "Produce two registration cards"
+    task add_notices "Add the new patient to the list of new notices"
+    task store_assignments "Store the assignment of each patient in the information system"
+    task pass_cards "Pass the registration cards to the first and second intaker"
+    and split_intake "Start intake meetings"
+    xor medical_required "Medical file required?"
+    task prepare_letter "Prepare and send a letter to the family doctor requesting a copy of the medical file"
+    task receive_copy "Receive a copy of the medical file"
+    task inform_second "Inform the second intaker"
+    task add_copy "Add the copy to the patient file"
+    xor medical_merge "Medical file checked?"
+    task type_tapes "Type out the tapes"
+    task add_taped_info "Add the information to the patient file"
+    task status_list "Put the patient on the list of patients that reach this status"
+    task provide_list "Provide the team-leader with a list of these patients"
+    and meetings_done "Meetings completed"
+  lane nursing_officer "Nursing officer"
+    task full_inquiry "Make a full inquiry into the mental, health, and social state"
+    task record_form "Record the information on a registration form"
+    task hand_form "Hand in the registration form at the secretarial office"
+  lane team_leader "Team-leader"
+    task hold_meeting "Hold a staff meeting of the medical team"
+    task assign "Assign all new patients on the list to members of the team"
+    task record_assignment_list "Record the assignments on an assignment list"
+    task hand_assignment_list "Hand the assignment list to the secretarial office"
+    task formulate_plan "Formulate a treatment plan"
+    end ended "Intake procedure ended"
+  lane social_worker "Social-medical worker"
+    task first_plan "Plan a meeting with the patient"
+    task first_examine "Examine the patient using a standard checklist"
+    task first_observe "Register additional observations in a personal notebook"
+    task first_notes "Put a copy of the notes in the patient file"
+    task first_checklist "Add the standard checklist to the patient file"
+  lane physician "Physician"
+    task second_plan "Plan the first meeting"
+    task second_meet "Meet with the patient"
+    task second_record "Record observations using a dictaphone"
+
+flow needed -> notice
+flow notice -> inquire
+flow inquire -> put_through
+flow put_through -> full_inquiry
+flow full_inquiry -> record_form
+flow record_form -> hand_form
+flow hand_form -> store
+flow store -> print
+flow print -> new_patient
+flow new_patient -> create_file "New patient"
+flow new_patient -> new_patient_join "Existing patient" default
+flow create_file -> new_patient_join
+flow new_patient_join -> store_docs
+flow store_docs -> produce_cards
+flow produce_cards -> add_notices
+flow add_notices -> hold_meeting
+flow hold_meeting -> assign
+flow assign -> record_assignment_list
+flow record_assignment_list -> hand_assignment_list
+flow hand_assignment_list -> store_assignments
+flow store_assignments -> pass_cards
+flow pass_cards -> split_intake
+flow split_intake -> first_plan
+flow split_intake -> medical_required
+flow first_plan -> first_examine
+flow first_examine -> first_observe
+flow first_observe -> first_notes
+flow first_notes -> first_checklist
+flow first_checklist -> meetings_done
+flow medical_required -> prepare_letter "Yes"
+flow medical_required -> medical_merge "No" default
+flow prepare_letter -> send_copy
+flow send_copy -> receive_copy
+flow receive_copy -> inform_second
+flow inform_second -> add_copy
+flow add_copy -> medical_merge
+flow medical_merge -> second_plan
+flow second_plan -> second_meet
+flow second_meet -> second_record
+flow second_record -> type_tapes
+flow type_tapes -> add_taped_info
+flow add_taped_info -> meetings_done
+flow meetings_done -> status_list
+flow status_list -> provide_list
+flow provide_list -> formulate_plan
+flow formulate_plan -> ended

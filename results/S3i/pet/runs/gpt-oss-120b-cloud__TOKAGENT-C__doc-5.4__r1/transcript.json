@@ -1,0 +1,86 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3988,
+  "output_tokens": 1465,
+  "seconds": 4.291624199977377,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to produce tok model. Identify actors: employee, supervisor, treasurer, maybe system (automatic payment system). Use pool \"Organisation\". Lanes: employee, supervisor, treasurer, system? The automatic activity linking to payment system could be in system lane. We'll create lane \"system\" for payment system.\n\nSequence:\n\nStart -> employee task \"Purchase a product or service\" (or \"Purchases a product or service\") -> employee task \"Submit expense report\" (includes receipts) -> supervisor task \"Review expense report\". Then xor decision \"Supervisor approves?\" with two branches: approve, reject.\n\nIf reject: employee task \"Edit expense report\". Then loop back to supervisor review. So after edit, go to supervisor review again. This could be modeled as flow from edit to supervisor review (maybe via xor re-enter). Also note that supervisor may auto-approve based on rules (still same decision). So same gateway.\n\nIf approve: flow to treasurer task \"Check receipts\". Then xor decision \"Receipts in order?\" (yes/no). If yes: treasurer task \"Accept expenses for processing\". Then system task \"Link to payment system\". Then system task \"Wait for payment confirmation\". Then end.\n\nIf no (receipts missing/mismatch): treasurer task \"Send report back to employee\". Then employee task \"Edit expense report\" -> back to supervisor review (as per spec). So we need a loop from treasurer to employee edit, then to supervisor review.\n\nMake sure flow ends at end events for each path: after payment confirmation -> end. Also if report is rejected by supervisor? Actually reject leads to edit then back to supervisor; there is no terminating end there; loop eventually may get approved.\n\nThus only one end after payment confirmed.\n\nWe may also need end after maybe if process ends due to reject? Spec says they can edit, so not end.\n\nThus one end.\n\nImplement gates:\n\nAfter supervisor review, xor \"approval?\" with label \"approve\" and \"reject\".\n\nReject flow -> employee task \"Edit expense report\" -> flow back to supervisor review (maybe directly). Use flow lines.\n\nApprove flow -> treasurer task \"Check receipts\" -> xor \"receipts ok?\" with \"yes\" and \"no\".\n\nYes -> treasurer task \"Accept expenses for processing\" -> system task \"Link to payment system\" -> system task \"Wait for payment confirmation\" -> end \"Process completed\".\n\nNo -> treasurer task \"Send report back to employee\" -> employee task \"Edit expense report\" -> flow back to supervisor review (maybe via a flow to supervisor lane). Could also go to same edit task as earlier; we can reuse same \"Edit expense report\" task, but it's same label, but used in two contexts. To avoid duplicate IDs, we can have single task \"Edit expense report\". That will be used from both reject and missing receipts. It will be placed in employee lane.\n\nThus after edit, flow to supervisor review.\n\nNow we need parallel? Not needed. No parallel.\n\nConstruct tok.\n\nHeader: tok 1.0 \"Expense Report Process\" [executable] maybe optional.\n\npool org \"Organisation\"\n  lane employee \"Employee\"\n    start start \"Start\"\n    task purchase \"Purchases a product or service\"\n    task submit \"Submits expense report with receipts\"\n    task edit \"Edits expense report\"\n  lane supervisor \"Supervisor\"\n    task review \"Reviews expense report\"\n    xor approval \"Supervisor approves?\"\n    # no tasks inside xor\n  lane treasurer \"Treasurer\"\n    task check \"Checks receipts\"\n    xor receipts_ok \"Receipts in order?\"\n    task accept \"Accepts expenses for processing\"\n    task send_back \"Sends report back to employee\"\n  lane system \"System\"\n    task link \"Links to payment system\"\n    task wait \"Waits for payment confirmation\"\n    end end \"Process completed\"\n\nNow flows. Must define IDs for each element (unique). We'll assign IDs: start, purchase, submit, edit, review, approval, accept_report (maybe not needed), check, receipts_ok, accept, send_back, link, wait, end.\n\nDefine flows:\n\nflow start -> purchase -> submit -> review -> approval\nflow approval -> review \"yes\"? Wait—approval decision yields two outcomes: \"approve\" to check, \"reject\" to edit.\n\nWe define flows with labels: flow approval -> check \"approve\" ; flow approval -> edit \"reject\". Use flow syntax with label.\n\nIn tok syntax: flow G -> D \"tak\" when=... label. For simple label just \"label\". Use flow approval -> check \"approve\". Similarly reject.\n\nAfter edit, flow to review again: flow edit -> review.\n\nAfter check, flow to receipts_ok: flow check -> receipts_ok\n\nAfter receipts_ok, flow to accept \"yes\" and to send_back \"no\". Use labels.\n\nAfter accept -> link; link -> wait; wait -> end.\n\nAfter send_back -> edit (employee) -> review.\n\nNote that edit task is already defined in employee lane, but used also for both. So flow send_back -> edit.\n\nMake sure IDs consistent.\n\nDefine IDs: start, purchase, submit, review, approval, edit, check, receipts_ok, accept, send_back, link, wait, end.\n\nNow write flows.\n\nEdge: edit after rejection - flow from approval (reject) to edit. That's okay.\n\nAlso we need flow from edit back to review.\n\nNow produce tok.\n\nPotential warnings: duplicate IDs? Ensure unique.\n\nAlso each lane must contain the elements.\n\nAlso need to ensure that each flow source and target have correct IDs.\n\nWrite.\n\nLet's craft token.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Expense Report Process\" [executable]\n\npool org \"Organisation\"\n  lane employee \"Employee\"\n    start start \"Start\"\n    task purchase \"Purchases a product or service\"\n    task submit \"Submits expense report with receipts\"\n    task edit \"Edits expense report\"\n  lane supervisor \"Supervisor\"\n    task review \"Reviews expense report\"\n    xor approval \"Supervisor approves?\"\n  lane treasurer \"Treasurer\"\n    task check \"Checks receipts\"\n    xor receipts_ok \"Receipts in order?\"\n    task accept \"Accepts expenses for processing\"\n    task send_back \"Sends report back to employee\"\n  lane system \"System\"\n    task link \"Links to payment system\"\n    task wait \"Waits for payment confirmation\"\n    end end \"Process completed\"\n\nflow start -> purchase -> submit -> review -> approval\nflow approval -> check \"approve\"\nflow approval -> edit \"reject\"\nflow edit -> review\nflow check -> receipts_ok\nflow receipts_ok -> accept \"yes\"\nflow receipts_ok -> send_back \"no\"\nflow accept -> link\nflow link -> wait\nflow wait -> end\nflow send_back -> edit\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5509,
+  "output_tokens": 320,
+  "seconds": 2.8686565999814775,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool expects either path or text, not both. Provide only text, omit path.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Expense Report Process\" [executable]\n\npool org \"Organisation\"\n  lane employee \"Employee\"\n    start start \"Start\"\n    task purchase \"Purchases a product or service\"\n    task submit \"Submits expense report with receipts\"\n    task edit \"Edits expense report\"\n  lane supervisor \"Supervisor\"\n    task review \"Reviews expense report\"\n    xor approval \"Supervisor approves?\"\n  lane treasurer \"Treasurer\"\n    task check \"Checks receipts\"\n    xor receipts_ok \"Receipts in order?\"\n    task accept \"Accepts expenses for processing\"\n    task send_back \"Sends report back to employee\"\n  lane system \"System\"\n    task link \"Links to payment system\"\n    task wait \"Waits for payment confirmation\"\n    end end \"Process completed\"\n\nflow start -> purchase -> submit -> review -> approval\nflow approval -> check \"approve\"\nflow approval -> edit \"reject\"\nflow edit -> review\nflow check -> receipts_ok\nflow receipts_ok -> accept \"yes\"\nflow receipts_ok -> send_back \"no\"\nflow accept -> link\nflow link -> wait\nflow wait -> end\nflow send_back -> edit"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 3: error P005: the document must start with a header such as 'tok 1.0'\n2 error(s), 2 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5950,
+  "output_tokens": 648,
+  "seconds": 3.281638699991163,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool says line 1 invalid token unexpected '[' after header? The header syntax: `tok 1.0 \"Title\" [executable]`. That seems allowed. However maybe there must be no extra space? Actually syntax: `tok 1.0 \"Title\" [executable]`. That's fine. The error might be because we used `[` directly after title but maybe need a space before '['. Already there is a space. Hmm maybe the tool expects header without brackets? In earlier example they used `tok 1.0 \"Application handling\"` (no `[executable]`). Probably `[executable]` is optional but allowed. Maybe brackets need to be without spaces? example: `tok 1.0 \"Application handling\"` no bracket. In cheat sheet header can have options like `[executable]`. Should be okay. Maybe the tool expects lower-case `tok`? Already lower-case. The error token '[' indicates maybe brackets not allowed in header for this version (maybe version 1.0 only accepts optional attributes after header like `process-name=`). It's safer to omit `[executable]` to avoid error. Also need to ensure header line ends after title. Let's remove `[executable]`.\n\nAlso error P005: document must start with header such as 'tok 1.0'. It sees header but flagged error earlier. So after fixing header, re-check.\n\nLet's produce new text without `[executable]`.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Expense Report Process\"\n\npool org \"Organisation\"\n  lane employee \"Employee\"\n    start start \"Start\"\n    task purchase \"Purchases a product or service\"\n    task submit \"Submits expense report with receipts\"\n    task edit \"Edits expense report\"\n  lane supervisor \"Supervisor\"\n    task review \"Reviews expense report\"\n    xor approval \"Supervisor approves?\"\n  lane treasurer \"Treasurer\"\n    task check \"Checks receipts\"\n    xor receipts_ok \"Receipts in order?\"\n    task accept \"Accepts expenses for processing\"\n    task send_back \"Sends report back to employee\"\n  lane system \"System\"\n    task link \"Links to payment system\"\n    task wait \"Waits for payment confirmation\"\n    end end \"Process completed\"\n\nflow start -> purchase -> submit -> review -> approval\nflow approval -> check \"approve\"\nflow approval -> edit \"reject\"\nflow edit -> review\nflow check -> receipts_ok\nflow receipts_ok -> accept \"yes\"\nflow receipts_ok -> send_back \"no\"\nflow accept -> link\nflow link -> wait\nflow wait -> end\nflow send_back -> edit"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 6624,
+  "output_tokens": 240,
+  "seconds": 1.8290511000086553,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Expense Report Process\"\n\npool org \"Organisation\"\n  lane employee \"Employee\"\n    start start \"Start\"\n    task purchase \"Purchases a product or service\"\n    task submit \"Submits expense report with receipts\"\n    task edit \"Edits expense report\"\n  lane supervisor \"Supervisor\"\n    task review \"Reviews expense report\"\n    xor approval \"Supervisor approves?\"\n  lane treasurer \"Treasurer\"\n    task check \"Checks receipts\"\n    xor receipts_ok \"Receipts in order?\"\n    task accept \"Accepts expenses for processing\"\n    task send_back \"Sends report back to employee\"\n  lane system \"System\"\n    task link \"Links to payment system\"\n    task wait \"Waits for payment confirmation\"\n    end end \"Process completed\"\n\nflow start -> purchase -> submit -> review -> approval\nflow approval -> check \"approve\"\nflow approval -> edit \"reject\"\nflow edit -> review\nflow check -> receipts_ok\nflow receipts_ok -> accept \"yes\"\nflow receipts_ok -> send_back \"no\"\nflow accept -> link\nflow link -> wait\nflow wait -> end\nflow send_back -> edit\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

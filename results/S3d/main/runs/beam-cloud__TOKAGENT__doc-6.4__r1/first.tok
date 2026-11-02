@@ -1,0 +1,47 @@
+tok 1.0 "Customer acquisition"
+
+pool org "Organisation"
+  lane marketing "Marketing staff"
+    start s "Start"
+    task t1 "Determine contact details of potential customers"
+  lane callcenter "Call center staff"
+    task t2 "Call customer"
+    task t3 "Determine contact person and budget"
+    xor g_interest "Customer interested?"
+    xor g_huge "Budget huge?"
+  lane headdev "Head of development"
+    task t_head "Acquire customer"
+    xor g_end_interest "Customer interested in the end?"
+  lane sales "Sales representative"
+    task t_pres_sales "Give online presentation"
+    task t_call_sales "Call customer"
+    task t_quot "Create quotation"
+    end e1 "End"
+    end e_left "Left alone"
+    xor g_tech "More technical presentation?"
+    xor gpj "Presentation done"
+    xor gaw "Customer responded"
+    eventgw g_wait "Wait for customer"
+    catch c_contact "Customer contacts" message="customer-contact"
+    catch c_timer "2 weeks elapsed" timer=P14D
+  lane presales "Pre-sales employee"
+    task t_pres_tech "Give technical online presentation"
+
+flow s -> t1 -> t2 -> t3 -> g_interest
+flow g_interest -> g_tech "yes" when="interested"
+flow g_interest -> g_huge "no" default
+flow g_huge -> t_head "yes" when=""
+flow g_huge -> e_left "no" default
+flow t_head -> g_end_interest
+flow g_end_interest -> g_tech "yes" when=""
+flow g_end_interest -> e_left "no" default
+flow g_tech -> t_pres_tech "technical" when=""
+flow g_tech -> t_pres_sales "standard" default
+flow t_pres_tech -> gpj
+flow t_pres_sales -> gpj
+flow gpj -> g_wait
+flow g_wait -> c_contact
+flow g_wait -> c_timer
+flow c_contact -> gaw
+flow c_timer -> t_call_sales -> gaw
+flow gaw -> t_quot -> e1

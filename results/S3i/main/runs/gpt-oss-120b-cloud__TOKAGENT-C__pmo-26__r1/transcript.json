@@ -1,0 +1,86 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3789,
+  "output_tokens": 1762,
+  "seconds": 8.164109799981816,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to produce a tok model for the described process. Steps:\n\nActors? Text mentions parent, social security, company. Probably three actors: Parent, Social Security, Company. Or organizational pool = the organization (maybe includes all). Use lane per actor.\n\nProcess: start, then sequential steps:\n1. Fetch information about potential models (months duration, split between parents) – performed by Parent? Could be Parent fetching info. Or perhaps system? We'll assign to Parent lane.\n2. Let parent select – Parent lane.\n3. Collect relevant information – could be Parent or maybe HR? We'll put Parent.\n4. Notify Social Security, Company in time – this is a parallel notification to two participants: Social Security and Company. Could be done by Parent lane but sending messages to other lanes. In BPMN, we can model as a task \"Notify Social Security, Company in time\" in Parent lane, then parallel gateways to send messages? Simpler: after collect, we have a parallel gateway splitting into two tasks: \"Notify Social Security\" and \"Notify Company\", then join. But description says \"Notify Social Security, Company in time\". Could treat as a single task, but then \"Gather information from companies\" is later. So perhaps after notifying, we gather info from companies (maybe by Company lane). So flow: after notifying (maybe a parallel gateway that notifies both, but tasks in separate lanes). We'll design: after Collect relevant information (Parent), a parallel gateway splits to two tasks: \"Notify Social Security\" in Social Security lane, and \"Notify Company\" in Company lane. Then join.\n\nThen \"Gather information from companies\" – likely in Company lane after it was notified. Could be a task \"Gather information from companies\". After that we need to proceed to end-of-period decision: \"At the end of the period let parent decide about extension.\" So end of period event maybe timer? Could just be a task \"End of period\" then a decision gateway \"Extension?\" leading to two paths: maybe \"Extend leave\" and \"End leave\". The description only says let parent decide about extension, we can just have a decision and then end events accordingly: one for extension (maybe loop back?) but we can just have two ends: extension decided (maybe \"Leave extended\") and \"Leave completed\". However we need end events for each path.\n\nSimplify: After gather information, we have a task \"End of period\" then xor decision \"Extend leave?\" with two branches: \"Yes\" -> task \"Extend leave\" -> end, \"No\" -> task \"Do not extend leave\" -> end.\n\nActors for these final tasks: Parent.\n\nSo lanes: Parent, Social Security, Company.\n\nNow produce tok statements.\n\nHeader: tok 1.0 \"Becoming A Parent\"\n\npool org \"Organisation\"\n lanes as described.\n\nDefine start event in Parent lane: start start \"Start planning maternity leave\"\n\nThen tasks:\n\ntask fetchInfo \"Fetch information about potential models (months duration, split between parents)\"\ntask selectModel \"Select maternity leave model\"\ntask collectInfo \"Collect relevant information\"\n\nParallel gateway after collectInfo: and splitID \"Notify parties\" (maybe label \"Notify\")\n\nTwo tasks:\ntask notifySS \"Notify Social Security\"\ntask notifyCompany \"Notify Company\"\n\nJoin gateway and join id.\n\nThen task gatherInfo \"Gather information from companies\" (in Company lane) after join.\n\nThen task endPeriod \"End of the leave period\" (Parent lane)\n\nDecision xor extension \"Extend leave?\" with two flows.\n\ntask extendLeave \"Extend maternity leave\"\ntask noExtension \"Do not extend leave\"\n\nEnds: end extended \"Leave extended\", end completed \"Leave completed\"\n\nNow define flows.\n\nFlows: start->fetchInfo->selectModel->collectInfo->split (and)\nsplit -> notifySS (in Social Security lane)\nsplit -> notifyCompany (in Company lane)\nnotifySS -> join\nnotifyCompany -> join\njoin -> gatherInfo (Company lane)\ngatherInfo -> endPeriod (Parent lane) (maybe need flow across lanes, okay)\nendPeriod -> extension decision xor\nxor -> extendLeave (label \"yes\") and -> noExtension (label \"no\")\nextendLeave -> endExtended\nnoExtension -> endCompleted\n\nAdd flow statements accordingly.\n\nNote: need to include gateway IDs unique.\n\nNow build the tok model.\n\nCheck for syntax: start ID \"Label\". Let's assign IDs: start s, tasks t1 t2 etc.\n\nMake sure each element has unique identifier.\n\nLet's craft:\n\ntok 1.0 \"Becoming A Parent\"\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start s \"Start planning maternity leave\"\n    task t_fetch \"Fetch information about potential models (months duration, split between parents)\"\n    task t_select \"Select maternity leave model\"\n    task t_collect \"Collect relevant information\"\n    and g_notify \"Notify parties\"\n    xor g_extend \"Extend leave?\"\n    task t_extend \"Extend maternity leave\"\n    task t_noext \"Do not extend leave\"\n    end e_extended \"Leave extended\"\n    end e_completed \"Leave completed\"\n  lane social_security \"Social Security\"\n    task t_notifySS \"Notify Social Security\"\n  lane company \"Company\"\n    task t_notifyCo \"Notify Company\"\n    task t_gather \"Gather information from companies\"\n    task t_endPeriod \"End of the leave period\"\n\nflow s -> t_fetch -> t_select -> t_collect -> g_notify\nflow g_notify -> t_notifySS\nflow g_notify -> t_notifyCo\nflow t_notifySS -> g_notify\nflow t_notifyCo -> g_notify\n?? (But need join after both notifications before proceeding to gather info). We need a join gateway separate from split. Use and join with same ID? In BPMN, split and join should be separate IDs. Let's define split gateway g_notify_split (and) and join gateway g_notify_join (and). So rename.\n\nDefine:\n\nand g_split \"Notify split\"\nand g_join \"Notify join\"\n\nThen flow after collect to g_split, then split flows to tasks, then both tasks to g_join, then flow to t_gather.\n\nUpdate.\n\nAlso need sequence from gather to t_endPeriod (Parent lane). So flow.\n\nThen to xor decision g_extend.\n\nThen flow.\n\nNow need to ensure tasks are placed in correct lanes: in tok, tasks inside lane block, regardless of flow.\n\nBut g_split and g_join placed maybe in Parent lane? Could be in Parent lane, as orchestrating. That's fine.\n\nBut t_notifySS is in Social Security lane; t_notifyCo and t_gather and t_endPeriod are in Company lane? t_endPeriod seems parent related, but might be in Parent lane after gather done; but we can keep in Parent lane, referencing cross-lane flow.\n\nNow define flows.\n\nLet's write final model.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "common-executable",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Becoming A Parent\"\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start s \"Start planning maternity leave\"\n    task t_fetch \"Fetch information about potential models (months duration, split between parents)\"\n    task t_select \"Select maternity leave model\"\n    task t_collect \"Collect relevant information\"\n    and g_split \"Notify split\"\n    and g_join \"Notify join\"\n    xor g_extend \"Extend leave?\"\n    task t_extend \"Extend maternity leave\"\n    task t_noext \"Do not extend leave\"\n    end e_extended \"Leave extended\"\n    end e_completed \"Leave completed\"\n  lane social_security \"Social Security\"\n    task t_notifySS \"Notify Social Security\"\n  lane company \"Company\"\n    task t_notifyCo \"Notify Company\"\n    task t_gather \"Gather information from companies\"\n    task t_endPeriod \"End of the leave period\"\n\nflow s -> t_fetch -> t_select -> t_collect -> g_split\nflow g_split -> t_notifySS\nflow g_split -> t_notifyCo\nflow t_notifySS -> g_join\nflow t_notifyCo -> g_join\nflow g_join -> t_gather\nflow t_gather -> t_endPeriod\nflow t_endPeriod -> g_extend\nflow g_extend -> t_extend \"yes\"\nflow g_extend -> t_noext \"no\"\nflow t_extend -> e_extended\nflow t_noext -> e_completed"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5611,
+  "output_tokens": 380,
+  "seconds": 2.312788300012471,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to call check with only text (or path). Provide text only. Let's send again with only text field.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "common-executable",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Becoming A Parent\"\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start s \"Start planning maternity leave\"\n    task t_fetch \"Fetch information about potential models (months duration, split between parents)\"\n    task t_select \"Select maternity leave model\"\n    task t_collect \"Collect relevant information\"\n    and g_split \"Notify split\"\n    and g_join \"Notify join\"\n    xor g_extend \"Extend leave?\"\n    task t_extend \"Extend maternity leave\"\n    task t_noext \"Do not extend leave\"\n    end e_extended \"Leave extended\"\n    end e_completed \"Leave completed\"\n  lane social_security \"Social Security\"\n    task t_notifySS \"Notify Social Security\"\n  lane company \"Company\"\n    task t_notifyCo \"Notify Company\"\n    task t_gather \"Gather information from companies\"\n    task t_endPeriod \"End of the leave period\"\n\nflow s -> t_fetch -> t_select -> t_collect -> g_split\nflow g_split -> t_notifySS\nflow g_split -> t_notifyCo\nflow t_notifySS -> g_join\nflow t_notifyCo -> g_join\nflow g_join -> t_gather\nflow t_gather -> t_endPeriod\nflow t_endPeriod -> g_extend\nflow g_extend -> t_extend \"yes\"\nflow g_extend -> t_noext \"no\"\nflow t_extend -> e_extended\nflow t_noext -> e_completed"
+    },
+    "is_error": false,
+    "result": "line 3: error R075: 'org' (participant) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 4: error R075: 'parent' (lane) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 6: error R075: 't_fetch' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 7: error R075: 't_select' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 8: error R075: 't_collect' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 12: error R075: 't_extend' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 13: error R075: 't_noext' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 16: error R075: 'social_security' (lane) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 17: error R075: 't_notifySS' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 18: error R075: 'company' (lane) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 19: error R075: 't_notifyCo' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 20: error R075: 't_gather' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\nline 21: error R075: 't_endPeriod' (task) is outside the BPMN conformance class common-executable; it belongs to the class descriptive\n13 error(s), 13 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6521,
+  "output_tokens": 440,
+  "seconds": 2.177831699984381,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to select appropriate BPMN conformance class that allows pools, lanes, tasks etc. Common-executable maybe too restrictive. Let's use class \"descriptive\". The check call should set class to \"descriptive\". The parameter 'class' expects e.g., \"descriptive|analytic|common-executable|full\". So set class to \"descriptive\". Also bpmn true.\n\nLet's re-run with class descriptive.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Becoming A Parent\"\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start s \"Start planning maternity leave\"\n    task t_fetch \"Fetch information about potential models (months duration, split between parents)\"\n    task t_select \"Select maternity leave model\"\n    task t_collect \"Collect relevant information\"\n    and g_split \"Notify split\"\n    and g_join \"Notify join\"\n    xor g_extend \"Extend leave?\"\n    task t_extend \"Extend maternity leave\"\n    task t_noext \"Do not extend leave\"\n    end e_extended \"Leave extended\"\n    end e_completed \"Leave completed\"\n  lane social_security \"Social Security\"\n    task t_notifySS \"Notify Social Security\"\n  lane company \"Company\"\n    task t_notifyCo \"Notify Company\"\n    task t_gather \"Gather information from companies\"\n    task t_endPeriod \"End of the leave period\"\n\nflow s -> t_fetch -> t_select -> t_collect -> g_split\nflow g_split -> t_notifySS\nflow g_split -> t_notifyCo\nflow t_notifySS -> g_join\nflow t_notifyCo -> g_join\nflow g_join -> t_gather\nflow t_gather -> t_endPeriod\nflow t_endPeriod -> g_extend\nflow g_extend -> t_extend \"yes\"\nflow g_extend -> t_noext \"no\"\nflow t_extend -> e_extended\nflow t_noext -> e_completed"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7047,
+  "output_tokens": 298,
+  "seconds": 6.83192379999673,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Becoming A Parent\"\n\npool org \"Organization\"\n  lane parent \"Parent\"\n    start s \"Start planning maternity leave\"\n    task t_fetch \"Fetch information about potential models (months duration, split between parents)\"\n    task t_select \"Select maternity leave model\"\n    task t_collect \"Collect relevant information\"\n    and g_split \"Notify split\"\n    and g_join \"Notify join\"\n    xor g_extend \"Extend leave?\"\n    task t_extend \"Extend maternity leave\"\n    task t_noext \"Do not extend leave\"\n    end e_extended \"Leave extended\"\n    end e_completed \"Leave completed\"\n  lane social_security \"Social Security\"\n    task t_notifySS \"Notify Social Security\"\n  lane company \"Company\"\n    task t_notifyCo \"Notify Company\"\n    task t_gather \"Gather information from companies\"\n    task t_endPeriod \"End of the leave period\"\n\nflow s -> t_fetch -> t_select -> t_collect -> g_split\nflow g_split -> t_notifySS\nflow g_split -> t_notifyCo\nflow t_notifySS -> g_join\nflow t_notifyCo -> g_join\nflow g_join -> t_gather\nflow t_gather -> t_endPeriod\nflow t_endPeriod -> g_extend\nflow g_extend -> t_extend \"yes\"\nflow g_extend -> t_noext \"no\"\nflow t_extend -> e_extended\nflow t_noext -> e_completed\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

@@ -1,0 +1,29 @@
+tok 1.0 "Loan approval process"
+
+pool org "Loan approval"
+  lane loan "Loan department"
+    start begin "Start"
+    task receive "Receive customer loan request"
+    xor risk-check "Risk assessment result?"
+    task deny "Deny loan"
+    task approve "Approve loan"
+    task send-approver "Send request to approver service"
+    xor decided "Decision made"
+    task feedback "Send feedback to customer"
+    end done "Feedback sent"
+  lane risk "Risk assessment service"
+    service assess "Assess loan request"
+  lane approver "Approver service"
+    service review "Review loan request"
+
+pool customer "Customer"
+
+flow begin -> receive -> assess -> risk-check
+flow risk-check -> deny "Customer is high risk" when="high_risk"
+flow risk-check -> approve "Loan small and customer low risk" when="small_loan and low_risk"
+flow risk-check -> send-approver "Further review or amount of $10,000 or more" default
+flow approve -> decided
+flow deny -> decided
+flow send-approver -> review -> decided -> feedback -> done
+message customer -> receive "Loan request"
+message feedback -> customer "Decision feedback"

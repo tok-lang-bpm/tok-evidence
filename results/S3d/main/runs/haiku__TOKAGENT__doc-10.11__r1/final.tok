@@ -1,0 +1,30 @@
+tok 1.0 "Measurement request"
+
+pool org "Organisation"
+  lane go "GO"
+    start s "Measurement needed"
+    task req "Request measurements"
+    task proc "Process measured values"
+    task chg "Send changed values to MSP"
+    task tr-sp "Transmit readings to SP"
+    end e-done "Readings transmitted"
+  lane msp "MSP"
+    task chk "Check received request"
+    xor acc "Request accepted?"
+    task deny "Deny request of GO"
+    task perf "Perform measurement"
+    xor merge1
+    xor fail "Reading failed?"
+    task inf "Inform GO about failure of reading"
+    task trv "Transmit measured values to GO"
+    end e-fail "Failure reported"
+
+flow s -> req -> chk -> acc
+flow acc -> deny "no"
+flow acc -> perf "yes"
+flow deny -> merge1
+flow perf -> merge1 -> fail
+flow fail -> inf "yes"
+flow fail -> trv "no"
+flow inf -> e-fail
+flow trv -> proc -> chg -> tr-sp -> e-done

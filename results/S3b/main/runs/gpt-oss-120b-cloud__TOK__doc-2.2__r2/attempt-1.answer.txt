@@ -1,0 +1,90 @@
+```tok
+tok 1.0 "Switch‑over Process"
+
+pool org "Company"
+  lane customer "Customer"
+    start S1 "Switch‑over request"
+    task T1 "Transmit customer data"
+  lane cs "Customer Service"
+    task T2 "Receive customer data"
+    task T3 "Enter customer data into CRM"
+    task T4 "Compare data and check completeness"
+    xor G1 "Data errors?"
+      task T5 "Correct data errors"
+    xor G2 "Customer exists?"
+      task T6 "Create new customer object"
+    xor G3
+    task T7 "Prepare contract documents"
+    task T10 "Send confirmation document to customer"
+    task T14 "Create CIS contract"
+    task T16 "Customer checks contract details"
+    xor D5 "Customer withdraws?"
+      end E1 "Process withdrawn"
+    task T15 "Switch date reached"
+    task T20 "Import meter data into systems"
+  lane crm "CRM System"
+    # (tasks are performed by Customer Service, kept here for completeness)
+  lane cis "CIS"
+    task T8 "Automated contract check"
+    xor G4 "Contract documents valid?"
+      task T9 "Analyze and resolve contract issues"
+    task T11 "Send switch request to Grid Operator"
+  lane grid "Grid Operator"
+    xor G5 "Supplier concurrence?"
+      and P1
+        task T12 "Inform all suppliers"
+        task T13 "Terminate old supplier agreement"
+      and P2
+    task T17 "Send meter data to Customer Service"
+    task T18 "Send meter data to Old Supplier"
+    task T19 "Compute final billing and send to Old Supplier"
+  lane old "Old Supplier"
+    task T21 "Create final billing for customer"
+    task T22 "Send final billing to customer"
+  # Merges before final parallel activities
+    and G8
+  # Final parallel join before end
+    and G9
+    end E2 "Process completed"
+
+# Sequence flows
+flow S1 -> T1
+flow T1 -> T2
+flow T2 -> T3
+flow T3 -> T4
+flow T4 -> G1
+flow G1 -> T5          # when errors
+flow T5 -> T4
+flow G1 -> G2          # when no errors
+flow G2 -> T6          # when not existing
+flow G2 -> G3          # when existing
+flow T6 -> G3
+flow G3 -> T7
+flow T7 -> T8
+flow T8 -> G4
+flow G4 -> T9          # when invalid
+flow T9 -> T7
+flow G4 -> T10         # when valid
+flow T10 -> T11
+flow T11 -> G5
+flow G5 -> P1          # when concurrence
+flow G5 -> T14         # when no concurrence
+flow P1 -> P2
+flow P2 -> G8
+flow T14 -> T16
+flow T16 -> D5
+flow D5 -> E1         # withdraw
+flow D5 -> T15        # accept / auto‑accept
+flow G8 -> T15
+flow T15 -> P3
+flow P3 -> T17
+flow P3 -> T18
+flow P3 -> T19
+flow T17 -> T20
+flow T20 -> G9
+flow T18 -> G9
+flow T19 -> T21
+flow T21 -> T22
+flow T22 -> G9
+flow G9 -> E2
+```

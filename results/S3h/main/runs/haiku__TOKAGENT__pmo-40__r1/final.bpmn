@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Machine_disconnected" name="Machine disconnected" />
+  <bpmn:message id="Message_Machine_restarted" name="Machine restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="plant" name="Production" processRef="plant-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="plant-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="plant-lanes">
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>stop-machine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restart-machine</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="OEE monitoring system">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disconnect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oee-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineer" name="Engineer">
+        <bpmn:flowNodeRef>check-machine</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="stop-machine" name="Stop machine" />
+    <bpmn:task id="restart-machine" name="Restart machine" />
+    <bpmn:startEvent id="begin" name="Start measuring" />
+    <bpmn:task id="collect" name="Collect machine data" />
+    <bpmn:boundaryEvent id="disconnect" name="Machine disconnected" attachedToRef="collect">
+      <bpmn:messageEventDefinition id="disconnect-def" messageRef="Message_Machine_disconnected" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="calc" name="Calculate OEE" />
+    <bpmn:exclusiveGateway id="oee-ok" name="OEE below limit?" default="f-oee-ok-collect" />
+    <bpmn:task id="send-mail" name="Send email to engineer" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted">
+      <bpmn:messageEventDefinition id="restarted-def" messageRef="Message_Machine_restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="stopped" name="Process stopped" />
+    <bpmn:task id="check-machine" name="Check machine" />
+    <bpmn:sequenceFlow id="f-begin-collect" sourceRef="begin" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calc" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-oee-ok" sourceRef="calc" targetRef="oee-ok" />
+    <bpmn:sequenceFlow id="f-oee-ok-stop-machine" name="yes" sourceRef="oee-ok" targetRef="stop-machine">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-oee-ok-collect" name="no" sourceRef="oee-ok" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-stop-machine-send-mail" sourceRef="stop-machine" targetRef="send-mail" />
+    <bpmn:sequenceFlow id="f-send-mail-check-machine" sourceRef="send-mail" targetRef="check-machine" />
+    <bpmn:sequenceFlow id="f-check-machine-restart-machine" sourceRef="check-machine" targetRef="restart-machine" />
+    <bpmn:sequenceFlow id="f-restart-machine-restarted" sourceRef="restart-machine" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f-restarted-collect" sourceRef="restarted" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-disconnect-stopped" sourceRef="disconnect" targetRef="stopped" />
+  </bpmn:process>
+</bpmn:definitions>

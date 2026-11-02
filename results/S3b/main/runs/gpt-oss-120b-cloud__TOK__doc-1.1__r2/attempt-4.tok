@@ -1,0 +1,43 @@
+tok 1.0 "Custom Bicycle Manufacturing"
+
+pool company "Small Company"
+  lane sales "Sales Department"
+    start start_order "Order received"
+    xor decision_accept "Order accepted?"
+    task reject_order "Reject order"
+    task accept_order "Accept order"
+    and split "Parallel split"
+    task ship_bicycle "Ship bicycle to customer"
+    end process_completed "Process completed"
+
+  lane storehouse "Storehouse"
+    xor part_available "Part available?"
+    task reserve_part "Reserve part"
+    task backorder_part "Back-order part"
+    xor more_items "More items?"
+
+  lane engineering "Engineering Department"
+    task inform_engineering "Inform engineering"
+    task prepare_assembly "Prepare assembly"
+    and join "Parallel join"
+    task assemble_bicycle "Assemble bicycle"
+
+  # flows
+  flow start_order -> decision_accept
+  flow decision_accept -> reject_order "no"
+  flow reject_order -> process_completed
+  flow decision_accept -> accept_order "yes"
+  flow accept_order -> split
+  flow split -> part_available
+  flow split -> inform_engineering
+  flow inform_engineering -> prepare_assembly
+  flow prepare_assembly -> join
+  flow part_available -> reserve_part "yes"
+  flow part_available -> backorder_part "no"
+  flow reserve_part -> more_items
+  flow backorder_part -> more_items
+  flow more_items -> part_available "yes"
+  flow more_items -> join "no"
+  flow join -> assemble_bicycle
+  flow assemble_bicycle -> ship_bicycle
+  flow ship_bicycle -> process_completed

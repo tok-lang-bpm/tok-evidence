@@ -1,0 +1,82 @@
+tok 1.0 "Power supplier switch-over"
+
+pool org "Power supplier switch-over"
+  lane cust "Customer"
+    start s "Switch-over request initiated"
+    task t1 "Transmit customer data"
+    task t17 "Check contract details"
+    task t30 "Receive final billing"
+    end e3 "Process ended for customer"
+  lane cs "Customer service"
+    task t2 "Receive customer data"
+    task t3 "Enter customer data object into CRM system"
+    task t4 "Compare customer data with customer data base"
+    xor g1 "Errors found?"
+    task t5 "Correct errors using error list"
+    xor g2 "Customer exists in data base?"
+    task t6 "Create new customer object"
+    xor g3
+    task t7 "Prepare contract documents"
+    task t10 "Analyze and resolve issues"
+    task t11 "Send confirmation document to customer"
+    task t15 "Create CIS contract"
+    eventgw g6 "Customer response?"
+    catch c1 "Confirmation received" message="Contract confirmation"
+    catch c2 "Withdrawal received" message="Contract withdrawal"
+    catch c3 "7 days passed" timer=P7D
+    end e2 "Process ended by withdrawal"
+    xor g7
+    task t22 "Receive meter data"
+    task t23 "Import meter data to systems"
+    end e4 "Customer won"
+  lane cis "CIS"
+    task t8 "Check contract documents automatically"
+    xor g4 "Documents generated successfully?"
+    task t12 "Send request to grid operator"
+  lane grid "Grid operator"
+    task t13 "Check switch-over request for supplier concurrence"
+    task t14 "Transmit response comment"
+    xor g5 "Supplier concurrence?"
+    task t16 "Inform involved suppliers and demand conflict resolution"
+    end e1 "Switch-over stopped"
+    task t18 "Terminate sales agreement with old supplier"
+    and g8
+    task t19 "Transmit power meter data"
+    task t20 "Compute final billing"
+    task t21 "Send final billing to old supplier"
+    and g9
+    end e5 "Grid operator finished"
+  lane old "Old supplier"
+    task t24 "Create final billing"
+    task t25 "Send final billing to customer"
+
+flow s -> t1 -> t2 -> t3 -> t4 -> g1
+flow g1 -> t5 "yes"
+flow t5 -> t4
+flow g1 -> g2 "no"
+flow g2 -> t6 "no"
+flow g2 -> g3 "yes"
+flow t6 -> g3
+flow g3 -> t7 -> t8 -> g4
+flow g4 -> t10 "no"
+flow t10 -> g3
+flow g4 -> t11 "yes"
+flow t11 -> t12 -> t13 -> t14 -> g5
+flow g5 -> t16 "yes"
+flow t16 -> e1
+flow g5 -> t18 "no"
+flow t18 -> t15 -> t17 -> g6
+flow g6 -> c1
+flow g6 -> c2
+flow g6 -> c3
+flow c2 -> e2
+flow c1 -> g7
+flow c3 -> g7
+flow g7 -> g8
+flow g8 -> t19
+flow g8 -> t20
+flow t19 -> t22 -> t23 -> e4
+flow t20 -> t21 -> g9
+flow g9 -> e5
+flow g9 -> t24
+flow t24 -> t25 -> t30 -> e3

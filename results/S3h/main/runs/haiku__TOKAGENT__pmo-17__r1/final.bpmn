@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Order fulfillment" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Delivery_confirmed" name="Delivery confirmed" />
+  <bpmn:message id="Message_Back_order_received" name="Back-order received" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="E-commerce company" processRef="shop-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" name="Order fulfillment" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="cust" name="Customer">
+        <bpmn:flowNodeRef>s0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>place</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>delivered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>issues</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="Order system">
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-fail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>payment-failed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>avail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inventory</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returns-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="wh" name="Warehouse">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pick</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>qc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>giftq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gift</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gift-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pack</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="ship" name="Shipping department">
+        <bpmn:flowNodeRef>docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>intl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>intl-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dispatch</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s0" name="Order process started" />
+    <bpmn:task id="place" name="Place order" />
+    <bpmn:intermediateCatchEvent id="delivered" name="Delivery confirmed">
+      <bpmn:messageEventDefinition id="delivered-def" messageRef="Message_Delivery_confirmed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="issues" name="Issue reported on delivery?" />
+    <bpmn:task id="record" name="Record order details" />
+    <bpmn:task id="pay" name="Process payment" />
+    <bpmn:exclusiveGateway id="paid" name="Payment successful?" />
+    <bpmn:task id="notify-fail" name="Notify customer of payment failure" />
+    <bpmn:endEvent id="payment-failed" name="Process ended: payment failed" />
+    <bpmn:task id="check" name="Check stock availability" />
+    <bpmn:exclusiveGateway id="stock" name="Items in stock?" />
+    <bpmn:task id="backorder" name="Initiate back-order" />
+    <bpmn:task id="inform" name="Inform customer about the delay" />
+    <bpmn:exclusiveGateway id="avail" name="All required items in stock" />
+    <bpmn:parallelGateway id="split-work" name="Start warehouse and shipping work" />
+    <bpmn:task id="confirm" name="Send shipping confirmation" />
+    <bpmn:task id="inventory" name="Update inventory levels" />
+    <bpmn:task id="feedback" name="Send follow-up feedback email" />
+    <bpmn:endEvent id="order-done" name="Order completed" />
+    <bpmn:subProcess id="returns" name="Returns process">
+      <bpmn:startEvent id="return-start" name="Return initiated" />
+      <bpmn:task id="ret-label" name="Send return shipping label" />
+      <bpmn:task id="ret-receive" name="Receive returned items" />
+      <bpmn:task id="ret-inspect" name="Inspect returned items" />
+      <bpmn:task id="ret-refund" name="Process refund or replacement" />
+      <bpmn:endEvent id="return-done" name="Return processed" />
+      <bpmn:sequenceFlow id="f-return-start-ret-label" sourceRef="return-start" targetRef="ret-label" />
+      <bpmn:sequenceFlow id="f-ret-label-ret-receive" sourceRef="ret-label" targetRef="ret-receive" />
+      <bpmn:sequenceFlow id="f-ret-receive-ret-inspect" sourceRef="ret-receive" targetRef="ret-inspect" />
+      <bpmn:sequenceFlow id="f-ret-inspect-ret-refund" sourceRef="ret-inspect" targetRef="ret-refund" />
+      <bpmn:sequenceFlow id="f-ret-refund-return-done" sourceRef="ret-refund" targetRef="return-done" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="returns-done" name="Returns processed" />
+    <bpmn:intermediateCatchEvent id="received" name="Back-order received">
+      <bpmn:messageEventDefinition id="received-def" messageRef="Message_Back_order_received" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="pick" name="Pick items from warehouse" />
+    <bpmn:task id="qc" name="Perform quality control" />
+    <bpmn:exclusiveGateway id="giftq" name="Gift wrapping requested?" />
+    <bpmn:task id="gift" name="Gift wrap items" />
+    <bpmn:exclusiveGateway id="gift-join" name="Packaging" />
+    <bpmn:task id="pack" name="Pack order" />
+    <bpmn:task id="docs" name="Prepare shipping documents and labels" />
+    <bpmn:exclusiveGateway id="intl" name="International order?" />
+    <bpmn:task id="customs" name="Prepare customs documentation" />
+    <bpmn:exclusiveGateway id="intl-join" name="Customs documentation done" />
+    <bpmn:parallelGateway id="join-ready" name="Packaging and shipping documents ready" />
+    <bpmn:task id="dispatch" name="Dispatch order" />
+    <bpmn:sequenceFlow id="f-s0-place" sourceRef="s0" targetRef="place" />
+    <bpmn:sequenceFlow id="f-place-record" sourceRef="place" targetRef="record" />
+    <bpmn:sequenceFlow id="f-record-pay" sourceRef="record" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-paid" sourceRef="pay" targetRef="paid" />
+    <bpmn:sequenceFlow id="f-paid-notify-fail" name="no" sourceRef="paid" targetRef="notify-fail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">payment_successful = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-paid-check" name="yes" sourceRef="paid" targetRef="check">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">payment_successful = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-notify-fail-payment-failed" sourceRef="notify-fail" targetRef="payment-failed" />
+    <bpmn:sequenceFlow id="f-check-stock" sourceRef="check" targetRef="stock" />
+    <bpmn:sequenceFlow id="f-stock-backorder" name="no" sourceRef="stock" targetRef="backorder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all_in_stock = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-stock-avail" name="yes" sourceRef="stock" targetRef="avail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all_in_stock = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-backorder-inform" sourceRef="backorder" targetRef="inform" />
+    <bpmn:sequenceFlow id="f-inform-received" sourceRef="inform" targetRef="received" />
+    <bpmn:sequenceFlow id="f-received-avail" sourceRef="received" targetRef="avail" />
+    <bpmn:sequenceFlow id="f-avail-split-work" sourceRef="avail" targetRef="split-work" />
+    <bpmn:sequenceFlow id="f-split-work-pick" sourceRef="split-work" targetRef="pick" />
+    <bpmn:sequenceFlow id="f-pick-qc" sourceRef="pick" targetRef="qc" />
+    <bpmn:sequenceFlow id="f-qc-giftq" sourceRef="qc" targetRef="giftq" />
+    <bpmn:sequenceFlow id="f-giftq-gift" name="yes" sourceRef="giftq" targetRef="gift">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">gift_wrap_requested = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-giftq-gift-join" name="no" sourceRef="giftq" targetRef="gift-join">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">gift_wrap_requested = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gift-gift-join" sourceRef="gift" targetRef="gift-join" />
+    <bpmn:sequenceFlow id="f-gift-join-pack" sourceRef="gift-join" targetRef="pack" />
+    <bpmn:sequenceFlow id="f-pack-join-ready" sourceRef="pack" targetRef="join-ready" />
+    <bpmn:sequenceFlow id="f-split-work-docs" sourceRef="split-work" targetRef="docs" />
+    <bpmn:sequenceFlow id="f-docs-intl" sourceRef="docs" targetRef="intl" />
+    <bpmn:sequenceFlow id="f-intl-customs" name="yes" sourceRef="intl" targetRef="customs">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">international_order = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-intl-intl-join" name="no" sourceRef="intl" targetRef="intl-join">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">international_order = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-customs-intl-join" sourceRef="customs" targetRef="intl-join" />
+    <bpmn:sequenceFlow id="f-intl-join-join-ready" sourceRef="intl-join" targetRef="join-ready" />
+    <bpmn:sequenceFlow id="f-join-ready-dispatch" sourceRef="join-ready" targetRef="dispatch" />
+    <bpmn:sequenceFlow id="f-dispatch-confirm" sourceRef="dispatch" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-confirm-inventory" sourceRef="confirm" targetRef="inventory" />
+    <bpmn:sequenceFlow id="f-inventory-delivered" sourceRef="inventory" targetRef="delivered" />
+    <bpmn:sequenceFlow id="f-delivered-issues" sourceRef="delivered" targetRef="issues" />
+    <bpmn:sequenceFlow id="f-issues-returns" name="yes" sourceRef="issues" targetRef="returns">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">issue_reported = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-issues-feedback" name="no" sourceRef="issues" targetRef="feedback">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">issue_reported = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-feedback-order-done" sourceRef="feedback" targetRef="order-done" />
+    <bpmn:sequenceFlow id="f-returns-returns-done" sourceRef="returns" targetRef="returns-done" />
+  </bpmn:process>
+</bpmn:definitions>

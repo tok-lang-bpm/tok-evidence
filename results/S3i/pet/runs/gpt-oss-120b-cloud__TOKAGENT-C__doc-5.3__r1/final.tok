@@ -1,0 +1,34 @@
+tok 1.0 "Office Supply Request"
+
+pool org "Organization"
+  lane employee "Employee"
+    start s "Office supply request started"
+    task t_submit "Submit office supply request"
+    task t_review "Review change comments"
+    task t_resubmit "Resubmit request"
+    end e_reject "Request rejected"
+    end e_done "Request completed"
+  lane supervisor "Supervisor"
+    task t_receive "Receive office supply request"
+    xor d_supervisor "Supervisor decision?"
+  lane purchase "Purchase Department"
+    task t_quot "Make quotations and select vendor"
+    xor g_vendor "Vendor valid?"
+    task t_choose "Choose different vendor"
+  lane system "System"
+    task t_notif_rej "Send rejection notification"
+    task t_genpo "Generate and send purchase order"
+    task t_wait "Wait for product delivery and invoice"
+    task t_notif_res "Send result notification"
+
+flow s -> t_submit -> t_receive -> d_supervisor
+flow d_supervisor -> t_notif_rej "Reject"
+flow t_notif_rej -> e_reject
+flow d_supervisor -> t_review "Change"
+flow t_review -> t_resubmit -> t_receive
+flow d_supervisor -> t_quot "Approve"
+flow t_quot -> g_vendor
+flow g_vendor -> t_genpo "Valid"
+flow g_vendor -> t_choose "Invalid"
+flow t_choose -> t_quot
+flow t_genpo -> t_wait -> t_notif_res -> e_done

@@ -1,0 +1,57 @@
+tok 1.0 "ACME invoice processing"
+
+pool acme "ACME AG"
+  lane sec "Secretariat"
+    start s "Invoice received on paper or fax"
+    task t1 "Receive invoice in central inbox"
+    task t2 "Inspect invoice visually"
+    task t3 "Forward invoice to accounting employee"
+  lane acc "Accounting employee"
+    task a1 "Identify charging supplier"
+    task a2 "Create invoice instance"
+    task a3 "Check invoice items"
+    task a4 "Note cost centers and managers on docket"
+    task a5 "Send docket and invoice copy to first cost center manager"
+    task a6 "Clarify inconsistencies with vendor"
+    task a7 "Consult cost center managers"
+    task a8 "Send invoice copy to cost center managers again"
+    task a9 "Forward invoice copy to commercial manager"
+    task a10 "Resolve complaint with supplier"
+    task a11 "File invoice copy and docket in signature file"
+    task a12 "Give payment instructions"
+    task a13 "Close instance"
+    end e "Invoice processed"
+    xor j1
+    xor j2
+    xor j3
+  lane ccm "Cost center manager"
+    task c1 "Review invoice content for accuracy"
+    xor g1 "Everything in order?"
+    task c2 "Note AP on docket"
+    task c3 "Reject AP with note and statement on docket"
+    xor g2 "All positions marked AP?"
+    task c4 "Send invoice copy to next cost center manager"
+  lane com "Commercial manager"
+    task m1 "Make commercial audit"
+    xor g3 "Complaint?"
+    task m2 "Issue approval for payment"
+    xor g4 "Amount exceeds EUR 20?"
+  lane brd "Board"
+    task b1 "Check invoice again"
+
+flow s -> t1 -> t2 -> t3 -> a1 -> a2 -> a3 -> a4 -> a5 -> j1 -> c1 -> g1
+flow g1 -> c2 "yes"
+flow g1 -> c3 "no"
+flow c2 -> g2
+flow g2 -> c4 "no"
+flow c4 -> j1
+flow g2 -> a9 "yes"
+flow c3 -> a6 -> a7 -> a8 -> j1
+flow a9 -> j2 -> m1 -> g3
+flow g3 -> a10 "yes"
+flow a10 -> j2
+flow g3 -> m2 "no"
+flow m2 -> g4
+flow g4 -> b1 "yes"
+flow g4 -> j3 "no"
+flow b1 -> j3 -> a11 -> a12 -> a13 -> e

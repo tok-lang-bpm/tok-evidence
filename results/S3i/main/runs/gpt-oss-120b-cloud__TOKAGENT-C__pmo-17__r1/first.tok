@@ -1,0 +1,69 @@
+tok 1.0 "Order Fulfillment Process"
+
+pool ecommerce "E-commerce Company"
+  lane customer "Customer"
+    start order_start "Order placed"
+    task place_order "Place order"
+    task report_issue "Report issue upon delivery"
+    xor issue_decision "Customer reports any issues upon delivery?"
+    end order_end "Order fulfilled"
+    end return_end "Return process completed"
+  lane system "System"
+    task record_order "Record order details"
+    task process_payment "Process payment"
+    xor pay_success "Payment successful?"
+    task notify_fail "Notify payment failure"
+    end payment_failed "Process ends due to payment failure"
+    task send_confirm "Send shipping confirmation"
+    task upd_inv "Update inventory levels"
+    task feedback "Send follow-up email for feedback"
+  lane inventory "Inventory"
+    task check_stock "Check stock availability"
+    xor stock_ok "Stock available?"
+    task backorder "Initiate back-order"
+    task inform_delay "Inform customer about delay"
+    task receive_backorder "Receive back-order"
+  lane warehouse "Warehouse"
+    task pick_items "Pick items from warehouse"
+    task quality_control "Perform quality control checks"
+    task package_items "Package items"
+    xor gift_needed "Gift wrap requested?"
+    task gift_wrap "Gift wrap items"
+  lane shipping "Shipping"
+    task prepare_shipping_docs "Prepare shipping documents and labels"
+    xor intl_order "International order?"
+    task prepare_customs "Prepare customs documentation"
+    and and_split "Parallel split"
+    and and_join "Parallel join"
+    task dispatch_order "Dispatch order"
+  lane returns "Returns"
+    task send_return_label "Send return shipping label"
+    task receive_returned_items "Receive returned items"
+    task inspect_returned_items "Inspect returned items"
+    task process_refund "Process refund or replacement"
+
+  flow order_start -> place_order -> record_order -> process_payment -> pay_success
+  flow pay_success -> check_stock "yes"
+  flow pay_success -> notify_fail "no"
+  flow notify_fail -> payment_failed
+  flow payment_failed -> end payment_failed
+  flow check_stock -> stock_ok
+  flow stock_ok -> pick_items "yes"
+  flow stock_ok -> backorder "no"
+  flow backorder -> inform_delay -> receive_backorder -> pick_items
+  flow pick_items -> quality_control -> and_split
+  flow and_split -> package_items
+  flow and_split -> prepare_shipping_docs
+  flow package_items -> gift_needed
+  flow gift_needed -> gift_wrap "yes"
+  flow gift_needed -> and_join "no"
+  flow gift_wrap -> and_join
+  flow prepare_shipping_docs -> intl_order
+  flow intl_order -> prepare_customs "yes"
+  flow intl_order -> and_join "no"
+  flow prepare_customs -> and_join
+  flow and_join -> dispatch_order
+  flow dispatch_order -> send_confirm -> upd_inv -> feedback -> issue_decision
+  flow issue_decision -> send_return_label "yes"
+  flow issue_decision -> order_end "no"
+  flow send_return_label -> receive_returned_items -> inspect_returned_items -> process_refund -> return_end

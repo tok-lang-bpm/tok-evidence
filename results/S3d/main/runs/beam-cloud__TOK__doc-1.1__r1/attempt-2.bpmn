@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Customized bicycle manufacturing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Customized bicycle manufacturing" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="sales" name="Sales department">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_parallel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finished</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide_order</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="storehouse" name="Storehouse">
+        <bpmn:flowNodeRef>process_list</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_qty</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reserve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backorder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>available</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>more_parts</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineering" name="Engineering department">
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_parallel</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Order received" />
+    <bpmn:task id="reject" name="Reject order" />
+    <bpmn:task id="accept" name="Accept order" />
+    <bpmn:parallelGateway id="split_parallel" name="Start preparation" />
+    <bpmn:task id="ship" name="Ship bicycle" />
+    <bpmn:endEvent id="rejected" name="Order rejected" />
+    <bpmn:endEvent id="finished" name="Process finished" />
+    <bpmn:exclusiveGateway id="decide_order" name="Reject or accept order?" />
+    <bpmn:task id="process_list" name="Process part list" />
+    <bpmn:task id="check_qty" name="Check required quantity" />
+    <bpmn:task id="reserve" name="Reserve part" />
+    <bpmn:task id="backorder" name="Back-order part" />
+    <bpmn:exclusiveGateway id="available" name="Part available?" />
+    <bpmn:exclusiveGateway id="more_parts" name="More parts?" default="f-more_parts-join_parallel" />
+    <bpmn:task id="prepare" name="Prepare assembling" />
+    <bpmn:task id="assemble" name="Assemble bicycle" />
+    <bpmn:parallelGateway id="join_parallel" name="Preparation finished" />
+    <bpmn:sequenceFlow id="f-received-decide_order" sourceRef="received" targetRef="decide_order" />
+    <bpmn:sequenceFlow id="f-decide_order-reject" name="reject" sourceRef="decide_order" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-decide_order-accept" name="accept" sourceRef="decide_order" targetRef="accept" />
+    <bpmn:sequenceFlow id="f-reject-rejected" sourceRef="reject" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-accept-split_parallel" sourceRef="accept" targetRef="split_parallel" />
+    <bpmn:sequenceFlow id="f-split_parallel-process_list" sourceRef="split_parallel" targetRef="process_list" />
+    <bpmn:sequenceFlow id="f-split_parallel-prepare" sourceRef="split_parallel" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-process_list-check_qty" sourceRef="process_list" targetRef="check_qty" />
+    <bpmn:sequenceFlow id="f-check_qty-available" sourceRef="check_qty" targetRef="available" />
+    <bpmn:sequenceFlow id="f-available-reserve" name="available" sourceRef="available" targetRef="reserve" />
+    <bpmn:sequenceFlow id="f-available-backorder" name="not available" sourceRef="available" targetRef="backorder" />
+    <bpmn:sequenceFlow id="f-reserve-more_parts" sourceRef="reserve" targetRef="more_parts" />
+    <bpmn:sequenceFlow id="f-backorder-more_parts" sourceRef="backorder" targetRef="more_parts" />
+    <bpmn:sequenceFlow id="f-more_parts-process_list" name="more parts" sourceRef="more_parts" targetRef="process_list">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">moreItems</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-more_parts-join_parallel" name="all parts done" sourceRef="more_parts" targetRef="join_parallel" />
+    <bpmn:sequenceFlow id="f-prepare-join_parallel" sourceRef="prepare" targetRef="join_parallel" />
+    <bpmn:sequenceFlow id="f-join_parallel-assemble" sourceRef="join_parallel" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f-assemble-ship" sourceRef="assemble" targetRef="ship" />
+    <bpmn:sequenceFlow id="f-ship-finished" sourceRef="ship" targetRef="finished" />
+  </bpmn:process>
+</bpmn:definitions>

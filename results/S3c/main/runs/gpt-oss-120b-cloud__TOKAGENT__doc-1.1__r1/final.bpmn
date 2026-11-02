@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Custom Bicycle Manufacturing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Small Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Custom Bicycle Manufacturing" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="sales" name="Sales Department">
+        <bpmn:flowNodeRef>start-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decision-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-process</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="storehouse" name="Storehouse">
+        <bpmn:flowNodeRef>check-part</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>part-available</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reserve-part</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backorder-part</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>storehouse-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineering" name="Engineering Department">
+        <bpmn:flowNodeRef>prepare-assembly</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start-order" name="Order received" />
+    <bpmn:task id="receive-order" name="Receive order" />
+    <bpmn:exclusiveGateway id="decision-order" name="Order accepted?" />
+    <bpmn:parallelGateway id="split" name="Parallel processing" />
+    <bpmn:endEvent id="end-process" name="Process completed" />
+    <bpmn:task id="check-part" name="Check part quantity" />
+    <bpmn:exclusiveGateway id="part-available" name="Part available?" default="f-part-available-backorder-part" />
+    <bpmn:task id="reserve-part" name="Reserve part" />
+    <bpmn:task id="backorder-part" name="Back-order part" />
+    <bpmn:task id="storehouse-done" name="Storehouse completed" />
+    <bpmn:task id="prepare-assembly" name="Prepare assembly" />
+    <bpmn:task id="assemble" name="Assemble bicycle" />
+    <bpmn:task id="ship" name="Ship bicycle" />
+    <bpmn:parallelGateway id="join" name="Join" />
+    <bpmn:sequenceFlow id="f-start-order-receive-order" sourceRef="start-order" targetRef="receive-order" />
+    <bpmn:sequenceFlow id="f-receive-order-decision-order" sourceRef="receive-order" targetRef="decision-order" />
+    <bpmn:sequenceFlow id="f-decision-order-end-process" name="Reject" sourceRef="decision-order" targetRef="end-process">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-decision-order-split" name="Accept" sourceRef="decision-order" targetRef="split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-split-check-part" name="Check part quantity" sourceRef="split" targetRef="check-part" />
+    <bpmn:sequenceFlow id="f-split-prepare-assembly" name="Prepare assembly" sourceRef="split" targetRef="prepare-assembly" />
+    <bpmn:sequenceFlow id="f-check-part-part-available" sourceRef="check-part" targetRef="part-available" />
+    <bpmn:sequenceFlow id="f-part-available-reserve-part" name="yes" sourceRef="part-available" targetRef="reserve-part">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-part-available-backorder-part" name="no" sourceRef="part-available" targetRef="backorder-part" />
+    <bpmn:sequenceFlow id="f-reserve-part-storehouse-done" sourceRef="reserve-part" targetRef="storehouse-done" />
+    <bpmn:sequenceFlow id="f-backorder-part-storehouse-done" sourceRef="backorder-part" targetRef="storehouse-done" />
+    <bpmn:sequenceFlow id="f-prepare-assembly-join" sourceRef="prepare-assembly" targetRef="join" />
+    <bpmn:sequenceFlow id="f-storehouse-done-join" sourceRef="storehouse-done" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-assemble" sourceRef="join" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f-assemble-ship" sourceRef="assemble" targetRef="ship" />
+    <bpmn:sequenceFlow id="f-ship-end-process" sourceRef="ship" targetRef="end-process" />
+  </bpmn:process>
+</bpmn:definitions>

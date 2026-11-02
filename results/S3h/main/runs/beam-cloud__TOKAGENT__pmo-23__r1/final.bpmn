@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Credit scoring" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Scoring_request" name="Scoring request" />
+  <bpmn:message id="Message_Scoring_result" name="Scoring result" />
+  <bpmn:message id="Message_Scoring_delay" name="Scoring delay" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="bank" name="Bank" processRef="bank-process" />
+    <bpmn:participant id="scoring-agency" name="Credit scoring agency" processRef="scoring-agency-process" />
+    <bpmn:messageFlow id="m-send-scoring-agency-start" name="Scoring request" sourceRef="send-scoring" targetRef="agency-start" messageRef="Message_Scoring_request" />
+    <bpmn:messageFlow id="m-send-immediate-receive-immediate" name="Scoring result" sourceRef="send-immediate" targetRef="receive-immediate" messageRef="Message_Scoring_result" />
+    <bpmn:messageFlow id="m-send-delay-receive-delay" name="Scoring delay" sourceRef="send-delay" targetRef="receive-delay" messageRef="Message_Scoring_delay" />
+    <bpmn:messageFlow id="m-send-delayed-result-receive-result" name="Scoring result" sourceRef="send-delayed-result" targetRef="receive-result" messageRef="Message_Scoring_result" />
+  </bpmn:collaboration>
+  <bpmn:process id="bank-process" name="Bank" isExecutable="false">
+    <bpmn:laneSet id="bank-lanes">
+      <bpmn:lane id="clerk" name="Sales clerk">
+        <bpmn:flowNodeRef>start-bank</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-credit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Banking system">
+        <bpmn:flowNodeRef>send-scoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>present-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>display-delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-delayed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start-bank" name="Credit scoring requested" />
+    <bpmn:task id="receive-credit" name="Receive credit scoring" />
+    <bpmn:sendTask id="send-scoring" name="Send scoring request" messageRef="Message_Scoring_request" />
+    <bpmn:eventBasedGateway id="wait" name="Wait for result or delay" />
+    <bpmn:receiveTask id="receive-immediate" name="Receive scoring result" messageRef="Message_Scoring_result" />
+    <bpmn:task id="present-result" name="Present scoring result" />
+    <bpmn:receiveTask id="receive-delay" name="Receive scoring delay" messageRef="Message_Scoring_delay" />
+    <bpmn:task id="display-delay" name="Display check again later message" />
+    <bpmn:receiveTask id="receive-result" name="Receive scoring result" messageRef="Message_Scoring_result" />
+    <bpmn:endEvent id="end-immediate" name="Scoring result presented" />
+    <bpmn:endEvent id="end-delayed" name="Scoring result available" />
+    <bpmn:sequenceFlow id="f-start-bank-receive-credit" sourceRef="start-bank" targetRef="receive-credit" />
+    <bpmn:sequenceFlow id="f-receive-credit-send-scoring" sourceRef="receive-credit" targetRef="send-scoring" />
+    <bpmn:sequenceFlow id="f-send-scoring-wait" sourceRef="send-scoring" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-receive-immediate" sourceRef="wait" targetRef="receive-immediate" />
+    <bpmn:sequenceFlow id="f-wait-receive-delay" sourceRef="wait" targetRef="receive-delay" />
+    <bpmn:sequenceFlow id="f-receive-immediate-present-result" sourceRef="receive-immediate" targetRef="present-result" />
+    <bpmn:sequenceFlow id="f-present-result-end-immediate" sourceRef="present-result" targetRef="end-immediate" />
+    <bpmn:sequenceFlow id="f-receive-delay-display-delay" sourceRef="receive-delay" targetRef="display-delay" />
+    <bpmn:sequenceFlow id="f-display-delay-receive-result" sourceRef="display-delay" targetRef="receive-result" />
+    <bpmn:sequenceFlow id="f-receive-result-end-delayed" sourceRef="receive-result" targetRef="end-delayed" />
+  </bpmn:process>
+  <bpmn:process id="scoring-agency-process" name="Credit scoring agency" isExecutable="false">
+    <bpmn:laneSet id="scoring-agency-lanes">
+      <bpmn:lane id="agency" name="Credit scoring agency">
+        <bpmn:flowNodeRef>agency-start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>level1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>level2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-delayed-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agency-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="agency-start" name="Scoring request received">
+      <bpmn:messageEventDefinition id="agency-start-def" messageRef="Message_Scoring_request" />
+    </bpmn:startEvent>
+    <bpmn:task id="level1" name="Perform level 1 scoring" />
+    <bpmn:exclusiveGateway id="gw-immediate" name="Result available immediately?" default="f-gw-immediate-send-immediate" />
+    <bpmn:sendTask id="send-immediate" name="Send scoring result" messageRef="Message_Scoring_result" />
+    <bpmn:sendTask id="send-delay" name="Inform of delay" messageRef="Message_Scoring_delay" />
+    <bpmn:task id="level2" name="Perform level 2 scoring" />
+    <bpmn:sendTask id="send-delayed-result" name="Send scoring result" messageRef="Message_Scoring_result" />
+    <bpmn:endEvent id="agency-end" name="Agency process completed" />
+    <bpmn:sequenceFlow id="f-agency-start-level1" sourceRef="agency-start" targetRef="level1" />
+    <bpmn:sequenceFlow id="f-level1-gw-immediate" sourceRef="level1" targetRef="gw-immediate" />
+    <bpmn:sequenceFlow id="f-gw-immediate-send-immediate" name="Immediate" sourceRef="gw-immediate" targetRef="send-immediate" />
+    <bpmn:sequenceFlow id="f-gw-immediate-send-delay" name="Delayed" sourceRef="gw-immediate" targetRef="send-delay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-send-immediate-agency-end" sourceRef="send-immediate" targetRef="agency-end" />
+    <bpmn:sequenceFlow id="f-send-delay-level2" sourceRef="send-delay" targetRef="level2" />
+    <bpmn:sequenceFlow id="f-level2-send-delayed-result" sourceRef="level2" targetRef="send-delayed-result" />
+    <bpmn:sequenceFlow id="f-send-delayed-result-agency-end" sourceRef="send-delayed-result" targetRef="agency-end" />
+  </bpmn:process>
+</bpmn:definitions>

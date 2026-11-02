@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="loan-approval-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="loan-approval-process" name="Loan approval process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>taskFeedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endEvent</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="loanApproval" name="Loan approval">
+        <bpmn:flowNodeRef>startEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskReceive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>taskDeny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayMerge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="riskAssessment" name="Risk assessment Web service">
+        <bpmn:flowNodeRef>taskAssess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayAssess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="approver" name="Approver Web service">
+        <bpmn:flowNodeRef>taskSend</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="startEvent" name="Loan approval process starts" />
+    <bpmn:task id="taskReceive" name="Receive a customer request for a loan amount" />
+    <bpmn:task id="taskAssess" name="Assess the request" />
+    <bpmn:exclusiveGateway id="gatewayAssess" name="Assessment result?" default="flowSend" />
+    <bpmn:task id="taskApprove" name="Approve the loan" />
+    <bpmn:task id="taskDeny" name="Deny the loan" />
+    <bpmn:task id="taskSend" name="Send the request to the approver Web service" />
+    <bpmn:exclusiveGateway id="gatewayMerge" name="Merge" />
+    <bpmn:task id="taskFeedback" name="Receive feedback" />
+    <bpmn:endEvent id="endEvent" name="Loan approval process finished" />
+
+    <bpmn:sequenceFlow id="flow1" sourceRef="startEvent" targetRef="taskReceive" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="taskReceive" targetRef="taskAssess" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="taskAssess" targetRef="gatewayAssess" />
+    <bpmn:sequenceFlow id="flowApprove" name="The loan is small and the customer is low risk" sourceRef="gatewayAssess" targetRef="taskApprove" />
+    <bpmn:sequenceFlow id="flowDeny" name="The customer is high risk" sourceRef="gatewayAssess" targetRef="taskDeny" />
+    <bpmn:sequenceFlow id="flowSend" name="The customer needs further review or the loan amount is for $10,000 or more" sourceRef="gatewayAssess" targetRef="taskSend" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="taskApprove" targetRef="gatewayMerge" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="taskDeny" targetRef="gatewayMerge" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="taskSend" targetRef="gatewayMerge" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="gatewayMerge" targetRef="taskFeedback" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="taskFeedback" targetRef="endEvent" />
+  </bpmn:process>
+</bpmn:definitions>

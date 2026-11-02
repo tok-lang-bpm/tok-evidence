@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Office Supply Request" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Office Supply Request" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review-comments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-changed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Immediate supervisor">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return-change</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="purchase" name="Purchase department">
+        <bpmn:flowNodeRef>quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select-vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>vendor-valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>other-vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm-vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive-invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-fulfil</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-fulfil</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-change</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generate-po</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-po</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e-result</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Office supply requirement" />
+    <bpmn:task id="submit" name="Submit office supply request" />
+    <bpmn:task id="review-comments" name="Review the comments for the change request" />
+    <bpmn:endEvent id="e-changed" name="Change requested" />
+    <bpmn:task id="receive" name="Receive the request" />
+    <bpmn:exclusiveGateway id="decide" name="Approve, request a change or reject?" />
+    <bpmn:task id="return-change" name="Return the request with comments" />
+    <bpmn:subProcess id="quotations" name="Make quotations">
+      <bpmn:startEvent id="q-start" name="Quotations needed" />
+      <bpmn:task id="request-quotes" name="Request quotations from vendors" />
+      <bpmn:task id="collect-quotes" name="Collect the quotations" />
+      <bpmn:endEvent id="q-end" name="Quotations made" />
+      <bpmn:sequenceFlow id="f-q-start-request-quotes" sourceRef="q-start" targetRef="request-quotes" />
+      <bpmn:sequenceFlow id="f-request-quotes-collect-quotes" sourceRef="request-quotes" targetRef="collect-quotes" />
+      <bpmn:sequenceFlow id="f-collect-quotes-q-end" sourceRef="collect-quotes" targetRef="q-end" />
+    </bpmn:subProcess>
+    <bpmn:task id="select-vendor" name="Select a vendor" />
+    <bpmn:exclusiveGateway id="vendor-valid" name="Vendor valid in the system?" />
+    <bpmn:task id="other-vendor" name="Choose a different vendor" />
+    <bpmn:task id="confirm-vendor" name="Confirm the selected vendor" />
+    <bpmn:task id="receive-product" name="Receive the delivered product" />
+    <bpmn:task id="receive-invoice" name="Receive the invoice" />
+    <bpmn:parallelGateway id="split-fulfil" name="Split" />
+    <bpmn:parallelGateway id="join-fulfil" name="Join" />
+    <bpmn:task id="register" name="Register the requirement" />
+    <bpmn:task id="notify-reject" name="Send rejection notification" />
+    <bpmn:task id="notify-change" name="Send change request notification" />
+    <bpmn:task id="generate-po" name="Generate the purchase order" />
+    <bpmn:task id="send-po" name="Send the purchase order" />
+    <bpmn:task id="notify-result" name="Send result notification" />
+    <bpmn:endEvent id="e-rejected" name="Request rejected" />
+    <bpmn:endEvent id="e-result" name="Request completed" />
+    <bpmn:sequenceFlow id="f-s-submit" sourceRef="s" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-register" sourceRef="submit" targetRef="register" />
+    <bpmn:sequenceFlow id="f-register-receive" sourceRef="register" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-decide" sourceRef="receive" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-notify-reject" name="rejected" sourceRef="decide" targetRef="notify-reject" />
+    <bpmn:sequenceFlow id="f-decide-return-change" name="change required" sourceRef="decide" targetRef="return-change" />
+    <bpmn:sequenceFlow id="f-decide-quotations" name="approved" sourceRef="decide" targetRef="quotations" />
+    <bpmn:sequenceFlow id="f-notify-reject-e-rejected" sourceRef="notify-reject" targetRef="e-rejected" />
+    <bpmn:sequenceFlow id="f-return-change-notify-change" sourceRef="return-change" targetRef="notify-change" />
+    <bpmn:sequenceFlow id="f-notify-change-review-comments" sourceRef="notify-change" targetRef="review-comments" />
+    <bpmn:sequenceFlow id="f-review-comments-e-changed" sourceRef="review-comments" targetRef="e-changed" />
+    <bpmn:sequenceFlow id="f-quotations-select-vendor" sourceRef="quotations" targetRef="select-vendor" />
+    <bpmn:sequenceFlow id="f-select-vendor-vendor-valid" sourceRef="select-vendor" targetRef="vendor-valid" />
+    <bpmn:sequenceFlow id="f-vendor-valid-other-vendor" name="no" sourceRef="vendor-valid" targetRef="other-vendor" />
+    <bpmn:sequenceFlow id="f-other-vendor-select-vendor" sourceRef="other-vendor" targetRef="select-vendor" />
+    <bpmn:sequenceFlow id="f-vendor-valid-confirm-vendor" name="yes" sourceRef="vendor-valid" targetRef="confirm-vendor" />
+    <bpmn:sequenceFlow id="f-confirm-vendor-generate-po" sourceRef="confirm-vendor" targetRef="generate-po" />
+    <bpmn:sequenceFlow id="f-generate-po-send-po" sourceRef="generate-po" targetRef="send-po" />
+    <bpmn:sequenceFlow id="f-send-po-split-fulfil" sourceRef="send-po" targetRef="split-fulfil" />
+    <bpmn:sequenceFlow id="f-split-fulfil-receive-product" sourceRef="split-fulfil" targetRef="receive-product" />
+    <bpmn:sequenceFlow id="f-receive-product-join-fulfil" sourceRef="receive-product" targetRef="join-fulfil" />
+    <bpmn:sequenceFlow id="f-split-fulfil-receive-invoice" sourceRef="split-fulfil" targetRef="receive-invoice" />
+    <bpmn:sequenceFlow id="f-receive-invoice-join-fulfil" sourceRef="receive-invoice" targetRef="join-fulfil" />
+    <bpmn:sequenceFlow id="f-join-fulfil-notify-result" sourceRef="join-fulfil" targetRef="notify-result" />
+    <bpmn:sequenceFlow id="f-notify-result-e-result" sourceRef="notify-result" targetRef="e-result" />
+  </bpmn:process>
+</bpmn:definitions>

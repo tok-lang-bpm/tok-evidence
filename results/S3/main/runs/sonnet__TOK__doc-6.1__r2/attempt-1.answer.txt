@@ -1,0 +1,66 @@
+```tok
+tok 1.0 "Invoice approval at ACME AG"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received on paper or fax"
+    task inbox "Receive the invoice in the central inbox"
+    task inspect "Inspect the invoice visually"
+    task forward "Forward the invoice to an accounting employee"
+  lane accounting "Accounting employee"
+    task identify "Identify the charging supplier"
+    task create "Create a new instance in ACME Financial Accounting"
+    task checkitems "Check the invoice items"
+    task note "Note the cost centers and cost center managers on the docket"
+    task sendfirst "Send the docket and the copy of the invoice to the first cost center manager"
+    task sendback "Send the copy of the invoice back to accounting"
+    task clarify "Clarify the inconsistencies with the vendor"
+    xor consult "Consultation with cost center managers needed?"
+    task consulting "Consult the cost center managers by telephone or e-mail"
+    task sendagain "Send the copy of the invoice to the cost center managers again"
+    task tocommercial "Forward the copy of the invoice to the commercial manager"
+    task resolve "Resolve the complaint with the supplier"
+    task instruct "Give payment instructions"
+    task close "Close the instance in ACME Financial Accounting"
+    end done "Invoice processed"
+  lane manager "Cost center manager"
+    xor reviewin
+    task review "Review the content of the invoice for accuracy"
+    xor accurate "Everything in order?"
+    task markap "Note the code AP on the docket"
+    task returnmail "Return the copy of the invoice to the internal mail"
+    xor allap "All positions marked AP?"
+    task reject "Reject the AP with a note and explanatory statement on the docket"
+  lane commercial "Commercial manager"
+    xor auditin
+    task audit "Make the commercial audit"
+    xor complaint "Complaint during the audit?"
+    task approve "Issue the approval for payment"
+    xor amount "Bill amount exceeds EUR 20?"
+    xor payjoin
+    task returnsig "Return the copy of the invoice and the docket to accounting in the signature file"
+  lane board "Board"
+    task boardcheck "Check the invoice again"
+
+flow received -> inbox -> inspect -> forward -> identify -> create -> checkitems -> note -> sendfirst -> reviewin
+flow reviewin -> review -> accurate
+flow accurate -> markap "yes"
+flow accurate -> reject "no" default
+flow markap -> returnmail -> allap
+flow allap -> reviewin "no" default
+flow allap -> tocommercial "yes" when="all positions are AP"
+flow reject -> sendback -> clarify -> consult
+flow consult -> consulting "yes" when="consultation needed"
+flow consulting -> clarify
+flow consult -> sendagain "no" default
+flow sendagain -> reviewin
+flow tocommercial -> auditin -> audit -> complaint
+flow complaint -> resolve "yes" when="complaint exists"
+flow resolve -> auditin
+flow complaint -> approve "no" default
+flow approve -> amount
+flow amount -> boardcheck "yes" when="amount > 20"
+flow amount -> payjoin "no" default
+flow boardcheck -> payjoin
+flow payjoin -> returnsig -> instruct -> close -> done
+```

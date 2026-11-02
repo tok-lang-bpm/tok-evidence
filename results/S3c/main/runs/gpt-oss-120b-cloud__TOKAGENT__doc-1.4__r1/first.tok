@@ -1,0 +1,45 @@
+tok 1.0
+
+pool org "Organization" {
+  lane company "Company" {
+    start start "Go public decision"
+    task select_underwriters "Select underwriters"
+    xor fair_check "Facts presented fairly?"
+    end reject_fair "End (facts not fair)"
+  }
+  lane underwriters "Underwriters" {
+    task prepare_reg "Prepare registration statement"
+    task check_bluesky "Check blue‑sky law compliance"
+    task submit_reg "Submit registration to SEC"
+    gateway split = and
+    task roadshow "Arrange road show"
+    gateway join = and
+    task fix_price "Fix issue price"
+    xor reason_check "Any reason not to proceed?"
+    end reject_reason "End (reason found)"
+    task commit "Enter firm commitment to buy stock"
+    task offer "Offer issue to public"
+    end success_end "Process completed"
+  }
+  lane sec "SEC" {
+    task sec_clear "Receive SEC clearance"
+  }
+}
+
+flow start -> select_underwriters
+flow select_underwriters -> fair_check
+flow fair_check -> prepare_reg "yes" when="factsFair = true"
+flow fair_check -> reject_fair "no" when="factsFair = false"
+flow prepare_reg -> check_bluesky
+flow check_bluesky -> submit_reg
+flow submit_reg -> split
+flow split -> roadshow
+flow split -> sec_clear
+flow roadshow -> join
+flow sec_clear -> join
+flow join -> fix_price
+flow fix_price -> reason_check
+flow reason_check -> reject_reason "yes" when="reasonFound = true"
+flow reason_check -> commit "no" when="reasonFound = false"
+flow commit -> offer
+flow offer -> success_end

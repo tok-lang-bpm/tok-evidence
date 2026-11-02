@@ -1,0 +1,151 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4123,
+  "output_tokens": 1314,
+  "seconds": 5.992402000003494,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model the process described. Identify organization and actors. There's MPON and MPOO, likely participants/roles within the organization. Use one pool for the organisation, and lanes for each actor. So pool \"Org\" maybe, with lanes \"MPON\" and \"MPOO\". Steps:\n\n1. MPON sends the dismissal to the MPOO. That's a task: \"sends dismissal to MPOO\". Probably a send task. Use task \"sends dismissal to MPOO\". Since MPON initiates, after start event, MPON task.\n\n2. MPOO reviews the dismissal. Task \"reviews dismissal\". Lane MPOO.\n\n3. Decision: MPOO opposes the dismissal of MPON OR MPOO confirms the dismissal of MPON. So exclusive gateway with two outgoing flows: one labeled \"opposes dismissal\", other \"confirms dismissal\". Then each leads to an end event? Probably after decision, the path ends (maybe separate end events). Could join? Not needed. So two end events after each branch.\n\nUse exclusive gateway label maybe \"Dismissal decision?\" but have branches labelled \"oppose\" and \"confirm\". Tasks maybe not needed after decision; just end events. Could add end events directly after gateway branches.\n\nStructure:\n\npool Org\n  lane MPON\n    start -> task send dismissal -> flow to lane MPOO? Actually flows cross lane within same pool are just flow lines; tasks in lanes connect.\n\nSo after send task, flow to MPOO lane \"reviews dismissal\". Then gateway after review: XOR gateway \"dismissal decision\". Two flows: to end event \"dismissal opposed\" and \"dismissal confirmed\". Or we could have tasks \"opposes dismissal\" and \"confirms dismissal\"? The text says \"MPOO opposes the dismissal of MPON or the MPOO confirms the dismissal of the MPON.\" Could model as tasks: \"opposes dismissal\" and \"confirms dismissal\". But maybe these are decisions, not tasks. Use exclusive gateway after review, then two tasks (oppose, confirm), each leads to end event.\n\nSimplify: after review, XOR gateway; flow to task \"opposes dismissal\" (in MPOO lane) then end; flow to task \"confirms dismissal\" then end. Use exclusive merges? Not needed.\n\nThus elements:\n\n- pool Org\n  - lane MPON\n    - start event\n    - task send dismissal\n  - lane MPOO\n    - task reviews dismissal\n    - xor gateway decision\n    - task opposes dismissal\n    - task confirms dismissal\n\nAll tasks after start are connected via flows.\n\nNeed to ensure all flows go from each element to next. We'll need flow statements.\n\nTok syntax: define pool then lanes. Example:\n\npool org \"Organisation\" {\n  lane mpon \"MPON\"\n  lane mpoo \"MPOO\"\n}\n\nDefine tasks within lanes: need to prefix lane: e.g., `task send-dismissal in mpon \"MPON sends dismissal to MPOO\"`? Actually syntax: you can declare node inside lane block? I recall tok cheat sheet: within pool block, you can write lane definitions and then create elements with `in` attribute to assign to lane. Eg:\n\ntask send-dismissal in mpon \"MPON sends dismissal to MPOO\"\n\nSimilarly for tasks in mpoo.\n\nAlso start and end events: `start start in mpon`? Or just `start start` and assign lane by `in`. I think you can use `in` attribute.\n\nLet's check reference: but cannot. We'll assume correct syntax: element definition optionally includes `in LANE`. Eg: `start start in mpon`. And flow: `flow start -> send-dismissal`.\n\nWe'll need to give ids. Use ids: start, send, review, decision, oppose, confirm, end1, end2.\n\nDefine tasks: send-dismissal, review-dismissal, oppose-dismissal, confirm-dismissal.\n\nGateways: xor decision.\n\nEnd events: end.\n\nDefine flows:\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n\nAlso may need end events: end-oppose, end-confirm.\n\nSet lane for each: start and send in mpon lane. review, decision, oppose, confirm, end in mpoo lane.\n\nDefine start event: `start start in mpon`. End events: `end end-oppose in mpoo`, `end end-confirm in mpoo`.\n\nAdd labels for flows? Not required but good.\n\nNow let's write tok file.\n\nHeader: `tok 1.0 executable?` Not required to be executable. Just plain model. Use `tok 1.0` header.\n\nWe'll include pool block:\n\npool org \"Organisation\" {\n  lane mpon \"MPON\"\n  lane mpoo \"MPOO\"\n}\n\nAfter pool, define elements.\n\nLet's construct.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane mpon \"MPON\"\n  lane mpoo \"MPOO\"\n}\n\nstart start in mpon \"Start\"\n\ntask send-dismissal in mpon \"MPON sends dismissal to MPOO\"\n\ntask review-dismissal in mpoo \"MPOO reviews dismissal\"\n\nxor decision in mpoo \"Dismissal decision\"\n\ntask oppose-dismissal in mpoo \"MPOO opposes dismissal\"\n\ntask confirm-dismissal in mpoo \"MPOO confirms dismissal\"\n\nend end-oppose in mpoo \"Dismissal Opposed\"\nend end-confirm in mpoo \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5465,
+  "output_tokens": 283,
+  "seconds": 1.2369589000009,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to provide only one of `path` or `text`. Provide text only, omit path. Let's redo.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane mpon \"MPON\"\n  lane mpoo \"MPOO\"\n}\n\nstart start in mpon \"Start\"\n\ntask send-dismissal in mpon \"MPON sends dismissal to MPOO\"\n\ntask review-dismissal in mpoo \"MPOO reviews dismissal\"\n\nxor decision in mpoo \"Dismissal decision\"\n\ntask oppose-dismissal in mpoo \"MPOO opposes dismissal\"\n\ntask confirm-dismissal in mpoo \"MPOO confirms dismissal\"\n\nend end-oppose in mpoo \"Dismissal Opposed\"\nend end-confirm in mpoo \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error T001: invalid token: unexpected character '}'\nline 8: error T003: indentation does not match any open block\n5 error(s), 5 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5882,
+  "output_tokens": 147,
+  "seconds": 0.8951173999812454,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The syntax for pool and lane may be different. According to tok cheat sheet, pool syntax: `pool ID \"Label\"` then optional block with lanes: `lane ID \"Label\"` lines perhaps without braces? Actually might be:\n\n```\npool org \"Organisation\"\nlane mpon \"MPON\"\nlane mpoo \"MPOO\"\n```\n\nBut lane should be inside pool. Perhaps syntax: `pool org \"Organisation\" { lane mpon \"MPON\" lane mpoo \"MPOO\" }` but braces cause token error. Could be that pool uses parentheses? Let's check reference quickly.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 8736,
+  "output_tokens": 563,
+  "seconds": 2.46766110000317,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We see that pools and lanes are block-indented. Syntax: `pool ID \"Label\" [process=P] ...` and then block: lines indented inside pool.\n\nSo need to use indentation, not braces. Our earlier use of braces is wrong.\n\nWe must indent lanes under pool, and then define tasks inside lanes also indented? The cheat sheet: \"lanes nest; nodes go inside lanes\". So after lane line, we need indent further tasks under lane. Let's build correctly.\n\nStructure:\n\n```\ntok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n```\n\nMake sure indentation uses two spaces? It probably doesn't matter as long as consistent >0 spaces.\n\nCheck that within lane, we don't need explicit `in`. Good.\n\nNow use `flow` statements after all nodes; they are top-level.\n\nNow send to check.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+    },
+    "is_error": false,
+    "result": "line 9: note L020: name of a splitting gateway is not a question (decision)\n0 error(s), 1 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9373,
+  "output_tokens": 310,
+  "seconds": 1.316986399993766,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Diagnostic L020: name of splitting gateway should be a question. So label for xor gateway should be a question. Use \"Dismissal decision?\"? Probably need to end with question mark. Let's change label to \"Dismissal decision?\" or something. Update.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision?\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 9709,
+  "output_tokens": 230,
+  "seconds": 1.0122523000172805,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Great, no errors. Now format canonical form with fmt.",
+  "tool_calls": [
+   {
+    "name": "fmt",
+    "arguments": {
+     "lang": "en",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision?\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal\nflow send-dismissal -> review-dismissal\nflow review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+    },
+    "is_error": false,
+    "result": "tok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision?\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal -> review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 10143,
+  "output_tokens": 173,
+  "seconds": 0.79693650000263,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0\n\npool org \"Organisation\"\n  lane mpon \"MPON\"\n    start start \"Start\"\n    task send-dismissal \"MPON sends dismissal to MPOO\"\n  lane mpoo \"MPOO\"\n    task review-dismissal \"MPOO reviews dismissal\"\n    xor decision \"Dismissal decision?\"\n    task oppose-dismissal \"MPOO opposes dismissal\"\n    task confirm-dismissal \"MPOO confirms dismissal\"\n    end end-oppose \"Dismissal Opposed\"\n    end end-confirm \"Dismissal Confirmed\"\n\nflow start -> send-dismissal -> review-dismissal -> decision\nflow decision -> oppose-dismissal \"oppose\"\nflow decision -> confirm-dismissal \"confirm\"\nflow oppose-dismissal -> end-oppose\nflow confirm-dismissal -> end-confirm\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

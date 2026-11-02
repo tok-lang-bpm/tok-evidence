@@ -1,0 +1,91 @@
+```tok
+tok 1.0 "Supplier switch-over"
+
+pool supplier "New supplier"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit "Transmit the customer data"
+    task checkDetails "Check the contract details"
+    eventgw decide "Customer decision"
+    catch catchConfirm "Customer confirms the contract" message="Contract confirmation"
+    catch catchWithdraw "Customer withdraws from the switch contract" message="Contract withdrawal"
+    catch catchWeek "7 days pass without withdrawal" timer=P7D
+    catch catchBilling "Final billing received" message="Final billing"
+    end endCustomer "Process ended for the customer"
+  lane service "Customer service"
+    task receive "Receive the customer data"
+    task enter "Enter the customer data object into the CRM system"
+    task compare "Compare the customer data with the internal customer database"
+    task validate "Check the customer data for completeness and plausibility"
+    xor errors "Errors found?"
+    task correct "Correct the errors on the basis of the error list"
+    xor exists "Customer exists in the customer database?"
+    task newCustomer "Create a new customer object"
+    xor objectReady
+    task prepare "Prepare the contract documents"
+    task analyze "Analyze and resolve the causing issues"
+    task regenerate "Generate the contract documents again"
+    task sendConfirmation "Send the confirmation document to the customer"
+    task createContract "Create the CIS contract"
+    task importMeter "Import the meter data into the systems that require it"
+    end endWithdrawn "Switch-over withdrawn"
+    end endImported "Process of winning a new customer ended"
+  lane cis "CIS"
+    task checkDocs "Check the contract documents automatically"
+    xor generated "Contract documents generated?"
+    and parallelOk
+    task sendRequest "Automatically send the switch-over request to the grid operator"
+  lane grid "Grid operator"
+    task checkConcurrence "Check the switch-over request for supplier concurrence"
+    task respond "Transmit the response comment"
+    xor concur "Supplier concurrence?"
+    task informSuppliers "Inform all involved suppliers"
+    task demandResolution "Demand the resolution of the conflict"
+    and parallelNo
+    task communicate "Communicate with the old supplier"
+    task terminate "Terminate the sales agreement between the customer and the old supplier"
+    and join
+    xor accepted
+    and meterSplit
+    task meterTransmit "Transmit the power meter data to customer service and the old supplier"
+    task computeBilling "Compute the final billing from the meter data"
+    task sendBilling "Send the final billing to the old supplier"
+    and afterBilling
+    end endGrid "Process ended for the grid operator"
+  lane old "Old supplier"
+    task createFinal "Create the final billing"
+    task sendFinal "Send the final billing to the customer"
+
+flow request -> transmit -> receive -> enter -> compare -> validate -> errors
+flow errors -> correct "yes"
+flow correct -> validate
+flow errors -> exists "no"
+flow exists -> newCustomer "no"
+flow newCustomer -> objectReady
+flow exists -> objectReady "yes"
+flow objectReady -> prepare -> checkDocs -> generated
+flow generated -> analyze "no"
+flow analyze -> regenerate -> checkDocs
+flow generated -> parallelOk "yes"
+flow parallelOk -> sendConfirmation
+flow parallelOk -> sendRequest -> checkConcurrence -> respond -> concur
+flow concur -> informSuppliers "yes"
+flow informSuppliers -> demandResolution -> checkConcurrence
+flow concur -> parallelNo "no"
+flow parallelNo -> createContract
+flow parallelNo -> communicate -> terminate
+flow sendConfirmation -> join
+flow createContract -> join
+flow terminate -> join
+flow join -> checkDetails -> decide
+flow decide -> catchWithdraw -> endWithdrawn
+flow decide -> catchConfirm
+flow decide -> catchWeek
+flow catchConfirm -> accepted
+flow catchWeek -> accepted
+flow accepted -> meterSplit
+flow meterSplit -> meterTransmit -> importMeter -> endImported
+flow meterSplit -> computeBilling -> sendBilling -> afterBilling
+flow afterBilling -> endGrid
+flow afterBilling -> createFinal -> sendFinal -> catchBilling -> endCustomer
+```

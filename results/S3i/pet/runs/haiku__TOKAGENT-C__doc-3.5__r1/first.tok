@@ -1,0 +1,37 @@
+tok 1.0 "Court file mail handling"
+
+pool office "Court Office"
+  lane mpu "Mail Processing Unit"
+    start received "Mail from the party collected"
+    task collect "Collect the mail from the party"
+    task sortbiz "Sort the unopened mail into business areas"
+    task distribute "Distribute the mail"
+  lane registry "Registry"
+    task openmail "Open the mail"
+    task sortgroups "Sort the mail into groups for distribution"
+    task registermail "Register the mail in the manual incoming Mail Register"
+    task qcheck "Perform the quality check"
+    xor compliant "Mail compliant?"
+    task requisition "Compile a list of requisition explaining the reason for rejection"
+    task sendback "Send the list of requisition back to the party"
+    end rejected "Requisition returned to the party"
+    task capture "Capture the matter details (types of action)"
+    task provide "Provide the matter details to the Cashier"
+    task envelope "Put the receipt and copied documents into an envelope"
+    task post "Post the envelope to the party"
+    and joined
+    end processed "Mail processed"
+  lane cashier "Cashier"
+    task fees "Take the applicable fees attached to the mail"
+    and fork
+    task partydet "Capture the Party Details"
+    task printfile "Print the Physical Court File"
+
+flow received -> collect -> sortbiz -> distribute -> openmail -> sortgroups -> registermail -> qcheck -> compliant
+flow compliant -> requisition "no"
+flow compliant -> capture "yes"
+flow requisition -> sendback -> rejected
+flow capture -> provide -> fees -> fork
+flow fork -> envelope -> post -> joined
+flow fork -> partydet -> printfile -> joined
+flow joined -> processed

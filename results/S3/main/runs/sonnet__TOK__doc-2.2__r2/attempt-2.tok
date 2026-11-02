@@ -1,0 +1,76 @@
+tok 1.0 "Winning a new customer: power supplier switch"
+
+pool company "Company"
+  lane customer "Customer"
+    start requested "Switch-over request initiated"
+    task transmit "Transmit customer data"
+    task checkcontract "Check contract details"
+    eventgw decide
+    catch withdraw "Withdrawal received" message="Withdrawal"
+    catch confirm "Confirmation received" message="Confirmation"
+    catch wait7 "7 days passed" timer=P7D
+    task receivebill "Receive final billing"
+  lane service "Customer service"
+    task receive "Receive customer data"
+    task enter "Enter customer data object into CRM system"
+    task compare "Compare customer data with customer data base"
+    task checkdata "Check customer data for completeness and plausibility"
+    xor errors "Errors found?"
+    task correct "Correct errors using error list"
+    xor exists "Customer exists in data base?"
+    task create "Create new customer object"
+    xor existsmerge
+    xor prepmerge
+    task prepare "Prepare contract documents"
+    task sendconf "Send confirmation document to customer"
+    task createcis "Create CIS contract"
+    xor accepted
+    and split
+    task import "Import meter data to systems"
+    and join
+    end done "New customer won"
+    end withdrawn "Process ended by withdrawal"
+  lane cis "CIS"
+    task checkdocs "Check contract documents"
+    xor generated "Contract documents generated successfully?"
+    task analyze "Analyze and resolve issues"
+    task sendreq "Send request to grid operator"
+  lane grid "Grid operator"
+    task checkreq "Check switch-over request for supplier concurrence"
+    xor concurrence "Supplier concurrence?"
+    task informsup "Inform involved suppliers and demand conflict resolution"
+    task terminate "Terminate sales agreement with old supplier"
+    task transmitmeter "Transmit power meter data"
+    task compute "Compute final billing"
+    task sendbill "Send final billing to old supplier"
+    end rejected "Switch-over rejected"
+  lane old "Old supplier"
+    task createbill "Create final billing"
+    task sendcust "Send final billing to customer"
+
+flow requested -> transmit -> receive -> enter -> compare -> checkdata -> errors
+flow errors -> correct "yes" when="errorsFound = true"
+flow correct -> checkdata
+flow errors -> exists "no" default
+flow exists -> create "no" default
+flow exists -> existsmerge "yes" when="customerExists = true"
+flow create -> existsmerge
+flow existsmerge -> prepmerge -> prepare -> checkdocs -> generated
+flow generated -> analyze "no" default
+flow analyze -> prepmerge
+flow generated -> sendconf "yes" when="documentsGenerated = true"
+flow sendconf -> sendreq -> checkreq -> concurrence
+flow concurrence -> informsup "yes" when="supplierConcurrence = true"
+flow informsup -> rejected
+flow concurrence -> terminate "no" default
+flow terminate -> createcis -> checkcontract -> decide
+flow decide -> withdraw
+flow decide -> confirm
+flow decide -> wait7
+flow withdraw -> withdrawn
+flow confirm -> accepted
+flow wait7 -> accepted
+flow accepted -> split
+flow split -> transmitmeter -> import -> join
+flow split -> compute -> sendbill -> createbill -> sendcust -> receivebill -> join
+flow join -> done

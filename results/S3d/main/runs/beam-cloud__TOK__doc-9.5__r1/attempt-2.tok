@@ -1,0 +1,52 @@
+tok 1.0 "Expense report processing"
+
+pool organisation "Organisation"
+  lane employee "Employee"
+    task resubmit "Re-submit expense report"
+    end resubmitted "Expense report re-submitted"
+  lane supervisor "Supervisor"
+  lane system "System"
+    start received "Expense report received"
+    sub handle "Handle expense report"
+      start handling "Expense report handling"
+      xor has_account "Employee has account?"
+      task create_account "Create new account"
+      task review "Review expense report for automatic approval"
+      xor amount "Amount under $200?"
+      task auto_approve "Automatically approve expense report"
+      task approve "Approve expense report"
+      xor approved "Expense report approved?"
+      task reject "Send rejection notice by email"
+      task reimburse "Send reimbursement to direct deposit bank account"
+      end rejected "Expense report rejected"
+      end reimbursed "Expense report reimbursed"
+
+      flow handling -> has_account
+      flow has_account -> create_account "No" when="hasAccount = false"
+      flow has_account -> review "Yes" default
+      flow create_account -> review
+      flow review -> amount
+      flow amount -> auto_approve "Yes" when="amount < 200"
+      flow amount -> approve "No" default
+      flow auto_approve -> reimburse
+      flow approve -> approved
+      flow approved -> reimburse "Yes" when="approved = true"
+      flow approved -> reject "No" default
+      flow reimburse -> reimbursed
+      flow reject -> rejected
+
+    boundary progress "Approval in progress" on=handle timer=P7D noninterrupting
+    boundary cancelled "Expense report cancelled" on=handle timer=P30D
+
+    task notify_progress "Send approval in progress email"
+    end progress_sent "Approval in progress notice sent"
+    task notify_cancellation "Send cancellation notice by email"
+    end handled "Expense report handled"
+
+    flow received -> handle
+    flow handle -> handled
+    flow progress -> notify_progress
+    flow notify_progress -> progress_sent
+    flow cancelled -> notify_cancellation
+    flow notify_cancellation -> resubmit
+    flow resubmit -> resubmitted

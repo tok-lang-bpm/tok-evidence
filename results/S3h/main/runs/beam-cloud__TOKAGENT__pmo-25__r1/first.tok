@@ -1,0 +1,49 @@
+tok 1.0 "Find a Job"
+
+pool find-job "Find a Job"
+  lane applicant "Job Applicant"
+    start s "Start"
+    task report-applications "Report job applications"
+    xor gw-negotiate "Negotiate job interview?"
+    task negotiate-interview "Negotiate job interview"
+    xor join-negotiate
+    xor gw-want "Company wants applicant?"
+    task enter-probation "Enter probation phase"
+    and g-ratings "Rate each other"
+    task rate-company "Rate company"
+    and join-ratings
+    catch wait-year "Wait 1 year" timer=P1Y
+    task publish-reviews "Publish company reviews"
+    xor gw-permanent "Job becomes permanent?"
+    xor gw-low-rating "Rated C or lower?"
+    end end-success "End"
+  lane company "Company"
+    task confirm-receipt "Confirm receipt of application"
+    task rate-application "Rate job application"
+    task rate-applicant "Rate applicant"
+  lane platform "Job Portal"
+    task send-offers "Send potential job offers"
+
+flow s -> report-applications
+flow report-applications -> send-offers
+flow send-offers -> confirm-receipt
+flow confirm-receipt -> rate-application
+flow rate-application -> gw-negotiate
+flow gw-negotiate -> negotiate-interview "yes" when="interview = true"
+flow gw-negotiate -> join-negotiate "no" default
+flow negotiate-interview -> join-negotiate
+flow join-negotiate -> gw-want
+flow gw-want -> enter-probation "yes" when="company_wants = true"
+flow gw-want -> report-applications "no" default
+flow enter-probation -> g-ratings
+flow g-ratings -> rate-company
+flow g-ratings -> rate-applicant
+flow rate-company -> join-ratings
+flow rate-applicant -> join-ratings
+flow join-ratings -> wait-year
+flow wait-year -> publish-reviews
+flow publish-reviews -> gw-permanent
+flow gw-permanent -> gw-low-rating "yes" when="job_permanent = true"
+flow gw-permanent -> report-applications "no" default
+flow gw-low-rating -> end-success "above C" when="company_rating > \"C\""
+flow gw-low-rating -> send-offers "C or lower" default

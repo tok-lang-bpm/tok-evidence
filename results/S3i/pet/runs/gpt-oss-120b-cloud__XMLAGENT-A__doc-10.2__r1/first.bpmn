@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgFailure" name="Failure notification"/>
+  <bpmn:message id="msgSuccess" name="Success notification"/>
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Org">
+      <bpmn:lane id="Lane_MPN" name="MPON">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1_ReportMeterOperation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_7_EquipmentAcquisition_MPN</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_GO" name="GO">
+        <bpmn:flowNodeRef>Task_2_ExamineApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_3_RejectApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_4_ConfirmApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_5_InformMPOORegistration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_6_InformMSPORegistration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateCatchEvent_Failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IntermediateCatchEvent_Success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_Timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_11_InformMPONFailureDeadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_12_ConfirmFailureAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_13_AssignMPON</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_14_ConfirmAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_15_InformMPOOFailureAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_16_InformMPOOAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_17_InformMSPOFailureAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_18_InformMSPOAssignment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_19_InformSPAssignment</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_MPOO" name="MPOO">
+        <bpmn:flowNodeRef>Task_8_EquipmentAcquisition_MPOO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_MSPO" name="MSPO" />
+      <bpmn:lane id="Lane_SP" name="SP" />
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_1" name="Start" />
+    <bpmn:task id="Task_1_ReportMeterOperation" name="1. Report meter operation to GO" />
+    <bpmn:task id="Task_2_ExamineApplication" name="2. Examine application of MPON" />
+    <bpmn:exclusiveGateway id="GW_AppDecision" name="3. Application approved?" />
+    <bpmn:task id="Task_3_RejectApplication" name="3. Reject application of MPON" />
+    <bpmn:task id="Task_4_ConfirmApplication" name="4. Confirm application of MPON" />
+    <bpmn:parallelGateway id="PG_RegSplit" />
+    <bpmn:task id="Task_5_InformMPOORegistration" name="5. Inform MPOO about registration confirmation of MPON" />
+    <bpmn:task id="Task_6_InformMSPORegistration" name="6. Inform MSPO about registration confirmation of MPON" />
+    <bpmn:parallelGateway id="PG_RegJoin" />
+    <bpmn:parallelGateway id="PG_EquipSplit" />
+    <bpmn:task id="Task_7_EquipmentAcquisition_MPN" name="7. Perform equipment acquisition and/or equipment changes (MPON)" />
+    <bpmn:task id="Task_8_EquipmentAcquisition_MPOO" name="8. Perform equipment acquisition and/or equipment changes (MPOO)" />
+    <bpmn:parallelGateway id="PG_EquipJoin" />
+    <bpmn:eventBasedGateway id="EBG_WaitMPONMessage" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_Failure" name="9. Receive failure notification from MPON">
+      <bpmn:messageEventDefinition messageRef="msgFailure" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_Success" name="10. Receive success notification from MPON">
+      <bpmn:messageEventDefinition messageRef="msgSuccess" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Timer_Timeout" name="Timeout waiting for MPON">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT72H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_11_InformMPONFailureDeadline" name="11. Inform MPON about failure of the overall transaction by deadline" />
+    <bpmn:task id="Task_12_ConfirmFailureAssignment" name="12. Confirm failure of the assignment to MPON" />
+    <bpmn:task id="Task_13_AssignMPON" name="13. Assign MPON" />
+    <bpmn:task id="Task_14_ConfirmAssignment" name="14. Confirm assignment to MPON" />
+    <bpmn:parallelGateway id="PG_NotifyFailSplit" />
+    <bpmn:task id="Task_15_InformMPOOFailureAssignment" name="15. Inform MPOO about failure of assignment of MPON" />
+    <bpmn:task id="Task_17_InformMSPOFailureAssignment" name="17. Inform MSPO about failure of assignment of MPON" />
+    <bpmn:task id="Task_19_InformSPAssignment" name="19. Inform SP about assignment of MPON" />
+    <bpmn:parallelGateway id="PG_NotifyFailJoin" />
+    <bpmn:parallelGateway id="PG_NotifySuccessSplit" />
+    <bpmn:task id="Task_16_InformMPOOAssignment" name="16. Inform MPOO about assignment of MPON" />
+    <bpmn:task id="Task_18_InformMSPOAssignment" name="18. Inform MSPO about assignment of MPON" />
+    <bpmn:parallelGateway id="PG_NotifySuccessJoin" />
+    <bpmn:endEvent id="End_Reject" name="End (rejected)" />
+    <bpmn:endEvent id="End_Complete" name="End (completed)" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_1" targetRef="Task_1_ReportMeterOperation" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Task_1_ReportMeterOperation" targetRef="Task_2_ExamineApplication" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Task_2_ExamineApplication" targetRef="GW_AppDecision" />
+    <bpmn:sequenceFlow id="F4" name="reject" sourceRef="GW_AppDecision" targetRef="Task_3_RejectApplication" />
+    <bpmn:sequenceFlow id="F5" name="confirm" sourceRef="GW_AppDecision" targetRef="Task_4_ConfirmApplication" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Task_3_RejectApplication" targetRef="End_Reject" />
+    <bpmn:sequenceFlow id="F7" sourceRef="Task_4_ConfirmApplication" targetRef="PG_RegSplit" />
+    <bpmn:sequenceFlow id="F8" sourceRef="PG_RegSplit" targetRef="Task_5_InformMPOORegistration" />
+    <bpmn:sequenceFlow id="F9" sourceRef="PG_RegSplit" targetRef="Task_6_InformMSPORegistration" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_5_InformMPOORegistration" targetRef="PG_RegJoin" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Task_6_InformMSPORegistration" targetRef="PG_RegJoin" />
+    <bpmn:sequenceFlow id="F12" sourceRef="PG_RegJoin" targetRef="PG_EquipSplit" />
+    <bpmn:sequenceFlow id="F13" sourceRef="PG_EquipSplit" targetRef="Task_7_EquipmentAcquisition_MPN" />
+    <bpmn:sequenceFlow id="F14" sourceRef="PG_EquipSplit" targetRef="Task_8_EquipmentAcquisition_MPOO" />
+    <bpmn:sequenceFlow id="F15" sourceRef="Task_7_EquipmentAcquisition_MPN" targetRef="PG_EquipJoin" />
+    <bpmn:sequenceFlow id="F16" sourceRef="Task_8_EquipmentAcquisition_MPOO" targetRef="PG_EquipJoin" />
+    <bpmn:sequenceFlow id="F17" sourceRef="PG_EquipJoin" targetRef="EBG_WaitMPONMessage" />
+    <bpmn:sequenceFlow id="F18" sourceRef="EBG_WaitMPONMessage" targetRef="IntermediateCatchEvent_Failure" />
+    <bpmn:sequenceFlow id="F19" sourceRef="EBG_WaitMPONMessage" targetRef="IntermediateCatchEvent_Success" />
+    <bpmn:sequenceFlow id="F20" sourceRef="EBG_WaitMPONMessage" targetRef="Timer_Timeout" />
+    <bpmn:sequenceFlow id="F21" sourceRef="Timer_Timeout" targetRef="Task_11_InformMPONFailureDeadline" />
+    <bpmn:sequenceFlow id="F22" sourceRef="IntermediateCatchEvent_Failure" targetRef="Task_12_ConfirmFailureAssignment" />
+    <bpmn:sequenceFlow id="F23" sourceRef="Task_11_InformMPONFailureDeadline" targetRef="Task_12_ConfirmFailureAssignment" />
+    <bpmn:sequenceFlow id="F24" sourceRef="Task_12_ConfirmFailureAssignment" targetRef="PG_NotifyFailSplit" />
+    <bpmn:sequenceFlow id="F25" sourceRef="Task_13_AssignMPON" targetRef="Task_14_ConfirmAssignment" />
+    <bpmn:sequenceFlow id="F26" sourceRef="Task_14_ConfirmAssignment" targetRef="PG_NotifySuccessSplit" />
+    <bpmn:sequenceFlow id="F27" sourceRef="IntermediateCatchEvent_Success" targetRef="Task_13_AssignMPON" />
+    <bpmn:sequenceFlow id="F28" sourceRef="PG_NotifyFailSplit" targetRef="Task_15_InformMPOOFailureAssignment" />
+    <bpmn:sequenceFlow id="F29" sourceRef="PG_NotifyFailSplit" targetRef="Task_17_InformMSPOFailureAssignment" />
+    <bpmn:sequenceFlow id="F30" sourceRef="PG_NotifyFailSplit" targetRef="Task_19_InformSPAssignment" />
+    <bpmn:sequenceFlow id="F31" sourceRef="Task_15_InformMPOOFailureAssignment" targetRef="PG_NotifyFailJoin" />
+    <bpmn:sequenceFlow id="F32" sourceRef="Task_17_InformMSPOFailureAssignment" targetRef="PG_NotifyFailJoin" />
+    <bpmn:sequenceFlow id="F33" sourceRef="Task_19_InformSPAssignment" targetRef="PG_NotifyFailJoin" />
+    <bpmn:sequenceFlow id="F34" sourceRef="PG_NotifyFailJoin" targetRef="End_Complete" />
+    <bpmn:sequenceFlow id="F35" sourceRef="PG_NotifySuccessSplit" targetRef="Task_16_InformMPOOAssignment" />
+    <bpmn:sequenceFlow id="F36" sourceRef="PG_NotifySuccessSplit" targetRef="Task_18_InformMSPOAssignment" />
+    <bpmn:sequenceFlow id="F37" sourceRef="PG_NotifySuccessSplit" targetRef="Task_19_InformSPAssignment" />
+    <bpmn:sequenceFlow id="F38" sourceRef="Task_16_InformMPOOAssignment" targetRef="PG_NotifySuccessJoin" />
+    <bpmn:sequenceFlow id="F39" sourceRef="Task_18_InformMSPOAssignment" targetRef="PG_NotifySuccessJoin" />
+    <bpmn:sequenceFlow id="F40" sourceRef="Task_19_InformSPAssignment" targetRef="PG_NotifySuccessJoin" />
+    <bpmn:sequenceFlow id="F41" sourceRef="PG_NotifySuccessJoin" targetRef="End_Complete" />
+  </bpmn:process>
+</bpmn:definitions>

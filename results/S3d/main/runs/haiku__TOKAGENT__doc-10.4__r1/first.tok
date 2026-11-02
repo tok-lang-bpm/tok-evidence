@@ -1,0 +1,27 @@
+tok 1.0 "Metering equipment change"
+
+pool p "Metering point operation"
+  lane mpon "MPON"
+    start s "Equipment change intention"
+    send n1 "Notify MPOO about equipment change intentions" message="Equipment change intention"
+    task fr "Perform final reading" doc="Performed by MPON or MPOO (MPON when MPOO does not self-dismount)"
+    task dis "Dismount old equipment" doc="Performed by MPON or MPOO (MPON when MPOO does not self-dismount)"
+    task mnt "Mount new device"
+    task rd "Read meter count from installed meter"
+    send gv "Send values of final reading to GO" message="Final reading values"
+    send inf "Tell GO about device changes, master data and meter count at installation" message="Device changes, master data, meter count at installation"
+  lane mpoo "MPOO"
+    xor g1 "Self-dismounting?"
+    task ann "Announce self-dismounting to MPON"
+    task nosd "Notify MPON about no self-dismounting"
+    xor g2
+  lane go "GO"
+    send msp "Notify MSP about device changes, master data, meter count at dismounting and at installation" message="Device changes, master data, meter counts"
+    end e "Change process finished"
+
+flow s -> n1 -> g1
+flow g1 -> ann "yes"
+flow g1 -> nosd "no"
+flow ann -> g2
+flow nosd -> g2
+flow g2 -> fr -> dis -> mnt -> rd -> gv -> inf -> msp -> e

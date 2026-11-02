@@ -1,0 +1,120 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="hotel" name="The Evanstonian" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="guest-lane" name="Guest">
+        <bpmn:flowNodeRef>n_start</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="manager-lane" name="Room-Service Manager">
+        <bpmn:flowNodeRef>t_take</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_alc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>p_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>j_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_sub_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_give_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_assign_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>p_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>j_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_sub_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_assign_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="kitchen-lane" name="Kitchen">
+        <bpmn:flowNodeRef>k_prep_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>k_prep_no</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sommelier-lane" name="Sommelier">
+        <bpmn:flowNodeRef>s_fetch_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_prep_yes</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="waiter-lane" name="Waiter">
+        <bpmn:flowNodeRef>w_ready_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>w_drinks_yes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>w_ready_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>w_drinks_no</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_deliver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_another</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>w_wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_debit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>n_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="n_start" name="Guest calls room service" />
+
+    <bpmn:task id="t_take" name="Take down the order" />
+
+    <bpmn:exclusiveGateway id="g_alc" name="Order includes alcoholic beverage?" default="f_no" />
+
+    <bpmn:parallelGateway id="p_yes" />
+    <bpmn:task id="t_sub_yes" name="Submit an order ticket to the kitchen" />
+    <bpmn:task id="k_prep_yes" name="Prepare the food" />
+    <bpmn:task id="t_give_yes" name="Give an order to the sommelier" />
+    <bpmn:task id="s_fetch_yes" name="Fetch wine from the cellar" />
+    <bpmn:task id="s_prep_yes" name="Prepare alcoholic beverages" />
+    <bpmn:task id="t_assign_yes" name="Assign the order to the waiter" />
+    <bpmn:task id="w_ready_yes" name="Ready a cart" />
+    <bpmn:task id="w_drinks_yes" name="Prepare nonalcoholic drinks" />
+    <bpmn:parallelGateway id="j_yes" />
+
+    <bpmn:parallelGateway id="p_no" />
+    <bpmn:task id="t_sub_no" name="Submit an order ticket to the kitchen" />
+    <bpmn:task id="k_prep_no" name="Prepare the food" />
+    <bpmn:task id="t_assign_no" name="Assign the order to the waiter" />
+    <bpmn:task id="w_ready_no" name="Ready a cart" />
+    <bpmn:task id="w_drinks_no" name="Prepare nonalcoholic drinks" />
+    <bpmn:parallelGateway id="j_no" />
+
+    <bpmn:exclusiveGateway id="g_merge" name="Paths merged" />
+    <bpmn:task id="t_deliver" name="Deliver to the guest's room" />
+    <bpmn:exclusiveGateway id="g_another" name="Another order to prepare or deliver?" default="f_debit" />
+    <bpmn:task id="w_wait" name="Wait to do the billing" />
+    <bpmn:task id="t_debit" name="Debit the guest's account" />
+    <bpmn:endEvent id="n_end" name="Order completed" />
+
+    <bpmn:sequenceFlow id="f0" sourceRef="n_start" targetRef="t_take" />
+    <bpmn:sequenceFlow id="f1" sourceRef="t_take" targetRef="g_alc" />
+
+    <bpmn:sequenceFlow id="f_yes" name="yes" sourceRef="g_alc" targetRef="p_yes">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">alcoholicBeverageIncluded == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_no" name="no" sourceRef="g_alc" targetRef="p_no" />
+
+    <bpmn:sequenceFlow id="fy_sub" sourceRef="p_yes" targetRef="t_sub_yes" />
+    <bpmn:sequenceFlow id="fy_kitch" sourceRef="t_sub_yes" targetRef="k_prep_yes" />
+    <bpmn:sequenceFlow id="fy_kitch_join" sourceRef="k_prep_yes" targetRef="j_yes" />
+    <bpmn:sequenceFlow id="fy_give" sourceRef="p_yes" targetRef="t_give_yes" />
+    <bpmn:sequenceFlow id="fy_fetch" sourceRef="t_give_yes" targetRef="s_fetch_yes" />
+    <bpmn:sequenceFlow id="fy_prepbev" sourceRef="s_fetch_yes" targetRef="s_prep_yes" />
+    <bpmn:sequenceFlow id="fy_wine_join" sourceRef="s_prep_yes" targetRef="j_yes" />
+    <bpmn:sequenceFlow id="fy_assign" sourceRef="p_yes" targetRef="t_assign_yes" />
+    <bpmn:sequenceFlow id="fy_ready" sourceRef="t_assign_yes" targetRef="w_ready_yes" />
+    <bpmn:sequenceFlow id="fy_drinks" sourceRef="w_ready_yes" targetRef="w_drinks_yes" />
+    <bpmn:sequenceFlow id="fy_waiter_join" sourceRef="w_drinks_yes" targetRef="j_yes" />
+    <bpmn:sequenceFlow id="fy_join2merge" sourceRef="j_yes" targetRef="g_merge" />
+
+    <bpmn:sequenceFlow id="fn_sub" sourceRef="p_no" targetRef="t_sub_no" />
+    <bpmn:sequenceFlow id="fn_kitch" sourceRef="t_sub_no" targetRef="k_prep_no" />
+    <bpmn:sequenceFlow id="fn_kitch_join" sourceRef="k_prep_no" targetRef="j_no" />
+    <bpmn:sequenceFlow id="fn_assign" sourceRef="p_no" targetRef="t_assign_no" />
+    <bpmn:sequenceFlow id="fn_ready" sourceRef="t_assign_no" targetRef="w_ready_no" />
+    <bpmn:sequenceFlow id="fn_drinks" sourceRef="w_ready_no" targetRef="w_drinks_no" />
+    <bpmn:sequenceFlow id="fn_waiter_join" sourceRef="w_drinks_no" targetRef="j_no" />
+    <bpmn:sequenceFlow id="fn_join2merge" sourceRef="j_no" targetRef="g_merge" />
+
+    <bpmn:sequenceFlow id="f_deliv" sourceRef="g_merge" targetRef="t_deliver" />
+    <bpmn:sequenceFlow id="f_another" sourceRef="t_deliver" targetRef="g_another" />
+
+    <bpmn:sequenceFlow id="f_wait" name="yes" sourceRef="g_another" targetRef="w_wait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">anotherOrderToPrepareOrDeliver == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_debit" name="no" sourceRef="g_another" targetRef="t_debit" />
+    <bpmn:sequenceFlow id="f_wait2debit" sourceRef="w_wait" targetRef="t_debit" />
+    <bpmn:sequenceFlow id="f_end" sourceRef="t_debit" targetRef="n_end" />
+  </bpmn:process>
+</bpmn:definitions>
+```

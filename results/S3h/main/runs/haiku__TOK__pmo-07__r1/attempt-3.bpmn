@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Ticket booking and travel" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Travel company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Ticket booking and travel" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>search</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>provide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>journey</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback_q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="booking" name="Booking system">
+        <bpmn:flowNodeRef>generate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dispatch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joined</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="travel" name="Travel company">
+        <bpmn:flowNodeRef>inventory</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reminder_q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>remind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Customer needs a ticket" />
+    <bpmn:task id="search" name="Search for a flight, train, or bus ticket" />
+    <bpmn:task id="select" name="Select the route, date, and time" />
+    <bpmn:task id="provide" name="Provide personal information and payment details" />
+    <bpmn:task id="journey" name="Complete the journey" />
+    <bpmn:exclusiveGateway id="feedback_q" name="Feedback or services after travel?" default="f-feedback_q-done" />
+    <bpmn:task id="feedback" name="Give post-travel feedback or use services" />
+    <bpmn:endEvent id="done" name="Process concluded" />
+    <bpmn:task id="generate" name="Generate the ticket" />
+    <bpmn:parallelGateway id="dispatch" name="Split" />
+    <bpmn:task id="send" name="Send the ticket by email or SMS" />
+    <bpmn:parallelGateway id="joined" name="Join" />
+    <bpmn:task id="inventory" name="Update the seat inventory" />
+    <bpmn:exclusiveGateway id="reminder_q" name="Reminders and instructions to send?" default="f-reminder_q-checkin" />
+    <bpmn:task id="remind" name="Send reminders and instructions for check-in or boarding" />
+    <bpmn:task id="checkin" name="Check in and board" />
+    <bpmn:sequenceFlow id="f-begin-search" sourceRef="begin" targetRef="search" />
+    <bpmn:sequenceFlow id="f-search-select" sourceRef="search" targetRef="select" />
+    <bpmn:sequenceFlow id="f-select-provide" sourceRef="select" targetRef="provide" />
+    <bpmn:sequenceFlow id="f-provide-generate" sourceRef="provide" targetRef="generate" />
+    <bpmn:sequenceFlow id="f-generate-dispatch" sourceRef="generate" targetRef="dispatch" />
+    <bpmn:sequenceFlow id="f-dispatch-send" sourceRef="dispatch" targetRef="send" />
+    <bpmn:sequenceFlow id="f-send-joined" sourceRef="send" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-dispatch-inventory" sourceRef="dispatch" targetRef="inventory" />
+    <bpmn:sequenceFlow id="f-inventory-joined" sourceRef="inventory" targetRef="joined" />
+    <bpmn:sequenceFlow id="f-joined-reminder_q" sourceRef="joined" targetRef="reminder_q" />
+    <bpmn:sequenceFlow id="f-reminder_q-remind" name="yes" sourceRef="reminder_q" targetRef="remind">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reminders_required</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-reminder_q-checkin" name="no" sourceRef="reminder_q" targetRef="checkin" />
+    <bpmn:sequenceFlow id="f-remind-checkin" sourceRef="remind" targetRef="checkin" />
+    <bpmn:sequenceFlow id="f-checkin-journey" sourceRef="checkin" targetRef="journey" />
+    <bpmn:sequenceFlow id="f-journey-feedback_q" sourceRef="journey" targetRef="feedback_q" />
+    <bpmn:sequenceFlow id="f-feedback_q-feedback" name="yes" sourceRef="feedback_q" targetRef="feedback">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">feedback_or_services_used</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-feedback_q-done" name="no" sourceRef="feedback_q" targetRef="done" />
+    <bpmn:sequenceFlow id="f-feedback-done" sourceRef="feedback" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

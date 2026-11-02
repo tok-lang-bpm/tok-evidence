@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="bankPool" name="Bank" processRef="bankProcess" />
+    <bpmn:participant id="agencyPool" name="Agency" processRef="agencyProcess" />
+    <!-- Message flows -->
+    <bpmn:messageFlow id="msgRequest" name="Scoring request" sourceRef="sendRequest" targetRef="agencyQuickScoring" />
+    <bpmn:messageFlow id="msgImmediateResult" name="Immediate result" sourceRef="agencyImmediateResult" targetRef="receiveImmediateResult" />
+    <bpmn:messageFlow id="msgDelay" name="Delay information" sourceRef="agencyInformDelay" targetRef="receiveDelayInfo" />
+    <bpmn:messageFlow id="msgFinalResult" name="Final result" sourceRef="agencyFinalResult" targetRef="receiveFinalResult" />
+  </bpmn:collaboration>
+  <bpmn:process id="bankProcess" isExecutable="false">
+    <bpmn:laneSet id="bankLanes">
+      <bpmn:lane id="clerkLane" name="Sales Clerk">
+        <bpmn:flowNodeRef>startEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>presentImmediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>presentFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endImmediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endFinal</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bankSysLane" name="Banking System">
+        <bpmn:flowNodeRef>sendRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitGateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveImmediateResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveDelayInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveFinalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>displayDelay</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="startEvent" name="Clerk initiates credit scoring" />
+    <bpmn:task id="sendRequest" name="Banking system sends scoring request to agency" />
+    <bpmn:parallelGateway id="splitGateway" name="Await scoring responses" />
+    <bpmn:task id="receiveImmediateResult" name="Banking system receives immediate result" />
+    <bpmn:task id="presentImmediate" name="Present immediate result to clerk" />
+    <bpmn:endEvent id="endImmediate" name="Process ends (immediate result)" />
+    <bpmn:task id="receiveDelayInfo" name="Banking system receives delay information" />
+    <bpmn:task id="displayDelay" name="Display delay message to clerk" />
+    <bpmn:task id="receiveFinalResult" name="Banking system receives final result" />
+    <bpmn:task id="presentFinal" name="Present final result to clerk" />
+    <bpmn:endEvent id="endFinal" name="Process ends (final result)" />
+    <bpmn:sequenceFlow id="f1" sourceRef="startEvent" targetRef="sendRequest" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendRequest" targetRef="splitGateway" />
+    <bpmn:sequenceFlow id="f3a" sourceRef="splitGateway" targetRef="receiveImmediateResult" />
+    <bpmn:sequenceFlow id="f3b" sourceRef="splitGateway" targetRef="receiveDelayInfo" />
+    <bpmn:sequenceFlow id="f4" sourceRef="receiveImmediateResult" targetRef="presentImmediate" />
+    <bpmn:sequenceFlow id="f5" sourceRef="presentImmediate" targetRef="endImmediate" />
+    <bpmn:sequenceFlow id="f6" sourceRef="receiveDelayInfo" targetRef="displayDelay" />
+    <bpmn:sequenceFlow id="f7" sourceRef="displayDelay" targetRef="receiveFinalResult" />
+    <bpmn:sequenceFlow id="f8" sourceRef="receiveFinalResult" targetRef="presentFinal" />
+    <bpmn:sequenceFlow id="f9" sourceRef="presentFinal" targetRef="endFinal" />
+  </bpmn:process>
+  <bpmn:process id="agencyProcess" isExecutable="false">
+    <bpmn:laneSet id="agencyLanes">
+      <bpmn:lane id="agencyLane" name="Agency">
+        <bpmn:flowNodeRef>agencyStart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyQuickScoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayResultImmediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyImmediateResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyInformDelay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyLevel2Scoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyFinalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>agencyEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="agencyStart" name="Agency receives scoring request" />
+    <bpmn:task id="agencyQuickScoring" name="Agency performs quick scoring (level 1)" />
+    <bpmn:exclusiveGateway id="gatewayResultImmediate" name="Result immediate?" />
+    <bpmn:task id="agencyImmediateResult" name="Agency returns immediate result" />
+    <bpmn:task id="agencyInformDelay" name="Agency informs delay" />
+    <bpmn:task id="agencyLevel2Scoring" name="Agency performs level 2 scoring" />
+    <bpmn:task id="agencyFinalResult" name="Agency returns final result" />
+    <bpmn:endEvent id="agencyEnd" name="Agency process ends" />
+    <bpmn:sequenceFlow id="a1" sourceRef="agencyStart" targetRef="agencyQuickScoring" />
+    <bpmn:sequenceFlow id="a2" sourceRef="agencyQuickScoring" targetRef="gatewayResultImmediate" />
+    <bpmn:sequenceFlow id="a3" name="yes" sourceRef="gatewayResultImmediate" targetRef="agencyImmediateResult" />
+    <bpmn:sequenceFlow id="a4" name="no" sourceRef="gatewayResultImmediate" targetRef="agencyInformDelay" />
+    <bpmn:sequenceFlow id="a5" sourceRef="agencyInformDelay" targetRef="agencyLevel2Scoring" />
+    <bpmn:sequenceFlow id="a6" sourceRef="agencyLevel2Scoring" targetRef="agencyFinalResult" />
+    <bpmn:sequenceFlow id="a7" sourceRef="agencyImmediateResult" targetRef="agencyEnd" />
+    <bpmn:sequenceFlow id="a8" sourceRef="agencyFinalResult" targetRef="agencyEnd" />
+  </bpmn:process>
+</bpmn:definitions>

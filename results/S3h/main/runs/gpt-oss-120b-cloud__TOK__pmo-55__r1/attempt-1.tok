@@ -1,0 +1,97 @@
+tok 1.0 "Central Venous Catheter Insertion"
+
+pool hospital "Hospital"
+  lane doctor "Doctor"
+    start s "Start"
+    and start_and                     # split for preparation tasks
+    task prep_impl "Prepare implements"
+    task wash_hands "Wash hands"
+    task get_sterile_clothes "Get in sterile clothes"
+    and after_prep                    # join after preparation
+
+    task clean_puncture_area "Clean puncture area"
+    task drape_puncture_zone "Drape puncture zone"
+    task configure_ultrasound "Configure ultrasound"
+    task put_gel_probe "Put gel in probe"
+    task cover_probe "Cover probe"
+    task put_sterile_gel "Put sterile gel"
+
+    and position_and                  # split for positioning tasks
+    task position_probe "Position probe"
+    task position_patient "Position patient"
+    and after_position                # join after positioning
+
+    xor identify_vein "Identify vein method"
+      task anatomic_identification "Anatomic identification"
+      task doppler_identification "Doppler identification"
+      task compression_identification "Compression identification"
+    and after_identify                # join after identification
+
+    task anesthetize_patient "Anesthetize patient"
+    task puncture_patient "Puncture patient"
+    task check_blood_return "Check blood return"
+
+    xor blood_return_ok "Blood return correct?"
+      # yes branch continues, no branch loops back
+    and after_blood_return            # join after decision
+
+    task drop_probe "Drop probe"
+    task remove_syringe "Remove syringe"
+    task install_guidewire "Install guidewire"
+    task remove_trocar "Remove trocar"
+
+    xor wire_check_method "Wire check method"
+      task check_long_axis "Check wire long axis"
+      task check_short_axis "Check wire short axis"
+    and after_wire_check              # join after wire check
+
+    xor wire_position_good "Wire in good position?"
+      # yes branch continues, no branch loops back
+    and after_wire_position           # join after decision
+
+    task widen_pathway "Widen pathway"
+    task advance_catheter "Advance catheter"
+    task remove_guidewire "Remove guidewire"
+
+    task verify_flow "Verify flow"
+    task verify_reflow "Verify reflow"
+    task check_catheter_position "Check catheter position"
+
+    end e "End"
+
+    # ---- flows ----
+    flow s -> start_and
+
+    flow start_and -> prep_impl
+    flow prep_impl -> wash_hands
+    flow wash_hands -> get_sterile_clothes
+    flow get_sterile_clothes -> after_prep
+
+    flow after_prep -> clean_puncture_area -> drape_puncture_zone -> configure_ultrasound -> put_gel_probe -> cover_probe -> put_sterile_gel -> position_and
+
+    flow position_and -> position_probe -> position_patient -> after_position
+
+    flow after_position -> identify_vein
+    flow identify_vein -> anatomic_identification
+    flow identify_vein -> doppler_identification
+    flow identify_vein -> compression_identification
+    flow anatomic_identification -> after_identify
+    flow doppler_identification -> after_identify
+    flow compression_identification -> after_identify
+
+    flow after_identify -> anesthetize_patient -> puncture_patient -> check_blood_return -> blood_return_ok
+
+    flow blood_return_ok -> drop_probe [when="blood_return = 'correct'"]
+    flow blood_return_ok -> puncture_patient [when="blood_return != 'correct'"]
+    flow drop_probe -> remove_syringe -> install_guidewire -> remove_trocar -> wire_check_method
+
+    flow wire_check_method -> check_long_axis
+    flow wire_check_method -> check_short_axis
+    flow check_long_axis -> after_wire_check
+    flow check_short_axis -> after_wire_check
+
+    flow after_wire_check -> wire_position_good
+
+    flow wire_position_good -> widen_pathway [when="wire_position = 'good'"]
+    flow wire_position_good -> puncture_patient [when="wire_position != 'good'"]
+    flow widen_pathway -> advance_catheter -> remove_guidewire -> verify_flow -> verify_reflow -> check_catheter_position -> e

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Instruct an artist to create a 3D model and print it" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Custom 3D model printing" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Instruct an artist to create a 3D model and print it" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>instruct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-sketches</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tell-changes</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>satisfied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>choose-color</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>in-stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>under-100</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shopping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>order-color</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>plastic-ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork-all</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gcode</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-all</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="artist" name="Artist">
+        <bpmn:flowNodeRef>create-project</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>change-project</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-stl</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="printer" name="3D printer">
+        <bpmn:flowNodeRef>turn-on</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>heat-up</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>print-model</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-model</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Craving a custom 3D model" />
+    <bpmn:task id="instruct" name="Instruct artist to create project" />
+    <bpmn:task id="send-sketches" name="Send several sketches" />
+    <bpmn:task id="tell-changes" name="Tell artist what to change" />
+    <bpmn:exclusiveGateway id="satisfied" name="Satisfied with the result?" default="f-satisfied-tell-changes" />
+    <bpmn:task id="choose-color" name="Choose plastic color" />
+    <bpmn:exclusiveGateway id="in-stock" name="Color in stock?" default="f-in-stock-order-color" />
+    <bpmn:task id="check-amount" name="Check how much color is left" />
+    <bpmn:exclusiveGateway id="under-100" name="Less than 100 grams left?" default="f-under-100-plastic-ready" />
+    <bpmn:task id="shopping" name="Put plastic on shopping list" />
+    <bpmn:task id="order-color" name="Order plastic color" />
+    <bpmn:exclusiveGateway id="plastic-ready" name="Plastic at hand" />
+    <bpmn:parallelGateway id="fork-all" name="Split work" />
+    <bpmn:task id="gcode" name="Generate gcode file from STL" />
+    <bpmn:parallelGateway id="join-all" name="Join work" />
+    <bpmn:task id="create-project" name="Create project" />
+    <bpmn:task id="change-project" name="Change project" />
+    <bpmn:task id="send-stl" name="Send STL file" />
+    <bpmn:task id="turn-on" name="Turn on printer" />
+    <bpmn:task id="heat-up" name="Heat up bed and extruder">
+      <bpmn:documentation>The printer sends its status back continuously</bpmn:documentation>
+    </bpmn:task>
+    <bpmn:task id="print-model" name="Print model" />
+    <bpmn:endEvent id="end-model" name="Model printed" />
+    <bpmn:sequenceFlow id="f-s-instruct" sourceRef="s" targetRef="instruct" />
+    <bpmn:sequenceFlow id="f-instruct-send-sketches" sourceRef="instruct" targetRef="send-sketches" />
+    <bpmn:sequenceFlow id="f-send-sketches-create-project" sourceRef="send-sketches" targetRef="create-project" />
+    <bpmn:sequenceFlow id="f-create-project-tell-changes" sourceRef="create-project" targetRef="tell-changes" />
+    <bpmn:sequenceFlow id="f-tell-changes-change-project" sourceRef="tell-changes" targetRef="change-project" />
+    <bpmn:sequenceFlow id="f-change-project-satisfied" sourceRef="change-project" targetRef="satisfied" />
+    <bpmn:sequenceFlow id="f-satisfied-send-stl" name="yes" sourceRef="satisfied" targetRef="send-stl">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">satisfied = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-satisfied-tell-changes" name="no" sourceRef="satisfied" targetRef="tell-changes" />
+    <bpmn:sequenceFlow id="f-send-stl-choose-color" sourceRef="send-stl" targetRef="choose-color" />
+    <bpmn:sequenceFlow id="f-choose-color-in-stock" sourceRef="choose-color" targetRef="in-stock" />
+    <bpmn:sequenceFlow id="f-in-stock-check-amount" name="yes" sourceRef="in-stock" targetRef="check-amount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">inStock = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-in-stock-order-color" name="no" sourceRef="in-stock" targetRef="order-color" />
+    <bpmn:sequenceFlow id="f-check-amount-under-100" sourceRef="check-amount" targetRef="under-100" />
+    <bpmn:sequenceFlow id="f-under-100-shopping" name="yes" sourceRef="under-100" targetRef="shopping">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 100</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-under-100-plastic-ready" name="no" sourceRef="under-100" targetRef="plastic-ready" />
+    <bpmn:sequenceFlow id="f-shopping-plastic-ready" sourceRef="shopping" targetRef="plastic-ready" />
+    <bpmn:sequenceFlow id="f-order-color-plastic-ready" sourceRef="order-color" targetRef="plastic-ready" />
+    <bpmn:sequenceFlow id="f-plastic-ready-fork-all" sourceRef="plastic-ready" targetRef="fork-all" />
+    <bpmn:sequenceFlow id="f-fork-all-turn-on" sourceRef="fork-all" targetRef="turn-on" />
+    <bpmn:sequenceFlow id="f-turn-on-heat-up" sourceRef="turn-on" targetRef="heat-up" />
+    <bpmn:sequenceFlow id="f-heat-up-join-all" sourceRef="heat-up" targetRef="join-all" />
+    <bpmn:sequenceFlow id="f-fork-all-gcode" sourceRef="fork-all" targetRef="gcode" />
+    <bpmn:sequenceFlow id="f-gcode-join-all" sourceRef="gcode" targetRef="join-all" />
+    <bpmn:sequenceFlow id="f-join-all-print-model" sourceRef="join-all" targetRef="print-model" />
+    <bpmn:sequenceFlow id="f-print-model-end-model" sourceRef="print-model" targetRef="end-model" />
+  </bpmn:process>
+</bpmn:definitions>

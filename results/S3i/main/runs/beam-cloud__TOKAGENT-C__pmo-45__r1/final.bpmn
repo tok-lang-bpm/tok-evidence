@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Ordering in an Online Shop" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="Online Shop" processRef="shop-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" name="Ordering in an Online Shop" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>add</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>save</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_selected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>all_selected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_shipping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>billing_eq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="E-Shop System">
+        <bpmn:flowNodeRef>check_credentials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>login_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare_payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare_shipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish_final</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="bank" name="Bank">
+        <bpmn:flowNodeRef>confirm_payment</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_order" name="Start ordering" />
+    <bpmn:task id="login" name="Log into E-Shop system" />
+    <bpmn:task id="wait_login" name="Wait for login confirmation" />
+    <bpmn:task id="select" name="Select product" />
+    <bpmn:task id="add" name="Add product to shopping cart" />
+    <bpmn:task id="save" name="Save product" />
+    <bpmn:task id="check_selected" name="Check if every product was selected" />
+    <bpmn:exclusiveGateway id="all_selected" name="All products selected?" />
+    <bpmn:task id="enter_payment" name="Enter payment data" />
+    <bpmn:task id="enter_shipping" name="Enter shipping address" />
+    <bpmn:task id="enter_billing" name="Enter billing address" />
+    <bpmn:exclusiveGateway id="billing_eq" name="Shipping address equals billing address?" default="f-billing_eq-join" />
+    <bpmn:endEvent id="stopped" name="Shopping experience stops" />
+    <bpmn:task id="check_credentials" name="Check credentials" />
+    <bpmn:exclusiveGateway id="login_ok" name="Login successful?" />
+    <bpmn:task id="finish_order" name="Finish the order" />
+    <bpmn:parallelGateway id="fork" name="Prepare payment and shipment" />
+    <bpmn:task id="prepare_payment" name="Prepare payment" />
+    <bpmn:task id="prepare_shipment" name="Prepare shipment" />
+    <bpmn:parallelGateway id="join" name="Address and payment completed" />
+    <bpmn:task id="finish_final" name="Finish the order" />
+    <bpmn:endEvent id="done" name="Order finished" />
+    <bpmn:task id="confirm_payment" name="Confirm payment" />
+    <bpmn:sequenceFlow id="f-start_order-login" sourceRef="start_order" targetRef="login" />
+    <bpmn:sequenceFlow id="f-login-wait_login" sourceRef="login" targetRef="wait_login" />
+    <bpmn:sequenceFlow id="f-wait_login-check_credentials" sourceRef="wait_login" targetRef="check_credentials" />
+    <bpmn:sequenceFlow id="f-check_credentials-login_ok" sourceRef="check_credentials" targetRef="login_ok" />
+    <bpmn:sequenceFlow id="f-login_ok-select" name="yes" sourceRef="login_ok" targetRef="select" />
+    <bpmn:sequenceFlow id="f-login_ok-stopped" name="no" sourceRef="login_ok" targetRef="stopped" />
+    <bpmn:sequenceFlow id="f-select-add" sourceRef="select" targetRef="add" />
+    <bpmn:sequenceFlow id="f-add-save" sourceRef="add" targetRef="save" />
+    <bpmn:sequenceFlow id="f-save-check_selected" sourceRef="save" targetRef="check_selected" />
+    <bpmn:sequenceFlow id="f-check_selected-all_selected" sourceRef="check_selected" targetRef="all_selected" />
+    <bpmn:sequenceFlow id="f-all_selected-finish_order" name="yes" sourceRef="all_selected" targetRef="finish_order" />
+    <bpmn:sequenceFlow id="f-all_selected-select" name="no" sourceRef="all_selected" targetRef="select" />
+    <bpmn:sequenceFlow id="f-finish_order-fork" sourceRef="finish_order" targetRef="fork" />
+    <bpmn:sequenceFlow id="f-fork-prepare_payment" sourceRef="fork" targetRef="prepare_payment" />
+    <bpmn:sequenceFlow id="f-fork-prepare_shipment" sourceRef="fork" targetRef="prepare_shipment" />
+    <bpmn:sequenceFlow id="f-prepare_payment-enter_payment" sourceRef="prepare_payment" targetRef="enter_payment" />
+    <bpmn:sequenceFlow id="f-enter_payment-confirm_payment" sourceRef="enter_payment" targetRef="confirm_payment" />
+    <bpmn:sequenceFlow id="f-confirm_payment-join" sourceRef="confirm_payment" targetRef="join" />
+    <bpmn:sequenceFlow id="f-prepare_shipment-enter_shipping" sourceRef="prepare_shipment" targetRef="enter_shipping" />
+    <bpmn:sequenceFlow id="f-enter_shipping-billing_eq" sourceRef="enter_shipping" targetRef="billing_eq" />
+    <bpmn:sequenceFlow id="f-billing_eq-enter_billing" name="No" sourceRef="billing_eq" targetRef="enter_billing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">shippingAddress != billingAddress</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-enter_billing-join" sourceRef="enter_billing" targetRef="join" />
+    <bpmn:sequenceFlow id="f-billing_eq-join" name="Yes" sourceRef="billing_eq" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-finish_final" sourceRef="join" targetRef="finish_final" />
+    <bpmn:sequenceFlow id="f-finish_final-done" sourceRef="finish_final" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

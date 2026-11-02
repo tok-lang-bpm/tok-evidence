@@ -1,0 +1,39 @@
+tok 1.0
+pool org "Organization" {
+  lane customer "Customer"
+  lane artist "Artist"
+  lane printer "Printer"
+}
+start s
+task instruct-artist "Instruct artist to create a project" lane=customer
+task send-sketches "Send sketches to artist" lane=customer
+task tell-changes "Tell artist what to change until satisfied" lane=customer
+task choose-color "Choose plastic color" lane=customer
+xor has-color "Is color at home?"
+task check-amount "Check how much color you have left" lane=customer
+xor amount-enough "Is amount >= 100g?"
+task put-shopping "Put color on shopping list" lane=customer
+task order-color "Order color" lane=customer
+and prepare "Prepare for printing"
+task turn-printer "Turn printer on and heat up bed and extruder" lane=printer
+task generate-gcode "Generate gcode file from STL" lane=customer
+task print-model "Print the model" lane=printer
+end e
+
+flow s -> instruct-artist
+flow instruct-artist -> send-sketches
+flow send-sketches -> tell-changes
+flow tell-changes -> choose-color
+flow choose-color -> has-color
+flow has-color -> check-amount when="yes"
+flow has-color -> order-color when="no"
+flow check-amount -> amount-enough
+flow amount-enough -> put-shopping when="no"
+flow amount-enough -> prepare when="yes"
+flow put-shopping -> order-color
+flow order-color -> prepare
+flow prepare -> turn-printer
+flow prepare -> generate-gcode
+flow turn-printer -> print-model
+flow generate-gcode -> print-model
+flow print-model -> e

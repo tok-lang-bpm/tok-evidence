@@ -1,0 +1,95 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+A small company manufactures customized bicycles. Whenever the sales department receives an order, a new process instance is created. A member of the sales department can then reject or accept the order for a customized bike. In the former case, the process instance is finished. In the latter case, the storehouse and the engineering department are informed. The storehouse immediately processes the part list of the order and checks the required quantity of each part. If the part is available in-house, it is reserved. If it is not available, it is back-ordered. This procedure is repeated for each item on the part list. In the meantime, the engineering department prepares everything for the assembling of the ordered bicycle. If the storehouse has successfully reserved or back-ordered every item of the part list and the preparation activity has finished, the engineering department assembles the bicycle. Afterwards, the sales department ships the bicycle to the customer and finishes the process instance.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Bicycle company" processRef="bike-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="bike-process" isExecutable="false">
+    <bpmn:laneSet id="bike-lanes">
+      <bpmn:lane id="sales" name="Sales department">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informStore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informEng</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ship</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shipped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="storehouse" name="Storehouse">
+        <bpmn:flowNodeRef>partList</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineering" name="Engineering department">
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>assemble</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Order received" />
+    <bpmn:task id="review" name="Review the order" />
+    <bpmn:exclusiveGateway id="accepted" name="Order accepted?" default="fNo" />
+    <bpmn:endEvent id="rejected" name="Order rejected" />
+    <bpmn:parallelGateway id="split" />
+    <bpmn:task id="informStore" name="Inform the storehouse" />
+    <bpmn:task id="informEng" name="Inform the engineering department" />
+    <bpmn:subProcess id="partList" name="Process the part list">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" />
+      <bpmn:startEvent id="itemStart" name="Part list item" />
+      <bpmn:task id="checkQty" name="Check the required quantity of the part" />
+      <bpmn:exclusiveGateway id="available" name="Part available in-house?" default="sNo" />
+      <bpmn:task id="reserve" name="Reserve the part" />
+      <bpmn:task id="backorder" name="Back-order the part" />
+      <bpmn:exclusiveGateway id="itemMerge" />
+      <bpmn:endEvent id="itemEnd" name="Item handled" />
+      <bpmn:sequenceFlow id="s1" sourceRef="itemStart" targetRef="checkQty" />
+      <bpmn:sequenceFlow id="s2" sourceRef="checkQty" targetRef="available" />
+      <bpmn:sequenceFlow id="sYes" name="yes" sourceRef="available" targetRef="reserve" />
+      <bpmn:sequenceFlow id="sNo" name="no" sourceRef="available" targetRef="backorder" />
+      <bpmn:sequenceFlow id="s3" sourceRef="reserve" targetRef="itemMerge" />
+      <bpmn:sequenceFlow id="s4" sourceRef="backorder" targetRef="itemMerge" />
+      <bpmn:sequenceFlow id="s5" sourceRef="itemMerge" targetRef="itemEnd" />
+    </bpmn:subProcess>
+    <bpmn:task id="prepare" name="Prepare the assembling of the bicycle" />
+    <bpmn:parallelGateway id="join" />
+    <bpmn:task id="assemble" name="Assemble the bicycle" />
+    <bpmn:task id="ship" name="Ship the bicycle to the customer" />
+    <bpmn:endEvent id="shipped" name="Process instance finished" />
+    <bpmn:sequenceFlow id="f1" sourceRef="received" targetRef="review" />
+    <bpmn:sequenceFlow id="f2" sourceRef="review" targetRef="accepted" />
+    <bpmn:sequenceFlow id="fYes" name="yes" sourceRef="accepted" targetRef="split" />
+    <bpmn:sequenceFlow id="fNo" name="no" sourceRef="accepted" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f3" sourceRef="split" targetRef="informStore" />
+    <bpmn:sequenceFlow id="f4" sourceRef="split" targetRef="informEng" />
+    <bpmn:sequenceFlow id="f5" sourceRef="informStore" targetRef="partList" />
+    <bpmn:sequenceFlow id="f6" sourceRef="informEng" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f7" sourceRef="partList" targetRef="join" />
+    <bpmn:sequenceFlow id="f8" sourceRef="prepare" targetRef="join" />
+    <bpmn:sequenceFlow id="f9" sourceRef="join" targetRef="assemble" />
+    <bpmn:sequenceFlow id="f10" sourceRef="assemble" targetRef="ship" />
+    <bpmn:sequenceFlow id="f11" sourceRef="ship" targetRef="shipped" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: fYes: Sequence flow is missing condition
+- conditional-flows: sYes: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

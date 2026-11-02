@@ -1,0 +1,42 @@
+tok 1.0 "Fault report and repair"
+
+pool org "MPO organisation"
+  lane fd "Fault detector"
+    start s-fd "Failure detected"
+    task report "Report failure to MPO"
+  lane mpo "MPO"
+    start s-mpo "MPO suspects own fault"
+    xor m1 "Failure to examine"
+    task examine "Examine failure"
+    xor c1 "Failure confirmed?"
+    end end-rej "Failure rejected"
+    and sp1 "Split"
+    task inform-go-f "Inform GO about the failure"
+    task inform-msp-f "Inform MSP about the failure"
+    task fix "Fix fault at measuring device"
+    and j1 "Join"
+    task share "Share repair results with fault detector"
+    and sp2 "Split"
+    task inform-go-r "Inform GO about the resolution of the interference"
+    task inform-msp-r "Inform MSP about the resolution of the interference"
+    and j2 "Join"
+    end end-done "Interference resolved"
+
+pool go "GO"
+
+pool msp "MSP"
+
+flow s-fd -> report -> m1
+flow s-mpo -> m1 -> examine -> c1
+flow c1 -> end-rej "rejected" when="confirmed = false"
+flow c1 -> sp1 "confirmed" when="confirmed = true"
+flow sp1 -> inform-go-f -> j1
+flow sp1 -> inform-msp-f -> j1
+flow sp1 -> fix -> j1 -> share -> sp2
+flow sp2 -> inform-go-r -> j2
+flow sp2 -> inform-msp-r -> j2 -> end-done
+
+message inform-go-f -> go "Failure report"
+message inform-msp-f -> msp "Failure report"
+message inform-go-r -> go "Resolution of the interference"
+message inform-msp-r -> msp "Resolution of the interference"

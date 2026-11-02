@@ -1,0 +1,44 @@
+tok 0.1 id=Definitions_1 process=Process_1 namespace=http://www.omg.org/spec/BPMN/20100524/MODEL
+
+user UserTask_1 "Determine properties" duration="exp(10m)"
+user UserTask_2 "Check delivery of ordered parts" duration="exp(10m)"
+user UserTask_3 "Perform Inspection" duration="exp(10m)"
+user UserTask_4 "Send first saw" duration="exp(10m)"
+user UserTask_5 "Cancel production of the remaining order" duration="exp(10m)"
+user UserTask_6 "Send the remaining order" duration="exp(10m)"
+service ServiceTask_1 "Order parts" duration="exp(10m)"
+service ServiceTask_2 "Order parts" duration="exp(10m)"
+service ServiceTask_3 "Order parts" duration="exp(10m)"
+service ServiceTask_4 "Assemble the parts" duration="exp(10m)"
+service ServiceTask_5 "Send updates" duration="exp(10m)"
+service ServiceTask_6 "Produce the remaining order" duration="exp(10m)"
+xor ExclusiveGateway_1 "Parts arrived ?"
+xor ExclusiveGateway_2 "Customer Approval ?"
+and ParallelGateway_1
+and ParallelGateway_2
+start StartEvent_1 "Start"
+end EndEvent_1 "End"
+
+flow StartEvent_1 -> UserTask_1 id=SequenceFlow_1
+flow UserTask_1 -> ParallelGateway_1 id=SequenceFlow_2
+flow ParallelGateway_1 -> ServiceTask_1 id=SequenceFlow_3
+flow ParallelGateway_1 -> ServiceTask_2 id=SequenceFlow_4
+flow ServiceTask_1 -> ParallelGateway_2 id=SequenceFlow_5
+flow ServiceTask_2 -> ParallelGateway_2 id=SequenceFlow_6
+flow ParallelGateway_2 -> UserTask_2 id=SequenceFlow_7
+flow UserTask_2 -> ExclusiveGateway_1 id=SequenceFlow_8
+flow ExclusiveGateway_1 -> UserTask_2 "No" id=SequenceFlow_9 p=0.500
+flow ExclusiveGateway_1 -> UserTask_3 "Yes" id=SequenceFlow_10 p=0.500
+flow UserTask_3 -> ServiceTask_4 id=SequenceFlow_11
+flow ServiceTask_4 -> ServiceTask_5 id=SequenceFlow_12
+flow ServiceTask_5 -> UserTask_4 id=SequenceFlow_13
+flow UserTask_4 -> ExclusiveGateway_2 id=SequenceFlow_14
+flow ExclusiveGateway_2 -> UserTask_5 "No" id=SequenceFlow_15 p=0.500
+flow UserTask_5 -> EndEvent_1 id=SequenceFlow_16
+flow ExclusiveGateway_2 -> ServiceTask_6 "Yes" id=SequenceFlow_17 p=0.500
+flow ServiceTask_6 -> UserTask_6 id=SequenceFlow_18
+flow UserTask_6 -> EndEvent_1 id=SequenceFlow_19
+flow ParallelGateway_1 -> ServiceTask_3 id=SequenceFlow_20
+flow ServiceTask_3 -> ParallelGateway_2 id=SequenceFlow_21
+
+simulate cases=500 seed=20261031 arrival="exp(1h)"

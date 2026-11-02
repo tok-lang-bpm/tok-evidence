@@ -1,0 +1,48 @@
+tok 1.0 "Office Supply Request Process" [executable]
+
+pool organization "Organization"
+  lane employee "Employee"
+    start S "Office supply request submitted"
+    task submit "Submit office supply request"
+    task register "Register request"
+  lane supervisor "Supervisor"
+    task receive "Receive request by supervisor"
+    xor supervisor_g "Supervisor decision?"
+    task approve "Approve request"
+    task ask_change "Ask for change"
+    task reject "Reject request"
+  lane purchase "Purchase Department"
+    sub quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_g "Vendor valid?"
+    task choose_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+  lane system "System"
+    task send_notification "Send notification to user"
+    and delivery_g "Wait for delivery and invoice"
+      task product_delivered "Product delivered"
+      task invoice_received "Invoice received"
+    and delivery_join "All received"
+  lane employee "Employee"
+    task review_change "Review change request"
+
+  end rejected "Request rejected"
+  end completed "Request completed"
+
+flow S -> submit -> register -> receive
+flow receive -> supervisor_g
+flow supervisor_g -> approve "Approve"
+flow supervisor_g -> ask_change "Change required"
+flow supervisor_g -> reject "Reject"
+flow reject -> send_notification -> rejected
+flow ask_change -> review_change -> register
+flow approve -> quotations -> select_vendor -> vendor_g
+flow vendor_g -> generate_po "Valid"
+flow vendor_g -> choose_vendor "Invalid"
+flow choose_vendor -> select_vendor
+flow generate_po -> delivery_g
+flow delivery_g -> product_delivered
+flow delivery_g -> invoice_received
+flow product_delivered -> delivery_join
+flow invoice_received -> delivery_join
+flow delivery_join -> send_notification -> completed

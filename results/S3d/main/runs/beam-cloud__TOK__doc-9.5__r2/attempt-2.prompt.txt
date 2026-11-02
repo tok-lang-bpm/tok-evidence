@@ -1,0 +1,65 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+After the Expense Report is received, a new account must be created if the employee does not already have one. The report is then reviewed for automatic approval. Amounts under $200 are automatically approved, whereas amounts equal to or over $200 require approval of the supervisor. In case of rejection, the employee must receive a rejection notice by email. Otherwise, the reimbursement goes to the employees direct deposit bank account. If the request is not completed in 7 days, then the employee must receive an approval in progress email. If the request is not finished within 30 days, then the process is stopped and the employee receives an email cancellation notice and must re-submit the expense report.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Expense report processing"
+
+pool organisation "Organisation"
+  lane finance "Finance"
+    start received "Expense Report received"
+    xor hasAccount "Employee has account?"
+    task createAccount "Create new account"
+    xor accountJoin "Account ready"
+    task review "Review report for automatic approval"
+    xor amount "Amount under $200?"
+    xor approvalJoin "Approval complete"
+    task sendReimbursement "Send reimbursement to bank account"
+    task sendRejection "Send rejection notice by email"
+    task sendInProgress "Send approval in progress email"
+    task sendCancellation "Send cancellation notice by email"
+    end reimbursed "Reimbursement completed"
+    end rejected "Rejection notice sent"
+    end inProgress "Approval in progress notice sent"
+    end cancelled "Re-submit expense report"
+  lane supervisor "Supervisor"
+    task approve "Approve expense report"
+    xor approvalResult "Approved?"
+    boundary progress "Approval in progress" on=approve timer=P7D noninterrupting
+    boundary timeout "Process timeout" on=approve timer=P30D
+
+flow received -> hasAccount
+flow hasAccount -> createAccount "No"
+flow hasAccount -> accountJoin "Yes" default
+flow createAccount -> accountJoin
+flow accountJoin -> review
+flow review -> amount
+flow amount -> approve "No" when="amount >= 200"
+flow amount -> approvalJoin "Yes" default
+flow approve -> approvalResult
+flow approvalResult -> approvalJoin "Approved"
+flow approvalResult -> sendRejection "Rejected" default
+flow approvalJoin -> sendReimbursement
+flow sendReimbursement -> reimbursed
+flow sendRejection -> rejected
+flow progress -> sendInProgress -> inProgress
+flow timeout -> sendCancellation -> cancelled
+```
+
+The tok checker reports these problems in it:
+
+- line 27: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-hasAccount-createAccount)
+- line 35: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-approvalResult-approvalJoin)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

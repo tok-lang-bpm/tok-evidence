@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="Definitions_1"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration with one pool (Organisation) -->
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Org" name="Organisation" processRef="Process_1"/>
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="Process_1" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Runner" name="Runner">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EnterAppData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectStartBlock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RunMeasure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_TimeCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Train</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GetStartNumber</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DetermineTravel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_TravelDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GoFromHome</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_LeaveFromWork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelGateway_Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RunNightRun</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DrinkDuringRun</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelGateway_Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveFinalTime</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_App" name="App (System)">
+        <bpmn:flowNodeRef>Task_EnterAppData</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_Gadget" name="Fitness Gadget (System)">
+        <bpmn:flowNodeRef>Task_CollectGadgetData</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_1" name="Start"/>
+
+    <!-- Tasks (App) -->
+    <bpmn:task id="Task_EnterAppData" name="Enter data into app"/>
+
+    <!-- Tasks (Gadget) -->
+    <bpmn:task id="Task_CollectGadgetData" name="Collect data from fitness gadget"/>
+
+    <!-- Runner tasks and flow -->
+    <bpmn:task id="Task_SelectStartBlock" name="Select starting block"/>
+    <bpmn:task id="Task_RunMeasure" name="Run 5km and measure time"/>
+    <bpmn:exclusiveGateway id="Gateway_TimeCheck" name="Time < 25 minutes?"/>
+    <bpmn:task id="Task_Train" name="Train and re‑measure"/>
+    <bpmn:task id="Task_GetStartNumber" name="Get starting number"/>
+    <bpmn:task id="Task_DetermineTravel" name="Determine travel option"/>
+    <bpmn:exclusiveGateway id="Gateway_TravelDecision" name="More than 1 h left?"/>
+    <bpmn:task id="Task_GoFromHome" name="Go to start from home"/>
+    <bpmn:task id="Task_LeaveFromWork" name="Leave directly from work"/>
+    <bpmn:parallelGateway id="ParallelGateway_Split"/>
+    <bpmn:task id="Task_RunNightRun" name="Run at Night Run"/>
+    <bpmn:task id="Task_DrinkDuringRun" name="Drink during run"/>
+    <bpmn:parallelGateway id="ParallelGateway_Join"/>
+    <bpmn:task id="Task_ReceiveFinalTime" name="Receive final running time"/>
+
+    <!-- End Event -->
+    <bpmn:endEvent id="EndEvent_1" name="End"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="StartEvent_1" targetRef="Task_EnterAppData"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Task_EnterAppData" targetRef="Task_CollectGadgetData"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_CollectGadgetData" targetRef="Task_SelectStartBlock"/>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_SelectStartBlock" targetRef="Task_RunMeasure"/>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_RunMeasure" targetRef="Gateway_TimeCheck"/>
+
+    <!-- Yes: good -->
+    <bpmn:sequenceFlow id="Flow_5_yes" name="yes" sourceRef="Gateway_TimeCheck" targetRef="Task_GetStartNumber"/>
+
+    <!-- No: need to train -->
+    <bpmn:sequenceFlow id="Flow_5_no" name="no" sourceRef="Gateway_TimeCheck" targetRef="Task_Train"/>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_Train" targetRef="Task_RunMeasure"/>
+
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_GetStartNumber" targetRef="Task_DetermineTravel"/>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_DetermineTravel" targetRef="Gateway_TravelDecision"/>
+
+    <!-- Travel decision branches -->
+    <bpmn:sequenceFlow id="Flow_9_yes" name="yes" sourceRef="Gateway_TravelDecision" targetRef="Task_GoFromHome"/>
+    <bpmn:sequenceFlow id="Flow_9_no" name="no" sourceRef="Gateway_TravelDecision" targetRef="Task_LeaveFromWork"/>
+
+    <bpmn:sequenceFlow id="Flow_10_fromHome" sourceRef="Task_GoFromHome" targetRef="ParallelGateway_Split"/>
+    <bpmn:sequenceFlow id="Flow_10_fromWork" sourceRef="Task_LeaveFromWork" targetRef="ParallelGateway_Split"/>
+
+    <bpmn:sequenceFlow id="Flow_11a" sourceRef="ParallelGateway_Split" targetRef="Task_RunNightRun"/>
+    <bpmn:sequenceFlow id="Flow_11b" sourceRef="ParallelGateway_Split" targetRef="Task_DrinkDuringRun"/>
+
+    <bpmn:sequenceFlow id="Flow_12a" sourceRef="Task_RunNightRun" targetRef="ParallelGateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_12b" sourceRef="Task_DrinkDuringRun" targetRef="ParallelGateway_Join"/>
+
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="ParallelGateway_Join" targetRef="Task_ReceiveFinalTime"/>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_ReceiveFinalTime" targetRef="EndEvent_1"/>
+
+  </bpmn:process>
+</bpmn:definitions>

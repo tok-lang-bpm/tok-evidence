@@ -1,0 +1,25 @@
+tok 1.0 "Loan approval process"
+
+pool organisation "Organisation"
+  lane customer "Customer"
+    start received "Customer request received"
+    task feedback "Receive feedback"
+    end done "Loan approval completed"
+  lane risk "Risk Assessment Web Service"
+    service assess "Assess request" type="job"
+    xor outcome "Loan small and customer low risk?"
+    task approve "Approve loan"
+    task deny "Deny loan"
+    service send "Send request to approver Web service" type="job"
+    xor merge "Feedback path?"
+
+flow received -> assess
+flow assess -> outcome
+flow outcome -> approve "small and low risk" when="amount < 10000 and risk = 'low'"
+flow outcome -> deny "high risk" when="risk = 'high'"
+flow outcome -> send "further review or >= 10000" default
+flow approve -> merge
+flow deny -> merge
+flow send -> merge
+flow merge -> feedback
+flow feedback -> done

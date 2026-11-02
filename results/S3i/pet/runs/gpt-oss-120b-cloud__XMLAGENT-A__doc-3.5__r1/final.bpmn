@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="process_main"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="process_main" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="laneset_main">
+      <bpmn:lane id="lane_mail_processing" name="Mail Processing Unit">
+        <bpmn:flowNodeRef>task_collect_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_mail_clerk" name="Mail Clerk">
+        <bpmn:flowNodeRef>task_sort_unopened</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_distribute</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_registry" name="Registry">
+        <bpmn:flowNodeRef>task_receive_mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_open_sort</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_register_mail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_assistant_manager" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>task_quality_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_compile_rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_send_rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_capture_details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_envelope_post</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_cashier" name="Cashier">
+        <bpmn:flowNodeRef>task_take_fees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_capture_party_print</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start_event" name="Start"/>
+    <bpmn:task id="task_collect_mail" name="Collect mail"/>
+    <bpmn:task id="task_sort_unopened" name="Sort unopened mail"/>
+    <bpmn:task id="task_distribute" name="Distribute mail"/>
+    <bpmn:task id="task_receive_mail" name="Receive mail"/>
+    <bpmn:task id="task_open_sort" name="Open and sort mail into groups"/>
+    <bpmn:task id="task_register_mail" name="Register mail in incoming Mail Register"/>
+    <bpmn:task id="task_quality_check" name="Perform quality check"/>
+    <bpmn:exclusiveGateway id="gw_compliance" name="Mail compliant?"/>
+    <!-- No (rejection) path -->
+    <bpmn:task id="task_compile_rejection" name="Compile rejection list"/>
+    <bpmn:task id="task_send_rejection" name="Send rejection list to party"/>
+    <bpmn:endEvent id="end_rejection" name="Process ends (rejected)"/>
+    <!-- Yes (accepted) path -->
+    <bpmn:task id="task_capture_details" name="Capture matter details"/>
+    <bpmn:task id="task_take_fees" name="Take applicable fees"/>
+    <bpmn:parallelGateway id="gw_parallel_split"/>
+    <bpmn:task id="task_envelope_post" name="Put receipt in envelope and post to party"/>
+    <bpmn:task id="task_capture_party_print" name="Capture Party Details and print Physical Court File"/>
+    <bpmn:parallelGateway id="gw_parallel_join"/>
+    <bpmn:endEvent id="end_success" name="Process ends (completed)"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="flow_start_collect" sourceRef="start_event" targetRef="task_collect_mail"/>
+    <bpmn:sequenceFlow id="flow_collect_sort" sourceRef="task_collect_mail" targetRef="task_sort_unopened"/>
+    <bpmn:sequenceFlow id="flow_sort_distribute" sourceRef="task_sort_unopened" targetRef="task_distribute"/>
+    <bpmn:sequenceFlow id="flow_distribute_receive" sourceRef="task_distribute" targetRef="task_receive_mail"/>
+    <bpmn:sequenceFlow id="flow_receive_open" sourceRef="task_receive_mail" targetRef="task_open_sort"/>
+    <bpmn:sequenceFlow id="flow_open_register" sourceRef="task_open_sort" targetRef="task_register_mail"/>
+    <bpmn:sequenceFlow id="flow_register_quality" sourceRef="task_register_mail" targetRef="task_quality_check"/>
+
+    <bpmn:sequenceFlow id="flow_quality_gateway" sourceRef="task_quality_check" targetRef="gw_compliance"/>
+
+    <!-- No branch -->
+    <bpmn:sequenceFlow id="flow_no_rejection" name="no" sourceRef="gw_compliance" targetRef="task_compile_rejection"/>
+    <bpmn:sequenceFlow id="flow_compile_send" sourceRef="task_compile_rejection" targetRef="task_send_rejection"/>
+    <bpmn:sequenceFlow id="flow_send_end" sourceRef="task_send_rejection" targetRef="end_rejection"/>
+
+    <!-- Yes branch -->
+    <bpmn:sequenceFlow id="flow_yes_capture" name="yes" sourceRef="gw_compliance" targetRef="task_capture_details"/>
+    <bpmn:sequenceFlow id="flow_capture_fees" sourceRef="task_capture_details" targetRef="task_take_fees"/>
+    <bpmn:sequenceFlow id="flow_fees_split" sourceRef="task_take_fees" targetRef="gw_parallel_split"/>
+
+    <bpmn:sequenceFlow id="flow_split_envelope" sourceRef="gw_parallel_split" targetRef="task_envelope_post"/>
+    <bpmn:sequenceFlow id="flow_split_capture" sourceRef="gw_parallel_split" targetRef="task_capture_party_print"/>
+
+    <bpmn:sequenceFlow id="flow_envelope_join" sourceRef="task_envelope_post" targetRef="gw_parallel_join"/>
+    <bpmn:sequenceFlow id="flow_capture_join" sourceRef="task_capture_party_print" targetRef="gw_parallel_join"/>
+
+    <bpmn:sequenceFlow id="flow_join_end" sourceRef="gw_parallel_join" targetRef="end_success"/>
+
+  </bpmn:process>
+</bpmn:definitions>

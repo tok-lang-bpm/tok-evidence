@@ -1,0 +1,66 @@
+tok 1.0
+
+pool org "Robotic Burger Seller" {
+  lane robot "Robot"
+  lane customer "Customer"
+}
+
+start start
+
+task receive-order "Robot receives an order" as robot
+
+xor menu-decision "Menu or just burger?" as customer
+flow receive-order -> menu-decision
+
+# menu branch
+gateway and menu-split "Parallel: drink & side" as robot
+flow menu-decision -> menu-split when="menu"
+
+task prepare-drink "Robot prepares the drink" as robot
+flow menu-split -> prepare-drink
+
+task ask-side "Robot asks if you want fries or wedges" as robot
+flow menu-split -> ask-side
+
+xor side-decision "Fries or wedges?" as customer
+flow ask-side -> side-decision
+
+task prepare-fries "Robot prepares fries" as robot
+flow side-decision -> prepare-fries when="fries"
+
+task prepare-wedges "Robot prepares wedges" as robot
+flow side-decision -> prepare-wedges when="wedges"
+
+# join drink and side
+gateway and menu-join "Join drink and side" as robot
+flow prepare-drink -> menu-join
+flow prepare-fries -> menu-join
+flow prepare-wedges -> menu-join
+
+# default just burger path flow
+flow menu-decision -> menu-join when="justburger"
+
+# merge menu decision
+gateway xor menu-merge "Merge menu decision" as robot
+flow menu-join -> menu-merge
+flow menu-decision -> menu-merge when="justburger"
+
+# burger preparation and status updates in parallel
+gateway and burger-split "Prepare burger and give updates" as robot
+flow menu-merge -> burger-split
+
+task prepare-burger "Robot prepares the burger" as robot
+flow burger-split -> prepare-burger
+
+task give-updates "Robot gives enthusiastic status updates" as robot
+flow burger-split -> give-updates
+
+gateway and burger-join "Join burger and updates" as robot
+flow prepare-burger -> burger-join
+flow give-updates -> burger-join
+
+task deliver "Order delivered via conveyor belt" as robot
+flow burger-join -> deliver
+
+end end
+flow deliver -> end

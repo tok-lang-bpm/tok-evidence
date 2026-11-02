@@ -1,0 +1,60 @@
+tok 1.0 "Invoice Processing"
+
+pool ACME_AG "ACME AG"
+  lane secretariat "Secretariat"
+    start s0 "Invoices received"
+    task r1 "Receive invoice on paper or fax"
+    task f2 "Forward invoice after visual inspection to accounting employee"
+
+  lane accounting "Accounting Employee"
+    task i3 "Identify charging suppliers and create invoice instance"
+    task c4 "Check invoice items and note cost centers and managers on docket"
+    task s5 "Send docket and copy of invoice to internal mail"
+    task cl13 "Clarify inconsistencies with vendor (consult managers if needed)"
+    task ft14 "Forward copy of invoice to commercial manager"
+    task rb20 "Receive reviewed copy from board"
+    task gp21 "Give payment instructions and close invoice"
+    end e22 "Process completed"
+
+  lane manager "Cost Center Manager"
+    task rev6 "Review invoice for accuracy"
+    xor g7 "Is position accurate?"
+    task ma8 "Mark position as accurate (AP)"
+    task rp9 "Reject position with note"
+    xor g10 "All positions marked accurate?"
+    task sn11 "Send docket and copy to next cost center manager"
+    task rt12 "Return copy to accounting"
+
+  lane commercial "Commercial Manager"
+    task pa15 "Perform commercial audit"
+    xor g16 "Complaint during audit?"
+    task hc17 "Handle complaint with supplier"
+    xor g18 "Amount > EUR 20?"
+    task br19 "Board review"
+
+  lane board "Board"
+    task approve_board "Approve invoice"
+
+# Sequence flows
+flow s0 -> r1 -> f2 -> i3 -> c4 -> s5 -> rev6
+flow rev6 -> g7
+flow g7 -> ma8 "yes"
+flow g7 -> rp9 "no"
+flow ma8 -> g10
+flow rp9 -> cl13
+flow cl13 -> s5
+flow g10 -> sn11 "no"
+flow g10 -> rt12 "yes"
+flow sn11 -> rev6
+flow rt12 -> ft14
+flow ft14 -> pa15
+flow pa15 -> g16
+flow g16 -> hc17 "yes"
+flow hc17 -> pa15
+flow g16 -> g18 "no"
+flow g18 -> br19 "yes"
+flow g18 -> approve_board "no"
+flow br19 -> approve_board
+flow approve_board -> rb20
+flow rb20 -> gp21
+flow gp21 -> e22

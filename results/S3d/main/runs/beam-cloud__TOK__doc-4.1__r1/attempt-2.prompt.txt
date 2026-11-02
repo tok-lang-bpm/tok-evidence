@@ -1,0 +1,90 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The intake workflow starts with a notice by telephone at the secretarial office of the mental health care institute. This notice is done by the family doctor of somebody who is in need of mental treatment. The secretarial worker inquires after the name and residence of the patient. On the basis of this information, the doctor is put through to the nursing officer responsible for the part of the region that the patient lives in. The nursing officer makes a full inquiry into the mental, health, and social state of the patient in question. This information is recorded on a registration form. At the end of the conversation, this form is handed in at the secretarial office of the institute. Here, the information on the form is stored in the information system and subsequently printed. For new patients, a patient file is created. The registration form as well as the print from the information system are stored in the patient file. Patient files are kept at the secretarial office and may not leave the building. At the secretarial office, two registration cards are produced for respectively the future first and second intaker of the patient. The registration card contains a set of basic patient data. The new patient is added on the list of new notices. Halfway the week, at Wednesday, a staff meeting of the entire medical team takes place. The medical team consists of social-medical workers, physicians, and a psychiatrist. At this meeting, the team-leader assigns all new patients on the list of new notices to members of the team. Each patient will be assigned to a social-medical worker, who will act as the first intaker of the patient. One of the physicians will act as the second intaker. In assigning intakers, the teamleader takes into account their expertise, the region they are responsible for, earlier contacts they might have had with the patient, and their case load. The assignments are recorded on an assignment list which is handed to the secretarial office. For each new assignment, it is also determined whether the medical file of the patient is required. This information is added to the assignment list. The secretarial office stores the assignment of each patient of the assignment list in the information system. It passes the produced registration cards to the first and second intaker of each newly assigned patient. An intaker keeps this registration with him at times when visiting the patient and in his close proximity when he is at the office. For each patient for which the medical file is required, the secretarial office prepares and sends a letter to the family doctor of the patient, requesting for a copy of the medical file. As soon as this copy is received, the secretarial office will inform the second intaker and add the copy to the patient file. The first intaker plans a meeting with the patient as soon as this is possible. During the first meeting, the patient is examined using a standard checklist which is filled out. Additional observations are registered in a personal notebook. After a visit, the first intaker puts a copy of these notes in the file of a patient. The standard checklist is also added to the patient's file. The second intaker plans the first meeting only after the medical information of the physician if required has been received. Physicians use dictaphones to record their observations made during meetings with patients. The secretarial office types out these tapes, after which the information is added to the patient file. As soon as the meetings of the first and second intaker with the patient have taken place, the secretarial office puts the patient on the list of patients that reach this status. For the staff meeting on Wednesday, they provide the team-leader with a list of these patients. For each of these patients, the first and second intaker together with the team-leader and the attending psychiatrist formulate a treatment plan. This treatment plan formally ends the intake procedure.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Intake workflow"
+
+pool institute "Mental health care institute"
+  lane family "Family doctor"
+    start start_intake "Intake starts"
+    task notice "Notice by telephone"
+  lane secret "Secretarial office"
+    task inquire "Inquire name and residence"
+    task put_through "Put doctor through to nursing officer"
+    task store_info "Store information in information system"
+    task print_info "Print information"
+    xor new_patient "New patient?"
+    task create_file "Create patient file"
+    task store_docs "Store registration form and print in patient file"
+    task produce_cards "Produce registration cards"
+    task add_list "Add new patient to list of new notices"
+    task store_assignments "Store assignment in information system"
+    task pass_cards "Pass registration cards to intakers"
+    xor medical_required "Medical file required?"
+    task send_letter "Prepare and send letter to family doctor"
+    task receive_copy "Receive copy of medical file"
+    task inform_second "Inform second intaker"
+    task add_copy "Add copy to patient file"
+    task type_tapes "Type out tapes"
+    task add_typed_info "Add information to patient file"
+    task put_list_status "Put patient on list of patients reached status"
+    task provide_list "Provide team-leader list of patients"
+    and meetings_done "Both intaker meetings completed"
+  lane nurse "Nursing officer"
+    task full_inquiry "Make full inquiry"
+    task record_form "Record information on registration form"
+    task hand_in_form "Hand in registration form"
+  lane team "Team-leader"
+    task hold_meeting "Hold staff meeting"
+    task assign_patients "Assign new patients to members"
+    task record_assignments "Record assignments on assignment list"
+    task determine_file "Determine whether medical file is required"
+    task add_file_info "Add medical file requirement to assignment list"
+    task hand_assignment_list "Hand assignment list to secretarial office"
+  lane social "Social-medical worker"
+    task plan_first_meeting "Plan meeting with patient"
+    task examine_patient "Examine patient using standard checklist"
+    task fill_checklist "Fill out standard checklist"
+    task register_observations "Register additional observations in notebook"
+    task copy_notes "Put copy of notes in patient file"
+    task add_checklist "Add standard checklist to patient file"
+  lane physician "Physician"
+    task plan_second_meeting "Plan first meeting with patient"
+    task record_observations "Record observations made during meetings"
+  lane psychiatrist "Psychiatrist"
+    task formulate_plan "Formulate treatment plan"
+    end end_intake "Intake ends"
+
+flow start_intake -> notice -> inquire -> put_through
+flow put_through -> full_inquiry -> record_form -> hand_in_form -> store_info -> print_info -> new_patient
+flow new_patient -> create_file "yes"
+flow new_patient -> store_docs "no" default
+flow create_file -> store_docs
+flow store_docs -> produce_cards -> add_list -> hold_meeting -> assign_patients -> record_assignments -> determine_file -> add_file_info -> hand_assignment_list -> store_assignments -> pass_cards -> medical_required
+flow medical_required -> send_letter "yes"
+flow medical_required -> plan_second_meeting "no" default
+flow send_letter -> receive_copy -> inform_second -> add_copy -> plan_second_meeting
+flow pass_cards -> plan_first_meeting
+flow plan_first_meeting -> examine_patient -> fill_checklist -> register_observations -> copy_notes -> add_checklist -> meetings_done
+flow plan_second_meeting -> record_observations -> type_tapes -> add_typed_info -> meetings_done
+flow meetings_done -> put_list_status -> provide_list -> formulate_plan -> end_intake
+```
+
+The tok checker reports these problems in it:
+
+- line 56: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-new_patient-create_file)
+- line 60: warning W022: branch without a condition at an element that splits conditionally (it has a default flow or other branches have conditions) (f-medical_required-send_letter)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

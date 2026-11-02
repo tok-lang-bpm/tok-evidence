@@ -1,0 +1,75 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The Evanstonian is an upscale independent hotel. When a guest calls room service at The Evanstonian, the room-service manager takes down the order. She then submits an order ticket to the kitchen to begin preparing the food. She also gives an order to the sommelier (i.e., the wine waiter) to fetch wine from the cellar and to prepare any other alcoholic beverages. Eighty percent of room-service orders include wine or some other alcoholic beverage. Finally, she assigns the order to the waiter. While the kitchen and the sommelier are doing their tasks, the waiter readies a cart (i.e., puts a tablecloth on the cart and gathers silverware). The waiter is also responsible for nonalcoholic drinks. Once the food, wine, and cart are ready, the waiter delivers it to the guest ’ s room. After returning to the room-service station, the waiter debits the guest ’ s account. The waiter may wait to do the billing if he has another order to prepare or deliver.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Room Service Process"
+
+pool hotel "The Evanstonian"
+  lane manager "Room‑Service Manager"
+    start start_call "Guest calls room service"
+    task take_order "Take down the order"
+    task submit_ticket "Submit order ticket to kitchen"
+    task give_order "Give order to sommelier"
+    task assign_waiter "Assign order to waiter"
+
+  lane kitchen "Kitchen"
+    task prepare_food "Prepare food"
+
+  lane sommelier "Sommelier"
+    xor wine_needed "Wine or alcoholic beverage needed?"
+    task fetch_wine "Fetch wine and prepare alcoholic beverages"
+
+  lane waiter "Waiter"
+    task ready_cart "Ready cart and prepare non‑alcoholic drinks"
+    task deliver_cart "Deliver food, wine, and cart to guest room"
+    xor bill_now "Bill now?"
+    task wait_billing "Wait for next order before billing"
+    task debit_account "Debit guest account"
+    end end_process "Room service completed"
+
+  # Parallel split after the manager assigns the order
+  and parallel_start
+  and parallel_end
+
+flow start_call -> take_order -> submit_ticket -> give_order -> assign_waiter -> parallel_start
+
+flow parallel_start -> prepare_food
+flow parallel_start -> ready_cart
+flow parallel_start -> wine_needed
+
+flow wine_needed "yes" -> fetch_wine
+flow wine_needed "no"  -> parallel_end
+
+flow prepare_food -> parallel_end
+flow ready_cart   -> parallel_end
+flow fetch_wine   -> parallel_end
+
+flow parallel_end -> deliver_cart
+
+flow deliver_cart -> bill_now
+flow bill_now "yes" -> debit_account
+flow bill_now "no"  -> wait_billing -> debit_account
+
+flow debit_account -> end_process
+```
+
+The tok checker reports these problems in it:
+
+- line 36: error P008: malformed flow line: expected '->'
+- line 37: error P008: malformed flow line: expected '->'
+- line 46: error P008: malformed flow line: expected '->'
+- line 47: error P008: malformed flow line: expected '->'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,26 @@
+tok 1.0 "Mortgage Offer Process"
+
+pool org "Organization"
+  lane csr "Customer Service Representative"
+    start start1 "Start"
+    task send_offer "Send Mortgage offer"
+    receive receive_reply "Receive customer reply"
+    boundary timeout "No reply timeout" on=receive_reply timer=P2W
+    xor reply_decision "Customer reply?"
+    task update_details "Update case details"
+    task archive_work "Archive work"
+    task cancel_case "Cancel case"
+    task move_to_admin "Move case to administration"
+    task generate_message "Generate message requesting outstanding documents"
+    end end_completed "Case completed"
+    end end_cancelled "Case cancelled"
+    end end_message "Message sent"
+
+    flow start1 -> send_offer -> receive_reply -> reply_decision
+    flow reply_decision -> update_details "decline"
+    flow reply_decision -> move_to_admin "complete all"
+    flow reply_decision -> generate_message "missing docs"
+    flow update_details -> archive_work -> cancel_case -> end_cancelled
+    flow move_to_admin -> end_completed
+    flow generate_message -> end_message
+    flow timeout -> update_details "timeout"

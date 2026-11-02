@@ -1,0 +1,46 @@
+```tok
+tok 1.0 "Equipment change process"
+
+pool org "Organisation"
+  lane mpon "MPON"
+    start start "Start"
+    task notifyIntentions "Notify the MPOO about equipment change intentions"
+    xor gatewayRead "Who performs the final reading?"
+    task readFinalMpon "Perform the final reading"
+    xor gatewayDismount "Who dismounts the old equipment?"
+    task dismountMpon "Dismount the old equipment"
+    task mount "Mount the new device"
+    task readInstalled "Read the meter count from the installed meter"
+    task sendFinal "Send the values of the final reading to the GO"
+    task tellGO "Tell the GO about the device changes, the master data and the meter count at installation"
+  lane mpoo "MPOO"
+    xor selfDecision "Self dismounting?"
+    task announce "Announce self dismounting to the MPON"
+    task notifyNo "Notify the MPON about no self-dismounting of the MPOO"
+    xor mergeSelf
+    task readFinalMpoo "Perform the final reading"
+    task dismountMpoo "Dismount the old equipment"
+    xor mergeRead
+    xor mergeDismount
+  lane go "GO"
+    task notifyMsp "Notify the MSP about the device changes, the master data, the meter count at dismounting, and the meter count at installation"
+    end finish "Application handled"
+
+flow start -> notifyIntentions -> selfDecision
+flow selfDecision -> announce "yes" when="selfDismounting"
+flow selfDecision -> notifyNo "no" default
+flow announce -> mergeSelf
+flow notifyNo -> mergeSelf
+flow mergeSelf -> gatewayRead
+flow gatewayRead -> readFinalMpon "MPON" when="finalReader = \"MPON\""
+flow gatewayRead -> readFinalMpoo "MPOO" default
+flow readFinalMpon -> mergeRead
+flow readFinalMpoo -> mergeRead
+flow mergeRead -> gatewayDismount
+flow gatewayDismount -> dismountMpon "MPON" when="dismounter = \"MPON\""
+flow gatewayDismount -> dismountMpoo "MPOO" default
+flow dismountMpon -> mergeDismount
+flow dismountMpoo -> mergeDismount
+flow mergeDismount -> mount -> readInstalled -> sendFinal -> tellGO
+flow tellGO -> notifyMsp -> finish
+```

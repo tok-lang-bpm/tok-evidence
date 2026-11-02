@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgConfirm" name="Contract confirmation" />
+  <bpmn:message id="msgWithdraw" name="Contract withdrawal" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool" name="Power supplier" processRef="switch-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="switch-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneCustomer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCS" name="Customer Service">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterCrm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwM0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwErr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwExists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createObject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwM2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evGate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evTimer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evWithdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwM3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endWithdrawn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>importMeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endImported</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCIS" name="CIS">
+        <bpmn:flowNodeRef>checkDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRequest</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGO" name="Grid Operator">
+        <bpmn:flowNodeRef>checkRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitResponse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwConc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informSuppliers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endConflict</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>evSwitchDate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitMeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>computeBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endGO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneOld" name="Old Supplier">
+        <bpmn:flowNodeRef>createBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFinalBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Switch-over requested" />
+    <bpmn:task id="transmit" name="Transmit customer data" />
+    <bpmn:task id="receive" name="Receive customer data" />
+    <bpmn:task id="enterCrm" name="Enter customer data object into CRM system" />
+    <bpmn:exclusiveGateway id="gwM0" />
+    <bpmn:task id="compare" name="Compare customer data with internal customer database" />
+    <bpmn:task id="checkData" name="Check customer data for completeness and plausibility" />
+    <bpmn:exclusiveGateway id="gwErr" name="Errors found?" default="fNoErr" />
+    <bpmn:task id="correct" name="Correct errors using error list" />
+    <bpmn:exclusiveGateway id="gwExists" name="Customer exists in database?" default="fNotExists" />
+    <bpmn:task id="createObject" name="Create new customer object" />
+    <bpmn:exclusiveGateway id="gwM1" />
+    <bpmn:exclusiveGateway id="gwM2" />
+    <bpmn:task id="prepare" name="Prepare contract documents" />
+    <bpmn:serviceTask id="checkDocs" name="Check contract documents" />
+    <bpmn:exclusiveGateway id="gwOk" name="Contract documents generated successfully?" default="fDocsNo" />
+    <bpmn:task id="analyze" name="Analyze and resolve issues" />
+    <bpmn:task id="sendConfirmation" name="Send confirmation document to customer" />
+    <bpmn:serviceTask id="sendRequest" name="Send request to grid operator" />
+    <bpmn:task id="checkRequest" name="Check switch-over request for supplier concurrence" />
+    <bpmn:task id="transmitResponse" name="Transmit response comment" />
+    <bpmn:exclusiveGateway id="gwConc" name="Supplier concurrence?" default="fConcNo" />
+    <bpmn:task id="informSuppliers" name="Inform involved suppliers and demand conflict resolution" />
+    <bpmn:endEvent id="endConflict" name="Conflict passed to suppliers" />
+    <bpmn:task id="terminate" name="Terminate sales agreement with old supplier" />
+    <bpmn:task id="createContract" name="Create CIS contract" />
+    <bpmn:task id="checkContract" name="Check contract details" />
+    <bpmn:eventBasedGateway id="evGate" />
+    <bpmn:intermediateCatchEvent id="evConfirm" name="Customer confirms">
+      <bpmn:messageEventDefinition messageRef="msgConfirm" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="evTimer" name="7 days passed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="evWithdraw" name="Customer withdraws">
+      <bpmn:messageEventDefinition messageRef="msgWithdraw" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gwM3" />
+    <bpmn:endEvent id="endWithdrawn" name="Customer withdrew from contract" />
+    <bpmn:intermediateCatchEvent id="evSwitchDate" name="Switch-date reached">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate>switch date</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="split" />
+    <bpmn:task id="transmitMeter" name="Transmit power meter data to customer service and old supplier" />
+    <bpmn:task id="importMeter" name="Import meter data to systems" />
+    <bpmn:endEvent id="endImported" name="New customer won" />
+    <bpmn:task id="computeBilling" name="Compute final billing based on meter data" />
+    <bpmn:task id="sendBilling" name="Send final billing to old supplier" />
+    <bpmn:endEvent id="endGO" name="Grid operator process finished" />
+    <bpmn:task id="createBilling" name="Create final billing" />
+    <bpmn:task id="sendFinalBilling" name="Send final billing to customer" />
+    <bpmn:endEvent id="endBilling" name="Final billing received" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="transmit" />
+    <bpmn:sequenceFlow id="f2" sourceRef="transmit" targetRef="receive" />
+    <bpmn:sequenceFlow id="f3" sourceRef="receive" targetRef="enterCrm" />
+    <bpmn:sequenceFlow id="f4" sourceRef="enterCrm" targetRef="gwM0" />
+    <bpmn:sequenceFlow id="f5" sourceRef="gwM0" targetRef="compare" />
+    <bpmn:sequenceFlow id="f6" sourceRef="compare" targetRef="checkData" />
+    <bpmn:sequenceFlow id="f7" sourceRef="checkData" targetRef="gwErr" />
+    <bpmn:sequenceFlow id="fErr" name="yes" sourceRef="gwErr" targetRef="correct" />
+    <bpmn:sequenceFlow id="fNoErr" name="no" sourceRef="gwErr" targetRef="gwExists" />
+    <bpmn:sequenceFlow id="f8" sourceRef="correct" targetRef="gwM0" />
+    <bpmn:sequenceFlow id="fNotExists" name="no" sourceRef="gwExists" targetRef="createObject" />
+    <bpmn:sequenceFlow id="fExists" name="yes" sourceRef="gwExists" targetRef="gwM1" />
+    <bpmn:sequenceFlow id="f9" sourceRef="createObject" targetRef="gwM1" />
+    <bpmn:sequenceFlow id="f10" sourceRef="gwM1" targetRef="gwM2" />
+    <bpmn:sequenceFlow id="f11" sourceRef="gwM2" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f12" sourceRef="prepare" targetRef="checkDocs" />
+    <bpmn:sequenceFlow id="f13" sourceRef="checkDocs" targetRef="gwOk" />
+    <bpmn:sequenceFlow id="fDocsNo" name="no" sourceRef="gwOk" targetRef="analyze" />
+    <bpmn:sequenceFlow id="fDocsYes" name="yes" sourceRef="gwOk" targetRef="sendConfirmation" />
+    <bpmn:sequenceFlow id="f14" sourceRef="analyze" targetRef="gwM2" />
+    <bpmn:sequenceFlow id="f15" sourceRef="sendConfirmation" targetRef="sendRequest" />
+    <bpmn:sequenceFlow id="f16" sourceRef="sendRequest" targetRef="checkRequest" />
+    <bpmn:sequenceFlow id="f17" sourceRef="checkRequest" targetRef="transmitResponse" />
+    <bpmn:sequenceFlow id="f18" sourceRef="transmitResponse" targetRef="gwConc" />
+    <bpmn:sequenceFlow id="fConcYes" name="yes" sourceRef="gwConc" targetRef="informSuppliers" />
+    <bpmn:sequenceFlow id="fConcNo" name="no" sourceRef="gwConc" targetRef="terminate" />
+    <bpmn:sequenceFlow id="f19" sourceRef="informSuppliers" targetRef="endConflict" />
+    <bpmn:sequenceFlow id="f20" sourceRef="terminate" targetRef="createContract" />
+    <bpmn:sequenceFlow id="f21" sourceRef="createContract" targetRef="checkContract" />
+    <bpmn:sequenceFlow id="f22" sourceRef="checkContract" targetRef="evGate" />
+    <bpmn:sequenceFlow id="f23" sourceRef="evGate" targetRef="evConfirm" />
+    <bpmn:sequenceFlow id="f24" sourceRef="evGate" targetRef="evTimer" />
+    <bpmn:sequenceFlow id="f25" sourceRef="evGate" targetRef="evWithdraw" />
+    <bpmn:sequenceFlow id="f26" sourceRef="evConfirm" targetRef="gwM3" />
+    <bpmn:sequenceFlow id="f27" sourceRef="evTimer" targetRef="gwM3" />
+    <bpmn:sequenceFlow id="f28" sourceRef="evWithdraw" targetRef="endWithdrawn" />
+    <bpmn:sequenceFlow id="f29" sourceRef="gwM3" targetRef="evSwitchDate" />
+    <bpmn:sequenceFlow id="f30" sourceRef="evSwitchDate" targetRef="split" />
+    <bpmn:sequenceFlow id="f31" sourceRef="split" targetRef="transmitMeter" />
+    <bpmn:sequenceFlow id="f32" sourceRef="split" targetRef="computeBilling" />
+    <bpmn:sequenceFlow id="f33" sourceRef="transmitMeter" targetRef="importMeter" />
+    <bpmn:sequenceFlow id="f34" sourceRef="importMeter" targetRef="endImported" />
+    <bpmn:sequenceFlow id="f35" sourceRef="computeBilling" targetRef="sendBilling" />
+    <bpmn:sequenceFlow id="f36" sourceRef="sendBilling" targetRef="endGO" />
+    <bpmn:sequenceFlow id="f37" sourceRef="sendBilling" targetRef="createBilling" />
+    <bpmn:sequenceFlow id="f38" sourceRef="createBilling" targetRef="sendFinalBilling" />
+    <bpmn:sequenceFlow id="f39" sourceRef="sendFinalBilling" targetRef="endBilling" />
+  </bpmn:process>
+</bpmn:definitions>

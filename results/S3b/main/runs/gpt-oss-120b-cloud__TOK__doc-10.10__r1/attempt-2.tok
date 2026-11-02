@@ -1,0 +1,59 @@
+tok 1.0 "Fault detection and resolution process"
+
+pool organisation "Organisation"
+  lane fault_detector "Fault Detector"
+    start start "Failure reported or suspicion"
+    task report_failure "Report failure to MPO"
+
+  lane mpo "MPO"
+    task examine_failure "Examine the failure"
+    xor decision_confirm "Confirm or reject failure?"
+    # reject path
+    end rejected "Failure rejected"
+    # confirm path
+    and fork_notify_failure
+    task inform_GO_failure_mpo "Inform GO about failure"
+    task inform_MSP_failure_mpo "Inform MSP about failure"
+    and join_notify_failure
+    task fix_fault "Fix the fault at the measuring device"
+    task share_results "Share repair results with fault detector"
+    and fork_notify_resolution
+    task inform_GO_resolution_mpo "Inform GO about resolution of the interference"
+    task inform_MSP_resolution_mpo "Inform MSP about resolution of the interference"
+    and join_notify_resolution
+    end resolved "Fault resolved"
+
+  lane go "GO"
+    task receive_GO_failure "Receive failure information"
+    task receive_GO_resolution "Receive resolution information"
+
+  lane msp "MSP"
+    task receive_MSP_failure "Receive failure information"
+    task receive_MSP_resolution "Receive resolution information"
+
+# Sequence flows
+flow start -> report_failure
+flow report_failure -> examine_failure
+flow examine_failure -> decision_confirm
+flow decision_confirm -> rejected "reject"
+flow decision_confirm -> fork_notify_failure "confirm"
+
+flow fork_notify_failure -> inform_GO_failure_mpo
+flow fork_notify_failure -> inform_MSP_failure_mpo
+flow inform_GO_failure_mpo -> receive_GO_failure
+flow receive_GO_failure -> join_notify_failure
+flow inform_MSP_failure_mpo -> receive_MSP_failure
+flow receive_MSP_failure -> join_notify_failure
+
+flow join_notify_failure -> fix_fault
+flow fix_fault -> share_results
+flow share_results -> fork_notify_resolution
+
+flow fork_notify_resolution -> inform_GO_resolution_mpo
+flow fork_notify_resolution -> inform_MSP_resolution_mpo
+flow inform_GO_resolution_mpo -> receive_GO_resolution
+flow receive_GO_resolution -> join_notify_resolution
+flow inform_MSP_resolution_mpo -> receive_MSP_resolution
+flow receive_MSP_resolution -> join_notify_resolution
+
+flow join_notify_resolution -> resolved

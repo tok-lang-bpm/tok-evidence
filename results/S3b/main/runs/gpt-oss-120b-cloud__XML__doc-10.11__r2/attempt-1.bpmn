@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                id="definitions"
+                targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_GO" name="GO">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processValues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendChanged</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitReadings</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_MSP" name="MSP">
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>performMeasurement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitValues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endFailure</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:task id="request" name="request the measurements" />
+    <bpmn:task id="check" name="check the received request" />
+    <bpmn:exclusiveGateway id="decision" name="Request denied?" />
+
+    <bpmn:task id="informFailure" name="inform GO about the failure of the reading" />
+    <bpmn:task id="performMeasurement" name="perform the measurement" />
+    <bpmn:task id="transmitValues" name="transmit the measured values to the GO" />
+    <bpmn:task id="processValues" name="process the measured values" />
+    <bpmn:task id="sendChanged" name="send the changed values to the MSP" />
+    <bpmn:task id="transmitReadings" name="transmit the readings to the SP" />
+
+    <bpmn:endEvent id="endSuccess" name="Process completed" />
+    <bpmn:endEvent id="endFailure" name="Request denied" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="request" />
+    <bpmn:sequenceFlow id="f2" sourceRef="request" targetRef="check" />
+    <bpmn:sequenceFlow id="f3" sourceRef="check" targetRef="decision" />
+
+    <bpmn:sequenceFlow id="f4" name="denied"
+                      sourceRef="decision" targetRef="informFailure">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">denied</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="f5" name="approved"
+                      sourceRef="decision" targetRef="performMeasurement">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="f6" sourceRef="informFailure" targetRef="endFailure" />
+    <bpmn:sequenceFlow id="f7" sourceRef="performMeasurement" targetRef="transmitValues" />
+    <bpmn:sequenceFlow id="f8" sourceRef="transmitValues" targetRef="processValues" />
+    <bpmn:sequenceFlow id="f9" sourceRef="processValues" targetRef="sendChanged" />
+    <bpmn:sequenceFlow id="f10" sourceRef="sendChanged" targetRef="transmitReadings" />
+    <bpmn:sequenceFlow id="f11" sourceRef="transmitReadings" targetRef="endSuccess" />
+  </bpmn:process>
+</bpmn:definitions>

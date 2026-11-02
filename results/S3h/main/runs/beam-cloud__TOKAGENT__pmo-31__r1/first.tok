@@ -1,0 +1,58 @@
+tok 1.0 "Blizzard Online Character Generator"
+pool blizzard "Blizzard"
+  lane player "Player"
+    start start_creation "Start character creation"
+    and split_start "Start two tasks"
+    task check_battle_net "Check whether you have a battle.net account"
+    xor battle_gateway "Do you have a battle.net account?"
+    task enter_account_info "Enter account information"
+    task click_confirmation_link "Click the link in confirmation mail"
+    xor account_ready "Account ready"
+    task check_subscription "Check whether you have an active WoW subscription"
+    xor subscription_gateway "Do you have an active WoW subscription?"
+    task select_payment_method "Select payment method"
+    xor payment_method_gateway "Which payment method?"
+    task enter_credit_card_info "Enter credit card information"
+    task enter_iban_bic "Enter IBAN and BIC numbers"
+    xor payment_ready "Payment entered"
+    xor login_ready "Ready to log in"
+    task log_into_game "Log into the game"
+    task select_realm_race_class "Select realm, race and class"
+    task come_up_with_names "Come up with good character names"
+    and things_ready "Account setup and names ready"
+    task enter_character_name "Enter character name"
+    xor name_available_gateway "Is name available?"
+    task get_confirmation "Get confirmation"
+    task get_selfies "Get selfies of your character"
+    task get_another_message "Get another message"
+    end end_creation "End"
+
+flow start_creation -> split_start
+flow split_start -> check_battle_net
+flow split_start -> come_up_with_names
+flow check_battle_net -> battle_gateway
+flow battle_gateway -> enter_account_info "No" when="hasBattleNetAccount = false"
+flow enter_account_info -> click_confirmation_link
+flow click_confirmation_link -> account_ready
+flow battle_gateway -> account_ready "Yes" when="hasBattleNetAccount = true"
+flow account_ready -> check_subscription
+flow check_subscription -> subscription_gateway
+flow subscription_gateway -> select_payment_method "No" when="hasActiveSubscription = false"
+flow select_payment_method -> payment_method_gateway
+flow payment_method_gateway -> enter_credit_card_info "Credit card" when="paymentMethod = 'credit card'"
+flow payment_method_gateway -> enter_iban_bic "Bank account" when="paymentMethod = 'bank account'"
+flow enter_credit_card_info -> payment_ready
+flow enter_iban_bic -> payment_ready
+flow payment_ready -> login_ready
+flow subscription_gateway -> login_ready "Yes" when="hasActiveSubscription = true"
+flow login_ready -> log_into_game
+flow log_into_game -> select_realm_race_class
+flow select_realm_race_class -> things_ready
+flow come_up_with_names -> things_ready
+flow things_ready -> enter_character_name
+flow enter_character_name -> name_available_gateway
+flow name_available_gateway -> enter_character_name "No" when="nameAvailable = false"
+flow name_available_gateway -> get_confirmation "Yes" when="nameAvailable = true"
+flow get_confirmation -> get_selfies
+flow get_selfies -> get_another_message
+flow get_another_message -> end_creation

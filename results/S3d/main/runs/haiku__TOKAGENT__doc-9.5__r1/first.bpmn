@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense reimbursement" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Expense reimbursement" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="fin" name="Finance department">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>acc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rev</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>auto</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>remind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-rej</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-remind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-cancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sup" name="Supervisor">
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b30</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Expense Report received" />
+    <bpmn:exclusiveGateway id="g1" name="Employee has an account?" default="f-g1-acc" />
+    <bpmn:task id="acc" name="Create new account" />
+    <bpmn:exclusiveGateway id="g2" />
+    <bpmn:task id="rev" name="Review report for automatic approval" />
+    <bpmn:exclusiveGateway id="g3" name="Amount under $200?" />
+    <bpmn:task id="auto" name="Approve report automatically" />
+    <bpmn:exclusiveGateway id="g5" />
+    <bpmn:task id="notice" name="Send rejection notice by email" />
+    <bpmn:task id="pay" name="Transfer reimbursement to direct deposit bank account" />
+    <bpmn:task id="remind" name="Send approval in progress email" />
+    <bpmn:task id="cancel" name="Send cancellation notice by email" />
+    <bpmn:endEvent id="end-rej" name="Report rejected" />
+    <bpmn:endEvent id="end-ok" name="Reimbursement paid" />
+    <bpmn:endEvent id="end-remind" name="Employee notified: approval in progress" />
+    <bpmn:endEvent id="end-cancel" name="Process stopped; employee must re-submit report" />
+    <bpmn:task id="approve" name="Approve report" />
+    <bpmn:exclusiveGateway id="g6" name="Report approved?" default="f-g6-notice" />
+    <bpmn:boundaryEvent id="b7" name="7 days" attachedToRef="approve" cancelActivity="false">
+      <bpmn:timerEventDefinition id="b7-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="b30" name="30 days" attachedToRef="approve">
+      <bpmn:timerEventDefinition id="b30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-s-g1" sourceRef="s" targetRef="g1" />
+    <bpmn:sequenceFlow id="f-g1-g2" name="yes" sourceRef="g1" targetRef="g2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">account = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g1-acc" name="no" sourceRef="g1" targetRef="acc" />
+    <bpmn:sequenceFlow id="f-acc-g2" sourceRef="acc" targetRef="g2" />
+    <bpmn:sequenceFlow id="f-g2-rev" sourceRef="g2" targetRef="rev" />
+    <bpmn:sequenceFlow id="f-rev-g3" sourceRef="rev" targetRef="g3" />
+    <bpmn:sequenceFlow id="f-g3-auto" name="under $200" sourceRef="g3" targetRef="auto">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g3-approve" name="$200 or more" sourceRef="g3" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &gt;= 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-auto-g5" sourceRef="auto" targetRef="g5" />
+    <bpmn:sequenceFlow id="f-approve-g6" sourceRef="approve" targetRef="g6" />
+    <bpmn:sequenceFlow id="f-g6-g5" name="yes" sourceRef="g6" targetRef="g5">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g6-notice" name="no" sourceRef="g6" targetRef="notice" />
+    <bpmn:sequenceFlow id="f-notice-end-rej" sourceRef="notice" targetRef="end-rej" />
+    <bpmn:sequenceFlow id="f-g5-pay" sourceRef="g5" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-end-ok" sourceRef="pay" targetRef="end-ok" />
+    <bpmn:sequenceFlow id="f-b7-remind" sourceRef="b7" targetRef="remind" />
+    <bpmn:sequenceFlow id="f-remind-end-remind" sourceRef="remind" targetRef="end-remind" />
+    <bpmn:sequenceFlow id="f-b30-cancel" sourceRef="b30" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f-cancel-end-cancel" sourceRef="cancel" targetRef="end-cancel" />
+  </bpmn:process>
+</bpmn:definitions>

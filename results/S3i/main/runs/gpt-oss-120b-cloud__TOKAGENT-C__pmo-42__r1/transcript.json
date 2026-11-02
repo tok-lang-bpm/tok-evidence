@@ -1,0 +1,62 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3820,
+  "output_tokens": 1634,
+  "seconds": 6.3891963999776635,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to model described process. Identify actors: Probably \"You\" (customer), \"central fridge service center\", \"service facility\". Could be three actors. The description: \"Your fridge produces strange noises. You describe the symptoms, and send them together with the type of fridge to the central fridge service center.\" So actor: Customer. Then central service center. Then service facility (maybe a technician). Probably separate lanes.\n\nSequence:\n\nStart event.\n\nCustomer: \"Describe the symptoms and send them together with the type of fridge to the central fridge service center\". So task: \"Describe symptoms and send them to service center\". Could split but okay as one.\n\nThen central service center: \"Select a local service facility\". Task: \"Select local service facility\". Then maybe flow to service facility lane.\n\nService facility: \"Make an appointment\". Task: \"Make appointment\". Then maybe parallel? Let's read: \"They arrive at a random time, and sometimes have to leave without repairing your fridge, because they need additional parts.\"\n\nSo after appointment, they arrive (maybe \"Arrive at customer location\") task. Then decision: \"Need additional parts?\" If yes -> they leave without repairing -> path? There's maybe a loop? However text: \"sometimes have to leave without repairing your fridge, because they need additional parts.\" So if need parts, they leave (perhaps end? maybe go back to appointment after parts delivered? but not described). We'll model that as a branch that leads to end \"Service not completed\". Or could loop to make appointment again after parts? Not in description. So treat as end.\n\nIf no need parts (i.e., can repair), then \"After your fridge is repaired, you have to confirm that it is OK again.\" So after repair, a task \"Repair fridge\" then \"Confirm fridge is OK\". That is likely done by customer? The confirm maybe by customer. So after repair, go to customer lane: \"Confirm fridge is OK\". Then \"You can rate the service facility.\" That's likely done by customer also: \"Rate service facility\". Then end.\n\nWe need to ensure every path ends with end event.\n\nParallel? Not described. \"After your fridge is repaired, you have to confirm that it is OK again. You can rate the service facility.\" These could be parallel (you can rate after confirming). Could be sequential? Could be parallel: rating can be done independently after repair. We'll model as parallel: after confirm, parallel gateway splits to \"Confirm OK\" and \"Rate service facility\". Then join and end.\n\nLet's design:\n\nPool \"Fridge Service\".\n\nLanes:\n- lane customer \"Customer\"\n- lane center \"Service Center\"\n- lane facility \"Service Facility\"\n\nStart event in customer lane? Probably start event in customer lane.\n\nSequence:\n\ncustomer: task \"Describe symptoms and send to service center\"\nflow to center: task \"Select local service facility\"\nflow to facility: task \"Make appointment\"\nflow to facility: task \"Arrive at customer location\"\nxor \"Additional parts needed?\" with labels \"yes\" (need parts) and \"no\" (no parts).\n- \"yes\": end event \"Service incomplete\" maybe end.\n- \"no\": task \"Repair fridge\"\nthen flow to customer: task \"Confirm fridge is OK\"\nthen parallel: and gateway splits to:\n    - task \"Rate service facility\"\n    - maybe no other branch? Actually \"Confirm fridge is OK\" already done. Wait we have confirm already. So maybe after confirm, both confirm and rating can be parallel? Actually confirm already done; rating is separate after repair. But the confirm is done by customer. The rating also by customer. Could be sequential: after confirm, rating. No need parallel.\n\nBut description: \"After your fridge is repaired, you have to confirm that it is OK again. You can rate the service facility.\" Could be optional rating (you can). Represent as xor with \"rate\" and \"no rating\". Use exclusive gateway with default? We'll just make a xor with a branch for rating and a default branch skip rating.\n\nSimplify: after confirm, xor \"Rate service?\" with yes to task \"Rate service facility\" then end, and no leads directly to end.\n\nThus all end events.\n\nAlso need end event for positive path.\n\nImplement:\n\nprocess model.\n\nNow produce tok code.\n\nNeed header: tok 1.0 \"Service for Your Fridge\". Add executable maybe not needed.\n\nDefine pool \"Fridge Service\".\n\nInside, lanes.\n\nThen tasks, gateways, flows.\n\nNeed IDs for each node.\n\nLet's write.\n\nIDs: start s, task t1, t2, t3, t4, t5, t6, t7, t8. Gateways: xor1 for parts needed, xor2 for rating.\n\nLet's produce.\n\nCheck syntax: start ID \"Label\". Use label.\n\nWe'll use literal labels.\n\nDefine flows using flow statements.\n\nMake sure all nodes are within pool (indentation). Example from example: tasks inside lane blocks, then flow statements after all.\n\nWe'll need to reference IDs.\n\nLet's draft:\n\n```\ntok 1.0 \"Service for Your Fridge\"\n\npool fridge_service \"Fridge Service\"\n  lane customer \"Customer\"\n    start s \"Start\"\n    task describe_and_send \"Describe symptoms and send to service center\"\n    task confirm_ok \"Confirm fridge is OK\"\n    xor rate_decision \"Rate service?\"\n    task rate \"Rate service facility\"\n    end e_success \"Service completed\"\n    end e_incomplete \"Service incomplete\"\n  lane center \"Service Center\"\n    task select_facility \"Select local service facility\"\n  lane facility \"Service Facility\"\n    task make_appointment \"Make appointment\"\n    task arrive \"Arrive at customer location\"\n    xor parts_needed \"Additional parts needed?\"\n    task repair \"Repair fridge\"\n\nflow s -> describe_and_send -> select_facility -> make_appointment -> arrive -> parts_needed\nflow parts_needed -> repair \"no\"\nflow parts_needed -> e_incomplete \"yes\"\nflow repair -> confirm_ok -> rate_decision\nflow rate_decision -> rate \"yes\"\nflow rate_decision -> e_success \"no\"\nflow rate -> e_success\n```\n\nCheck: need to ensure flow chain order: after arrive to parts_needed decision.\n\nThe flow from parts_needed to repair labeled \"no\" meaning no parts needed -> proceed repair. Yes path to incomplete.\n\nNow ensure that after rate->e_success end.\n\nAlso need flow from rate_decision \"yes\" to rate, then rate to e_success.\n\nNow run check.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Service for Your Fridge\"\n\npool fridge_service \"Fridge Service\"\n  lane customer \"Customer\"\n    start s \"Start\"\n    task describe_and_send \"Describe symptoms and send to service center\"\n    task confirm_ok \"Confirm fridge is OK\"\n    xor rate_decision \"Rate service?\"\n    task rate \"Rate service facility\"\n    end e_success \"Service completed\"\n    end e_incomplete \"Service incomplete\"\n  lane center \"Service Center\"\n    task select_facility \"Select local service facility\"\n  lane facility \"Service Facility\"\n    task make_appointment \"Make appointment\"\n    task arrive \"Arrive at customer location\"\n    xor parts_needed \"Additional parts needed?\"\n    task repair \"Repair fridge\"\n\nflow s -> describe_and_send -> select_facility -> make_appointment -> arrive -> parts_needed\nflow parts_needed -> repair \"no\"\nflow parts_needed -> e_incomplete \"yes\"\nflow repair -> confirm_ok -> rate_decision\nflow rate_decision -> rate \"yes\"\nflow rate_decision -> e_success \"no\"\nflow rate -> e_success"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5502,
+  "output_tokens": 342,
+  "seconds": 1.9822619000042323,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool expects either path or text, not both. In our call we set path empty string and text provided. That's okay? It says give either text or path, not both. We gave path as empty string, that might count as both. Let's omit path field.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Service for Your Fridge\"\n\npool fridge_service \"Fridge Service\"\n  lane customer \"Customer\"\n    start s \"Start\"\n    task describe_and_send \"Describe symptoms and send to service center\"\n    task confirm_ok \"Confirm fridge is OK\"\n    xor rate_decision \"Rate service?\"\n    task rate \"Rate service facility\"\n    end e_success \"Service completed\"\n    end e_incomplete \"Service incomplete\"\n  lane center \"Service Center\"\n    task select_facility \"Select local service facility\"\n  lane facility \"Service Facility\"\n    task make_appointment \"Make appointment\"\n    task arrive \"Arrive at customer location\"\n    xor parts_needed \"Additional parts needed?\"\n    task repair \"Repair fridge\"\n\nflow s -> describe_and_send -> select_facility -> make_appointment -> arrive -> parts_needed\nflow parts_needed -> repair \"no\"\nflow parts_needed -> e_incomplete \"yes\"\nflow repair -> confirm_ok -> rate_decision\nflow rate_decision -> rate \"yes\"\nflow rate_decision -> e_success \"no\"\nflow rate -> e_success"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5918,
+  "output_tokens": 231,
+  "seconds": 0.8519651000096928,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Service for Your Fridge\"\n\npool fridge_service \"Fridge Service\"\n  lane customer \"Customer\"\n    start s \"Start\"\n    task describe_and_send \"Describe symptoms and send to service center\"\n    task confirm_ok \"Confirm fridge is OK\"\n    xor rate_decision \"Rate service?\"\n    task rate \"Rate service facility\"\n    end e_success \"Service completed\"\n    end e_incomplete \"Service incomplete\"\n  lane center \"Service Center\"\n    task select_facility \"Select local service facility\"\n  lane facility \"Service Facility\"\n    task make_appointment \"Make appointment\"\n    task arrive \"Arrive at customer location\"\n    xor parts_needed \"Additional parts needed?\"\n    task repair \"Repair fridge\"\n\nflow s -> describe_and_send -> select_facility -> make_appointment -> arrive -> parts_needed\nflow parts_needed -> repair \"no\"\nflow parts_needed -> e_incomplete \"yes\"\nflow repair -> confirm_ok -> rate_decision\nflow rate_decision -> rate \"yes\"\nflow rate_decision -> e_success \"no\"\nflow rate -> e_success\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

@@ -1,0 +1,180 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+A university enrollment system involves the following steps:
+Prospective students submit an application online.
+The admissions office reviews the application and supporting documents.
+If documents are missing, the applicant is notified to provide the missing items.
+Upon receiving all documents, the application is evaluated by the admissions committee.
+Concurrently, the finance department processes any application fees or waivers.
+If the application is accepted, an acceptance letter is sent.
+Otherwise, a rejection letter is sent and the process ends.
+After being accepted, the student must then confirm enrollment by a specified deadline; otherwise the application will be canceled.
+If the student confirms, they receive orientation materials and the IT department sets up student accounts for email, online portals, and library access.
+If the student is international, the international student office assists with visa processing.
+The student obtains a student ID card and starts creating their study plan, which includes:
+Meeting with an academic advisor.
+Selecting courses.
+Resolving any schedule conflicts.
+The student begins attending classes.
+Throughout each semester, the student may add or drop courses within the add/drop period.
+At the end of the semester, grades are posted, and the student can review them online.
+If the student has any grievances, they can file an appeal, which includes:
+Submitting an appeal form.
+Meeting with the appeals committee.
+Awaiting a decision.
+The process repeats each semester until the student graduates or withdraws.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "University enrollment process"
+
+pool university "University"
+
+  lane prospective_student "Prospective Student"
+    start start "Start enrollment process"
+    task submit_app "Submit application online"
+    task provide_missing "Provide missing documents"
+    task confirm_enroll "Confirm enrollment by deadline"
+    task receive_orientation "Receive orientation materials"
+    task obtain_id "Obtain student ID card"
+    task meet_advisor "Meet with academic advisor"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve any schedule conflicts"
+    task begin_classes "Begin attending classes"
+    task add_drop "Add or drop courses within the add/drop period"
+    task post_grades "Post grades"
+    task review_grades "Review grades online"
+    task submit_appeal "Submit appeal form"
+    task await_decision "Await decision on appeal"
+    task graduate "Graduate"
+    task withdraw "Withdraw"
+    end end_reject "Application rejected"
+    end end_cancel "Application cancelled"
+    end end_graduate "Graduated"
+    end end_withdraw "Withdrawn"
+
+  lane admissions_office "Admissions Office"
+    task review_app "Review application and supporting documents"
+    task notify_missing "Notify applicant to provide missing items"
+    task send_accept "Send acceptance letter"
+    task send_reject "Send rejection letter"
+    task cancel_app "Cancel application"
+
+  lane admissions_committee "Admissions Committee"
+    task eval_app "Evaluate application by admissions committee"
+
+  lane finance "Finance Department"
+    task process_fees "Process application fees or waivers"
+
+  lane it_department "IT Department"
+    task setup_accounts "Set up student accounts for email, online portals, and library access"
+
+  lane international_office "International Student Office"
+    task assist_visa "Assist with visa processing"
+
+  lane appeals_committee "Appeals Committee"
+    task meet_appeals "Meet with appeals committee"
+
+  xor missing "Are all documents present?"
+  and parallel "Parallel evaluation and fee processing"
+  and join_eval "Join evaluation and fee processing"
+  xor accept "Is the application accepted?"
+  xor confirm "Is enrollment confirmed?"
+  and join_post "Join orientation and account setup"
+  xor international "Is the student international?"
+  xor course_change "Add or drop courses?"
+  xor grievance "File an appeal?"
+  xor next_step "Next step?"
+  and loop_continue "Loop back to next semester"
+
+  flow start -> submit_app
+  flow submit_app -> review_app
+  flow review_app -> missing
+  flow missing -> parallel "yes"
+  flow missing -> notify_missing "no"
+
+  flow notify_missing -> provide_missing
+  flow provide_missing -> review_app
+
+  flow parallel -> eval_app
+  flow parallel -> process_fees
+  flow eval_app -> join_eval
+  flow process_fees -> join_eval
+  flow join_eval -> accept
+
+  flow accept -> send_accept "yes"
+  flow accept -> send_reject "no"
+
+  flow send_reject -> end_reject
+  flow send_accept -> confirm
+
+  flow confirm -> confirm_enroll "yes"
+  flow confirm -> cancel_app "no"
+
+  flow cancel_app -> end_cancel
+  flow confirm_enroll -> join_post
+
+  flow join_post -> receive_orientation
+  flow join_post -> setup_accounts
+  flow receive_orientation -> international
+  flow setup_accounts -> international
+
+  flow international -> assist_visa "yes"
+  flow international -> obtain_id "no"
+  flow assist_visa -> obtain_id
+
+  flow obtain_id -> meet_advisor
+  flow meet_advisor -> select_courses
+  flow select_courses -> resolve_conflicts
+  flow resolve_conflicts -> begin_classes
+  flow begin_classes -> course_change
+
+  flow course_change -> add_drop "yes"
+  flow course_change -> post_grades "no"
+  flow add_drop -> post_grades
+
+  flow post_grades -> review_grades
+  flow review_grades -> grievance
+
+  flow grievance -> submit_appeal "yes"
+  flow grievance -> next_step "no"
+
+  flow submit_appeal -> meet_appeals
+  flow meet_appeals -> await_decision
+  flow await_decision -> review_grades
+
+  flow next_step -> loop_continue "continue"
+  flow next_step -> graduate "graduate"
+  flow next_step -> withdraw "withdraw"
+
+  flow loop_continue -> begin_classes
+
+  flow graduate -> end_graduate
+  flow withdraw -> end_withdraw
+```
+
+The tok checker reports these problems in it:
+
+- line 50: error R030: 'missing' is in a pool with lanes but outside every lane
+- line 51: error R030: 'parallel' is in a pool with lanes but outside every lane
+- line 52: error R030: 'join_eval' is in a pool with lanes but outside every lane
+- line 53: error R030: 'accept' is in a pool with lanes but outside every lane
+- line 54: error R030: 'confirm' is in a pool with lanes but outside every lane
+- line 55: error R030: 'join_post' is in a pool with lanes but outside every lane
+- line 56: error R030: 'international' is in a pool with lanes but outside every lane
+- line 57: error R030: 'course_change' is in a pool with lanes but outside every lane
+- line 58: error R030: 'grievance' is in a pool with lanes but outside every lane
+- line 59: error R030: 'next_step' is in a pool with lanes but outside every lane
+- line 60: error R030: 'loop_continue' is in a pool with lanes but outside every lane
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

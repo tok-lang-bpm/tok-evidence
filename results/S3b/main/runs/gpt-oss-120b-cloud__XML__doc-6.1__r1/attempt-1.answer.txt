@@ -1,0 +1,114 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="ACME AG" processRef="invoice-process"/>
+  </bpmn:collaboration>
+  <bpmn:process id="invoice-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneSecretariat" name="Secretariat">
+        <bpmn:flowNodeRef>forward</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneAccounting" name="Accounting Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkItems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>forwardToCommercial</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>resolveComplaint</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveBoard</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCCM" name="Cost Center Manager">
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayCC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>markAP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gatewayMore</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCommercial" name="Commercial Manager">
+        <bpmn:flowNodeRef>audit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneBoard" name="Board">
+        <bpmn:flowNodeRef>boardCheck</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Invoice received (paper/fax)"/>
+
+    <!-- Secretariat -->
+    <bpmn:task id="forward" name="Visual inspection and forward invoice"/>
+
+    <!-- Accounting -->
+    <bpmn:task id="create" name="Identify suppliers and create invoice"/>
+    <bpmn:task id="checkItems" name="Check invoice items and note cost centers (create docket)"/>
+
+    <!-- Cost Center Manager loop -->
+    <bpmn:task id="review" name="Review invoice for accuracy"/>
+    <bpmn:exclusiveGateway id="gatewayCC" name="AP decision"/>
+    <bpmn:task id="markAP" name="Mark position as accurate (AP)"/>
+    <bpmn:task id="reject" name="Reject AP with note and explanation"/>
+    <bpmn:exclusiveGateway id="gatewayMore" name="More managers?"/>
+
+    <!-- Accounting (clarification) -->
+    <bpmn:task id="clarify" name="Clarify inconsistency with vendor"/>
+
+    <!-- Accounting forward to commercial -->
+    <bpmn:task id="forwardToCommercial" name="Forward copy to commercial manager"/>
+
+    <!-- Commercial audit -->
+    <bpmn:task id="audit" name="Commercial audit and issue approval for payment"/>
+
+    <!-- Complaint handling -->
+    <bpmn:exclusiveGateway id="gatewayComplaint" name="Complaint?"/>
+    <bpmn:task id="resolveComplaint" name="Resolve complaint with supplier"/>
+
+    <!-- Amount check -->
+    <bpmn:exclusiveGateway id="gatewayAmount" name="Amount > EUR 20?"/>
+
+    <!-- Board check -->
+    <bpmn:task id="boardCheck" name="Board check (4‑eyes principle)"/>
+    <bpmn:task id="receiveBoard" name="Receive board signature"/>
+
+    <!-- Payment and close -->
+    <bpmn:task id="payment" name="Give payment instructions and close invoice instance"/>
+
+    <!-- End -->
+    <bpmn:endEvent id="end" name="Process completed"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="forward"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="forward" targetRef="create"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="create" targetRef="checkItems"/>
+    <bpmn:sequenceFlow id="f4" sourceRef="checkItems" targetRef="review"/>
+    
+    <bpmn:sequenceFlow id="f5" sourceRef="review" targetRef="gatewayCC"/>
+    <bpmn:sequenceFlow id="f6" name="AP" sourceRef="gatewayCC" targetRef="markAP"/>
+    <bpmn:sequenceFlow id="f7" name="Reject" sourceRef="gatewayCC" targetRef="reject"/>
+    
+    <bpmn:sequenceFlow id="f8" sourceRef="markAP" targetRef="gatewayMore"/>
+    <bpmn:sequenceFlow id="f9" sourceRef="reject" targetRef="clarify"/>
+    <bpmn:sequenceFlow id="f10" sourceRef="clarify" targetRef="review"/>
+    
+    <bpmn:sequenceFlow id="f11" name="All positions processed" sourceRef="gatewayMore" targetRef="forwardToCommercial"/>
+    <bpmn:sequenceFlow id="f12" name="Next manager" sourceRef="gatewayMore" targetRef="review"/>
+    
+    <bpmn:sequenceFlow id="f13" sourceRef="forwardToCommercial" targetRef="audit"/>
+    
+    <bpmn:sequenceFlow id="f14" sourceRef="audit" targetRef="gatewayComplaint"/>
+    <bpmn:sequenceFlow id="f15" name="Complaint" sourceRef="gatewayComplaint" targetRef="resolveComplaint"/>
+    <bpmn:sequenceFlow id="f16" name="No complaint" sourceRef="gatewayComplaint" targetRef="gatewayAmount"/>
+    <bpmn:sequenceFlow id="f17" sourceRef="resolveComplaint" targetRef="gatewayAmount"/>
+    
+    <bpmn:sequenceFlow id="f18" name="Amount>20" sourceRef="gatewayAmount" targetRef="boardCheck"/>
+    <bpmn:sequenceFlow id="f19" name="Amount≤20" sourceRef="gatewayAmount" targetRef="payment"/>
+    <bpmn:sequenceFlow id="f20" sourceRef="boardCheck" targetRef="receiveBoard"/>
+    <bpmn:sequenceFlow id="f21" sourceRef="receiveBoard" targetRef="payment"/>
+    
+    <bpmn:sequenceFlow id="f22" sourceRef="payment" targetRef="end"/>
+  </bpmn:process>
+</bpmn:definitions>
+```

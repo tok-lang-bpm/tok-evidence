@@ -1,0 +1,130 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4143,
+  "output_tokens": 1093,
+  "seconds": 5.147688400000334,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to produce a tok model of the described process. Need pool for organisation (likely the whole process includes EC, INQ, IP as actors). Use one pool for the organisation and one lane for each actor (person, role, department or system). So pool ID maybe \"org\". Lanes: EC, INQ, IP. Process steps:\n\n1. EC tells the INQ about the change of his master data. => task: \"tell INQ about change of master data\". Actor EC.\n\n2. INQ notifies the IP of the change. => task: \"notify IP of change\". Actor INQ.\n\n3. IP checks whether the master data can be changed at the desired time. => task: \"check whether master data can be changed at desired time\". Actor IP.\n\n4. Decision: IP confirms the changes of the INQ or IP rejects the changes of the INQ.\n\nSo after the check, an exclusive gateway with two outgoing flows: one to task \"confirm changes of INQ\" maybe by IP? The text says \"The IP confirms the changes of the INQ\" - that's an activity? It's like a response. Could model as task \"confirm changes\" (by IP) and default path \"reject changes\" (by IP). After each, end.\n\nThus flow: start -> EC task -> INQ task -> IP task -> xor gateway -> two tasks -> end events.\n\nWe need to include lanes. Need to declare pool with lanes: start in lane EC or maybe start event not in lane? Usually start event belongs to the pool, but we can place it at start of EC lane maybe.\n\nWe must write tok code with header \"tok 1.0\". Use pool block with lanes. Inside lanes, define tasks. Then after lanes, define flows.\n\nNeed unique identifiers. Provide IDs like tell-change, notify-ip, check-change, confirm-change, reject-change. Provide labels accordingly.\n\nLet's draft:\n\ntok 1.0\n\npool org \"Organisation\" {\n  lane ec \"EC\"\n  lane inq \"INQ\"\n  lane ip \"IP\"\n}\n\nNow tasks inside lanes:\n\ntask tell-change \"EC tells INQ about the change of his master data\" ec\ntask notify-ip \"INQ notifies IP of the change\" inq\ntask check-change \"IP checks whether the master data can be changed at the desired time\" ip\ntask confirm \"IP confirms the changes of INQ\" ip\ntask reject \"IP rejects the changes of INQ\" ip\n\nNow flows:\n\nstart -> tell-change\ntell-change -> notify-ip\nnotify-ip -> check-change\ncheck-change -> decision (xor) maybe we need an explicit gateway.\n\nxor decision \"Can master data be changed at desired time?\" ip? The gateway belongs to IP lane.\n\ngateway decision xor \"Can master data be changed at desired time?\" ip\n\nThen flows:\n\ncheck-change -> decision\ndecision -> confirm \"yes\"\ndecision -> reject \"no\"\n\nThen confirm -> end\nreject -> end\n\nWe need an end event. Could have separate ends.\n\nEnd events: end1, end2.\n\nDefine end events maybe no label.\n\nend end1\nend end2\n\nNow flows from confirm to end1, reject to end2.\n\nWe also need explicit start event defined.\n\nstart start\n\nProbably need to tag start and end as events. Syntax: start, end.\n\nEverything must be after lane definitions.\n\nLet's build the tok.\n\nAlso need flow attributes for conditions: when=\"true\" etc. We can write when=\"\" but maybe leave unspecified? Requirement: exclusive gateways need each outgoing flow either when=\"…\" or default. Must include condition or default. Provide when=\"true\" for confirm, default for reject. Or when=\"false\"? Let's use when=\"true\" on confirm, default on reject.\n\nThus flows:\n\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\n\nMake sure each flow line has exactly one arrow.\n\nNow final tok.\n\nLet's test with check.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane ec \"EC\"\n  lane inq \"INQ\"\n  lane ip \"IP\"\n}\n\nstart start\n\ntask tell-change \"EC tells INQ about the change of his master data\" ec\n\ntask notify-ip \"INQ notifies IP of the change\" inq\n\ntask check-change \"IP checks whether the master data can be changed at the desired time\" ip\n\ngateway decision xor \"Can master data be changed at desired time?\" ip\n\ntask confirm \"IP confirms the changes of INQ\" ip\n\ntask reject \"IP rejects the changes of INQ\" ip\n\nend end1\nend end2\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end1\nflow reject -> end2\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5268,
+  "output_tokens": 313,
+  "seconds": 1.2656849999912083,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool expects either path or text, not both. I gave text; path empty maybe not allowed. I need to provide either path (string) or text. Since we gave text and path as empty, causing error. Provide only text field. Let's call again.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane ec \"EC\"\n  lane inq \"INQ\"\n  lane ip \"IP\"\n}\n\nstart start\n\ntask tell-change \"EC tells INQ about the change of his master data\" ec\n\ntask notify-ip \"INQ notifies IP of the change\" inq\n\ntask check-change \"IP checks whether the master data can be changed at the desired time\" ip\n\ngateway decision xor \"Can master data be changed at desired time?\" ip\n\ntask confirm \"IP confirms the changes of INQ\" ip\n\ntask reject \"IP rejects the changes of INQ\" ip\n\nend end1\nend end2\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end1\nflow reject -> end2\n"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error P004: 'lane' is not allowed inside top\nline 7: error T001: invalid token: unexpected character '}'\nline 9: error T003: indentation does not match any open block\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5736,
+  "output_tokens": 224,
+  "seconds": 1.452689300000202,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The syntax for pool and lanes may be wrong. Need to consult cheat sheet. Usually pool syntax: `pool ID \"Label\" { ... }` Inside block you can define lanes as `lane ID \"Label\"`.\n\nBut my syntax inside pool had lane definitions; error indicates lane not allowed inside top? Maybe need to define lanes as `lane ID \"Label\"` at top level, then assign tasks to lanes with attribute lane=ID? Actually in tok, you define lane inside pool block using `lane ID \"Label\"` but my error shows not allowed. Perhaps need to include `pool ...` but after that need to open block with `{` and inside define lanes preceded by `lane`. The error says unexpected character '{' at line 3. Means maybe syntax: `pool org \"Organisation\"` without braces? Actually maybe pool is defined without block; lanes are separate top-level entries with `lane` specifying pool attribute. Let's check reference. Use `reference` to see cheat sheet.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 8667,
+  "output_tokens": 847,
+  "seconds": 3.3329635999980383,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The cheat sheet shows pool syntax: `pool ID \"Label\" [process=P] ...` and then inside a block, lanes nest; nodes go inside lanes.\n\nSo need proper indentation: block opened by newline after pool line and then indent lines under it. In the cheat sheet, pool line likely ends with nothing but block is indicated by indentation? Actually they use indentation to indicate blocks. So syntax:\n\npool org \"Organisation\"\n  lane ec \"EC\"\n  lane inq \"INQ\"\n  lane ip \"IP\"\n\nThen tasks inside lanes must be placed inside the lane block, i.e.:\n\nlane ec \"EC\"\n  task tell-change ...\n\nBut maybe tasks are inside lane indentation. The cheat sheet: \"lane ID \"Label\" # lanes nest; nodes go inside lanes\". So we need to indent tasks under the lane. So structure:\n\npool org \"Organisation\"\n  lane ec \"EC\"\n    task tell-change ...\n  lane inq \"INQ\"\n    task notify-ip ...\n  lane ip \"IP\"\n    task check-change ...\n    gateway decision xor ...\n    task confirm ...\n    task reject ...\n\nThen flows are after the pool block (top-level, not indented). Flows refer to IDs.\n\nThus modify.\n\nAlso we need start and end events possibly placed in a lane (maybe EC lane? but start belongs to overall process; we can place start in EC lane or a separate lane? Maybe place start in EC lane as it's the first actor). So put start in EC lane block.\n\nThus:\n\npool org \"Organisation\"\n  lane ec \"EC\"\n    start start\n    task tell-change \"EC tells INQ about the change of his master data\"\n    # maybe also end for this lane? no.\n  lane inq \"INQ\"\n    task notify-ip \"INQ notifies IP of the change\"\n  lane ip \"IP\"\n    task check-change \"IP checks whether the master data can be changed at the desired time\"\n    gateway decision xor \"Can master data be changed at desired time?\"\n    task confirm \"IP confirms the changes of INQ\"\n    task reject \"IP rejects the changes of INQ\"\n    end end-confirm\n    end end-reject\n\nBut we need end events after confirm/reject lines, maybe separate end events defined in IP lane.\n\nNow flows: after block.\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end-confirm\nflow reject -> end-reject\n\nMake sure IDs are correct: start's ID is start (maybe \"start\"? but ID must be unique, so use start. That's okay.)\n\nTask IDs: tell-change, notify-ip, check-change, confirm, reject.\n\nGateway ID: decision\n\nEnd IDs: end-confirm, end-reject.\n\nNow check token formatting.\n\nLet's construct model text accordingly.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane ec \"EC\"\n    start start\n    task tell-change \"EC tells INQ about the change of his master data\"\n  lane inq \"INQ\"\n    task notify-ip \"INQ notifies IP of the change\"\n  lane ip \"IP\"\n    task check-change \"IP checks whether the master data can be changed at the desired time\"\n    gateway decision xor \"Can master data be changed at desired time?\"\n    task confirm \"IP confirms the changes of INQ\"\n    task reject \"IP rejects the changes of INQ\"\n    end end-confirm\n    end end-reject\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end-confirm\nflow reject -> end-reject\n"
+    },
+    "is_error": false,
+    "result": "line 11: error P001: unknown keyword 'gateway'\n1 error(s), 1 diagnostic(s); BPMN conformance class: full"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9585,
+  "output_tokens": 387,
+  "seconds": 1.5227066999941599,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The keyword for gateway is likely `xor`, `and`, `or` etc. Actually the syntax: `xor ID \"Question?\"` is the gateway statement, not `gateway`. So we need to use `xor decision \"Can master data...?\"`. So replace `gateway decision xor` with `xor decision \"Can ...?\"`. Let's adjust.\n\nAlso need to assign tasks to lanes after lane definitions, tasks inside lane must be indented same as lane block, fine.\n\nWe need to ensure label for decision maybe \"question\".\n\nThus adjust.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane ec \"EC\"\n    start start\n    task tell-change \"EC tells INQ about the change of his master data\"\n  lane inq \"INQ\"\n    task notify-ip \"INQ notifies IP of the change\"\n  lane ip \"IP\"\n    task check-change \"IP checks whether the master data can be changed at the desired time\"\n    xor decision \"Can master data be changed at desired time?\"\n    task confirm \"IP confirms the changes of INQ\"\n    task reject \"IP rejects the changes of INQ\"\n    end end-confirm\n    end end-reject\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end-confirm\nflow reject -> end-reject\n"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 9998,
+  "output_tokens": 245,
+  "seconds": 1.1615353999950457,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0\n\npool org \"Organisation\"\n  lane ec \"EC\"\n    start start\n    task tell-change \"EC tells INQ about the change of his master data\"\n  lane inq \"INQ\"\n    task notify-ip \"INQ notifies IP of the change\"\n  lane ip \"IP\"\n    task check-change \"IP checks whether the master data can be changed at the desired time\"\n    xor decision \"Can master data be changed at desired time?\"\n    task confirm \"IP confirms the changes of INQ\"\n    task reject \"IP rejects the changes of INQ\"\n    end end-confirm\n    end end-reject\n\nflow start -> tell-change\nflow tell-change -> notify-ip\nflow notify-ip -> check-change\nflow check-change -> decision\nflow decision -> confirm \"yes\" when=\"true\"\nflow decision -> reject \"no\" default\nflow confirm -> end-confirm\nflow reject -> end-reject\n```",
+  "thinking": "Great, no errors.\n\nNow we might want to format canonical form using fmt, but not required. The model is correct.\n\nWe will output the model in a fenced code block marked ```tok.",
+  "tool_calls": []
+ }
+]

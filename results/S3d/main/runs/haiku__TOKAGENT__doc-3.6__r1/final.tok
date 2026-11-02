@@ -1,0 +1,47 @@
+tok 1.0 "Claims Notification"
+
+pool org "Insurance organisation"
+  lane handler "Claims handler"
+    start s "Claim received" message="Claim"
+    task check-insured "Check whether claimant is insured"
+    xor insured "Claimant insured?"
+    send inform-reject "Inform claimant that claim must be rejected" message="Claim rejected"
+    end rejected "Claim rejected"
+    task evaluate "Evaluate severity of claim"
+    xor severity "Simple or complex claim?"
+    send send-simple "Send simple claim forms" message="Simple claim forms"
+    send send-complex "Send complex claim forms" message="Complex claim forms"
+    xor merge-forms
+    receive receive-forms "Receive returned forms" message="Forms returned"
+    task check-forms "Check forms for completeness"
+    xor complete "Forms complete?"
+    send inform-update "Inform claimant to update forms" message="Update forms"
+    receive receive-updated "Receive updated forms" message="Updated forms"
+    task check-updated "Check updated forms"
+  lane system "Claims Management system"
+    task register "Register claim in Claims Management system"
+    end done "Claims Notification process ends"
+
+pool claimant "Claimant"
+
+message claimant -> s "Claim"
+message inform-reject -> claimant "Claim rejected"
+message send-simple -> claimant "Simple claim forms"
+message send-complex -> claimant "Complex claim forms"
+message claimant -> receive-forms "Forms returned"
+message inform-update -> claimant "Update forms"
+message claimant -> receive-updated "Updated forms"
+
+flow s -> check-insured -> insured
+flow insured -> evaluate "yes"
+flow insured -> inform-reject "no"
+flow inform-reject -> rejected
+flow evaluate -> severity
+flow severity -> send-simple "simple"
+flow severity -> send-complex "complex"
+flow send-simple -> merge-forms
+flow send-complex -> merge-forms -> receive-forms -> check-forms -> complete
+flow complete -> register "yes"
+flow complete -> inform-update "no"
+flow register -> done
+flow inform-update -> receive-updated -> check-updated -> complete

@@ -1,0 +1,97 @@
+```tok
+tok 1.0 "University enrollment system"
+
+pool university "University"
+  lane student "Student"
+    start needed "Application needed"
+    task submit "Submit application online"
+    task confirm "Confirm enrollment"
+    boundary cancel_enr on=confirm timer=P7D
+    task receive_orientation "Receive orientation materials"
+    task idcard "Obtain student ID card"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve schedule conflicts"
+    task attend "Begin attending classes"
+    xor add_drop_choice "Add or drop courses?"
+    task add_drop "Add or drop courses"
+    task review_grades "Review grades online"
+    xor grievances "Any grievances?"
+    task submit_appeal "Submit appeal form"
+    task await_decision "Await appeal decision"
+    xor continue_studies "Continue, graduate, or withdraw?"
+    end graduated "Student graduated"
+    end withdrawn "Student withdrawn"
+  lane admissions "Admissions Office"
+    task review "Review application and supporting documents"
+    xor docs "Documents complete?"
+    task notify "Notify applicant to provide missing items"
+    and concurrent "Process evaluation and fees concurrently"
+    and concurrent_done "Evaluation and fees complete"
+    xor accepted "Application accepted?"
+    task send_accept "Send acceptance letter"
+    task send_reject "Send rejection letter"
+    end rejected "Application rejected"
+    task cancelapp "Cancel application"
+    end canceled "Application canceled"
+    xor international "International student?"
+  lane committee "Admissions Committee"
+    task evaluate "Evaluate application"
+  lane finance "Finance Department"
+    task fees "Process application fees or waivers"
+  lane it "IT Department"
+    task setup_accounts "Set up student accounts"
+  lane international_office "International Student Office"
+    task visa "Assist with visa processing"
+  lane advisor "Academic Advisor"
+    task meet_advisor "Meet with academic advisor"
+  lane appeals "Appeals Committee"
+    task meet_appeals "Meet with appeals committee"
+  lane system "University System"
+    task post_grades "Post grades"
+
+flow needed -> submit -> review -> docs
+flow docs -> concurrent "yes"
+flow docs -> notify "no"
+flow notify -> review
+flow concurrent -> evaluate
+flow concurrent -> fees
+flow evaluate -> concurrent_done
+flow fees -> concurrent_done
+flow concurrent_done -> accepted
+flow accepted -> send_accept "accepted"
+flow accepted -> send_reject "rejected"
+flow send_reject -> rejected
+flow send_accept -> confirm
+flow cancel_enr -> cancelapp
+flow cancelapp -> canceled
+flow confirm -> orient_split
+flow orient_split -> receive_orientation
+flow orient_split -> setup_accounts
+flow receive_orientation -> orient_join
+flow setup_accounts -> orient_join
+flow orient_join -> international
+flow international -> visa "yes"
+flow international -> idcard "no"
+flow visa -> idcard
+flow idcard -> meet_advisor
+flow meet_advisor -> select_courses
+flow select_courses -> resolve_conflicts
+flow resolve_conflicts -> attend
+flow attend -> add_drop_choice
+flow add_drop_choice -> add_drop "yes"
+flow add_drop_choice -> post_grades "no"
+flow add_drop -> post_grades
+flow post_grades -> review_grades
+flow review_grades -> grievances
+flow grievances -> submit_appeal "yes"
+flow grievances -> continue_studies "no"
+flow submit_appeal -> meet_appeals
+flow meet_appeals -> await_decision
+flow await_decision -> continue_studies
+flow continue_studies -> attend "continue"
+flow continue_studies -> graduated "graduate"
+flow continue_studies -> withdrawn "withdraw"
+
+and orient_split
+and orient_join
+```

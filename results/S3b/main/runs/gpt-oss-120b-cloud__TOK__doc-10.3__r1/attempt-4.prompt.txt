@@ -1,0 +1,71 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The MPOO deregisters at the GO. The GO verifies the deregistration. The GO rejects the deregistration of the MPOO or the GO preliminarily confirms the deregistration of the MPOO. The GO prepares the readmission of the measuring point. Optionally, the GO may oblige the MPOO to continue the operations. If the GO binds the MPOO to continue the operation, the MPOO confirmes the continuation to the MPOO. The GO performs the equipment acquisition and / or equipment changes. The GO assigns the GO as MPO. The GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO. The GO informs the MSPO about the assignment of the GO. The GO informs the SP about the assignment of the GO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "MPOO deregistration process"
+
+pool org "Organisation"
+  lane mpoo "MPOO"
+    start s_start "Start deregistration"
+    task t_deregister "MPOO deregisters at the GO"
+    task t_mpoo_confirm "MPOO confirms the continuation to the MPOO"
+
+    end e_reject "Deregistration rejected"
+  lane go "GO"
+    task t_verify "GO verifies the deregistration"
+    xor g_decision "GO decision on deregistration"
+    task t_reject "GO rejects the deregistration of the MPOO"
+    task t_confirm "GO preliminarily confirms the deregistration of the MPOO"
+    task t_prepare "GO prepares the readmission of the measuring point"
+    xor g_obligation "GO obliges MPOO to continue?"
+    task t_bind "GO binds the MPOO to continue the operation"
+
+    and g_eq_split "Equipment activities"
+    task t_acquire "GO performs equipment acquisition"
+    task t_change "GO performs equipment changes"
+    and g_eq_join "Equipment join"
+
+    task t_assign "GO assigns the GO as MPO"
+    task t_inform_mpoo "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+
+    and g_inform_split "Inform parties"
+    task t_inform_mspo "GO informs the MSPO about the assignment of the GO"
+    task t_inform_sp "GO informs the SP about the assignment of the GO"
+    and g_inform_join "Inform join"
+
+    end e_complete "Process completed"
+
+# Sequence flows
+flow s_start -> t_deregister -> t_verify -> g_decision
+flow g_decision -> t_reject "reject"
+flow g_decision -> t_confirm "confirm"
+flow t_reject -> e_reject
+flow t_confirm -> t_prepare -> g_obligation
+flow g_obligation -> t_bind "bind"
+flow g_obligation -> g_eq_split "no bind"
+flow t_bind -> t_mpoo_confirm -> g_eq_split
+flow g_eq_split -> t_acquire -> g_eq_join
+flow g_eq_split -> t_change -> g_eq_join
+flow g_eq_join -> t_assign -> t_inform_mpoo -> g_inform_split
+flow g_inform_split -> t_inform_mspo -> g_inform_join
+flow g_inform_split -> t_inform_sp -> g_inform_join
+flow g_inform_join -> e_complete
+```
+
+The tok checker reports these problems in it:
+
+- line 19: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (g_eq_split)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

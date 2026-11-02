@@ -1,0 +1,75 @@
+```tok
+tok 1.0 "Annual audit process"
+
+pool company "Company"
+  lane audit_coordinator "Audit coordinator"
+    start audit_initiated "Audit initiated"
+    task send_notification "Send notification"
+    and par_preparation
+  lane regional_office "Regional office"
+    task prepare_statements "Prepare financial statements"
+    task gather_documents "Gather necessary documents"
+    task submit_documents "Submit documents"
+    task provide_clarifications "Provide clarifications"
+  lane compliance_team "Compliance team"
+    task check_updates "Check regulatory updates"
+  lane central_audit_team "Central audit team"
+    and par_review_ready
+    task review_submission "Review submission"
+    task request_clarifications "Request clarifications"
+    xor gw_discrepancies "Discrepancies found?"
+  lane audit_team "Audit team"
+    adhoc risk_assessment "Risk assessment"
+      task evaluate_financial "Evaluate financial risks"
+      task evaluate_operational "Evaluate operational risks"
+      task evaluate_compliance "Evaluate compliance risks"
+    xor gw_high_risk "High risk identified?"
+    task analyze_data "Analyze data"
+    task conduct_interviews "Conduct interviews"
+    task conduct_site_visits "Conduct site visits"
+    xor gw_site_visit "Site visit needed?"
+    xor gw_site_merge
+    xor gw_high_merge
+    task compile_report "Compile audit report"
+    task update_report "Update audit report"
+    task resubmit_report "Resubmit audit report"
+    task distribute_report "Distribute final report"
+    task archive_report "Archive audit report"
+  lane audit_director "Audit director"
+    task review_report "Review audit report"
+    xor gw_report_decision "Report approved?"
+  end audit_closed "Audit process closed"
+
+flow audit_initiated -> send_notification
+flow send_notification -> par_preparation
+flow par_preparation -> prepare_statements
+flow par_preparation -> check_updates
+flow prepare_statements -> gather_documents
+flow gather_documents -> submit_documents
+flow submit_documents -> par_review_ready
+flow check_updates -> par_review_ready
+flow par_review_ready -> review_submission
+flow review_submission -> gw_discrepancies
+flow gw_discrepancies -> request_clarifications "yes"
+flow request_clarifications -> provide_clarifications
+flow provide_clarifications -> review_submission
+flow gw_discrepancies -> risk_assessment "no" default
+flow risk_assessment -> gw_high_risk
+flow gw_high_risk -> analyze_data "yes"
+flow gw_high_risk -> gw_high_merge "no" default
+flow analyze_data -> conduct_interviews
+flow conduct_interviews -> gw_site_visit
+flow gw_site_visit -> conduct_site_visits "yes"
+flow gw_site_visit -> gw_site_merge "no" default
+flow conduct_site_visits -> gw_site_merge
+flow gw_site_merge -> gw_high_merge
+flow gw_high_merge -> compile_report
+flow compile_report -> review_report
+flow review_report -> gw_report_decision
+flow gw_report_decision -> distribute_report "approved"
+flow distribute_report -> archive_report
+flow archive_report -> audit_closed
+flow gw_report_decision -> update_report "revisions" default
+flow update_report -> resubmit_report
+flow resubmit_report -> review_report
+```

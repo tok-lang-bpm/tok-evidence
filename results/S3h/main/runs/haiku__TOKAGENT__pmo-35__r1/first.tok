@@ -1,0 +1,36 @@
+tok 1.0 "Chainsaw"
+
+pool customer "Customer"
+pool suppliers "Online parts suppliers"
+
+pool chainsaw "Chainsaw manufacturer"
+  lane sales "Sales"
+    start order-received "Customer tells the properties of the saw" message="Customer order"
+    catch customer-feedback "Customer feedback received" message="Customer feedback"
+    xor likes "Customer likes the saw?"
+    end order-closed "Order ends"
+  lane purchasing "Purchasing"
+    task order-parts "Order the parts from various online sources" parallel
+    catch parts-arrived "Parts arrived" message="Parts delivered"
+  lane production "Production"
+    manual inspect-parts "Inspect all parts manually"
+    task assemble-saw "Assemble the parts into the first saw"
+    boundary update-timer "Every week" on=assemble-saw timer="R/P1W" noninterrupting
+    send update-customer "Send production update to customer" message="Production update"
+    end update-sent "Update sent"
+    send send-first-saw "Send the first saw to the customer" message="First saw"
+    task produce-rest "Produce the rest of the order"
+    end order-done "Order completed"
+
+flow order-received -> order-parts -> parts-arrived -> inspect-parts -> assemble-saw -> send-first-saw -> customer-feedback -> likes
+flow likes -> produce-rest "yes" when="customer-likes = true"
+flow likes -> order-closed "no" default
+flow produce-rest -> order-done
+flow update-timer -> update-customer -> update-sent
+
+message customer -> order-received "Order with properties"
+message order-parts -> suppliers "Parts order"
+message suppliers -> parts-arrived "Parts delivered"
+message send-first-saw -> customer "First saw"
+message update-customer -> customer "Production update"
+message customer -> customer-feedback "Feedback"

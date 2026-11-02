@@ -1,0 +1,45 @@
+```tok
+tok 1.0 "Office Supply Request Process"
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start_event "Office supply request submitted"
+    task submit_request "Submit office supply request"
+    task register_requirement "Register requirement"
+    task review_change "Review change request"
+    flow start_event -> submit_request -> register_requirement
+
+  lane supervisor "Supervisor"
+    task receive_request "Receive request"
+    xor decision "Supervisor decision?"
+    task approve_request "Approve request"
+    task ask_change "Ask for change"
+    task reject_request "Reject request"
+    flow register_requirement -> receive_request -> decision
+    flow decision -> approve_request
+    flow decision -> ask_change
+    flow decision -> reject_request
+
+  lane purchase "Purchase Department"
+    sub make_quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+    task wait_delivery "Wait for product delivery and invoice receipt"
+    flow approve_request -> make_quotations -> select_vendor -> vendor_valid
+    flow vendor_valid -> select_vendor "valid"
+    flow vendor_valid -> choose_different_vendor "invalid"
+    flow choose_different_vendor -> select_vendor
+    flow select_vendor -> generate_po -> wait_delivery
+
+  lane system "System"
+    task send_notification "Send notification to user"
+    flow reject_request -> send_notification
+    flow send_notification -> end end_reject "Request rejected"
+    flow ask_change -> send_notification
+    flow send_notification -> review_change
+    flow review_change -> decision
+    flow wait_delivery -> send_notification
+    flow send_notification -> end end_done "Request completed"
+```

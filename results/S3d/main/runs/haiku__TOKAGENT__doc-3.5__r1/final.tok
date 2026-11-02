@@ -1,0 +1,37 @@
+tok 1.0 "Handling incoming court mail"
+
+pool org "Court Registry"
+  lane mailclerk "Mail Clerk"
+    start s-mail "Mail from the party collected daily"
+    task collect "Collect mail from the party"
+    task sort-areas "Sort unopened mail into business areas"
+    task distribute "Distribute mail"
+  lane registry "Registry"
+    task receive "Receive mail"
+    task open "Open mail"
+    task sort-groups "Sort mail into groups for distribution"
+    task register "Register mail in manual incoming Mail Register"
+  lane arm "Assistant Registry Manager"
+    task qc "Perform quality check"
+    xor compliant "Is the mail compliant?"
+    task compile "Compile list of requisition with reason for rejection"
+    task send-req "Send list of requisition to party"
+    end e-rejected "Mail rejected"
+    task capture "Capture matter details (types of action)"
+    task envelope "Put receipt and copied documents into envelope"
+    task post "Post envelope to party"
+  lane cashier "Cashier"
+    task fees "Take applicable fees"
+    and split-fees
+    task capture-party "Capture party details"
+    task print "Print physical court file"
+    and join-fees
+    end e-done "Mail processed"
+
+flow s-mail -> collect -> sort-areas -> distribute -> receive -> open -> sort-groups -> register -> qc -> compliant
+flow compliant -> compile "no" when="compliant = false"
+flow compliant -> capture "yes" default
+flow compile -> send-req -> e-rejected
+flow capture -> fees -> split-fees
+flow split-fees -> envelope -> post -> join-fees
+flow split-fees -> capture-party -> print -> join-fees -> e-done

@@ -1,0 +1,65 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The MPOO deregisters at the GO. The GO verifies the deregistration. The GO rejects the deregistration of the MPOO or the GO preliminarily confirms the deregistration of the MPOO. The GO prepares the readmission of the measuring point. Optionally, the GO may oblige the MPOO to continue the operations. If the GO binds the MPOO to continue the operation, the MPOO confirmes the continuation to the MPOO. The GO performs the equipment acquisition and / or equipment changes. The GO assigns the GO as MPO. The GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO. The GO informs the MSPO about the assignment of the GO. The GO informs the SP about the assignment of the GO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "MPOO deregistration process"
+
+pool organisation "Organisation"
+  lane MPOO "MPOO"
+    start start "Start"
+    task dreg "MPOO deregisters at the GO"
+    task mopoconfirm "MPOO confirms the continuation to the MPOO"
+  lane GO "GO"
+    task verify "GO verifies the deregistration"
+    xor decision1 "Deregistration decision"
+    task reject "GO rejects the deregistration of the MPOO"
+    end reject_end "Deregistration rejected"
+    task confirm "GO preliminarily confirms the deregistration of the MPOO"
+    task readmit "GO prepares the readmission of the measuring point"
+    xor decision2 "Obligation to continue?"
+    task bind "GO binds the MPOO to continue the operation"
+    and split_equip "Equipment split"
+    task acquire "GO performs equipment acquisition"
+    task change "GO performs equipment changes"
+    and join_equip "Equipment join"
+    task assign "GO assigns the GO as MPO"
+    task inform_mpoo "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "GO informs the MSPO about the assignment of the GO"
+    task inform_sp "GO informs the SP about the assignment of the GO"
+    end end_process "Process completed"
+  lane MSPO "MSPO"
+    # receiving inform_mspo (no tasks required)
+  lane SP "SP"
+    # receiving inform_sp (no tasks required)
+
+flow start -> dreg -> verify -> decision1
+flow decision1 -> reject -> reject_end
+flow decision1 -> confirm -> readmit -> decision2
+flow decision2 -> bind -> mopoconfirm -> split_equip
+flow decision2 -> split_equip
+flow split_equip -> acquire -> join_equip
+flow split_equip -> change -> join_equip
+flow join_equip -> assign -> inform_mpoo -> inform_mspo -> inform_sp -> end_process
+```
+
+The tok checker reports these problems in it:
+
+- line 17: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (split_equip)
+- line 32: warning W021: branch of an XOR/OR split without label, condition or default status (f-decision1-reject)
+- line 33: warning W021: branch of an XOR/OR split without label, condition or default status (f-decision1-confirm)
+- line 34: warning W021: branch of an XOR/OR split without label, condition or default status (f-decision2-bind)
+- line 35: warning W021: branch of an XOR/OR split without label, condition or default status (f-decision2-split_equip)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

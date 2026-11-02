@@ -1,0 +1,58 @@
+tok 1.0
+
+pool sport "Sports Institute" {
+  lane user "User" {
+    start start "Start"
+    task select-course "select a course"
+    task select-one "select one"
+    task log-into "log into it"
+    task complete-registration "complete registration and provide payment information"
+    end end "End"
+  }
+
+  lane system "System" {
+    task tell-courses "system tells courses and dates"
+    task check-account "check if you already have an account"
+    task check-eligibility "check whether you are registered at an eligible university"
+    task register-account "register your account"
+    task request-activation "request an activation and wait for a response"
+    task tweet-friends "tweet to friends"
+    task send-ticket "receive a course ticket"
+  }
+}
+
+/* Gateways */
+xor g1 "Slots free?"
+xor g2 "Account exists?"
+xor g3 "Eligible university?"
+and p1 "Parallel activities"
+and p2 "Parallel join"
+
+/* Flows */
+flow start -> select-course
+flow select-course -> g1
+flow g1 -> tell-courses when="slotsFree"
+flow g1 -> end default
+
+flow tell-courses -> select-one
+flow select-one -> check-account
+flow check-account -> g2
+flow g2 -> log-into when="accountExists"
+flow g2 -> check-eligibility default
+
+flow check-eligibility -> g3
+flow g3 -> register-account when="eligible"
+flow g3 -> request-activation default
+
+flow register-account -> log-into
+flow request-activation -> log-into
+
+flow log-into -> p1
+flow p1 -> tweet-friends
+flow p1 -> complete-registration
+
+flow tweet-friends -> p2
+flow complete-registration -> p2
+
+flow p2 -> send-ticket
+flow send-ticket -> end

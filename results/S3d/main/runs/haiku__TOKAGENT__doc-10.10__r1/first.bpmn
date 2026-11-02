@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Fault report and repair" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Failure_report" name="Failure report" />
+  <bpmn:message id="Message_Resolution_of_the_interference" name="Resolution of the interference" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="MPO organisation" processRef="org-process" />
+    <bpmn:participant id="go" name="GO" />
+    <bpmn:participant id="msp" name="MSP" />
+    <bpmn:messageFlow id="m-inform-go-f-go" name="Failure report" sourceRef="inform-go-f" targetRef="go" messageRef="Message_Failure_report" />
+    <bpmn:messageFlow id="m-inform-msp-f-msp" name="Failure report" sourceRef="inform-msp-f" targetRef="msp" messageRef="Message_Failure_report" />
+    <bpmn:messageFlow id="m-inform-go-r-go" name="Resolution of the interference" sourceRef="inform-go-r" targetRef="go" messageRef="Message_Resolution_of_the_interference" />
+    <bpmn:messageFlow id="m-inform-msp-r-msp" name="Resolution of the interference" sourceRef="inform-msp-r" targetRef="msp" messageRef="Message_Resolution_of_the_interference" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Fault report and repair" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="fd" name="Fault detector">
+        <bpmn:flowNodeRef>s-fd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpo" name="MPO">
+        <bpmn:flowNodeRef>s-mpo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>m1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-rej</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-go-f</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-msp-f</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fix</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>j1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-go-r</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-msp-r</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>j2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s-fd" name="Failure detected" />
+    <bpmn:task id="report" name="Report failure to MPO" />
+    <bpmn:startEvent id="s-mpo" name="MPO suspects own fault" />
+    <bpmn:exclusiveGateway id="m1" name="Failure to examine" />
+    <bpmn:task id="examine" name="Examine failure" />
+    <bpmn:exclusiveGateway id="c1" name="Failure confirmed?" />
+    <bpmn:endEvent id="end-rej" name="Failure rejected" />
+    <bpmn:parallelGateway id="sp1" name="Split" />
+    <bpmn:task id="inform-go-f" name="Inform GO about the failure" />
+    <bpmn:task id="inform-msp-f" name="Inform MSP about the failure" />
+    <bpmn:task id="fix" name="Fix fault at measuring device" />
+    <bpmn:parallelGateway id="j1" name="Join" />
+    <bpmn:task id="share" name="Share repair results with fault detector" />
+    <bpmn:parallelGateway id="sp2" name="Split" />
+    <bpmn:task id="inform-go-r" name="Inform GO about the resolution of the interference" />
+    <bpmn:task id="inform-msp-r" name="Inform MSP about the resolution of the interference" />
+    <bpmn:parallelGateway id="j2" name="Join" />
+    <bpmn:endEvent id="end-done" name="Interference resolved" />
+    <bpmn:sequenceFlow id="f-s-fd-report" sourceRef="s-fd" targetRef="report" />
+    <bpmn:sequenceFlow id="f-report-m1" sourceRef="report" targetRef="m1" />
+    <bpmn:sequenceFlow id="f-s-mpo-m1" sourceRef="s-mpo" targetRef="m1" />
+    <bpmn:sequenceFlow id="f-m1-examine" sourceRef="m1" targetRef="examine" />
+    <bpmn:sequenceFlow id="f-examine-c1" sourceRef="examine" targetRef="c1" />
+    <bpmn:sequenceFlow id="f-c1-end-rej" name="rejected" sourceRef="c1" targetRef="end-rej">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confirmed = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-c1-sp1" name="confirmed" sourceRef="c1" targetRef="sp1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confirmed = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-sp1-inform-go-f" sourceRef="sp1" targetRef="inform-go-f" />
+    <bpmn:sequenceFlow id="f-inform-go-f-j1" sourceRef="inform-go-f" targetRef="j1" />
+    <bpmn:sequenceFlow id="f-sp1-inform-msp-f" sourceRef="sp1" targetRef="inform-msp-f" />
+    <bpmn:sequenceFlow id="f-inform-msp-f-j1" sourceRef="inform-msp-f" targetRef="j1" />
+    <bpmn:sequenceFlow id="f-sp1-fix" sourceRef="sp1" targetRef="fix" />
+    <bpmn:sequenceFlow id="f-fix-j1" sourceRef="fix" targetRef="j1" />
+    <bpmn:sequenceFlow id="f-j1-share" sourceRef="j1" targetRef="share" />
+    <bpmn:sequenceFlow id="f-share-sp2" sourceRef="share" targetRef="sp2" />
+    <bpmn:sequenceFlow id="f-sp2-inform-go-r" sourceRef="sp2" targetRef="inform-go-r" />
+    <bpmn:sequenceFlow id="f-inform-go-r-j2" sourceRef="inform-go-r" targetRef="j2" />
+    <bpmn:sequenceFlow id="f-sp2-inform-msp-r" sourceRef="sp2" targetRef="inform-msp-r" />
+    <bpmn:sequenceFlow id="f-inform-msp-r-j2" sourceRef="inform-msp-r" targetRef="j2" />
+    <bpmn:sequenceFlow id="f-j2-end-done" sourceRef="j2" targetRef="end-done" />
+  </bpmn:process>
+</bpmn:definitions>

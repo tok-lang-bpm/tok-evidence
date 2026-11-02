@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgDecline" name="Customer declines the mortgage" />
+  <bpmn:message id="msgDocs" name="Completed offer documents returned" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="pool" name="Mortgage Organisation" processRef="mortgage-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="mortgage-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>declined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docsBack</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>twoWeeks</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>allDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>moveAdmin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>requestDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeClose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateDetails</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveWork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelCase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endAdmin</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Mortgage offer needed" />
+    <bpmn:task id="sendOffer" name="Send the Mortgage offer to the customer" />
+    <bpmn:eventBasedGateway id="waitReply" name="Reply received?" />
+    <bpmn:intermediateCatchEvent id="declined" name="Customer declines the mortgage">
+      <bpmn:messageEventDefinition messageRef="msgDecline" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="docsBack" name="Completed offer documents returned">
+      <bpmn:messageEventDefinition messageRef="msgDocs" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="twoWeeks" name="2 weeks without answer">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="allDocs" name="All prerequisite documents provided?" default="fNo" />
+    <bpmn:task id="moveAdmin" name="Move the case to administration for completion" />
+    <bpmn:task id="requestDocs" name="Request outstanding documents from the customer" />
+    <bpmn:exclusiveGateway id="mergeClose" />
+    <bpmn:task id="updateDetails" name="Update the case details" />
+    <bpmn:task id="archiveWork" name="Archive the work" />
+    <bpmn:task id="cancelCase" name="Cancel the case" />
+    <bpmn:endEvent id="endCancelled" name="Case cancelled" />
+    <bpmn:endEvent id="endAdmin" name="Case moved to administration" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sendOffer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendOffer" targetRef="waitReply" />
+    <bpmn:sequenceFlow id="f3" sourceRef="waitReply" targetRef="declined" />
+    <bpmn:sequenceFlow id="f4" sourceRef="waitReply" targetRef="docsBack" />
+    <bpmn:sequenceFlow id="f5" sourceRef="waitReply" targetRef="twoWeeks" />
+    <bpmn:sequenceFlow id="f6" sourceRef="declined" targetRef="mergeClose" />
+    <bpmn:sequenceFlow id="f7" sourceRef="twoWeeks" targetRef="mergeClose" />
+    <bpmn:sequenceFlow id="f8" sourceRef="docsBack" targetRef="allDocs" />
+    <bpmn:sequenceFlow id="fYes" name="yes" sourceRef="allDocs" targetRef="moveAdmin" />
+    <bpmn:sequenceFlow id="fNo" name="no" sourceRef="allDocs" targetRef="requestDocs" />
+    <bpmn:sequenceFlow id="f9" sourceRef="moveAdmin" targetRef="endAdmin" />
+    <bpmn:sequenceFlow id="f10" sourceRef="requestDocs" targetRef="waitReply" />
+    <bpmn:sequenceFlow id="f11" sourceRef="mergeClose" targetRef="updateDetails" />
+    <bpmn:sequenceFlow id="f12" sourceRef="updateDetails" targetRef="archiveWork" />
+    <bpmn:sequenceFlow id="f13" sourceRef="archiveWork" targetRef="cancelCase" />
+    <bpmn:sequenceFlow id="f14" sourceRef="cancelCase" targetRef="endCancelled" />
+  </bpmn:process>
+</bpmn:definitions>

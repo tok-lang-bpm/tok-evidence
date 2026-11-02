@@ -1,0 +1,74 @@
+tok 1.0 "Power supplier switch-over"
+
+pool office "New power supplier"
+  lane customer "Customer"
+    start request "Switch-over request"
+    task transmit "Transmit the customer data to customer service"
+    task check_contract "Check the contract details"
+    xor decide "Withdraw from the switch contract within 7 days?"
+    task withdraw "Withdraw from the switch contract"
+    task confirm "Confirm the switch contract"
+    xor accepted
+    end end_customer "Process ended for the customer"
+  lane service "Customer service"
+    task receive "Receive the customer data"
+    task enter_crm "Enter the customer data object into the CRM system"
+    task compare "Compare the customer data with the internal customer database"
+    xor exists "Customer exists in the customer database?"
+    task new_customer "Create a new customer object"
+    xor merge_customer
+    task check_data "Check completeness and plausibility"
+    xor errors "Errors found?"
+    task correct "Correct the errors using the error list"
+    task prepare "Prepare the contract documents for the power supplier switch"
+    task send_conf "Send the confirmation document to the customer"
+    task create_contract "Create the CIS contract"
+    task import_meter "Import the meter data into the systems that require it"
+    end end_withdrawn "Switch contract withdrawn"
+    end end_service "Process of winning a new customer ended"
+  lane cis "CIS (customer information system)"
+    task cis_check "Check the contract documents automatically in the CIS"
+    xor docs_ok "Contract documents generated?"
+    task analyze "Analyze and resolve the causing issues"
+    task send_request "Send the request to the grid operator automatically"
+  lane grid "Grid operator"
+    task go_check "Check the switch-over request for supplier concurrence and send response comment"
+    xor concurrence "Supplier concurrence?"
+    task inform "Inform all involved suppliers and demand the resolution of the conflict"
+    task terminate "Terminate the sales agreement with the old supplier"
+    and split_meter
+    task transmit_meter "Transmit the meter data to customer service and the old supplier"
+    task compute_bill "Compute the final billing based on the meter data"
+    task send_bill_old "Send the final billing to the old supplier"
+    and bill_split
+    end end_go "Process ended for the grid operator"
+  lane old "Old supplier"
+    task create_bill_old "Create and send the final billing to the customer"
+
+flow request -> transmit -> receive -> enter_crm -> compare -> exists
+flow exists -> merge_customer "yes"
+flow exists -> new_customer "no"
+flow new_customer -> merge_customer
+flow merge_customer -> check_data -> errors
+flow errors -> correct "yes"
+flow correct -> check_data
+flow errors -> prepare "no"
+flow prepare -> cis_check -> docs_ok
+flow docs_ok -> analyze "no"
+flow analyze -> prepare
+flow docs_ok -> send_conf "yes"
+flow send_conf -> send_request -> go_check -> concurrence
+flow concurrence -> inform "yes"
+flow inform -> go_check
+flow concurrence -> terminate "no"
+flow terminate -> create_contract -> check_contract -> decide
+flow decide -> withdraw "yes, within 7 days" when="withdrawn_within_7_days = true"
+flow withdraw -> end_withdrawn
+flow decide -> confirm "confirms" when="confirmed = true"
+flow confirm -> accepted
+flow decide -> accepted "no withdrawal (accepted after 7 days)" default
+flow accepted -> split_meter
+flow split_meter -> transmit_meter -> import_meter -> end_service
+flow split_meter -> compute_bill -> send_bill_old -> bill_split
+flow bill_split -> create_bill_old -> end_customer
+flow bill_split -> end_go

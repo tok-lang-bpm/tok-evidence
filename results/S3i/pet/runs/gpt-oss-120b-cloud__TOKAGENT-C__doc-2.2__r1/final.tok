@@ -1,0 +1,95 @@
+tok 1.0 "Switch-over Process"
+
+pool org "Organization"
+  lane customer "Customer"
+    start s "Switch-over request"
+    task t1 "Transmit customer data"
+    task t16 "Customer checks contract details"
+    xor g5 "Customer withdraws?"
+    task t17 "Withdraw from switch contract"
+    task t26 "Receive final billing"
+    end e_customer "Customer process ends"
+    end e_withdraw "Process ends after withdrawal"
+
+  lane customer_service "Customer Service"
+    task t2 "Receive customer data"
+    task t3 "Enter customer data into CRM"
+    task t4 "Compare customer data with internal database and check completeness"
+    xor g1 "Data errors?"
+    task t5 "Correct errors based on error list"
+    xor g2 "Customer exists?"
+    task t6 "Create new customer object"
+    task t7 "Prepare contract documents for power supplier switch"
+    task t21 "Import meter data to systems"
+    end e_cs_import "Customer Service process ends"
+
+  lane cis "CIS"
+    task t8 "Automated contract check"
+    xor g3 "Contract check positive?"
+    task t9 "Analyze and resolve contract issues"
+    task t10 "Send confirmation document to customer"
+    task t11 "Send request to Grid Operator"
+    and g9 "CIS split to Grid Operator and end"
+    end e_cis "CIS process ends"
+
+  lane grid_operator "Grid Operator"
+    task t12 "Check supplier concurrence"
+    xor g4 "Supplier concurrence?"
+    task t13 "Inform all involved suppliers and demand resolution of conflict"
+    task t14 "Communicate with old supplier and terminate sales agreement"
+    task t15 "Create CIS contract"
+    task t19 "Send meter data to Customer Service"
+    and g8 "Split meter data to Customer Service and Old Supplier"
+    task t22 "Compute final billing"
+    task t23 "Send final billing to Old Supplier"
+    and g6 "Parallel split for post‑acceptance activities"
+    and g7 "Parallel join before final ends"
+    end e_grid "Grid Operator process ends"
+
+  lane old_supplier "Old Supplier"
+    task t20 "Receive meter data"
+    task t24 "Create final billing for customer"
+    task t25 "Send final billing to customer"
+    end e_old "Old Supplier process ends"
+
+# Flows
+flow s -> t1 -> t2 -> t3 -> t4 -> g1
+flow g1 -> t5 "yes"
+flow t5 -> t4
+flow g1 -> g2 "no"
+flow g2 -> t7 "yes"
+flow g2 -> t6 "no"
+flow t6 -> t7
+flow t7 -> t8 -> g3
+flow g3 -> t10 "yes"
+flow t10 -> t11
+flow t11 -> g9
+flow g9 -> t12
+flow g9 -> e_cis
+flow g3 -> t9 "no"
+flow t9 -> t7
+flow t12 -> g4
+flow g4 -> t13 "yes"
+flow t13 -> t14
+flow t14 -> t16
+flow g4 -> t15 "no"
+flow t15 -> t16
+flow t16 -> g5
+flow g5 -> t17 "yes"
+flow t17 -> e_withdraw
+flow g5 -> g6 "no"
+flow g6 -> t19
+flow t19 -> g8
+flow g8 -> t21
+flow g8 -> t20
+flow t21 -> g7
+flow t20 -> e_old
+flow g6 -> t22
+flow t22 -> t23
+flow t23 -> t24
+flow t24 -> t25
+flow t25 -> t26
+flow t26 -> g7
+flow g7 -> e_cs_import
+flow g7 -> e_customer
+flow g7 -> e_grid

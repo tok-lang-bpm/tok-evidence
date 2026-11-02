@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Org" name="Organization" processRef="OfficeSupplyRequest" />
+  </bpmn:collaboration>
+  <bpmn:process id="OfficeSupplyRequest" name="Office Supply Request" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Start_Request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewComments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ChangeRequired</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Immediate supervisor">
+        <bpmn:flowNodeRef>Task_Receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Decision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Purchase" name="Purchase department">
+        <bpmn:flowNodeRef>Sub_Quotations</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_VendorValid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ChooseVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ParSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Delivery</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ParJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Task_Register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GeneratePO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendPO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Request" name="Office supply request needed" />
+    <bpmn:userTask id="Task_Submit" name="Submit office supply request" />
+    <bpmn:task id="Task_Register" name="Register requirement" />
+    <bpmn:userTask id="Task_Receive" name="Receive request" />
+    <bpmn:userTask id="Task_Review" name="Review request" />
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Approved, change required or rejected?" />
+
+    <bpmn:task id="Task_NotifyReject" name="Send rejection notification" />
+    <bpmn:endEvent id="End_Rejected" name="Request rejected" />
+
+    <bpmn:task id="Task_NotifyChange" name="Send change required notification" />
+    <bpmn:userTask id="Task_ReviewComments" name="Review comments for change request" />
+    <bpmn:endEvent id="End_ChangeRequired" name="Change required" />
+
+    <bpmn:task id="Task_NotifyApprove" name="Send approval notification" />
+    <bpmn:subProcess id="Sub_Quotations" name="Make quotations">
+      <bpmn:startEvent id="SubStart_Quotations" name="Quotations needed" />
+      <bpmn:task id="Task_RequestQuotes" name="Request quotations from vendors" />
+      <bpmn:task id="Task_Compare" name="Compare quotations" />
+      <bpmn:endEvent id="SubEnd_Quotations" name="Quotations made" />
+      <bpmn:sequenceFlow id="SF_Sub1" sourceRef="SubStart_Quotations" targetRef="Task_RequestQuotes" />
+      <bpmn:sequenceFlow id="SF_Sub2" sourceRef="Task_RequestQuotes" targetRef="Task_Compare" />
+      <bpmn:sequenceFlow id="SF_Sub3" sourceRef="Task_Compare" targetRef="SubEnd_Quotations" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="Task_SelectVendor" name="Select vendor" />
+    <bpmn:exclusiveGateway id="Gw_VendorValid" name="Vendor valid in system?" />
+    <bpmn:userTask id="Task_Confirm" name="Confirm vendor" />
+    <bpmn:userTask id="Task_ChooseVendor" name="Choose a different vendor" />
+    <bpmn:task id="Task_GeneratePO" name="Generate purchase order" />
+    <bpmn:task id="Task_SendPO" name="Send purchase order" />
+    <bpmn:parallelGateway id="Gw_ParSplit" name="Wait for delivery and invoice" />
+    <bpmn:task id="Task_Delivery" name="Receive product delivery" />
+    <bpmn:task id="Task_Invoice" name="Receive invoice" />
+    <bpmn:parallelGateway id="Gw_ParJoin" />
+    <bpmn:task id="Task_NotifyResult" name="Send result notification" />
+    <bpmn:endEvent id="End_Completed" name="Office supply request completed" />
+
+    <bpmn:sequenceFlow id="SF_01" sourceRef="Start_Request" targetRef="Task_Submit" />
+    <bpmn:sequenceFlow id="SF_02" sourceRef="Task_Submit" targetRef="Task_Register" />
+    <bpmn:sequenceFlow id="SF_03" sourceRef="Task_Register" targetRef="Task_Receive" />
+    <bpmn:sequenceFlow id="SF_04" sourceRef="Task_Receive" targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="SF_05" sourceRef="Task_Review" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="SF_06" name="rejected" sourceRef="Gw_Decision" targetRef="Task_NotifyReject" />
+    <bpmn:sequenceFlow id="SF_07" sourceRef="Task_NotifyReject" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="SF_08" name="change required" sourceRef="Gw_Decision" targetRef="Task_NotifyChange" />
+    <bpmn:sequenceFlow id="SF_09" sourceRef="Task_NotifyChange" targetRef="Task_ReviewComments" />
+    <bpmn:sequenceFlow id="SF_10" sourceRef="Task_ReviewComments" targetRef="End_ChangeRequired" />
+    <bpmn:sequenceFlow id="SF_11" name="approved" sourceRef="Gw_Decision" targetRef="Task_NotifyApprove" />
+    <bpmn:sequenceFlow id="SF_12" sourceRef="Task_NotifyApprove" targetRef="Sub_Quotations" />
+    <bpmn:sequenceFlow id="SF_13" sourceRef="Sub_Quotations" targetRef="Task_SelectVendor" />
+    <bpmn:sequenceFlow id="SF_14" sourceRef="Task_SelectVendor" targetRef="Gw_VendorValid" />
+    <bpmn:sequenceFlow id="SF_15" name="yes" sourceRef="Gw_VendorValid" targetRef="Task_Confirm" />
+    <bpmn:sequenceFlow id="SF_16" name="no" sourceRef="Gw_VendorValid" targetRef="Task_ChooseVendor" />
+    <bpmn:sequenceFlow id="SF_17" sourceRef="Task_ChooseVendor" targetRef="Task_SelectVendor" />
+    <bpmn:sequenceFlow id="SF_18" sourceRef="Task_Confirm" targetRef="Task_GeneratePO" />
+    <bpmn:sequenceFlow id="SF_19" sourceRef="Task_GeneratePO" targetRef="Task_SendPO" />
+    <bpmn:sequenceFlow id="SF_20" sourceRef="Task_SendPO" targetRef="Gw_ParSplit" />
+    <bpmn:sequenceFlow id="SF_21" sourceRef="Gw_ParSplit" targetRef="Task_Delivery" />
+    <bpmn:sequenceFlow id="SF_22" sourceRef="Gw_ParSplit" targetRef="Task_Invoice" />
+    <bpmn:sequenceFlow id="SF_23" sourceRef="Task_Delivery" targetRef="Gw_ParJoin" />
+    <bpmn:sequenceFlow id="SF_24" sourceRef="Task_Invoice" targetRef="Gw_ParJoin" />
+    <bpmn:sequenceFlow id="SF_25" sourceRef="Gw_ParJoin" targetRef="Task_NotifyResult" />
+    <bpmn:sequenceFlow id="SF_26" sourceRef="Task_NotifyResult" targetRef="End_Completed" />
+  </bpmn:process>
+</bpmn:definitions>

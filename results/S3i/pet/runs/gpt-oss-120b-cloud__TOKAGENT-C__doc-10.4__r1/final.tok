@@ -1,0 +1,46 @@
+tok 1.0 "Equipment change process"
+
+pool org "Organization"
+  lane MPON "MPON"
+    start s "Start"
+    task n_int "Notify MPOO about equipment change intentions"
+    xor gd_split "Self dismounting decision?"
+    xor gd_merge "Self dismounting merge"
+    xor fr_split "Final reading performer?"
+    xor fr_merge "Final reading merge"
+    xor dm_split "Old equipment dismount performer?"
+    xor dm_merge "Old equipment dismount merge"
+    task fr_mp "Perform final reading"
+    task dm_mp "Dismount old equipment"
+    task mount "Mount new device"
+    task read_meter "Read meter count from installed meter"
+    task send_vals "Send final reading values to GO"
+    task tell_go "Tell GO about device changes, master data and meter count at installation"
+    end e "End"
+  lane MPOO "MPOO"
+    task a_self "Announce self dismounting to MPON"
+    task n_no_self "Notify MPON about no self-dismounting of MPOO"
+    task fr_mpo "Perform final reading"
+    task dm_mpo "Dismount old equipment"
+  lane GO "GO"
+    task notify_msp "Notify MSP about device changes, master data, meter count at dismounting and installation"
+  lane MSP "MSP"
+    
+
+flow s -> n_int -> gd_split
+flow gd_split -> a_self "yes"
+flow gd_split -> n_no_self "no"
+flow a_self -> gd_merge
+flow n_no_self -> gd_merge
+flow gd_merge -> fr_split
+flow fr_split -> fr_mp "MPON"
+flow fr_split -> fr_mpo "MPOO"
+flow fr_mp -> fr_merge
+flow fr_mpo -> fr_merge
+flow fr_merge -> dm_split
+flow dm_split -> dm_mp "MPON"
+flow dm_split -> dm_mpo "MPOO"
+flow dm_mp -> dm_merge
+flow dm_mpo -> dm_merge
+flow dm_merge -> mount
+flow mount -> read_meter -> send_vals -> tell_go -> notify_msp -> e

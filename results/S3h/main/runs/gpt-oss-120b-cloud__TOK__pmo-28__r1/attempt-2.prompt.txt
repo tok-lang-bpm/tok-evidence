@@ -1,0 +1,77 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Internship
+
+You can enter a topic that interests you, and how much money you want.
+You can also enter experience and hobbies.
+Several offers will arrive (at arbitrary points in time).
+You can accept or deny offers.
+As soon as an offer is accepted, all other offers become invalid.
+You have to write at least 3 status updates about your internship (every week).
+The company has to write 3 status updates about you.
+After the internship is finished you can recommend the company to a list of friends (via twitter).
+Separate tweets are sent in parallel.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Internship"
+
+pool organization "Organization"
+  lane intern "Intern"
+    start start "Start internship"
+    task e1 "Enter topic and desired money"
+    task e2 "Enter experience and hobbies"
+    task recv "Receive offer"
+    xor decide "Offer decision?"
+    task accept "Accept offer"
+    task deny "Deny offer"
+    and updates_split
+    task iu "Write intern status update" loop while="intern_updates < 3"
+    and updates_join
+    task rec "Recommend company via Twitter"
+    and tweets_split
+    task tweet1 "Send tweet to friend 1"
+    task tweet2 "Send tweet to friend 2"
+    task tweet3 "Send tweet to friend 3"
+    and tweets_join
+    end end "Internship completed"
+
+  lane company "Company"
+    task cu "Write company status update" loop while="company_updates < 3"
+
+flow start -> e1 -> e2 -> recv -> decide
+flow decide -> accept
+flow decide -> deny
+flow accept -> updates_split
+flow deny -> recv
+flow updates_split -> iu
+flow updates_split -> cu
+flow iu -> updates_join
+flow cu -> updates_join
+flow updates_join -> rec
+flow rec -> tweets_split
+flow tweets_split -> tweet1
+flow tweets_split -> tweet2
+flow tweets_split -> tweet3
+flow tweet1 -> tweets_join
+flow tweet2 -> tweets_join
+flow tweet3 -> tweets_join
+flow tweets_join -> end
+```
+
+The tok checker reports these problems in it:
+
+- line 27: warning W021: branch of an XOR/OR split without label, condition or default status (f-decide-accept)
+- line 28: warning W021: branch of an XOR/OR split without label, condition or default status (f-decide-deny)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Machine_disconnected" name="Machine disconnected" />
+  <bpmn:message id="Message_Machine_restarted" name="Machine restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="OEE" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>stopm</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="monitor" name="Monitoring system">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>measure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>below</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rst</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:task id="stopm" name="Stop the machine" />
+    <bpmn:startEvent id="begin" name="Measurement started" />
+    <bpmn:exclusiveGateway id="measure" />
+    <bpmn:task id="collect" name="Collect relevant information from the machine" />
+    <bpmn:boundaryEvent id="bd" name="Machine disconnected" attachedToRef="collect">
+      <bpmn:messageEventDefinition id="bd-def" messageRef="Message_Machine_disconnected" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="calc" name="Calculate the OEE" />
+    <bpmn:exclusiveGateway id="below" name="OEE below the threshold?" default="f-below-measure" />
+    <bpmn:task id="email" name="Send an email to the engineer" />
+    <bpmn:eventBasedGateway id="wait" name="Wait for the machine" />
+    <bpmn:intermediateCatchEvent id="rst" name="Machine restarted">
+      <bpmn:messageEventDefinition id="rst-def" messageRef="Message_Machine_restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="disc" name="Machine disconnected">
+      <bpmn:messageEventDefinition id="disc-def" messageRef="Message_Machine_disconnected" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="stopped" name="Process stopped" />
+    <bpmn:sequenceFlow id="f-begin-measure" sourceRef="begin" targetRef="measure" />
+    <bpmn:sequenceFlow id="f-measure-collect" sourceRef="measure" targetRef="collect" />
+    <bpmn:sequenceFlow id="f-collect-calc" sourceRef="collect" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-below" sourceRef="calc" targetRef="below" />
+    <bpmn:sequenceFlow id="f-below-stopm" name="yes" sourceRef="below" targetRef="stopm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">oee &lt; threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-below-measure" name="no" sourceRef="below" targetRef="measure" />
+    <bpmn:sequenceFlow id="f-stopm-email" sourceRef="stopm" targetRef="email" />
+    <bpmn:sequenceFlow id="f-email-wait" sourceRef="email" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-rst" sourceRef="wait" targetRef="rst" />
+    <bpmn:sequenceFlow id="f-rst-measure" sourceRef="rst" targetRef="measure" />
+    <bpmn:sequenceFlow id="f-wait-disc" sourceRef="wait" targetRef="disc" />
+    <bpmn:sequenceFlow id="f-disc-stopped" sourceRef="disc" targetRef="stopped" />
+    <bpmn:sequenceFlow id="f-bd-stopped" sourceRef="bd" targetRef="stopped" />
+  </bpmn:process>
+</bpmn:definitions>

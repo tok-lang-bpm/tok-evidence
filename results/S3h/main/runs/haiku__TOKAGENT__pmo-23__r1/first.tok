@@ -1,0 +1,33 @@
+tok 1.0 "Credit scoring"
+
+pool bank "Bank"
+  lane clerk "Sales clerk"
+    start s-request "Credit scoring requested"
+    task c-check-later "Check again later"
+    task c-view "View result at frontend"
+    end e-done "Credit scoring completed"
+  lane banking "Banking system"
+    task b-send "Send scoring request to agency"
+    task b-receive-delay "Receive delay information"
+    task b-display-delay "Display delay message to clerk"
+    task b-receive-result "Receive scoring result"
+    xor m-result
+    and j-result
+    task b-present "Present result to clerk"
+  lane agency "Credit agency"
+    task a-level1 "Perform level 1 scoring"
+    xor a-immediate "Result determined immediately?"
+    task a-return "Return result to banking system"
+    task a-inform "Inform banking system of delay"
+    and a-split
+    task a-level2 "Perform level 2 scoring"
+    task a-send-result "Send scoring result to banking system"
+
+flow s-request -> b-send -> a-level1 -> a-immediate
+flow a-immediate -> a-return "yes" when=""
+flow a-immediate -> a-inform "no" default
+flow a-return -> m-result
+flow a-inform -> a-split
+flow a-split -> b-receive-delay -> b-display-delay -> c-check-later -> j-result
+flow a-split -> a-level2 -> a-send-result -> b-receive-result -> j-result
+flow j-result -> m-result -> b-present -> c-view -> e-done

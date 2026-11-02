@@ -1,0 +1,36 @@
+tok 1.0 "Robotic Burger Seller near the University of Vienna"
+
+pool seller "Robotic Burger Seller near the University of Vienna"
+  lane robot "Robot"
+    start s "Order received"
+    task receive-order "Receive order"
+    xor menu-q "Menu or just the burger?"
+    and menu-split "Split menu"
+    task prepare-drink "Prepare drink" doc="The duration varies with the size of the drink."
+    task ask-side "Ask fries or wedges"
+    xor side-q "Fries or wedges?"
+    task prepare-fries "Prepare fries" doc="The duration varies with the size of the fries order."
+    task prepare-wedges "Prepare wedges" doc="The duration varies with the size of the wedges order."
+    xor side-merge "Side ready"
+    and menu-join "Menu ready"
+    xor burger-merge "Burger to prepare"
+    task prepare-burger "Prepare burger" doc="The duration varies with the number of ingredients."
+    boundary status-timer noninterrupting on=prepare-burger timer=R/PT30S
+    task status-update "Give enthusiastic status update"
+    end status-end "Status update given"
+  lane conveyor "Conveyor belt"
+    task deliver "Deliver order via conveyor belt"
+    end done "Order delivered"
+
+flow s -> receive-order -> menu-q
+flow menu-q -> menu-split "menu" when=""
+flow menu-q -> burger-merge "just the burger" default
+flow menu-split -> prepare-drink
+flow menu-split -> ask-side -> side-q
+flow side-q -> prepare-fries "fries" when=""
+flow side-q -> prepare-wedges "wedges" when=""
+flow prepare-fries -> side-merge
+flow prepare-wedges -> side-merge
+flow prepare-drink -> menu-join
+flow side-merge -> menu-join -> burger-merge -> prepare-burger -> deliver -> done
+flow status-timer -> status-update -> status-end

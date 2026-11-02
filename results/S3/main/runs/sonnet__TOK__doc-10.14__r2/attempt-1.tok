@@ -1,0 +1,43 @@
+tok 1.0 "Bill examination"
+
+pool org "Metering organisation"
+  lane mpoo "MPOO"
+    start begin "Bill to be sent"
+    xor kind "Which bill?"
+    task sendOps "Send the bill for the temporary continuation of the metering point operations"
+    task sendEquip "Send the bill for the equipment acquisition"
+  lane mspo "MSPO"
+    task sendMeas "Send the bill for the temporary continuation of the measurement"
+    task sendRead "Send the bill for additional readings"
+  lane go "GO"
+    xor mergeGo
+    task examineGo "Examine the bill (GO)"
+    xor who "Who examines the bill?"
+    xor examined
+    xor ok "Invoice acceptable?"
+    task confirm "Confirm the invoice with payment advice"
+    task reject "Reject the invoice"
+    end confirmed "Invoice confirmed"
+    end rejected "Invoice rejected"
+  lane mpon "MPON"
+    task examineMpon "Examine the bill (MPON)"
+
+flow begin -> kind
+flow kind -> sendOps "continuation of metering point operations"
+flow kind -> sendMeas "continuation of measurement"
+flow kind -> sendRead "additional readings"
+flow kind -> sendEquip "equipment acquisition"
+flow sendOps -> mergeGo
+flow sendMeas -> mergeGo
+flow sendRead -> mergeGo
+flow mergeGo -> examineGo
+flow sendEquip -> who
+flow who -> mergeGo "GO"
+flow who -> examineMpon "MPON"
+flow examineGo -> examined
+flow examineMpon -> examined
+flow examined -> ok
+flow ok -> confirm "yes"
+flow ok -> reject "no"
+flow confirm -> confirmed
+flow reject -> rejected

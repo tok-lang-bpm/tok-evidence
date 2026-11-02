@@ -1,0 +1,154 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4195,
+  "output_tokens": 1116,
+  "seconds": 4.86311810000916,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create a tok model with a pool for organisation, lanes for actors: Notification department, Handling department, maybe garage (system?) and customer? Process includes sending claim (customer activity) but it's start event triggered by customer submit claim. Could model start event labelled \"customer submits claim\". Probably lane for Notification department, Handling department, Garage (system). The lane for the insurer organization overall? Actually one pool for the organisation (car insurer). Lanes for each actor: Notification dept, Handling dept, Garage (system). Customer is external, start event outside pool? Usually start event is in pool. Could have start event \"customer submits claim\" in lane maybe \"Customer\"? But spec says lanes for actors performing activities; if external, perhaps not needed. Use single lane \"Notification\" then after that \"Handling\". But we need lane for garage to phone. Might be system lane \"Garage\". We can have lanes: notification, handling, garage. Start event in \"notification\". End event after letter sent maybe in \"notification\" lane? Or separate? Could be end event in any lane.\n\nSequence:\nStart -> task \"check documents upon completeness and registers the claim\" (in Notification lane). Then flow to task \"picks up the claim and checks the insurance\" (Handling lane). Then task \"assessment is performed\" (Handling lane). Then exclusive gateway decision \"assessment positive?\" Branch yes: then task \"garage is phoned to authorise the repairs\" (Garage lane). Then task \"payment is scheduled\" (Handling lane maybe) after phone. After that flow to task \"letter is sent to the customer\" (Notification lane?) Or maybe generic lane. Then end.\n\nOther branch (assessment negative): directly go to task \"letter is sent to the customer\", then end.\n\nAll paths converge before end? Both go to letter then end. So after the two branches, we can have parallel? Actually they converge to same task. So we can have flow from both branches to same task \"letter is sent to the customer\". No need for join gateway, just flow join.\n\nBut note ordering: After phone and schedule payment, then letter. So letter after both positive path tasks and after negative path directly.\n\nModel: start, task1 (check docs), task2 (pick up claim...), task3 (assessment performed), xor gateway g1 \"assessment positive?\" with outgoing flows: \"yes\" to task4 (phone garage) then flow to task5 (schedule payment) then flow to task6 (send letter). \"no\" flow directly to task6. Then end.\n\nWe'll need flow IDs. Write in tok:\n\ntok 1.0\npool insurer \"Car Insurer\" {\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n}\nstart start_claim \"Customer submits claim\"\ntask check-docs \"Checks documents for completeness and registers claim\" lane=notification\ntask pick-claim \"Picks up claim and checks insurance\" lane=handling\ntask assessment \"Assessment is performed\" lane=handling\nxor decision \"Assessment positive?\" \ntask phone-garage \"Garage is phoned to authorise repairs\" lane=garage\ntask schedule-payment \"Payment is scheduled\" lane=handling\ntask send-letter \"Letter is sent to customer\" lane=notification\nend end_process \"Process complete\"\n\nNow flows:\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"assessment = true\" // but we need condition expression. Could just leave default? Use when=\"true\"? Let's use when=\"result = true\". But we have no variable. Use when=\"true\". For no branch maybe default.\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process\n\nNeed to ensure exclusive gateway has both when or default. Use default for negative. Add when on positive.\n\nNow check using tool.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "path": "",
+     "text": "tok 1.0\npool insurer \"Car Insurer\" {\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n}\nstart start_claim \"Customer submits claim\"\ntask check-docs \"Checks documents for completeness and registers claim\" lane=notification\ntask pick-claim \"Picks up claim and checks insurance\" lane=handling\ntask assessment \"Assessment is performed\" lane=handling\nxor decision \"Assessment positive?\"\ntask phone-garage \"Garage is phoned to authorise repairs\" lane=garage\ntask schedule-payment \"Payment is scheduled\" lane=handling\ntask send-letter \"Letter is sent to customer\" lane=notification\nend end_process \"Process complete\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5351,
+  "output_tokens": 370,
+  "seconds": 1.5243835999863222,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to give only text or path. Provide text alone. Also we need to ensure syntax correct: arrow is -> not -\\>. Use ->. Also flow syntax: flow FROM -> TO \"label\" when=\"...\". The arrow is `->`. Ensure quoting. Also lane attribute syntax: maybe `lane=notification` is correct? According to cheatsheet, you can declare lane on element as `lane=notification`. Yes.\n\nNow re-run check with just text.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool insurer \"Car Insurer\" {\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n}\nstart start_claim \"Customer submits claim\"\ntask check-docs \"Checks documents for completeness and registers claim\" lane=notification\ntask pick-claim \"Picks up claim and checks insurance\" lane=handling\ntask assessment \"Assessment is performed\" lane=handling\nxor decision \"Assessment positive?\"\ntask phone-garage \"Garage is phoned to authorise repairs\" lane=garage\ntask schedule-payment \"Payment is scheduled\" lane=handling\ntask send-letter \"Letter is sent to customer\" lane=notification\nend end_process \"Process complete\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process"
+    },
+    "is_error": false,
+    "result": "line 2: error T001: invalid token: unexpected character '{'\nline 3: error P004: 'lane' is not allowed inside top\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error T001: invalid token: unexpected character '}'\nline 7: error T003: indentation does not match any open block\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5880,
+  "output_tokens": 647,
+  "seconds": 2.526768000010634,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The syntax for pools and lanes maybe different. Let's recall tok syntax: from cheat sheet.\n\nTypically:\n\npool ID \"Label\" {\n  lane ID \"Label\"\n  lane ID \"Label\"\n}\n\nBut need `pool insurer \"Car Insurer\"` maybe. The block should be opened after label. The error indicates unexpected '{' after line 2, meaning token '{' not expected there maybe because need `pool insurer \"Car Insurer\" {` all in one line, then indent lane lines.\n\nLine 2 currently is `{` alone. Should be same line. Let's adjust.\n\nAlso lanes may need to be declared inside pool block as `lane notification \"Notification Department\"` not with colon.\n\nAlso need proper indentation. Let's rewrite.\n\ntok 1.0\npool insurer \"Car Insurer\" {\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n}\nstart start_claim \"Customer submits claim\"\ntask check-docs \"Checks documents for completeness and registers claim\" lane=notification\ntask pick-claim \"Picks up claim and checks insurance\" lane=handling\ntask assessment \"Assessment is performed\" lane=handling\nxor decision \"Assessment positive?\"\ntask phone-garage \"Garage is phoned to authorise repairs\" lane=garage\ntask schedule-payment \"Payment is scheduled\" lane=handling\ntask send-letter \"Letter is sent to customer\" lane=notification\nend end_process \"Process complete\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process\n\nNow run check.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool insurer \"Car Insurer\" {\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n}\nstart start_claim \"Customer submits claim\"\ntask check-docs \"Checks documents for completeness and registers claim\" lane=notification\ntask pick-claim \"Picks up claim and checks insurance\" lane=handling\ntask assessment \"Assessment is performed\" lane=handling\nxor decision \"Assessment positive?\"\ntask phone-garage \"Garage is phoned to authorise repairs\" lane=garage\ntask schedule-payment \"Payment is scheduled\" lane=handling\ntask send-letter \"Letter is sent to customer\" lane=notification\nend end_process \"Process complete\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process"
+    },
+    "is_error": false,
+    "result": "line 2: error T001: invalid token: unexpected character '{'\nline 3: error P004: 'lane' is not allowed inside top\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error T001: invalid token: unexpected character '}'\nline 7: error T003: indentation does not match any open block\n6 error(s), 6 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 6686,
+  "output_tokens": 75,
+  "seconds": 0.7351639000116847,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "It still treats `{` as unexpected. Perhaps pool syntax is different: maybe need `pool insurer \"Car Insurer\"` then newline with indent and then `lane ...` and then `end`? Or braces not allowed? Let's check reference quickly.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 9468,
+  "output_tokens": 635,
+  "seconds": 2.641615800006548,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The cheat sheet shows pool syntax: `pool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process` followed by indent block containing lanes. So we need `pool insurer \"Car Insurer\"` then newline with indentation for lanes. No braces. Use indentation (two spaces?). Indentation must be consistent.\n\nThus:\n\npool insurer \"Car Insurer\"\n  lane notification \"Notification Department\"\n  lane handling \"Handling Department\"\n  lane garage \"Garage\"\n\nNo braces.\n\nAlso the start event etc should be inside a pool? Actually nodes go inside lanes. So we need to place tasks inside lanes by prefixing them with lane name? According cheat sheet: nodes go inside lanes (indented under lane). So we must nest tasks under lane blocks.\n\nThus structure:\n\npool insurer \"Car Insurer\"\n  lane notification \"Notification Department\"\n    start start_claim \"Customer submits claim\"\n    task check-docs \"Checks documents for completeness and registers claim\"\n    task send-letter \"Letter is sent to customer\"\n  lane handling \"Handling Department\"\n    task pick-claim \"Picks up claim and checks insurance\"\n    task assessment \"Assessment is performed\"\n    xor decision \"Assessment positive?\"\n    task schedule-payment \"Payment is scheduled\"\n  lane garage \"Garage\"\n    task phone-garage \"Garage is phoned to authorise repairs\"\n  end end_process \"Process complete\"\n\nBut need end event perhaps in any lane; could put in notification lane after send-letter, but need sequence flows.\n\nWe need flow statements: Since tasks are inside lanes, flows reference IDs regardless of lane.\n\nWe need to ensure that lane blocks are closed by decreasing indentation. After lane block, go back to pool level.\n\nLet's construct.\n\nIndentation: 2 spaces per level.\n\nNow flows as before.\n\nNow run check again.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool insurer \"Car Insurer\"\n  lane notification \"Notification Department\"\n    start start_claim \"Customer submits claim\"\n    task check-docs \"Checks documents for completeness and registers claim\"\n    task send-letter \"Letter is sent to customer\"\n  lane handling \"Handling Department\"\n    task pick-claim \"Picks up claim and checks insurance\"\n    task assessment \"Assessment is performed\"\n    xor decision \"Assessment positive?\"\n    task schedule-payment \"Payment is scheduled\"\n  lane garage \"Garage\"\n    task phone-garage \"Garage is phoned to authorise repairs\"\n  end end_process \"Process complete\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process"
+    },
+    "is_error": false,
+    "result": "line 14: error R030: 'end_process' is in a pool with lanes but outside every lane\n1 error(s), 1 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 6,
+  "input_tokens": 10188,
+  "output_tokens": 347,
+  "seconds": 1.3407261999964248,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "End event must be inside a lane. Place it maybe in notification lane after send-letter. So move end inside notification lane.\n\nThus remove end from pool level, and add under notification lane after send-letter.\n\nAlso we need to ensure end ID unique.\n\nLet's edit.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "full",
+     "text": "tok 1.0\npool insurer \"Car Insurer\"\n  lane notification \"Notification Department\"\n    start start_claim \"Customer submits claim\"\n    task check-docs \"Checks documents for completeness and registers claim\"\n    task send-letter \"Letter is sent to customer\"\n    end end_process \"Process complete\"\n  lane handling \"Handling Department\"\n    task pick-claim \"Picks up claim and checks insurance\"\n    task assessment \"Assessment is performed\"\n    xor decision \"Assessment positive?\"\n    task schedule-payment \"Payment is scheduled\"\n  lane garage \"Garage\"\n    task phone-garage \"Garage is phoned to authorise repairs\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: analytic"
+   }
+  ]
+ },
+ {
+  "call": 7,
+  "input_tokens": 10561,
+  "output_tokens": 226,
+  "seconds": 0.9488999999884982,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "Here is the complete BPMN model in **tok** syntax:\n\n```tok\ntok 1.0\npool insurer \"Car Insurer\"\n  lane notification \"Notification Department\"\n    start start_claim \"Customer submits claim\"\n    task check-docs \"Checks documents for completeness and registers claim\"\n    task send-letter \"Letter is sent to customer\"\n    end end_process \"Process complete\"\n  lane handling \"Handling Department\"\n    task pick-claim \"Picks up claim and checks insurance\"\n    task assessment \"Assessment is performed\"\n    xor decision \"Assessment positive?\"\n    task schedule-payment \"Payment is scheduled\"\n  lane garage \"Garage\"\n    task phone-garage \"Garage is phoned to authorise repairs\"\nflow start_claim -> check-docs\nflow check-docs -> pick-claim\nflow pick-claim -> assessment\nflow assessment -> decision\nflow decision -> phone-garage \"yes\" when=\"true\"\nflow decision -> send-letter \"no\" default\nflow phone-garage -> schedule-payment\nflow schedule-payment -> send-letter\nflow send-letter -> end_process\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

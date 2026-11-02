@@ -1,0 +1,66 @@
+```tok
+tok 1.0 "Customer acquisition"
+
+pool org "Organisation"
+  lane general "General"
+    start start "Start"
+    task buy_details "Buy details for cold calls"
+    task know_person "Know somebody interested in the product"
+    task leave_alone "Leave customer alone"
+    xor gw_details "Determine contact details"
+    xor gw_details_join "Contact details determined"
+    xor gw_interest "Customer generally interested?"
+    xor gw_budget "Potential project budget huge?"
+    xor gw_final "Customer interested in the end?"
+    xor gw_presentation "More technical presentation?"
+    xor gw_presentation_done "Presentation given"
+    eventgw gw_response "Customer response?"
+    catch catch_contact "Customer contacts us" message="CustomerContact"
+    catch catch_timeout "2 weeks elapsed" timer=P14D
+    xor gw_contact_join "Customer contacted"
+    end end_done "End"
+  lane marketing "Marketing"
+    task marketing_part "Participate in exhibitions"
+  lane callcenter "Call Center"
+    task call_customer "Start calling the customer"
+    task determine_contact "Determine contact person"
+    task determine_budget "Determine project budget"
+    task ask_interest "Ask customer whether generally interested"
+  lane headdev "Head of Development"
+    task acquire_head "Try to acquire customer"
+  lane sales "Sales"
+    task presentation_sales "Give online presentation"
+    task call_after_timeout "Call customer"
+    task create_quotation "Create quotation"
+  lane presales "Pre-Sales"
+    task presentation_presales "Give technical online presentation"
+
+flow start -> gw_details
+flow gw_details -> buy_details "Buy details" when="buy"
+flow gw_details -> marketing_part "Exhibitions" when="exhibitions"
+flow gw_details -> know_person "Know somebody" default
+flow buy_details -> gw_details_join
+flow marketing_part -> gw_details_join
+flow know_person -> gw_details_join
+flow gw_details_join -> call_customer
+flow call_customer -> determine_contact -> determine_budget -> ask_interest -> gw_interest
+flow gw_interest -> gw_presentation "Yes" when="interested"
+flow gw_interest -> gw_budget "No" default
+flow gw_budget -> acquire_head "Yes" when="budgetHuge"
+flow gw_budget -> leave_alone "No" default
+flow acquire_head -> gw_final
+flow gw_final -> gw_presentation "Yes" when="interested"
+flow gw_final -> leave_alone "No" default
+flow leave_alone -> end_done
+flow gw_presentation -> presentation_presales "More technical" when="technical"
+flow gw_presentation -> presentation_sales "Standard" default
+flow presentation_sales -> gw_presentation_done
+flow presentation_presales -> gw_presentation_done
+flow gw_presentation_done -> gw_response
+flow gw_response -> catch_contact
+flow gw_response -> catch_timeout
+flow catch_contact -> gw_contact_join
+flow catch_timeout -> call_after_timeout -> gw_contact_join
+flow gw_contact_join -> create_quotation
+flow create_quotation -> end_done
+```

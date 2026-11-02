@@ -1,0 +1,52 @@
+tok 1.0 "Credit scoring"
+
+pool bank "Bank"
+  lane clerk "Sales clerk"
+    start start-bank "Credit scoring requested"
+    task receive-credit "Receive credit scoring"
+  lane system "Banking system"
+    task send-scoring "Send scoring request" send message="Scoring request"
+    eventgw wait "Wait for result or delay"
+    receive receive-immediate "Receive scoring result" message="Scoring result"
+    task present-result "Present scoring result"
+    receive receive-delay "Receive scoring delay" message="Scoring delay"
+    task display-delay "Display check again later message"
+    receive receive-result "Receive scoring result" message="Scoring result"
+    end end-immediate "Scoring result presented"
+    end end-delayed "Scoring result available"
+
+pool agency "Credit scoring agency"
+  lane agency "Credit scoring agency"
+    start agency-start "Scoring request received" message="Scoring request"
+    task level1 "Perform level 1 scoring"
+    xor gw-immediate "Result available immediately?"
+    task send-immediate "Send scoring result" send message="Scoring result"
+    task send-delay "Inform of delay" send message="Scoring delay"
+    task level2 "Perform level 2 scoring"
+    task send-delayed-result "Send scoring result" send message="Scoring result"
+    end agency-end "Agency process completed"
+
+flow start-bank -> receive-credit
+flow receive-credit -> send-scoring
+flow send-scoring -> wait
+flow wait -> receive-immediate
+flow wait -> receive-delay
+flow receive-immediate -> present-result
+flow present-result -> end-immediate
+flow receive-delay -> display-delay
+flow display-delay -> receive-result
+flow receive-result -> end-delayed
+
+flow agency-start -> level1
+flow level1 -> gw-immediate
+flow gw-immediate -> send-immediate "Immediate" default
+flow gw-immediate -> send-delay "Delayed" when=""
+flow send-immediate -> agency-end
+flow send-delay -> level2
+flow level2 -> send-delayed-result
+flow send-delayed-result -> agency-end
+
+message send-scoring -> agency-start "Scoring request"
+message send-immediate -> receive-immediate "Scoring result"
+message send-delay -> receive-delay "Scoring delay"
+message send-delayed-result -> receive-result "Scoring result"

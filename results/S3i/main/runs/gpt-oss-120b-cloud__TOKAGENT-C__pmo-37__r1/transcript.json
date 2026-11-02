@@ -1,0 +1,86 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3891,
+  "output_tokens": 1714,
+  "seconds": 15.616088600014336,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to turn description into BPMN model with tok.\n\nIdentify actors: The text seems about \"you\" (perhaps a project manager). Could also include \"web shop\" as external participants. Since need a pool for organisation, lane for each actor that performs activities. Activities performed by \"you\" (project manager). Query shops could be done by system? Keep simple: one lane \"Project manager\". Could also have lane \"Web shop\" but they are multiple external participants; we could model as a lane \"Web shop\" (or \"Suppliers\") but activities like \"query\", \"order\", \"receive parts\" are interactions.\n\nSimplify: single lane \"Project manager\". Use start event, tasks, exclusive gateways, parallel gateways.\n\nSteps:\n\n1. Start.\n2. Task: \"Query web shops\" (query them all)\n3. Task: \"Create list of parts per shop\"\n4. Decision: \"Is any shop lacking enough parts?\" (if one shop not enough, order from several shops) Actually need to handle ordering: Possibly after list, need to order parts. We can model: XOR \"Shop has enough parts?\" with two branches: \"Order from sufficient shop(s)\" vs \"Order from several shops\". But also \"Always use cheapest parts\" – could be decision to \"Select cheapest parts\". Could combine logic: after list, we decide based on availability.\n\nMaybe flow:\n\n- After create list, XOR \"Are parts available from a single shop?\" label \"yes\" else \"no\". If yes: task \"Order parts from cheapest shop\". If no: task \"Order parts from multiple shops (cheapest)\".\n\nThen after ordering, parts arrive in batches. This is parallel? The parts arrive in batches random order; when first parts arrive you start building. So we have parallel arrival of multiple parts? Could model with parallel gateway join after each part arrival to start building. Use parallel split to \"Wait for first part arrival\". Actually we can model as \"Parallel gateway split to multiple 'Receive parts batch' tasks\"? Might be complex.\n\nSimplify: after ordering, task \"Receive parts batches\" (maybe parallel). Then task \"Start building\" after first arrival. Could model with \"or\" gateway? Use parallel gateway with join after first arrival. But specification says use parallel gateway for activities that happen at same time. So we could have parallel gateway split after ordering to multiple \"Receive part batch\" tasks (one per shop) but unknown number. Use generic.\n\nAlternatively, model as:\n\n- Parallel gateway \"parts arrive\" split to multiple \"Receive parts batch\" tasks (for each shop). Then join with parallel gateway \"All parts received\"? But building starts when first parts arrive not when all. So we need exclusive gateway decision? Could be \"When first parts arrive\" event. Use event? Not required.\n\nSimplify: After ordering, task \"First parts arrive\" then task \"Start building\". Then after building, we may need reorders. There is loop for reordering based on stock levels. So after building, we need decision: stock <5? then reorder cheapest; stock<3? reorder fastest; stock=0? write mail complaining.\n\nWe can implement a loop with XOR decision sequence checking stock levels, with ordering tasks possibly repeated, then eventually end.\n\nWe can use exclusive gateway \"Stock level?\" with three outgoing flows labeled \">=5\", \"<5\", \"<3\", \"0\". But overlapping. Actually conditions: if falls below 5 -> reorder cheapest, if below 3 -> reorder fastest, if zero -> write mail.\n\nWe can model sequential checks: First check if stock =0 -> mail, else if <3 reorder fastest, else if <5 reorder cheapest, else continue (maybe end). For simplicity: after start building, XOR \"Stock zero?\" (yes -> task \"Write mail to friends\", end). No? then XOR \"Stock below 3?\" (yes -> task \"Reorder parts (fastest)\" then loop back to start building? after reorder, parts arrive again -> start building). If no, check \"Stock below 5?\" (yes -> task \"Reorder parts (cheapest)\" then loop). If no, proceed to end (build completed).\n\nSimplify loops: after reorder tasks, go back to \"Receive parts batches\" then \"Start building\" again.\n\nWe need to ensure end event.\n\nLet's draft model:\n\nHeader: tok 1.0 \"Contract\" [executable]\n\npool org \"Organization\"\n  lane manager \"Project Manager\"\n    start start1 \"Start contract process\"\n    task query \"Query web shops\"\n    task list \"Create list of parts per shop\"\n    xor shopAvail \"Single shop has enough parts?\"\n      flow yes -> orderSingle \"Order parts from cheapest shop\"\n      flow no -> orderMultiple \"Order parts from multiple shops (cheapest)\"\n    task orderSingle \"Order parts from cheapest shop\"\n    task orderMultiple \"Order parts from multiple shops (cheapest)\"\n    and partsArrive\n      task receiveBatch \"Receive parts batch\"\n    and arriveDone\n    task startBuild \"Start building\"\n    xor stockZero \"Stock zero?\"\n      flow yes -> task mail \"Write mail to friends complaining\"\n      flow no -> xor stockLow \"Stock below 3?\"\n        flow yes -> task reorderFast \"Reorder parts (fastest)\"\n        flow no -> xor stockLess5 \"Stock below 5?\"\n          flow yes -> task reorderCheap \"Reorder parts (cheapest)\"\n          flow no -> end done \"Contract completed\"\n    # loops: after reorder tasks, go back to receiveBatch? and then startBuild\n    # need flow: reorderFast -> receiveBatch\n    # reorderCheap -> receiveBatch\n\nWe'll need to use flow statements to connect.\n\nDefine IDs.\n\nLet's produce a consistent model.\n\nPotential errors: need start event, end per path. Use end events for termination.\n\nMake parallel gateway \"partsArrive\" (and) to split? Actually we have only one receive batch task? Better use a simple task \"Receive parts batch\". Not parallel.\n\nSimplify: after ordering (orderSingle or orderMultiple), task \"Receive parts batch\". Then start building.\n\nLoop reorder: after reorderFast or reorderCheap, go to task \"Receive parts batch\" again.\n\nAdd end event after \"Contract completed\".\n\nAlso need end after mail perhaps.\n\nDefine IDs.\n\nLet's write.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Contract\" [executable]\n\npool org \"Organization\"\n  lane manager \"Project Manager\"\n    start s1 \"Start contract process\"\n    task q1 \"Query web shops\"\n    task l1 \"Create list of parts per shop\"\n    xor g1 \"Single shop has enough parts?\"\n    task o1 \"Order parts from cheapest shop\"\n    task o2 \"Order parts from multiple shops (cheapest)\"\n    task r1 \"Receive parts batch\"\n    task b1 \"Start building\"\n    xor g2 \"Stock zero?\"\n    task m1 \"Write mail to friends complaining\"\n    xor g3 \"Stock below 3?\"\n    task rfast \"Reorder parts (fastest)\"\n    xor g4 \"Stock below 5?\"\n    task rcost \"Reorder parts (cheapest)\"\n    end e1 \"Contract completed\"\n    end e2 \"Process ended after complaint\"\n\n    flow s1 -> q1 -> l1 -> g1\n    flow g1 \"yes\" -> o1\n    flow g1 \"no\" -> o2\n    flow o1 -> r1\n    flow o2 -> r1\n    flow r1 -> b1\n    flow b1 -> g2\n    flow g2 \"yes\" -> m1 -> e2\n    flow g2 \"no\" -> g3\n    flow g3 \"yes\" -> rfast -> r1\n    flow g3 \"no\" -> g4\n    flow g4 \"yes\" -> rcost -> r1\n    flow g4 \"no\" -> e1"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5677,
+  "output_tokens": 424,
+  "seconds": 2.0216394999879412,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The tool expects either text or path, but we gave both path empty and text. Should omit path param. Provide only text.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Contract\" [executable]\n\npool org \"Organization\"\n  lane manager \"Project Manager\"\n    start s1 \"Start contract process\"\n    task q1 \"Query web shops\"\n    task l1 \"Create list of parts per shop\"\n    xor g1 \"Single shop has enough parts?\"\n    task o1 \"Order parts from cheapest shop\"\n    task o2 \"Order parts from multiple shops (cheapest)\"\n    task r1 \"Receive parts batch\"\n    task b1 \"Start building\"\n    xor g2 \"Stock zero?\"\n    task m1 \"Write mail to friends complaining\"\n    xor g3 \"Stock below 3?\"\n    task rfast \"Reorder parts (fastest)\"\n    xor g4 \"Stock below 5?\"\n    task rcost \"Reorder parts (cheapest)\"\n    end e1 \"Contract completed\"\n    end e2 \"Process ended after complaint\"\n\n    flow s1 -> q1 -> l1 -> g1\n    flow g1 \"yes\" -> o1\n    flow g1 \"no\" -> o2\n    flow o1 -> r1\n    flow o2 -> r1\n    flow r1 -> b1\n    flow b1 -> g2\n    flow g2 \"yes\" -> m1 -> e2\n    flow g2 \"no\" -> g3\n    flow g3 \"yes\" -> rfast -> r1\n    flow g3 \"no\" -> g4\n    flow g4 \"yes\" -> rcost -> r1\n    flow g4 \"no\" -> e1"
+    },
+    "is_error": false,
+    "result": "line 1: error T001: invalid token: unexpected character '['\nline 3: error P005: the document must start with a header such as 'tok 1.0'\nline 23: error P008: malformed flow line: expected '->'\nline 24: error P008: malformed flow line: expected '->'\nline 29: error P008: malformed flow line: expected '->'\nline 30: error P008: malformed flow line: expected '->'\nline 31: error P008: malformed flow line: expected '->'\nline 32: error P008: malformed flow line: expected '->'\nline 33: error P008: malformed flow line: expected '->'\nline 34: error P008: malformed flow line: expected '->'\n10 error(s), 10 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6366,
+  "output_tokens": 722,
+  "seconds": 3.446649099991191,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "The syntax errors: Header must be `tok 1.0 \"Title\"` without brackets after. The `[executable]` is optional after header but placed after header line. Actually header line is: `tok 1.0 \"Title\" [executable]`. That's fine. The error was \"invalid token: unexpected character '['\" suggests maybe the tool expects header without brackets before newline? The example shows `tok 1.0 \"Application handling\"` (no executable). But we can include [executable]. maybe tool version expects header without brackets? Let's remove `[executable]`. Also flow syntax: use `flow A -> B -> C`. For labeling flows, we need `flow G -> D \"tak\" when=\"condition\"` not arrow after label. For labeled flow, syntax: `flow G -> D \"label\"` then maybe `when`. We used `flow g1 \"yes\" -> o1`. Should be `flow g1 -> o1 \"yes\"`? Actually example: `flow complete -> approve \"yes\"`. So label after target. So we need: `flow g1 -> o1 \"yes\"` etc.\n\nAlso `xor` syntax: `xor ID \"Question?\"`. We gave `xor g1 \"Single shop has enough parts?\"` correct.\n\n`task` syntax: `task ID \"Label\"`.\n\nWe used `flow s1 -> q1 -> l1 -> g1` correct.\n\nNow correct flow lines.\n\nAlso need to ensure IDs uniqueness and start/end nodes referenced.\n\nLet's rewrite.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Contract\"\n\npool org \"Organization\"\n  lane manager \"Project Manager\"\n    start s1 \"Start contract process\"\n    task q1 \"Query web shops\"\n    task l1 \"Create list of parts per shop\"\n    xor g1 \"Single shop has enough parts?\"\n    task o1 \"Order parts from cheapest shop\"\n    task o2 \"Order parts from multiple shops (cheapest)\"\n    task r1 \"Receive parts batch\"\n    task b1 \"Start building\"\n    xor g2 \"Stock zero?\"\n    task m1 \"Write mail to friends complaining\"\n    xor g3 \"Stock below 3?\"\n    task rfast \"Reorder parts (fastest)\"\n    xor g4 \"Stock below 5?\"\n    task rcost \"Reorder parts (cheapest)\"\n    end e1 \"Contract completed\"\n    end e2 \"Process ended after complaint\"\n\n    flow s1 -> q1 -> l1 -> g1\n    flow g1 -> o1 \"yes\"\n    flow g1 -> o2 \"no\"\n    flow o1 -> r1\n    flow o2 -> r1\n    flow r1 -> b1\n    flow b1 -> g2\n    flow g2 -> m1 \"yes\"\n    flow m1 -> e2\n    flow g2 -> g3 \"no\"\n    flow g3 -> rfast \"yes\"\n    flow rfast -> r1\n    flow g3 -> g4 \"no\"\n    flow g4 -> rcost \"yes\"\n    flow rcost -> r1\n    flow g4 -> e1 \"no\""
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 7186,
+  "output_tokens": 342,
+  "seconds": 4.880149700009497,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Contract\"\n\npool org \"Organization\"\n  lane manager \"Project Manager\"\n    start s1 \"Start contract process\"\n    task q1 \"Query web shops\"\n    task l1 \"Create list of parts per shop\"\n    xor g1 \"Single shop has enough parts?\"\n    task o1 \"Order parts from cheapest shop\"\n    task o2 \"Order parts from multiple shops (cheapest)\"\n    task r1 \"Receive parts batch\"\n    task b1 \"Start building\"\n    xor g2 \"Stock zero?\"\n    task m1 \"Write mail to friends complaining\"\n    xor g3 \"Stock below 3?\"\n    task rfast \"Reorder parts (fastest)\"\n    xor g4 \"Stock below 5?\"\n    task rcost \"Reorder parts (cheapest)\"\n    end e1 \"Contract completed\"\n    end e2 \"Process ended after complaint\"\n\n    flow s1 -> q1 -> l1 -> g1\n    flow g1 -> o1 \"yes\"\n    flow g1 -> o2 \"no\"\n    flow o1 -> r1\n    flow o2 -> r1\n    flow r1 -> b1\n    flow b1 -> g2\n    flow g2 -> m1 \"yes\"\n    flow m1 -> e2\n    flow g2 -> g3 \"no\"\n    flow g3 -> rfast \"yes\"\n    flow rfast -> r1\n    flow g3 -> g4 \"no\"\n    flow g4 -> rcost \"yes\"\n    flow rcost -> r1\n    flow g4 -> e1 \"no\"\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

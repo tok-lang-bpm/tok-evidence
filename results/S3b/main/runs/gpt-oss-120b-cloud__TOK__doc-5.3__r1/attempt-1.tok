@@ -1,0 +1,50 @@
+tok 1.0 "Office Supply Request Process" [executable]
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start1 "Office supply request submitted"
+    task submit "Submit office supply request"
+    task register "Register requirement"
+    flow start1 -> submit -> register
+
+  lane supervisor "Supervisor"
+    task receive "Receive request"
+    xor decision "Supervisor decision?"
+    task approve "Approve request"
+    task ask_change "Ask for change"
+    task reject "Reject request"
+    flow register -> receive -> decision
+    flow decision -> approve
+    flow decision -> ask_change
+    flow decision -> reject
+
+  lane system "System"
+    task send_notification_change "Send notification to user (change required)"
+    task send_notification_final "Send notification to user (final outcome)"
+
+  lane purchase "Purchase Department"
+    sub make_quotations "Make quotations (subprocess)"
+    task select_vendor "Select vendor"
+    xor vendor_valid "Vendor valid?"
+    task choose_different_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+    task wait_delivery "Wait for product delivery and invoice receipt"
+    flow approve -> make_quotations -> select_vendor -> vendor_valid
+    flow vendor_valid -> select_vendor "valid"
+    flow vendor_valid -> choose_different_vendor "invalid"
+    flow choose_different_vendor -> select_vendor
+    flow select_vendor -> generate_po -> wait_delivery
+
+  # Paths after supervisor decisions
+  # Rejection path
+  flow reject -> send_notification_final
+  flow send_notification_final -> end end_reject "Request rejected"
+
+  # Change request path
+  flow ask_change -> send_notification_change
+  flow send_notification_change -> employee.review_change
+  flow employee.review_change -> decision  # loop back to supervisor decision
+
+  # Approval path continues with final notification after delivery
+  flow wait_delivery -> send_notification_final
+  flow send_notification_final -> end end_done "Request completed"

@@ -1,0 +1,121 @@
+tok 1.0 "Work and Live in Austria"
+
+pool org "Organisation"
+  lane applicant "Applicant"
+    start start0 "Start process"
+    and combine_split "Combine steps"
+    task organize_accommodation "Organize accommodation"
+    task negotiate_accommodation "Negotiate accommodation"
+    task open_bank_account "Open bank account"
+    task apply_rwrc "Apply for Rot-Weiss-Rot Card"
+    and combine_join "Steps combined"
+    task consult_representations "Consult list of representation offices"
+    task contact_representation "Contact representation in advance"
+    and gather "Gather visa requirements"
+    task complete_form "Complete visa application form"
+    task provide_travel_document "Present travel document"
+    task provide_photo "Provide passport photo"
+    task present_insurance "Present travel health insurance"
+    task prove_means "Prove sufficient means of subsistence"
+    task provide_evidence "Provide other evidence"
+    task ensure_no_refusal "Ensure absence of grounds for refusal"
+    and gathered "Requirements gathered"
+    task submit_application "Submit visa application"
+    xor application_channel "Application channel?"
+    task apply_representation "Apply at representation office"
+    task apply_border "Apply at border control post"
+    task apply_police_extension "Apply at state police headquarters"
+    xor visa_type "Visa type?"
+    task apply_schengen "Apply for Schengen visa"
+    task apply_type_d "Apply for type D visa"
+    xor main_destination "Main travel destination known?"
+    task identify_destination "Identify main travel destination"
+    xor equal_time "Equal time in several countries?"
+    task decide_length_purpose "Decide based on length and purpose"
+    task first_entry "Country of first entry responsible"
+    xor territorial_ac "Territorial competence for A or C?"
+    task consular_district "Apply at consular district of residence"
+    task exceptional_justification "Provide justification for exceptional competence"
+    task austrian_representation "Apply at competent Austrian representation"
+    task place_of_interest "Prove place of residence or centre of interest"
+    task provide_additional "Provide additional documents"
+    end issued "Visa issued"
+    end refused "Application refused"
+    end completed "Process completed"
+  lane representation "Representation office"
+    task verify_documents "Verify documents"
+    task request_additional "Request additional documents"
+    task determine_competence "Determine territorial competence"
+    task claim_exceptional "Claim exceptional competence"
+    task issue_visa "Issue visa"
+    task refuse_visa "Refuse visa"
+    xor additional_needed "Additional documents requested?"
+    xor approval_decision "Application approved?"
+  lane border "Border control post"
+    task issue_border "Issue visa in exceptional case"
+  lane police "State police headquarters"
+    task extend_visa "Extend visa"
+
+flow start0 -> combine_split
+flow combine_split -> organize_accommodation
+flow combine_split -> open_bank_account
+flow combine_split -> apply_rwrc
+flow organize_accommodation -> negotiate_accommodation
+flow negotiate_accommodation -> combine_join
+flow open_bank_account -> combine_join
+flow apply_rwrc -> combine_join
+flow combine_join -> consult_representations
+flow consult_representations -> contact_representation
+flow contact_representation -> gather
+flow gather -> complete_form
+flow gather -> provide_travel_document
+flow gather -> provide_photo
+flow gather -> present_insurance
+flow gather -> prove_means
+flow gather -> provide_evidence
+flow gather -> ensure_no_refusal
+flow complete_form -> gathered
+flow provide_travel_document -> gathered
+flow provide_photo -> gathered
+flow present_insurance -> gathered
+flow prove_means -> gathered
+flow provide_evidence -> gathered
+flow ensure_no_refusal -> gathered
+flow gathered -> submit_application
+flow submit_application -> application_channel
+flow application_channel -> apply_representation "Representation office" default
+flow application_channel -> apply_border "Border control post" when="channel = \"border\""
+flow application_channel -> apply_police_extension "State police headquarters" when="channel = \"police\""
+flow apply_border -> issue_border
+flow issue_border -> completed
+flow apply_police_extension -> extend_visa
+flow extend_visa -> completed
+flow apply_representation -> visa_type
+flow visa_type -> apply_schengen "Schengen visa" default
+flow visa_type -> apply_type_d "Type D visa" when="visaType = \"D\""
+flow apply_schengen -> main_destination
+flow apply_type_d -> austrian_representation
+flow austrian_representation -> place_of_interest
+flow place_of_interest -> determine_competence
+flow main_destination -> identify_destination "Main destination known" default
+flow main_destination -> equal_time "No main destination" when="mainDestinationKnown = false"
+flow equal_time -> decide_length_purpose "Equal time" when="equalTime = true"
+flow equal_time -> first_entry "Not equal time" default
+flow identify_destination -> territorial_ac
+flow decide_length_purpose -> territorial_ac
+flow first_entry -> territorial_ac
+flow territorial_ac -> consular_district "Consular district" default
+flow territorial_ac -> exceptional_justification "Exceptional competence" when="exceptional = true"
+flow consular_district -> determine_competence
+flow exceptional_justification -> claim_exceptional
+flow claim_exceptional -> determine_competence
+flow determine_competence -> verify_documents
+flow verify_documents -> additional_needed
+flow additional_needed -> request_additional "Yes" when="additionalNeeded = true"
+flow additional_needed -> approval_decision "No" default
+flow request_additional -> provide_additional
+flow provide_additional -> verify_documents
+flow approval_decision -> issue_visa "Approved" default
+flow approval_decision -> refuse_visa "Refused" when="approved = false"
+flow issue_visa -> issued
+flow refuse_visa -> refused

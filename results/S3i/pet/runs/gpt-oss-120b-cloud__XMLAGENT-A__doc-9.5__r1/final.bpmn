@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration with a single pool for the Organisation -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG_POOL" name="Organisation" processRef="process_main" />
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="process_main" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LANESET_1">
+      <bpmn:lane id="Lane_Employee" name="Employee">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EmployeeResubmit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>GW_AccountCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_AmountCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutoApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendProgressEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendCancellationEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendRejectionEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejection</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>Task_SupervisorApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_SupervisorDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Finance" name="Finance">
+        <bpmn:flowNodeRef>Task_Reimburse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Success</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="Start_1" name="Expense Report received" />
+
+    <!-- Account existence check -->
+    <bpmn:exclusiveGateway id="GW_AccountCheck" name="Employee has account?" />
+
+    <!-- Create account (if missing) -->
+    <bpmn:task id="Task_CreateAccount" name="Create employee account" />
+
+    <!-- Review expense report -->
+    <bpmn:task id="Task_ReviewReport" name="Review expense report" />
+
+    <!-- Amount decision -->
+    <bpmn:exclusiveGateway id="GW_AmountCheck" name="Amount under $200?" />
+
+    <!-- Automatic approval -->
+    <bpmn:task id="Task_AutoApprove" name="Auto approve expense report" />
+
+    <!-- Supervisor approval -->
+    <bpmn:task id="Task_SupervisorApprove" name="Supervisor approves expense report" />
+
+    <!-- Supervisor decision (approve/reject) -->
+    <bpmn:exclusiveGateway id="GW_SupervisorDecision" name="Supervisor approves?" />
+
+    <!-- Rejection handling -->
+    <bpmn:task id="Task_SendRejectionEmail" name="Send rejection email" />
+    <bpmn:endEvent id="End_Rejection" name="Rejection end" />
+
+    <!-- Merge approved paths -->
+    <bpmn:exclusiveGateway id="GW_MergeApproved" name="Approved path merge" />
+
+    <!-- Reimburse employee -->
+    <bpmn:task id="Task_Reimburse" name="Reimburse employee" />
+
+    <!-- Boundary timer: 7 days -->
+    <bpmn:intermediateCatchEvent id="Timer_7Days" name="7 days timer"
+                                 attachedToRef="Task_Reimburse" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT168H</bpmn:timeDuration> <!-- 7 days -->
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_SendProgressEmail" name="Send approval‑in‑progress email" />
+    <bpmn:endEvent id="End_Progress" name="Progress‑email end" />
+
+    <!-- Boundary timer: 30 days -->
+    <bpmn:intermediateCatchEvent id="Timer_30Days" name="30 days timer"
+                                 attachedToRef="Task_Reimburse" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT720H</bpmn:timeDuration> <!-- 30 days -->
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_SendCancellationEmail" name="Send cancellation email" />
+    <bpmn:endEvent id="End_Cancellation" name="Cancellation‑email end" />
+
+    <!-- Employee re‑submit -->
+    <bpmn:task id="Task_EmployeeResubmit" name="Employee re‑submit expense report" />
+
+    <!-- Successful end -->
+    <bpmn:endEvent id="End_Success" name="Reimbursement completed" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="F_start_accountCheck" sourceRef="Start_1" targetRef="GW_AccountCheck" />
+
+    <bpmn:sequenceFlow id="F_accountNo" sourceRef="GW_AccountCheck" targetRef="Task_CreateAccount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_accountYes" sourceRef="GW_AccountCheck" targetRef="Task_ReviewReport">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_create_to_review" sourceRef="Task_CreateAccount" targetRef="Task_ReviewReport" />
+
+    <bpmn:sequenceFlow id="F_review_to_amount" sourceRef="Task_ReviewReport" targetRef="GW_AmountCheck" />
+
+    <bpmn:sequenceFlow id="F_amountYes" sourceRef="GW_AmountCheck" targetRef="Task_AutoApprove">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_amountNo" sourceRef="GW_AmountCheck" targetRef="Task_SupervisorApprove">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_supervisor_to_decision" sourceRef="Task_SupervisorApprove" targetRef="GW_SupervisorDecision" />
+
+    <bpmn:sequenceFlow id="F_supervisorYes" sourceRef="GW_SupervisorDecision" targetRef="GW_MergeApproved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">yes</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_supervisorNo" sourceRef="GW_SupervisorDecision" targetRef="Task_SendRejectionEmail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">no</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_rejection_to_end" sourceRef="Task_SendRejectionEmail" targetRef="End_Rejection" />
+
+    <bpmn:sequenceFlow id="F_autoApprove_to_merge" sourceRef="Task_AutoApprove" targetRef="GW_MergeApproved" />
+
+    <bpmn:sequenceFlow id="F_merge_to_reimburse" sourceRef="GW_MergeApproved" targetRef="Task_Reimburse" />
+
+    <!-- Normal successful end after reimburse -->
+    <bpmn:sequenceFlow id="F_reimburse_to_end" sourceRef="Task_Reimburse" targetRef="End_Success" />
+
+    <!-- 7‑day timer path -->
+    <bpmn:sequenceFlow id="F_timer7_to_progress" sourceRef="Timer_7Days" targetRef="Task_SendProgressEmail" />
+    <bpmn:sequenceFlow id="F_progress_to_end" sourceRef="Task_SendProgressEmail" targetRef="End_Progress" />
+
+    <!-- 30‑day timer path -->
+    <bpmn:sequenceFlow id="F_timer30_to_cancellation" sourceRef="Timer_30Days" targetRef="Task_SendCancellationEmail" />
+    <bpmn:sequenceFlow id="F_cancellation_to_resubmit" sourceRef="Task_SendCancellationEmail" targetRef="Task_EmployeeResubmit" />
+    <bpmn:sequenceFlow id="F_resubmit_to_accountCheck" sourceRef="Task_EmployeeResubmit" targetRef="GW_AccountCheck" />
+    <bpmn:sequenceFlow id="F_cancellation_end" sourceRef="Task_SendCancellationEmail" targetRef="End_Cancellation" />
+
+  </bpmn:process>
+</bpmn:definitions>

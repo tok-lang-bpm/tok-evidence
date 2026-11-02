@@ -1,0 +1,60 @@
+tok 1.0 "Internship"
+
+pool p "Internship"
+  lane intern "Intern"
+    start s "Start"
+    and gdetails "Enter details"
+    task enter-topic "Enter topic and money wanted"
+    task enter-exp "Enter experience and hobbies"
+    and gdetails-done "Details entered"
+    sub offer-phase "Handle offers"
+      start os "Start offer handling"
+      receive ro "Receive offer" message="Offer"
+      xor dec "Accept offer?"
+      task acc "Accept offer"
+      task den "Deny offer"
+      end term "Offers invalidated" terminate
+    and gphase "Offer phase"
+    and gphase-done "Offer phase done"
+    task wsi "Write status update about internship" loop loop-max=3
+    and gsu "Status updates"
+    and gsu-done "Status updates done"
+    xor recrec "Recommend company?"
+    task recommend "Recommend company to friends"
+    task tweet "Send tweet to friend" parallel
+    end e1 "End"
+    end e2 "End without recommendation"
+  lane company "Company"
+    task send-offers "Send offer" loop loop-max=5
+    task wsc "Write status update about intern" loop loop-max=3
+
+flow s -> gdetails
+flow gdetails -> enter-topic
+flow gdetails -> enter-exp
+flow enter-topic -> gdetails-done
+flow enter-exp -> gdetails-done
+
+flow gdetails-done -> gphase
+flow gphase -> offer-phase
+flow gphase -> send-offers
+flow offer-phase -> gphase-done
+flow send-offers -> gphase-done
+
+flow gphase-done -> gsu
+flow gsu -> wsi
+flow gsu -> wsc
+flow wsi -> gsu-done
+flow wsc -> gsu-done
+
+flow gsu-done -> recrec
+flow recrec -> recommend "Yes"
+flow recrec -> e2 "No" default
+flow recommend -> tweet
+flow tweet -> e1
+
+flow os -> ro
+flow ro -> dec
+flow dec -> acc "Accept"
+flow dec -> den "Deny" default
+flow den -> ro
+flow acc -> term

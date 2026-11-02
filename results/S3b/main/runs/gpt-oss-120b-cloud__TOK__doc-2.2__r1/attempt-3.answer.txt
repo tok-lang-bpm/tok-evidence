@@ -1,0 +1,67 @@
+```tok
+tok 1.0 "Switch‑over Process"
+
+pool org "Organization"
+  lane customer "Customer"
+    start s1 "Switch‑over request"
+    task t_send "Transmit data to Customer Service"
+    task t_check_contract "Check contract details"
+    xor xor_withdraw "Withdraw contract?"
+    end end_withdraw "Process ends (withdrawal)"
+    end end_success "Process ends (successful)"
+
+  lane customer_service "Customer Service"
+    task cs_enter "Enter customer data into CRM"
+    task cs_compare "Compare data with internal database and check completeness"
+    xor cs_err "Data errors?"
+    task cs_correct "Correct errors based on error list"
+    xor cs_exists "Customer exists in database?"
+    task cs_create "Create new customer object"
+    task cs_prepare "Prepare contract documents"
+    task cs_send_conf "Send confirmation document to customer"
+    task cs_send_req "Send switch request to Grid Operator"
+    and split_contract "Split after positive contract check"
+    and join_after_supplier "Join after supplier handling"
+    task cs_create_cis "Create CIS contract"
+    task cs_import "Import meter data to systems"
+
+  lane cis "CIS System"
+    task cis_check "Automated check of contract documents in CIS"
+    xor cis_ok "Contract documents correct?"
+    task cis_resolve "Analyze and resolve issues"
+
+  lane grid_operator "Grid Operator"
+    task go_check "Check supplier concurrence"
+    xor go_conc "Supplier concurrence?"
+    task go_inform "Inform suppliers and resolve conflict"
+    and split_meter "Split meter‑data & billing"
+    and join_final "Join final reports"
+    task go_meter "Transmit meter data to Customer Service and Old Supplier"
+    task go_bill "Send final billing to Old Supplier"
+
+  lane old_supplier "Old Supplier"
+    task os_bill "Send final billing to Customer"
+
+  # flows
+  flow s1 -> t_send -> cs_enter -> cs_compare -> cs_err
+  flow cs_err -> cs_correct -> cs_compare               # error correction loop
+  flow cs_err -> cs_exists
+  flow cs_exists -> cs_create -> cs_prepare               # customer not existing
+  flow cs_exists -> cs_prepare                            # customer exists
+  flow cs_prepare -> cis_check
+  flow cis_check -> cis_ok
+  flow cis_ok -> split_contract
+  flow cis_ok -> cis_resolve -> cis_check                # negative branch loop
+  flow split_contract -> cs_send_conf -> join_after_supplier
+  flow split_contract -> cs_send_req -> go_check
+  flow go_check -> go_conc
+  flow go_conc -> go_inform -> join_after_supplier      # supplier concurrence
+  flow go_conc -> cs_create_cis -> t_check_contract       # no concurrence
+  flow join_after_supplier -> t_check_contract
+  flow t_check_contract -> xor_withdraw
+  flow xor_withdraw -> end_withdraw                       # withdrawal path
+  flow xor_withdraw -> split_meter
+  flow split_meter -> go_meter -> cs_import -> join_final
+  flow split_meter -> go_bill -> os_bill -> join_final
+  flow join_final -> end_success
+```

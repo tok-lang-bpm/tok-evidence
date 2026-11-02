@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Loan approval process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Loan approval process" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Loan approval process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>s_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk" name="Risk assessment">
+        <bpmn:flowNodeRef>t_assess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="approver" name="Approver">
+        <bpmn:flowNodeRef>t_sendApprover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_approverDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s_start" name="Customer request received" />
+    <bpmn:task id="t_receive" name="Receive customer request" />
+    <bpmn:task id="t_feedback" name="Customer receives feedback" />
+    <bpmn:endEvent id="e_end" name="Process complete" />
+    <bpmn:task id="t_assess" name="Invoke risk assessment Web service" />
+    <bpmn:exclusiveGateway id="g_decision" name="Assessment decision" />
+    <bpmn:task id="t_approve" name="Approve loan" />
+    <bpmn:task id="t_deny" name="Deny loan" />
+    <bpmn:exclusiveGateway id="g_merge" name="Merge decision" />
+    <bpmn:task id="t_sendApprover" name="Send request to approver Web service" />
+    <bpmn:task id="t_approverDecision" name="Approver provides decision" />
+    <bpmn:sequenceFlow id="f-s_start-t_receive" sourceRef="s_start" targetRef="t_receive" />
+    <bpmn:sequenceFlow id="f-t_receive-t_assess" sourceRef="t_receive" targetRef="t_assess" />
+    <bpmn:sequenceFlow id="f-t_assess-g_decision" sourceRef="t_assess" targetRef="g_decision" />
+    <bpmn:sequenceFlow id="f-g_decision-t_approve" name="Approve" sourceRef="g_decision" targetRef="t_approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">loanAmount &lt; 10000 and risk = "low"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g_decision-t_deny" name="Deny" sourceRef="g_decision" targetRef="t_deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">risk = "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g_decision-t_sendApprover" name="Review" sourceRef="g_decision" targetRef="t_sendApprover">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">needsReview = true or loanAmount &gt;= 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-t_approve-g_merge" sourceRef="t_approve" targetRef="g_merge" />
+    <bpmn:sequenceFlow id="f-t_deny-g_merge" sourceRef="t_deny" targetRef="g_merge" />
+    <bpmn:sequenceFlow id="f-t_sendApprover-t_approverDecision" sourceRef="t_sendApprover" targetRef="t_approverDecision" />
+    <bpmn:sequenceFlow id="f-t_approverDecision-g_merge" sourceRef="t_approverDecision" targetRef="g_merge" />
+    <bpmn:sequenceFlow id="f-g_merge-t_feedback" sourceRef="g_merge" targetRef="t_feedback" />
+    <bpmn:sequenceFlow id="f-t_feedback-e_end" sourceRef="t_feedback" targetRef="e_end" />
+  </bpmn:process>
+</bpmn:definitions>

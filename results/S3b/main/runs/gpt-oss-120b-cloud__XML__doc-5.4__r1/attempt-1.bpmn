@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="expense-process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="expense-process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="employeeLane" name="Employee">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>purchase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>employeeEdit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisorLane" name="Supervisor">
+        <bpmn:flowNodeRef>supervisorReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>supervisorDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="treasurerLane" name="Treasurer">
+        <bpmn:flowNodeRef>treasurerCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>treasurerDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>treasurerAccept</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="systemLane" name="System">
+        <bpmn:flowNodeRef>linkPayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paymentConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Expense process start" />
+
+    <bpmn:task id="purchase" name="Purchase product or service" />
+    <bpmn:task id="submit" name="Submit expense report" />
+
+    <bpmn:task id="supervisorReview" name="Supervisor reviews expense report" />
+    <bpmn:exclusiveGateway id="supervisorDecision" name="Supervisor approval?" />
+
+    <bpmn:task id="employeeEdit" name="Employee edits expense report" />
+
+    <bpmn:task id="treasurerCheck" name="Treasurer checks receipts" />
+    <bpmn:exclusiveGateway id="treasurerDecision" name="Receipts in order?" />
+
+    <bpmn:task id="treasurerAccept" name="Treasurer accepts expenses for processing" />
+
+    <bpmn:task id="linkPayment" name="Link to payment system" />
+    <bpmn:intermediateCatchEvent id="paymentConfirm" name="Payment confirmation received">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="end" name="Process completed">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="purchase" />
+    <bpmn:sequenceFlow id="f2" sourceRef="purchase" targetRef="submit" />
+    <bpmn:sequenceFlow id="f3" sourceRef="submit" targetRef="supervisorReview" />
+    <bpmn:sequenceFlow id="f4" sourceRef="supervisorReview" targetRef="supervisorDecision" />
+
+    <bpmn:sequenceFlow id="f5" name="approve" sourceRef="supervisorDecision" targetRef="treasurerCheck" />
+    <bpmn:sequenceFlow id="f6" name="reject" sourceRef="supervisorDecision" targetRef="employeeEdit" />
+
+    <bpmn:sequenceFlow id="f7" sourceRef="employeeEdit" targetRef="supervisorReview" />
+
+    <bpmn:sequenceFlow id="f8" sourceRef="treasurerCheck" targetRef="treasurerDecision" />
+    <bpmn:sequenceFlow id="f9" name="ok" sourceRef="treasurerDecision" targetRef="treasurerAccept" />
+    <bpmn:sequenceFlow id="f10" name="not ok" sourceRef="treasurerDecision" targetRef="employeeEdit" />
+
+    <bpmn:sequenceFlow id="f11" sourceRef="treasurerAccept" targetRef="linkPayment" />
+    <bpmn:sequenceFlow id="f12" sourceRef="linkPayment" targetRef="paymentConfirm" />
+    <bpmn:sequenceFlow id="f13" sourceRef="paymentConfirm" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,37 @@
+tok 1.0 "Find a Job"
+
+pool organisation "Organisation"
+  lane applicant "Applicant"
+    start S "Start job search"
+    task R "Report job applications"
+    task O "Send job offers"
+    task N "Negotiate job interview"
+    task P "Enter probation phase"
+    task RC "Rate company"
+    task RA "Rate applicant"
+    task VR "View company reviews"
+    end END "Process ends"
+
+  lane company "Company"
+    task C "Confirm receipt and rate application"
+    xor H "Company wants to hire?"
+    and G1 "After probation start"
+    and G2 "After rating join"
+    xor PERM "Job becomes permanent?"
+    xor LR "Low rating?"
+    catch W "Wait 1 year" timer=P1Y
+
+flow S -> R -> O -> C -> N -> H
+flow H -> O          # company does not want to hire, continue offers
+flow H -> P          # company wants to hire
+flow P -> G1
+flow G1 -> RC
+flow G1 -> RA
+flow RC -> G2
+flow RA -> G2
+flow G2 -> W
+flow W -> VR -> PERM
+flow PERM -> O      # job not permanent, continue offers
+flow PERM -> LR
+flow LR -> O        # low rating (C or less), continue offers without reporting
+flow LR -> END       # rating higher than C, process ends

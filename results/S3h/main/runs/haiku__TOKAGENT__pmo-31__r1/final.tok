@@ -1,0 +1,48 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizzard "Blizzard"
+  lane player "Player"
+    start s "Start creating a character"
+    and fork "Two things at once"
+    task names "Come up with character names"
+    task enter-info "Enter account information"
+    task click-link "Click the link in the confirmation mail"
+    task select-pay "Select payment method"
+    xor pay-q "Payment method?"
+    task enter-card "Enter credit card information"
+    task enter-iban "Enter IBAN and BIC numbers"
+    xor pay-join
+    task log-in "Log into the game"
+    task select-realm "Select realm, race and class"
+    and name-join
+    task enter-name "Enter character name"
+  lane system "Blizzard system"
+    task check-bnet "Check battle.net account"
+    xor bnet-q "Battle.net account?"
+    xor bnet-join
+    task check-sub "Check active WoW subscription"
+    xor sub-q "Active WoW subscription?"
+    xor sub-join
+    xor name-q "Name still available?"
+    task confirm "Send confirmation and character selfies"
+    catch expansion "Expansion released" message="Expansion released"
+    task expansion-msg "Send expansion message"
+    end e "End"
+
+flow s -> fork
+flow fork -> names
+flow fork -> check-bnet -> bnet-q
+flow bnet-q -> enter-info "no" default
+flow bnet-q -> bnet-join "yes" when="has_bnet_account = true"
+flow enter-info -> click-link -> bnet-join -> check-sub -> sub-q
+flow sub-q -> select-pay "no" default
+flow sub-q -> sub-join "yes" when="has_wow_subscription = true"
+flow select-pay -> pay-q
+flow pay-q -> enter-card "credit card" when="credit_card = true"
+flow pay-q -> enter-iban "bank account" default
+flow enter-card -> pay-join
+flow enter-iban -> pay-join -> sub-join -> log-in -> select-realm -> name-join
+flow names -> name-join -> enter-name -> name-q
+flow name-q -> enter-name "no" when="name_available = false"
+flow name-q -> confirm "yes" when="name_available = true"
+flow confirm -> expansion -> expansion-msg -> e

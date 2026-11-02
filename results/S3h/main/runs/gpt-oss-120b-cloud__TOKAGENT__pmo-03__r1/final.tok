@@ -1,0 +1,37 @@
+tok 1.0
+
+pool org "Organization"
+  lane system "System"
+    start start "Start"
+    task monitor-inventory "monitor inventory levels"
+    xor g_threshold "stock reaches threshold?"
+    task signal-reorder "signal need to reorder"
+    task update-expected "update inventory system with expected delivery dates"
+    and g_split "Parallel activities"
+    task record-system "record in system"
+    and g_join "Join parallel activities"
+    task update-levels "update inventory levels after restock"
+    end end "End"
+  lane procurement "Procurement Team"
+    task place-order "place order with suppliers"
+  lane warehouse "Warehouse"
+    task receive-stock "receive stock"
+    task inspect-quality "inspect for quality"
+    task place-storage "place on shelves or in storage"
+
+flow start -> monitor-inventory
+flow monitor-inventory -> g_threshold
+flow g_threshold -> signal-reorder when="stock >= threshold"
+flow g_threshold -> monitor-inventory default
+flow signal-reorder -> place-order
+flow place-order -> update-expected
+flow update-expected -> receive-stock
+flow receive-stock -> g_split
+flow g_split -> inspect-quality
+flow g_split -> record-system
+flow g_split -> place-storage
+flow inspect-quality -> g_join
+flow record-system -> g_join
+flow place-storage -> g_join
+flow g_join -> update-levels
+flow update-levels -> end

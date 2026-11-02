@@ -1,0 +1,70 @@
+tok 1.0 "Annual audit process"
+
+pool org "Multinational company"
+  lane coord "Audit coordinator"
+    start s "Audit process starts"
+    task notify "Send notification to regional office"
+    and fork "Split"
+  lane regional "Regional office"
+    task prepare "Prepare financial statements"
+    task gather "Gather necessary documents"
+    and join "Join"
+    task submit "Submit documents to central audit team"
+    task clarify "Provide necessary clarifications"
+  lane compliance "Compliance team"
+    task regs "Check regulatory updates"
+  lane central "Central audit team"
+    xor rev-merge "Merge"
+    task review "Review submission"
+    xor disc "Discrepancies found?"
+    task request "Request clarifications from regional office"
+    and risk-fork "Split"
+    task fin-risk "Evaluate financial risks"
+    task op-risk "Evaluate operational risks"
+    task comp-risk "Evaluate compliance risks"
+    and risk-join "Join"
+    xor high "High risk identified?"
+    sub invest "Conduct detailed investigation"
+      start i-s "Investigation starts"
+      task analyse "Analyse data"
+      task interview "Conduct interviews"
+      xor site "Site visit required?"
+      task visit "Carry out site visit"
+      xor site-m "Merge"
+      end i-e "Investigation ends"
+    xor risks-m "Merge"
+    task compile "Compile audit report"
+    task distribute "Distribute final report to executive board"
+    task archive "Archive final report"
+    task revise "Update report with revisions"
+    task resubmit "Resubmit report to audit director"
+    end done "Audit process closed"
+  lane director "Audit director"
+    task director-review "Review audit report"
+    xor approve "Report approved?"
+
+flow s -> notify -> fork
+flow fork -> prepare
+flow fork -> regs
+flow prepare -> gather -> join
+flow regs -> join -> submit -> rev-merge -> review -> disc
+flow disc -> request "yes" when="discrepancies_found = true"
+flow request -> clarify -> rev-merge
+flow disc -> risk-fork "no" default
+flow risk-fork -> fin-risk
+flow risk-fork -> op-risk
+flow risk-fork -> comp-risk
+flow fin-risk -> risk-join
+flow op-risk -> risk-join
+flow comp-risk -> risk-join -> high
+flow high -> invest "yes" when="high_risk = true"
+flow high -> risks-m "no" default
+flow invest -> risks-m -> compile -> director-review -> approve
+flow approve -> distribute "approved" when="report_approved = true"
+flow approve -> revise "revisions required" default
+flow revise -> resubmit -> director-review
+flow distribute -> archive -> done
+flow i-s -> analyse -> interview -> site
+flow site -> visit "yes" when="site_visit_required = true"
+flow site -> site-m "no" default
+flow visit -> site-m -> i-e

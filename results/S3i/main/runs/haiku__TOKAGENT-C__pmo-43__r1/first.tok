@@ -1,0 +1,37 @@
+tok 1.0 "Car Service"
+
+pool police "Police"
+  lane owner "Car owner"
+    start started "Successful service completed"
+    task pay "Pay the repair through the app"
+    end nextDone "Next service recorded"
+  lane system "Police app"
+    task checkNeed "Check that a service is necessary"
+    xor registered "Car still registered?"
+    task notify "Notify the owner"
+    xor goes "Owner goes to the service?"
+    catch wait30 "Wait 30 days" timer=P30D
+    task fine "Fine the owner"
+    task status "Send status updates via email"
+    end notRegistered "Car no longer registered"
+    end fined "Owner fined"
+  lane mechanic "Mechanic"
+    task enterProblems "Enter the problems of the car"
+    and forkWork
+    task repair "Repair the car"
+    and joinWork
+    task enterSuccess "Enter that the repair was successful"
+    task pickerl "Enter that the Pickerl was issued"
+    task enterNext "Enter the time of the next service"
+
+flow started -> checkNeed -> registered
+flow registered -> notify "yes"
+flow registered -> notRegistered "no"
+flow notify -> goes
+flow goes -> enterProblems "yes"
+flow goes -> wait30 "no"
+flow wait30 -> fine -> fined
+flow enterProblems -> forkWork
+flow forkWork -> repair -> pay -> joinWork
+flow forkWork -> status -> joinWork
+flow joinWork -> enterSuccess -> pickerl -> enterNext -> nextDone

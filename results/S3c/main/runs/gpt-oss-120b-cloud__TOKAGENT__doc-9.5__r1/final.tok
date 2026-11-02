@@ -1,0 +1,47 @@
+tok 1.0
+
+pool Company "Company"
+  lane employee "Employee"
+    start start "Start"
+    task receive-report "Receive Expense Report"
+  lane system "System"
+    xor check-account "Employee has account?"
+    xor amount-decision "Amount under $200?"
+    xor approval-decision "Supervisor approves?"
+    task create-account "Create New Account"
+    task review-report "Review Expense Report for Automatic Approval"
+    task auto-approve "Automatically Approve Expense Report"
+    task request-supervisor "Request Supervisor Approval"
+    task supervisor-approval "Supervisor Approves Expense Report"
+    task send-progress-email "Send Approval In Progress Email"
+    task send-cancellation-email "Send Cancellation Notice Email"
+    task resubmit-report "Resubmit Expense Report"
+    task rejection-email "Send Rejection Notice Email"
+    task reimbursement "Reimburse to Direct Deposit"
+    end end-success "End"
+    end end-reject "End"
+    end end-cancel "End"
+    boundary timer7 on=supervisor-approval timer=P7D noninterrupting
+    boundary timer30 on=supervisor-approval timer=P30D
+# Flows
+flow start -> receive-report
+flow receive-report -> check-account
+flow check-account -> create-account "no"
+flow check-account -> review-report "yes"
+flow create-account -> review-report
+flow review-report -> amount-decision
+flow amount-decision -> auto-approve "yes"
+flow amount-decision -> request-supervisor "no"
+flow auto-approve -> reimbursement
+flow request-supervisor -> supervisor-approval
+flow supervisor-approval -> approval-decision
+flow approval-decision -> rejection-email "reject"
+flow rejection-email -> end-reject
+flow approval-decision -> reimbursement "approve"
+flow reimbursement -> end-success
+# Timer flows
+flow timer7 -> send-progress-email
+flow send-progress-email -> supervisor-approval
+flow timer30 -> send-cancellation-email
+flow send-cancellation-email -> resubmit-report
+flow resubmit-report -> end-cancel

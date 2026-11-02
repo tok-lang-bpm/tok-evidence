@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Equipment change of a metering point" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Metering point operation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Equipment change of a metering point" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="mpon" name="MPON">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reader</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>read_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>read_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismount_q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismount_mpon</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismount_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_reading</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_go</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpoo" name="MPOO">
+        <bpmn:flowNodeRef>self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>announce</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>no_self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>self_done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>read_mpoo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dismount_mpoo</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>notify_msp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>handled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Equipment change intention" />
+    <bpmn:task id="notify" name="Notify the MPOO about equipment change intentions" />
+    <bpmn:exclusiveGateway id="reader" name="Final reading by MPON or MPOO?" />
+    <bpmn:task id="read_mpon" name="Perform the final reading" />
+    <bpmn:exclusiveGateway id="read_done" />
+    <bpmn:exclusiveGateway id="dismount_q" name="Dismounting by MPON or MPOO?" />
+    <bpmn:task id="dismount_mpon" name="Dismount the old equipment" />
+    <bpmn:exclusiveGateway id="dismount_done" />
+    <bpmn:task id="mount" name="Mount the new device" />
+    <bpmn:task id="meter" name="Read the meter count from the installed meter" />
+    <bpmn:task id="send_reading" name="Send the values of the final reading to the GO" />
+    <bpmn:task id="inform_go" name="Inform the GO about device changes, master data and meter count at installation" />
+    <bpmn:exclusiveGateway id="self" name="Self dismounting?" />
+    <bpmn:task id="announce" name="Announce self dismounting to the MPON" />
+    <bpmn:task id="no_self" name="Notify the MPON about no self-dismounting" />
+    <bpmn:exclusiveGateway id="self_done" />
+    <bpmn:task id="read_mpoo" name="Perform the final reading" />
+    <bpmn:task id="dismount_mpoo" name="Dismount the old equipment" />
+    <bpmn:task id="notify_msp" name="Notify the MSP about device changes, master data, meter count at dismounting and meter count at installation" />
+    <bpmn:endEvent id="handled" name="Equipment change notified to the MSP" />
+    <bpmn:sequenceFlow id="f-begin-notify" sourceRef="begin" targetRef="notify" />
+    <bpmn:sequenceFlow id="f-notify-self" sourceRef="notify" targetRef="self" />
+    <bpmn:sequenceFlow id="f-self-announce" name="yes" sourceRef="self" targetRef="announce" />
+    <bpmn:sequenceFlow id="f-self-no_self" name="no" sourceRef="self" targetRef="no_self" />
+    <bpmn:sequenceFlow id="f-announce-self_done" sourceRef="announce" targetRef="self_done" />
+    <bpmn:sequenceFlow id="f-no_self-self_done" sourceRef="no_self" targetRef="self_done" />
+    <bpmn:sequenceFlow id="f-self_done-reader" sourceRef="self_done" targetRef="reader" />
+    <bpmn:sequenceFlow id="f-reader-read_mpon" name="MPON" sourceRef="reader" targetRef="read_mpon" />
+    <bpmn:sequenceFlow id="f-reader-read_mpoo" name="MPOO" sourceRef="reader" targetRef="read_mpoo" />
+    <bpmn:sequenceFlow id="f-read_mpon-read_done" sourceRef="read_mpon" targetRef="read_done" />
+    <bpmn:sequenceFlow id="f-read_mpoo-read_done" sourceRef="read_mpoo" targetRef="read_done" />
+    <bpmn:sequenceFlow id="f-read_done-dismount_q" sourceRef="read_done" targetRef="dismount_q" />
+    <bpmn:sequenceFlow id="f-dismount_q-dismount_mpon" name="MPON" sourceRef="dismount_q" targetRef="dismount_mpon" />
+    <bpmn:sequenceFlow id="f-dismount_q-dismount_mpoo" name="MPOO" sourceRef="dismount_q" targetRef="dismount_mpoo" />
+    <bpmn:sequenceFlow id="f-dismount_mpon-dismount_done" sourceRef="dismount_mpon" targetRef="dismount_done" />
+    <bpmn:sequenceFlow id="f-dismount_mpoo-dismount_done" sourceRef="dismount_mpoo" targetRef="dismount_done" />
+    <bpmn:sequenceFlow id="f-dismount_done-mount" sourceRef="dismount_done" targetRef="mount" />
+    <bpmn:sequenceFlow id="f-mount-meter" sourceRef="mount" targetRef="meter" />
+    <bpmn:sequenceFlow id="f-meter-send_reading" sourceRef="meter" targetRef="send_reading" />
+    <bpmn:sequenceFlow id="f-send_reading-inform_go" sourceRef="send_reading" targetRef="inform_go" />
+    <bpmn:sequenceFlow id="f-inform_go-notify_msp" sourceRef="inform_go" targetRef="notify_msp" />
+    <bpmn:sequenceFlow id="f-notify_msp-handled" sourceRef="notify_msp" targetRef="handled" />
+  </bpmn:process>
+</bpmn:definitions>

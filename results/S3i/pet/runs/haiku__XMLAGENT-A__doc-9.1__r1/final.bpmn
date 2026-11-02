@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Org" name="Organisation" processRef="Process_Defaulters" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Defaulters" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_DB" name="Database system">
+        <bpmn:flowNodeRef>Start_Weekday</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_NewRecords</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_RecordsFound</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Reconcile</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CRM" name="CRM system">
+        <bpmn:flowNodeRef>Task_CheckCRM1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_NewReturns1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_NoReturns1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckCRM2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_NewReturns2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_NoReturns2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Rep" name="Defaulter reporting">
+        <bpmn:flowNodeRef>Task_Register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Advised</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Produce</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendTable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Merge2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Deadline1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Merge3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Deadline2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Message</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Weekday" name="Every weekday morning" />
+    <bpmn:task id="Task_Backup" name="Back up the database" />
+    <bpmn:task id="Task_CheckTable" name="Check whether the Account Defaulter table has new records" />
+    <bpmn:exclusiveGateway id="Gw_NewRecords" name="New records found?" />
+    <bpmn:endEvent id="End_RecordsFound" name="Defaulter records found" />
+    <bpmn:task id="Task_CheckCRM1" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="Gw_NewReturns1" name="New returns filed?" />
+    <bpmn:endEvent id="End_NoReturns1" name="No new returns" />
+    <bpmn:task id="Task_Register" name="Register all defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="Gw_Advised" name="Defaulting client codes previously advised?" />
+    <bpmn:task id="Task_Produce" name="Produce another table of defaulting accounts" />
+    <bpmn:task id="Task_SendTable" name="Send the table to account management" />
+    <bpmn:exclusiveGateway id="Gw_Merge2" />
+    <bpmn:exclusiveGateway id="Gw_Deadline1" name="Completed by 2:30 pm?" />
+    <bpmn:task id="Task_Alert" name="Send an alert to the supervisor" />
+    <bpmn:exclusiveGateway id="Gw_Merge3" />
+    <bpmn:task id="Task_CheckCRM2" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="Gw_NewReturns2" name="New returns filed?" />
+    <bpmn:endEvent id="End_NoReturns2" name="No new returns" />
+    <bpmn:task id="Task_Reconcile" name="Reconcile with the existing account defaulters table" />
+    <bpmn:exclusiveGateway id="Gw_Deadline2" name="Completed by 4:00 pm?" />
+    <bpmn:task id="Task_Message" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="End_Done" name="Defaulter report completed" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_Weekday" targetRef="Task_Backup" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Task_Backup" targetRef="Task_CheckTable" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Task_CheckTable" targetRef="Gw_NewRecords" />
+    <bpmn:sequenceFlow id="F4" name="yes" sourceRef="Gw_NewRecords" targetRef="End_RecordsFound" />
+    <bpmn:sequenceFlow id="F5" name="no" sourceRef="Gw_NewRecords" targetRef="Task_CheckCRM1" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Task_CheckCRM1" targetRef="Gw_NewReturns1" />
+    <bpmn:sequenceFlow id="F7" name="no" sourceRef="Gw_NewReturns1" targetRef="End_NoReturns1" />
+    <bpmn:sequenceFlow id="F8" name="yes" sourceRef="Gw_NewReturns1" targetRef="Task_Register" />
+    <bpmn:sequenceFlow id="F9" sourceRef="Task_Register" targetRef="Gw_Advised" />
+    <bpmn:sequenceFlow id="F10" name="yes" sourceRef="Gw_Advised" targetRef="Gw_Merge2" />
+    <bpmn:sequenceFlow id="F11" name="no" sourceRef="Gw_Advised" targetRef="Task_Produce" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Task_Produce" targetRef="Task_SendTable" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Task_SendTable" targetRef="Gw_Merge2" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Gw_Merge2" targetRef="Gw_Deadline1" />
+    <bpmn:sequenceFlow id="F15" name="yes" sourceRef="Gw_Deadline1" targetRef="Gw_Merge3" />
+    <bpmn:sequenceFlow id="F16" name="no" sourceRef="Gw_Deadline1" targetRef="Task_Alert" />
+    <bpmn:sequenceFlow id="F17" sourceRef="Task_Alert" targetRef="Gw_Merge3" />
+    <bpmn:sequenceFlow id="F18" sourceRef="Gw_Merge3" targetRef="Task_CheckCRM2" />
+    <bpmn:sequenceFlow id="F19" sourceRef="Task_CheckCRM2" targetRef="Gw_NewReturns2" />
+    <bpmn:sequenceFlow id="F20" name="no" sourceRef="Gw_NewReturns2" targetRef="End_NoReturns2" />
+    <bpmn:sequenceFlow id="F21" name="yes" sourceRef="Gw_NewReturns2" targetRef="Task_Reconcile" />
+    <bpmn:sequenceFlow id="F22" sourceRef="Task_Reconcile" targetRef="Gw_Deadline2" />
+    <bpmn:sequenceFlow id="F23" name="yes" sourceRef="Gw_Deadline2" targetRef="End_Done" />
+    <bpmn:sequenceFlow id="F24" name="no" sourceRef="Gw_Deadline2" targetRef="Task_Message" />
+    <bpmn:sequenceFlow id="F25" sourceRef="Task_Message" targetRef="End_Done" />
+  </bpmn:process>
+</bpmn:definitions>

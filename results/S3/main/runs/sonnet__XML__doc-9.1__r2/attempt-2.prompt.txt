@@ -1,0 +1,123 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+Every weekday morning, the database is backed up and then it is checked to see whether the Account Defaulter table has new records. If no new records are found, then the process should check the CRM system to see whether new returns have been filed. If new returns exist, then register all defaulting accounts and customers. If the defaulting client codes have not been previously advised, produce another table of defaulting accounts and send to account management. All of this must be completed by 2: 30 pm, if it is not, then an alert should be sent to the supervisor. Once the new defaulting account report has been completed, check the CRM system to see whether new returns have been filed. If new returns have been filed, reconcile with the existing account defaulters table. This must be completed by 4: 0 pm otherwise a supervisor should be sent a message.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Account defaulter monitoring" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE" name="Account defaulter monitoring">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sub1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sub2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertEnd1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>b2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertEnd2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Weekday morning">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle>0 0 8 ? * MON-FRI</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+
+    <bpmn:subProcess id="sub1" name="Produce the defaulting account report">
+      <bpmn:startEvent id="s1start" name="Report started" />
+      <bpmn:task id="backup" name="Back up the database" />
+      <bpmn:task id="checkTable" name="Check the Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="gwNew" name="New records found?" default="s1f5" />
+      <bpmn:task id="checkCrm1" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="gwRet1" name="New returns filed?" default="s1f8" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="gwAdv" name="Defaulting client codes previously advised?" default="s1f11" />
+      <bpmn:task id="produce" name="Produce a table of defaulting accounts" />
+      <bpmn:task id="send" name="Send the table to account management" />
+      <bpmn:endEvent id="s1endA" name="New records already present" />
+      <bpmn:endEvent id="s1endB" name="No new returns" />
+      <bpmn:endEvent id="s1endC" name="Client codes already advised" />
+      <bpmn:endEvent id="s1endD" name="Report sent" />
+      <bpmn:sequenceFlow id="s1f1" sourceRef="s1start" targetRef="backup" />
+      <bpmn:sequenceFlow id="s1f2" sourceRef="backup" targetRef="checkTable" />
+      <bpmn:sequenceFlow id="s1f3" sourceRef="checkTable" targetRef="gwNew" />
+      <bpmn:sequenceFlow id="s1f4" name="yes" sourceRef="gwNew" targetRef="s1endA" />
+      <bpmn:sequenceFlow id="s1f5" name="no" sourceRef="gwNew" targetRef="checkCrm1" />
+      <bpmn:sequenceFlow id="s1f6" sourceRef="checkCrm1" targetRef="gwRet1" />
+      <bpmn:sequenceFlow id="s1f7" name="yes" sourceRef="gwRet1" targetRef="register" />
+      <bpmn:sequenceFlow id="s1f8" name="no" sourceRef="gwRet1" targetRef="s1endB" />
+      <bpmn:sequenceFlow id="s1f9" sourceRef="register" targetRef="gwAdv" />
+      <bpmn:sequenceFlow id="s1f10" name="no" sourceRef="gwAdv" targetRef="produce" />
+      <bpmn:sequenceFlow id="s1f11" name="yes" sourceRef="gwAdv" targetRef="s1endC" />
+      <bpmn:sequenceFlow id="s1f12" sourceRef="produce" targetRef="send" />
+      <bpmn:sequenceFlow id="s1f13" sourceRef="send" targetRef="s1endD" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="b1" name="2:30 pm reached" attachedToRef="sub1" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate>14:30</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert1" name="Send an alert to the supervisor" />
+    <bpmn:endEvent id="alertEnd1" name="Supervisor alerted" />
+
+    <bpmn:subProcess id="sub2" name="Reconcile the defaulters">
+      <bpmn:startEvent id="s2start" name="Reconciliation started" />
+      <bpmn:task id="checkCrm2" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="gwRet2" name="New returns filed?" default="s2f4" />
+      <bpmn:task id="reconcile" name="Reconcile with the existing Account Defaulters table" />
+      <bpmn:endEvent id="s2endA" name="Reconciled" />
+      <bpmn:endEvent id="s2endB" name="No new returns" />
+      <bpmn:sequenceFlow id="s2f1" sourceRef="s2start" targetRef="checkCrm2" />
+      <bpmn:sequenceFlow id="s2f2" sourceRef="checkCrm2" targetRef="gwRet2" />
+      <bpmn:sequenceFlow id="s2f3" name="yes" sourceRef="gwRet2" targetRef="reconcile" />
+      <bpmn:sequenceFlow id="s2f4" name="no" sourceRef="gwRet2" targetRef="s2endB" />
+      <bpmn:sequenceFlow id="s2f5" sourceRef="reconcile" targetRef="s2endA" />
+    </bpmn:subProcess>
+
+    <bpmn:boundaryEvent id="b2" name="4:00 pm reached" attachedToRef="sub2" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate>16:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert2" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="alertEnd2" name="Supervisor messaged" />
+
+    <bpmn:endEvent id="done" name="Daily check completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sub1" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sub1" targetRef="sub2" />
+    <bpmn:sequenceFlow id="f3" sourceRef="sub2" targetRef="done" />
+    <bpmn:sequenceFlow id="f4" sourceRef="b1" targetRef="alert1" />
+    <bpmn:sequenceFlow id="f5" sourceRef="alert1" targetRef="alertEnd1" />
+    <bpmn:sequenceFlow id="f6" sourceRef="b2" targetRef="alert2" />
+    <bpmn:sequenceFlow id="f7" sourceRef="alert2" targetRef="alertEnd2" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: s1f4: Sequence flow is missing condition
+- conditional-flows: s1f7: Sequence flow is missing condition
+- conditional-flows: s1f10: Sequence flow is missing condition
+- conditional-flows: s2f3: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

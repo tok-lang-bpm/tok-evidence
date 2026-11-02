@@ -1,0 +1,65 @@
+tok 0.5 id=Definitions_1 namespace=http://www.omg.org/spec/BPMN/20100524/MODEL collaboration=Collaboration_1
+
+pool Participant_1 "Customer" process=Process_1 process-name=""
+  lane Lane_1
+    user UserTask_1 "Send requirements" duration="exp(10m)"
+    user UserTask_2 "Collect requirements" duration="exp(10m)"
+    user UserTask_3 "Refine requirements" duration="exp(10m)"
+    user UserTask_4 "Create order list" duration="exp(10m)"
+    user UserTask_5 "Place order" duration="exp(10m)"
+    service ServiceTask_1 "Report for builing permit" duration="exp(10m)"
+    service ServiceTask_2 "Calculate effort" duration="exp(10m)"
+    service ServiceTask_3 "Check feasibility" duration="exp(10m)"
+    manual ManualTask_1 "Call friends" duration="exp(10m)"
+    manual ManualTask_2 "Build house" duration="exp(10m)"
+    manual ManualTask_3 "Hire building company" duration="exp(10m)"
+    xor ExclusiveGateway_1 "Draft sufficient?"
+    xor ExclusiveGateway_2
+    xor ExclusiveGateway_3 "Subject to approval?"
+    xor ExclusiveGateway_4
+    xor ExclusiveGateway_5 "Affordable?"
+    xor ExclusiveGateway_6
+    and ParallelGateway_1
+    and ParallelGateway_2
+    start StartEvent_1 "wish to build a house"
+    end EndEvent_1 "finished house"
+    catch IntermediateCatchEvent_1 "draft received" message
+    catch IntermediateCatchEvent_2 "Get order" message
+
+pool Participant_2 "Architect"
+
+pool Participant_3 "Online stores"
+
+flow StartEvent_1 -> UserTask_2 id=SequenceFlow_1
+flow UserTask_1 -> IntermediateCatchEvent_1 id=SequenceFlow_2
+flow UserTask_4 -> UserTask_5 id=SequenceFlow_3
+flow IntermediateCatchEvent_1 -> ServiceTask_3 id=SequenceFlow_4
+flow UserTask_3 -> ExclusiveGateway_2 id=SequenceFlow_5
+flow ExclusiveGateway_2 -> UserTask_1 id=SequenceFlow_6
+flow UserTask_2 -> ExclusiveGateway_2 id=SequenceFlow_7
+flow ExclusiveGateway_3 -> ServiceTask_1 "Yes" id=SequenceFlow_8 p=0.500
+flow ExclusiveGateway_1 -> ExclusiveGateway_3 "Yes" id=SequenceFlow_9 p=0.500
+flow ExclusiveGateway_1 -> UserTask_3 "No" id=SequenceFlow_10 p=0.500
+flow ServiceTask_1 -> ExclusiveGateway_4 id=SequenceFlow_11
+flow ExclusiveGateway_3 -> ExclusiveGateway_4 "No" id=SequenceFlow_12 p=0.500
+flow ExclusiveGateway_4 -> UserTask_4 id=SequenceFlow_13
+flow UserTask_5 -> ServiceTask_2 id=SequenceFlow_14
+flow ServiceTask_2 -> ParallelGateway_1 id=SequenceFlow_15
+flow ServiceTask_3 -> ExclusiveGateway_1 id=SequenceFlow_16
+flow ParallelGateway_1 -> IntermediateCatchEvent_2 id=SequenceFlow_17
+flow ParallelGateway_1 -> ExclusiveGateway_5 id=SequenceFlow_18
+flow ExclusiveGateway_5 -> ManualTask_1 "No" id=SequenceFlow_19 p=0.500
+flow ExclusiveGateway_5 -> ManualTask_3 "Yes" id=SequenceFlow_20 p=0.500
+flow ManualTask_1 -> ExclusiveGateway_6 id=SequenceFlow_21
+flow IntermediateCatchEvent_2 -> ParallelGateway_2 id=SequenceFlow_22
+flow ExclusiveGateway_6 -> ParallelGateway_2 id=SequenceFlow_23
+flow ParallelGateway_2 -> ManualTask_2 id=SequenceFlow_24
+flow ManualTask_2 -> EndEvent_1 id=SequenceFlow_25
+flow ManualTask_3 -> ExclusiveGateway_6 id=SequenceFlow_26
+
+message UserTask_1 -> Participant_2 id=MessageFlow_1
+message Participant_2 -> IntermediateCatchEvent_1 id=MessageFlow_2
+message Participant_3 -> IntermediateCatchEvent_2 id=MessageFlow_3
+message UserTask_5 -> Participant_3 id=MessageFlow_4
+
+simulate cases=500 seed=20261031 arrival="exp(1h)"

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Supplier switch-over" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Contract_confirmation" name="Contract confirmation" />
+  <bpmn:message id="Message_Contract_withdrawal" name="Contract withdrawal" />
+  <bpmn:message id="Message_Final_billing" name="Final billing" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="supplier" name="New supplier" processRef="supplier-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="supplier-process" name="Supplier switch-over" isExecutable="false">
+    <bpmn:laneSet id="supplier-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkDetails</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchConfirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchWithdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchWeek</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCustomer</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="service" name="Customer service">
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>validate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>errors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>exists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>newCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>objectReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyze</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>regenerate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>importMeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endWithdrawn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endImported</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cis" name="CIS">
+        <bpmn:flowNodeRef>checkDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRequest</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="grid" name="Grid operator">
+        <bpmn:flowNodeRef>checkConcurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>respond</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>concur</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informSuppliers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>demandResolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelNo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>communicate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>meterSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>meterTransmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>computeBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>afterBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endGrid</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="old" name="Old supplier">
+        <bpmn:flowNodeRef>createFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFinal</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="request" name="Switch-over request" />
+    <bpmn:task id="transmit" name="Transmit the customer data" />
+    <bpmn:task id="checkDetails" name="Check the contract details" />
+    <bpmn:eventBasedGateway id="decide" name="Customer decision" />
+    <bpmn:intermediateCatchEvent id="catchConfirm" name="Customer confirms the contract">
+      <bpmn:messageEventDefinition id="catchConfirm-def" messageRef="Message_Contract_confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catchWithdraw" name="Customer withdraws from the switch contract">
+      <bpmn:messageEventDefinition id="catchWithdraw-def" messageRef="Message_Contract_withdrawal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catchWeek" name="7 days pass without withdrawal">
+      <bpmn:timerEventDefinition id="catchWeek-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catchBilling" name="Final billing received">
+      <bpmn:messageEventDefinition id="catchBilling-def" messageRef="Message_Final_billing" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="endCustomer" name="Process ended for the customer" />
+    <bpmn:task id="receive" name="Receive the customer data" />
+    <bpmn:task id="enter" name="Enter the customer data object into the CRM system" />
+    <bpmn:task id="compare" name="Compare the customer data with the internal customer database" />
+    <bpmn:task id="validate" name="Check the customer data for completeness and plausibility" />
+    <bpmn:exclusiveGateway id="errors" name="Errors found?" />
+    <bpmn:task id="correct" name="Correct the errors on the basis of the error list" />
+    <bpmn:exclusiveGateway id="exists" name="Customer exists in the customer database?" />
+    <bpmn:task id="newCustomer" name="Create a new customer object" />
+    <bpmn:exclusiveGateway id="objectReady" />
+    <bpmn:task id="prepare" name="Prepare the contract documents" />
+    <bpmn:task id="analyze" name="Analyze and resolve the causing issues" />
+    <bpmn:task id="regenerate" name="Generate the contract documents again" />
+    <bpmn:task id="sendConfirmation" name="Send the confirmation document to the customer" />
+    <bpmn:task id="createContract" name="Create the CIS contract" />
+    <bpmn:task id="importMeter" name="Import the meter data into the systems that require it" />
+    <bpmn:endEvent id="endWithdrawn" name="Switch-over withdrawn" />
+    <bpmn:endEvent id="endImported" name="Process of winning a new customer ended" />
+    <bpmn:task id="checkDocs" name="Check the contract documents automatically" />
+    <bpmn:exclusiveGateway id="generated" name="Contract documents generated?" />
+    <bpmn:parallelGateway id="parallelOk" />
+    <bpmn:task id="sendRequest" name="Automatically send the switch-over request to the grid operator" />
+    <bpmn:task id="checkConcurrence" name="Check the switch-over request for supplier concurrence" />
+    <bpmn:task id="respond" name="Transmit the response comment" />
+    <bpmn:exclusiveGateway id="concur" name="Supplier concurrence?" />
+    <bpmn:task id="informSuppliers" name="Inform all involved suppliers" />
+    <bpmn:task id="demandResolution" name="Demand the resolution of the conflict" />
+    <bpmn:parallelGateway id="parallelNo" />
+    <bpmn:task id="communicate" name="Communicate with the old supplier" />
+    <bpmn:task id="terminate" name="Terminate the sales agreement between the customer and the old supplier" />
+    <bpmn:parallelGateway id="join" />
+    <bpmn:exclusiveGateway id="accepted" />
+    <bpmn:parallelGateway id="meterSplit" />
+    <bpmn:task id="meterTransmit" name="Transmit the power meter data to customer service and the old supplier" />
+    <bpmn:task id="computeBilling" name="Compute the final billing from the meter data" />
+    <bpmn:task id="sendBilling" name="Send the final billing to the old supplier" />
+    <bpmn:parallelGateway id="afterBilling" />
+    <bpmn:endEvent id="endGrid" name="Process ended for the grid operator" />
+    <bpmn:task id="createFinal" name="Create the final billing" />
+    <bpmn:task id="sendFinal" name="Send the final billing to the customer" />
+    <bpmn:sequenceFlow id="f-request-transmit" sourceRef="request" targetRef="transmit" />
+    <bpmn:sequenceFlow id="f-transmit-receive" sourceRef="transmit" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-enter" sourceRef="receive" targetRef="enter" />
+    <bpmn:sequenceFlow id="f-enter-compare" sourceRef="enter" targetRef="compare" />
+    <bpmn:sequenceFlow id="f-compare-validate" sourceRef="compare" targetRef="validate" />
+    <bpmn:sequenceFlow id="f-validate-errors" sourceRef="validate" targetRef="errors" />
+    <bpmn:sequenceFlow id="f-errors-correct" name="yes" sourceRef="errors" targetRef="correct" />
+    <bpmn:sequenceFlow id="f-correct-validate" sourceRef="correct" targetRef="validate" />
+    <bpmn:sequenceFlow id="f-errors-exists" name="no" sourceRef="errors" targetRef="exists" />
+    <bpmn:sequenceFlow id="f-exists-newCustomer" name="no" sourceRef="exists" targetRef="newCustomer" />
+    <bpmn:sequenceFlow id="f-newCustomer-objectReady" sourceRef="newCustomer" targetRef="objectReady" />
+    <bpmn:sequenceFlow id="f-exists-objectReady" name="yes" sourceRef="exists" targetRef="objectReady" />
+    <bpmn:sequenceFlow id="f-objectReady-prepare" sourceRef="objectReady" targetRef="prepare" />
+    <bpmn:sequenceFlow id="f-prepare-checkDocs" sourceRef="prepare" targetRef="checkDocs" />
+    <bpmn:sequenceFlow id="f-checkDocs-generated" sourceRef="checkDocs" targetRef="generated" />
+    <bpmn:sequenceFlow id="f-generated-analyze" name="no" sourceRef="generated" targetRef="analyze" />
+    <bpmn:sequenceFlow id="f-analyze-regenerate" sourceRef="analyze" targetRef="regenerate" />
+    <bpmn:sequenceFlow id="f-regenerate-checkDocs" sourceRef="regenerate" targetRef="checkDocs" />
+    <bpmn:sequenceFlow id="f-generated-parallelOk" name="yes" sourceRef="generated" targetRef="parallelOk" />
+    <bpmn:sequenceFlow id="f-parallelOk-sendConfirmation" sourceRef="parallelOk" targetRef="sendConfirmation" />
+    <bpmn:sequenceFlow id="f-parallelOk-sendRequest" sourceRef="parallelOk" targetRef="sendRequest" />
+    <bpmn:sequenceFlow id="f-sendRequest-checkConcurrence" sourceRef="sendRequest" targetRef="checkConcurrence" />
+    <bpmn:sequenceFlow id="f-checkConcurrence-respond" sourceRef="checkConcurrence" targetRef="respond" />
+    <bpmn:sequenceFlow id="f-respond-concur" sourceRef="respond" targetRef="concur" />
+    <bpmn:sequenceFlow id="f-concur-informSuppliers" name="yes" sourceRef="concur" targetRef="informSuppliers" />
+    <bpmn:sequenceFlow id="f-informSuppliers-demandResolution" sourceRef="informSuppliers" targetRef="demandResolution" />
+    <bpmn:sequenceFlow id="f-demandResolution-checkConcurrence" sourceRef="demandResolution" targetRef="checkConcurrence" />
+    <bpmn:sequenceFlow id="f-concur-parallelNo" name="no" sourceRef="concur" targetRef="parallelNo" />
+    <bpmn:sequenceFlow id="f-parallelNo-createContract" sourceRef="parallelNo" targetRef="createContract" />
+    <bpmn:sequenceFlow id="f-parallelNo-communicate" sourceRef="parallelNo" targetRef="communicate" />
+    <bpmn:sequenceFlow id="f-communicate-terminate" sourceRef="communicate" targetRef="terminate" />
+    <bpmn:sequenceFlow id="f-sendConfirmation-join" sourceRef="sendConfirmation" targetRef="join" />
+    <bpmn:sequenceFlow id="f-createContract-join" sourceRef="createContract" targetRef="join" />
+    <bpmn:sequenceFlow id="f-terminate-join" sourceRef="terminate" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-checkDetails" sourceRef="join" targetRef="checkDetails" />
+    <bpmn:sequenceFlow id="f-checkDetails-decide" sourceRef="checkDetails" targetRef="decide" />
+    <bpmn:sequenceFlow id="f-decide-catchWithdraw" sourceRef="decide" targetRef="catchWithdraw" />
+    <bpmn:sequenceFlow id="f-catchWithdraw-endWithdrawn" sourceRef="catchWithdraw" targetRef="endWithdrawn" />
+    <bpmn:sequenceFlow id="f-decide-catchConfirm" sourceRef="decide" targetRef="catchConfirm" />
+    <bpmn:sequenceFlow id="f-decide-catchWeek" sourceRef="decide" targetRef="catchWeek" />
+    <bpmn:sequenceFlow id="f-catchConfirm-accepted" sourceRef="catchConfirm" targetRef="accepted" />
+    <bpmn:sequenceFlow id="f-catchWeek-accepted" sourceRef="catchWeek" targetRef="accepted" />
+    <bpmn:sequenceFlow id="f-accepted-meterSplit" sourceRef="accepted" targetRef="meterSplit" />
+    <bpmn:sequenceFlow id="f-meterSplit-meterTransmit" sourceRef="meterSplit" targetRef="meterTransmit" />
+    <bpmn:sequenceFlow id="f-meterTransmit-importMeter" sourceRef="meterTransmit" targetRef="importMeter" />
+    <bpmn:sequenceFlow id="f-importMeter-endImported" sourceRef="importMeter" targetRef="endImported" />
+    <bpmn:sequenceFlow id="f-meterSplit-computeBilling" sourceRef="meterSplit" targetRef="computeBilling" />
+    <bpmn:sequenceFlow id="f-computeBilling-sendBilling" sourceRef="computeBilling" targetRef="sendBilling" />
+    <bpmn:sequenceFlow id="f-sendBilling-afterBilling" sourceRef="sendBilling" targetRef="afterBilling" />
+    <bpmn:sequenceFlow id="f-afterBilling-endGrid" sourceRef="afterBilling" targetRef="endGrid" />
+    <bpmn:sequenceFlow id="f-afterBilling-createFinal" sourceRef="afterBilling" targetRef="createFinal" />
+    <bpmn:sequenceFlow id="f-createFinal-sendFinal" sourceRef="createFinal" targetRef="sendFinal" />
+    <bpmn:sequenceFlow id="f-sendFinal-catchBilling" sourceRef="sendFinal" targetRef="catchBilling" />
+    <bpmn:sequenceFlow id="f-catchBilling-endCustomer" sourceRef="catchBilling" targetRef="endCustomer" />
+  </bpmn:process>
+</bpmn:definitions>

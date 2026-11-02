@@ -1,0 +1,147 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+A university enrollment system involves the following steps:
+Prospective students submit an application online.
+The admissions office reviews the application and supporting documents.
+If documents are missing, the applicant is notified to provide the missing items.
+Upon receiving all documents, the application is evaluated by the admissions committee.
+Concurrently, the finance department processes any application fees or waivers.
+If the application is accepted, an acceptance letter is sent.
+Otherwise, a rejection letter is sent and the process ends.
+After being accepted, the student must then confirm enrollment by a specified deadline; otherwise the application will be canceled.
+If the student confirms, they receive orientation materials and the IT department sets up student accounts for email, online portals, and library access.
+If the student is international, the international student office assists with visa processing.
+The student obtains a student ID card and starts creating their study plan, which includes:
+Meeting with an academic advisor.
+Selecting courses.
+Resolving any schedule conflicts.
+The student begins attending classes.
+Throughout each semester, the student may add or drop courses within the add/drop period.
+At the end of the semester, grades are posted, and the student can review them online.
+If the student has any grievances, they can file an appeal, which includes:
+Submitting an appeal form.
+Meeting with the appeals committee.
+Awaiting a decision.
+The process repeats each semester until the student graduates or withdraws.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "University enrollment system"
+
+pool university "University"
+  lane student "Student"
+    start needed "Application needed"
+    task submit "Submit application online"
+    task confirm "Confirm enrollment"
+    boundary cancel_enr on=confirm timer=P7D
+    task receive_orientation "Receive orientation materials"
+    task idcard "Obtain student ID card"
+    task select_courses "Select courses"
+    task resolve_conflicts "Resolve schedule conflicts"
+    task attend "Begin attending classes"
+    xor add_drop_choice "Add or drop courses?"
+    task add_drop "Add or drop courses"
+    task review_grades "Review grades online"
+    xor grievances "Any grievances?"
+    task submit_appeal "Submit appeal form"
+    task await_decision "Await appeal decision"
+    xor continue_studies "Continue, graduate, or withdraw?"
+    end graduated "Student graduated"
+    end withdrawn "Student withdrawn"
+  lane admissions "Admissions Office"
+    task review "Review application and supporting documents"
+    xor docs "Documents complete?"
+    task notify "Notify applicant to provide missing items"
+    and concurrent "Process evaluation and fees concurrently"
+    and concurrent_done "Evaluation and fees complete"
+    xor accepted "Application accepted?"
+    task send_accept "Send acceptance letter"
+    task send_reject "Send rejection letter"
+    end rejected "Application rejected"
+    task cancelapp "Cancel application"
+    end canceled "Application canceled"
+    xor international "International student?"
+  lane committee "Admissions Committee"
+    task evaluate "Evaluate application"
+  lane finance "Finance Department"
+    task fees "Process application fees or waivers"
+  lane it "IT Department"
+    task setup_accounts "Set up student accounts"
+  lane international_office "International Student Office"
+    task visa "Assist with visa processing"
+  lane advisor "Academic Advisor"
+    task meet_advisor "Meet with academic advisor"
+  lane appeals "Appeals Committee"
+    task meet_appeals "Meet with appeals committee"
+  lane system "University System"
+    task post_grades "Post grades"
+
+flow needed -> submit -> review -> docs
+flow docs -> concurrent "yes"
+flow docs -> notify "no"
+flow notify -> review
+flow concurrent -> evaluate
+flow concurrent -> fees
+flow evaluate -> concurrent_done
+flow fees -> concurrent_done
+flow concurrent_done -> accepted
+flow accepted -> send_accept "accepted"
+flow accepted -> send_reject "rejected"
+flow send_reject -> rejected
+flow send_accept -> confirm
+flow cancel_enr -> cancelapp
+flow cancelapp -> canceled
+flow confirm -> orient_split
+flow orient_split -> receive_orientation
+flow orient_split -> setup_accounts
+flow receive_orientation -> orient_join
+flow setup_accounts -> orient_join
+flow orient_join -> international
+flow international -> visa "yes"
+flow international -> idcard "no"
+flow visa -> idcard
+flow idcard -> meet_advisor
+flow meet_advisor -> select_courses
+flow select_courses -> resolve_conflicts
+flow resolve_conflicts -> attend
+flow attend -> add_drop_choice
+flow add_drop_choice -> add_drop "yes"
+flow add_drop_choice -> post_grades "no"
+flow add_drop -> post_grades
+flow post_grades -> review_grades
+flow review_grades -> grievances
+flow grievances -> submit_appeal "yes"
+flow grievances -> continue_studies "no"
+flow submit_appeal -> meet_appeals
+flow meet_appeals -> await_decision
+flow await_decision -> continue_studies
+flow continue_studies -> attend "continue"
+flow continue_studies -> graduated "graduate"
+flow continue_studies -> withdrawn "withdraw"
+
+and orient_split
+and orient_join
+```
+
+The tok checker reports these problems in it:
+
+- line 66: error R021: sequence flow confirm -> orient_split crosses a process or sub-process boundary
+- line 67: error R021: sequence flow orient_split -> receive_orientation crosses a process or sub-process boundary
+- line 68: error R021: sequence flow orient_split -> setup_accounts crosses a process or sub-process boundary
+- line 69: error R021: sequence flow receive_orientation -> orient_join crosses a process or sub-process boundary
+- line 70: error R021: sequence flow setup_accounts -> orient_join crosses a process or sub-process boundary
+- line 71: error R021: sequence flow orient_join -> international crosses a process or sub-process boundary
+- line 94: error R031: 'orient_split' is declared at top level, but the document has pools; move it into a pool
+- line 95: error R031: 'orient_join' is declared at top level, but the document has pools; move it into a pool
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="laneMailClerk" name="Mail Clerk">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sortMail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>distributeMail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneRegistry" name="Registry">
+        <bpmn:flowNodeRef>openRegisterMail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneAssistantMgr" name="Assistant Registry Manager">
+        <bpmn:flowNodeRef>qualityCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compileRejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>captureDetails</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>envelopeAndPost</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCashier" name="Cashier">
+        <bpmn:flowNodeRef>takeFees</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>capturePrintFile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Mail collected daily" />
+    <bpmn:task id="sortMail" name="Sort unopened mail into business areas" />
+    <bpmn:task id="distributeMail" name="Distribute mail" />
+    <bpmn:task id="openRegisterMail" name="Open, sort and register mail" />
+    <bpmn:task id="qualityCheck" name="Perform quality check" />
+    <bpmn:exclusiveGateway id="gatewayDecision" name="Mail compliant?" />
+    <bpmn:task id="compileRejection" name="Compile rejection list and send to party" />
+    <bpmn:endEvent id="endRejected" name="Process ended (rejected)" />
+    <bpmn:task id="captureDetails" name="Capture matter details and provide to Cashier" />
+    <bpmn:task id="takeFees" name="Take applicable fees" />
+    <bpmn:parallelGateway id="splitGateway" />
+    <bpmn:task id="envelopeAndPost" name="Envelope receipt and post to party" />
+    <bpmn:task id="capturePrintFile" name="Capture Party Details and print Physical Court File" />
+    <bpmn:parallelGateway id="joinGateway" />
+    <bpmn:endEvent id="endCompleted" name="Process completed" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sortMail" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sortMail" targetRef="distributeMail" />
+    <bpmn:sequenceFlow id="f3" sourceRef="distributeMail" targetRef="openRegisterMail" />
+    <bpmn:sequenceFlow id="f4" sourceRef="openRegisterMail" targetRef="qualityCheck" />
+    <bpmn:sequenceFlow id="f5" sourceRef="qualityCheck" targetRef="gatewayDecision" />
+    <bpmn:sequenceFlow id="f6_yes" name="yes" sourceRef="gatewayDecision" targetRef="captureDetails">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">compliant == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6_no" name="no" sourceRef="gatewayDecision" targetRef="compileRejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">compliant == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f7" sourceRef="compileRejection" targetRef="endRejected" />
+    <bpmn:sequenceFlow id="f8" sourceRef="captureDetails" targetRef="takeFees" />
+    <bpmn:sequenceFlow id="f9" sourceRef="takeFees" targetRef="splitGateway" />
+    <bpmn:sequenceFlow id="f10" sourceRef="splitGateway" targetRef="envelopeAndPost" />
+    <bpmn:sequenceFlow id="f11" sourceRef="splitGateway" targetRef="capturePrintFile" />
+    <bpmn:sequenceFlow id="f12" sourceRef="envelopeAndPost" targetRef="joinGateway" />
+    <bpmn:sequenceFlow id="f13" sourceRef="capturePrintFile" targetRef="joinGateway" />
+    <bpmn:sequenceFlow id="f14" sourceRef="joinGateway" targetRef="endCompleted" />
+  </bpmn:process>
+</bpmn:definitions>

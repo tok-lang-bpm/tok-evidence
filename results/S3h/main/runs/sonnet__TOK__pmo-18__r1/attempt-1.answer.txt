@@ -1,0 +1,88 @@
+```tok
+tok 1.0 "University enrollment"
+
+pool university "University"
+  lane student "Student"
+    start applying "Application needed"
+    task submit "Submit the application online"
+    task provide "Provide the missing items"
+    eventgw await "Confirmation by the deadline?"
+    catch confirmed "Enrollment confirmed" message="Enrollment confirmation"
+    catch deadline "Deadline passed" timer=P14D
+    task idcard "Obtain the student ID card"
+    task meet "Meet with the academic advisor"
+    task select "Select courses"
+    task resolve "Resolve schedule conflicts"
+    task attend "Attend classes"
+    xor changes "Add or drop courses?"
+    task adddrop "Add or drop courses"
+    xor changesmerge
+    task review "Review the grades online"
+    xor grievance "Any grievances?"
+    task appealform "Submit an appeal form"
+    task appealmeet "Meet with the appeals committee"
+    task decision "Await the appeal decision"
+    xor grievancemerge
+    xor finished "Graduated or withdrawn?"
+    end left "Student graduated or withdrew"
+    end cancelled "Application canceled"
+    end rejected "Application rejected"
+  lane admissions "Admissions office"
+    task check "Review the application and supporting documents"
+    xor complete "Documents complete?"
+    task notify "Notify the applicant about the missing documents"
+    and split "Evaluate and process fees"
+    and joined
+    xor accepted "Application accepted?"
+    task accept "Send the acceptance letter"
+    task reject "Send the rejection letter"
+    task cancel "Cancel the application"
+    and onboard
+    task orientation "Send the orientation materials"
+    xor intl "International student?"
+    xor intlmerge
+    and onboarded
+    task grades "Post the grades"
+  lane committee "Admissions committee"
+    task evaluate "Evaluate the application"
+  lane finance "Finance department"
+    task fees "Process the application fees or waivers"
+  lane it "IT department"
+    task accounts "Set up student accounts for email, online portals and library access"
+  lane intloffice "International student office"
+    task visa "Assist with visa processing"
+
+flow applying -> submit -> check -> complete
+flow complete -> notify "no"
+flow notify -> provide -> check
+flow complete -> split "yes"
+flow split -> evaluate -> joined
+flow split -> fees -> joined
+flow joined -> accepted
+flow accepted -> accept "yes"
+flow accepted -> reject "no"
+flow reject -> rejected
+flow accept -> await
+flow await -> confirmed
+flow await -> deadline
+flow deadline -> cancel -> cancelled
+flow confirmed -> onboard
+flow onboard -> orientation -> onboarded
+flow onboard -> accounts -> onboarded
+flow onboard -> intl
+flow intl -> visa "yes"
+flow intl -> intlmerge "no"
+flow visa -> intlmerge
+flow intlmerge -> onboarded
+flow onboarded -> idcard -> meet -> select -> resolve -> attend -> changes
+flow changes -> adddrop "yes"
+flow changes -> changesmerge "no"
+flow adddrop -> changesmerge
+flow changesmerge -> grades -> review -> grievance
+flow grievance -> appealform "yes"
+flow appealform -> appealmeet -> decision -> grievancemerge
+flow grievance -> grievancemerge "no"
+flow grievancemerge -> finished
+flow finished -> left "yes"
+flow finished -> attend "no"
+```

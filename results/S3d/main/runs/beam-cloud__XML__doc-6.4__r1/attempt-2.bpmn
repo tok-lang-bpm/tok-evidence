@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msgCustomerContacts" name="Customer contacts us" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="marketing" name="Marketing">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>methods_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>buy_details</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>participate_exhibitions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>know_somebody</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>methods_merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="call_center" name="Call Center">
+        <bpmn:flowNodeRef>call_customer_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determine_contact</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ask_interested</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interested_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>budget_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>leave_alone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_left</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="head_of_development" name="Head of Development">
+        <bpmn:flowNodeRef>acquire</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>interested_end_gw</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sales" name="Sales Representative">
+        <bpmn:flowNodeRef>technical_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>present_sales</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>presentation_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait_gw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catch_customer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catch_timer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>call_customer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create_quotation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_quotation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="pre_sales" name="Pre-Sales Employee">
+        <bpmn:flowNodeRef>present_presales</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:exclusiveGateway id="methods_gw" name="How to determine contact details?" default="f_buy" />
+    <bpmn:task id="buy_details" name="Buy details for cold calls" />
+    <bpmn:task id="participate_exhibitions" name="Participate in exhibitions" />
+    <bpmn:task id="know_somebody" name="Know somebody interested in the product" />
+    <bpmn:exclusiveGateway id="methods_merge" name="Contact details determined" />
+    <bpmn:task id="call_customer_start" name="Start calling the customer" />
+    <bpmn:task id="determine_contact" name="Determine contact person and budget" />
+    <bpmn:task id="ask_interested" name="Ask customer whether interested" />
+    <bpmn:exclusiveGateway id="interested_gw" name="Customer interested?" default="f_interested_no" />
+    <bpmn:exclusiveGateway id="budget_gw" name="Budget huge?" default="f_budget_no" />
+    <bpmn:task id="leave_alone" name="Leave him alone" />
+    <bpmn:endEvent id="end_left" name="End" />
+    <bpmn:task id="acquire" name="Acquire the customer" />
+    <bpmn:exclusiveGateway id="interested_end_gw" name="Customer interested?" default="f_acquired_no" />
+    <bpmn:exclusiveGateway id="technical_gw" name="Technical presentation?" default="f_technical_no" />
+    <bpmn:task id="present_sales" name="Give detailed online presentation" />
+    <bpmn:task id="present_presales" name="Give detailed online presentation" />
+    <bpmn:exclusiveGateway id="presentation_merge" name="Presentation given" />
+    <bpmn:eventBasedGateway id="wait_gw" name="Waiting for customer" />
+    <bpmn:intermediateCatchEvent id="catch_customer" name="Customer contacts us">
+      <bpmn:messageEventDefinition messageRef="msgCustomerContacts" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catch_timer" name="2 weeks elapsed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="call_customer" name="Call the customer" />
+    <bpmn:task id="create_quotation" name="Create quotation" />
+    <bpmn:endEvent id="end_quotation" name="End" />
+
+    <bpmn:sequenceFlow id="f_start_methods" sourceRef="start" targetRef="methods_gw" />
+    <bpmn:sequenceFlow id="f_buy" sourceRef="methods_gw" targetRef="buy_details" />
+    <bpmn:sequenceFlow id="f_participate" name="participate" sourceRef="methods_gw" targetRef="participate_exhibitions">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">participateInExhibitions</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_know" name="know" sourceRef="methods_gw" targetRef="know_somebody">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">knowSomebodyInterested</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_buy_merge" sourceRef="buy_details" targetRef="methods_merge" />
+    <bpmn:sequenceFlow id="f_part_merge" sourceRef="participate_exhibitions" targetRef="methods_merge" />
+    <bpmn:sequenceFlow id="f_know_merge" sourceRef="know_somebody" targetRef="methods_merge" />
+    <bpmn:sequenceFlow id="f_call_start" sourceRef="methods_merge" targetRef="call_customer_start" />
+    <bpmn:sequenceFlow id="f_determine" sourceRef="call_customer_start" targetRef="determine_contact" />
+    <bpmn:sequenceFlow id="f_ask" sourceRef="determine_contact" targetRef="ask_interested" />
+    <bpmn:sequenceFlow id="f_interested" sourceRef="ask_interested" targetRef="interested_gw" />
+    <bpmn:sequenceFlow id="f_interested_yes" name="yes" sourceRef="interested_gw" targetRef="technical_gw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">customerInterested</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_interested_no" name="no" sourceRef="interested_gw" targetRef="budget_gw" />
+    <bpmn:sequenceFlow id="f_budget_no" name="no" sourceRef="budget_gw" targetRef="leave_alone" />
+    <bpmn:sequenceFlow id="f_budget_yes" name="yes" sourceRef="budget_gw" targetRef="acquire">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">budgetHuge</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_acquired" sourceRef="acquire" targetRef="interested_end_gw" />
+    <bpmn:sequenceFlow id="f_acquired_yes" name="yes" sourceRef="interested_end_gw" targetRef="technical_gw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">customerAcquired</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_acquired_no" name="no" sourceRef="interested_end_gw" targetRef="leave_alone" />
+    <bpmn:sequenceFlow id="f_leave_end" sourceRef="leave_alone" targetRef="end_left" />
+    <bpmn:sequenceFlow id="f_technical_no" name="no" sourceRef="technical_gw" targetRef="present_sales" />
+    <bpmn:sequenceFlow id="f_technical_yes" name="yes" sourceRef="technical_gw" targetRef="present_presales">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">technicalPresentation</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_present_sales_merge" sourceRef="present_sales" targetRef="presentation_merge" />
+    <bpmn:sequenceFlow id="f_present_presales_merge" sourceRef="present_presales" targetRef="presentation_merge" />
+    <bpmn:sequenceFlow id="f_presentation_wait" sourceRef="presentation_merge" targetRef="wait_gw" />
+    <bpmn:sequenceFlow id="f_wait_contact" sourceRef="wait_gw" targetRef="catch_customer" />
+    <bpmn:sequenceFlow id="f_wait_timer" sourceRef="wait_gw" targetRef="catch_timer" />
+    <bpmn:sequenceFlow id="f_contact_quotation" sourceRef="catch_customer" targetRef="create_quotation" />
+    <bpmn:sequenceFlow id="f_timer_call" sourceRef="catch_timer" targetRef="call_customer" />
+    <bpmn:sequenceFlow id="f_call_quotation" sourceRef="call_customer" targetRef="create_quotation" />
+    <bpmn:sequenceFlow id="f_quotation_end" sourceRef="create_quotation" targetRef="end_quotation" />
+  </bpmn:process>
+</bpmn:definitions>

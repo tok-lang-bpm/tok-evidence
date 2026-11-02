@@ -1,0 +1,105 @@
+assistant to=check_bpmnanalysis xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="E-Shop" processRef="shop-process" />
+    <bpmn:participant id="bank" name="Bank" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>selectProduct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>addToCart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>saveProduct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkAllSelected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterPaymentData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitForPayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterShipping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>checkCredentials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>loginOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>allSelected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitOps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finishOrder1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>preparePayment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareShipment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinOps</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>splitPayAddr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>shipEqualsBill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinAddr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>joinPayAddr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finishOrderFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endStop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSuccess</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:message id="Message_PaymentConfirmation" name="Payment confirmed" />
+    <bpmn:startEvent id="start" name="Ordering started" />
+    <bpmn:task id="login" name="Log in" />
+    <bpmn:task id="checkCredentials" name="Check credentials" />
+    <bpmn:exclusiveGateway id="loginOk" name="Login successful?" />
+    <bpmn:task id="selectProduct" name="Select product" />
+    <bpmn:task id="addToCart" name="Add product to shopping cart" />
+    <bpmn:task id="saveProduct" name="Save product" />
+    <bpmn:task id="checkAllSelected" name="Check if all products selected" />
+    <bpmn:exclusiveGateway id="allSelected" name="All products selected?" />
+    <bpmn:parallelGateway id="splitOps" />
+    <bpmn:task id="finishOrder1" name="Finish order" />
+    <bpmn:task id="preparePayment" name="Prepare payment" />
+    <bpmn:task id="prepareShipment" name="Prepare shipment" />
+    <bpmn:parallelGateway id="joinOps" />
+    <bpmn:task id="enterPaymentData" name="Enter payment data" />
+    <bpmn:parallelGateway id="splitPayAddr" />
+    <bpmn:intermediateCatchEvent id="waitForPayment" name="Wait for payment confirmation">
+      <bpmn:messageEventDefinition messageRef="Message_PaymentConfirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="enterShipping" name="Enter shipping address" />
+    <bpmn:exclusiveGateway id="shipEqualsBill" name="Shipping address equals billing address?" />
+    <bpmn:task id="enterBilling" name="Enter billing address" />
+    <bpmn:exclusiveGateway id="joinAddr" />
+    <bpmn:parallelGateway id="joinPayAddr" />
+    <bpmn:task id="finishOrderFinal" name="Finish order" />
+    <bpmn:endEvent id="endStop" name="Shopping experience stops" />
+    <bpmn:endEvent id="endSuccess" name="Order finished" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="login" />
+    <bpmn:sequenceFlow id="f2" sourceRef="login" targetRef="checkCredentials" />
+    <bpmn:sequenceFlow id="f3" sourceRef="checkCredentials" targetRef="loginOk" />
+    <bpmn:sequenceFlow id="f4" name="yes" sourceRef="loginOk" targetRef="selectProduct">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">loginSuccessful = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" name="no" sourceRef="loginOk" targetRef="endStop" default="true" />
+    <bpmn:sequenceFlow id="f6" sourceRef="selectProduct" targetRef="addToCart" />
+    <bpmn:sequenceFlow id="f7" sourceRef="addToCart" targetRef="saveProduct" />
+    <bpmn:sequenceFlow id="f8" sourceRef="saveProduct" targetRef="checkAllSelected" />
+    <bpmn:sequenceFlow id="f9" sourceRef="checkAllSelected" targetRef="allSelected" />
+    <bpmn:sequenceFlow id="f10" name="yes" sourceRef="allSelected" targetRef="splitOps">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">allProductsSelected = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f11" name="no" sourceRef="allSelected" targetRef="selectProduct" />
+    <bpmn:sequenceFlow id="f12" name="default" sourceRef="splitOps" targetRef="finishOrder1" />
+    <bpmn:sequenceFlow id="f13" sourceRef="splitOps" targetRef="preparePayment" />
+    <bpmn:sequenceFlow id="f14" sourceRef="splitOps" targetRef="prepareShipment" />
+    <bpmn:sequenceFlow id="f15" sourceRef="finishOrder1" targetRef="joinOps" />
+    <bpmn:sequenceFlow id="f16" sourceRef="preparePayment" targetRef="joinOps" />
+    <bpmn:sequenceFlow id="f17" sourceRef="prepareShipment" targetRef="joinOps" />
+    <bpmn:sequenceFlow id="f18" sourceRef="joinOps" targetRef="enterPaymentData" />
+    <bpmn:sequenceFlow id="f19" sourceRef="enterPaymentData" targetRef="splitPayAddr" />
+    <bpmn:sequenceFlow id="f20" sourceRef="splitPayAddr" targetRef="waitForPayment" />
+    <bpmn:sequenceFlow id="f21" sourceRef="splitPayAddr" targetRef="enterShipping" />
+    <bpmn:sequenceFlow id="f22" sourceRef="enterShipping" targetRef="shipEqualsBill" />
+    <bpmn:sequenceFlow id="f23" name="not equal" sourceRef="shipEqualsBill" targetRef="enterBilling">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">shippingAddress != billingAddress</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f24" name="equal" sourceRef="shipEqualsBill" targetRef="joinAddr" default="true" />
+    <bpmn:sequenceFlow id="f25" sourceRef="enterBilling" targetRef="joinAddr" />
+    <bpmn:sequenceFlow id="f26" sourceRef="joinAddr" targetRef="joinPayAddr" />
+    <bpmn:sequenceFlow id="f27" sourceRef="waitForPayment" targetRef="joinPayAddr" />
+    <bpmn:sequenceFlow id="f28" sourceRef="joinPayAddr" targetRef="finishOrderFinal" />
+    <bpmn:sequenceFlow id="f29" sourceRef="finishOrderFinal" targetRef="endSuccess" />
+  </bpmn:process>
+</bpmn:definitions>
+</rfl:parameter>

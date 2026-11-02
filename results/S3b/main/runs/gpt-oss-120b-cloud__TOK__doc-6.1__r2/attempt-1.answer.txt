@@ -1,0 +1,47 @@
+```tok
+tok 1.0 "Invoice Processing"
+
+pool acme "ACME AG" [executable]
+  lane secretariat "Secretariat"
+    start start "Invoice received (paper or fax)"
+    task rev "Receive invoice on paper or fax"
+    task fwd "Forward invoice after visual inspection"
+  lane accounting "Accounting Employee"
+    task ic "Identify suppliers and create invoice instance"
+    task chk "Check invoice items and note cost centers on docket"
+    task mail "Send docket and copy of invoice to internal mail"
+    task clar "Clarify with vendor and consult cost centre managers"
+    task fwd_comm "Forward copy of invoice to commercial manager"
+    task pay "Give payment instructions and close invoice"
+  lane manager "Cost Centre Manager"
+    task recv "Receive copy of invoice and docket"
+    xor acc_gate "Is position accurate?"
+      task mark "Mark position as accurate (AP) on docket"
+      task rej "Reject AP with note on docket"
+    xor all_gate "All positions marked accurate?"
+      task ret_all "Return copy to accounting (all accurate)"
+      task ret_rej "Return copy to accounting (rejection)"
+  lane commercial "Commercial Manager"
+    task audit "Perform commercial audit"
+    xor amt_gate "Invoice amount > EUR 20?"
+      task board_chk "Board checks invoice"
+    xor comp_gate "Complaint during commercial audit?"
+      task resolve "Resolve complaint with supplier"
+  lane board "Board"
+    task board_rev "Review invoice"
+
+  # Sequence flows
+  flow start -> rev -> fwd -> ic -> chk -> mail -> recv
+  flow recv -> acc_gate
+  flow acc_gate -> mark -> all_gate
+  flow acc_gate -> rej -> ret_rej
+  flow all_gate -> ret_all
+  flow all_gate -> recv                     # not all accurate, next manager
+  flow ret_all -> fwd_comm
+  flow ret_rej -> clar -> mail -> recv      # after clarification resend
+  flow fwd_comm -> audit -> amt_gate
+  flow amt_gate -> board_chk -> board_rev -> comp_gate
+  flow amt_gate -> comp_gate                # amount <= 20
+  flow comp_gate -> resolve -> audit        # complaint resolved, re‑audit
+  flow comp_gate -> pay -> end end "Process completed"
+```

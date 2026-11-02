@@ -1,0 +1,76 @@
+tok 1.0 "Annual audit"
+
+pool org "Multinational company"
+  lane coord "Audit coordinator"
+    start s "Audit started"
+    task notify "Send notification to regional office"
+    end e "Audit process closed"
+  lane region "Regional office"
+    and p1
+    task prep "Prepare financial statements"
+    task gather "Gather necessary documents"
+    and p1j
+    task submit "Submit documents to central audit team"
+    task clarify "Provide clarifications"
+  lane comp "Compliance team"
+    task regs "Check regulatory updates"
+  lane audit "Central audit team"
+    xor m1
+    task review "Review submission"
+    xor d1 "Discrepancies found?"
+    task reqclar "Request clarifications"
+    task risk "Conduct risk assessment"
+    and r1
+    task fin "Evaluate financial risks"
+    task ops "Evaluate operational risks"
+    task cmp "Evaluate compliance risks"
+    and r1j
+    xor h1 "High risk identified?"
+    task inv "Launch detailed investigation"
+    and i1
+    task da "Perform data analysis"
+    task iv "Conduct interviews"
+    xor sv "Site visit needed?"
+    task visit "Conduct site visit"
+    xor svj
+    and i1j
+    xor h1j
+    xor m2
+    task compile "Compile audit report"
+    task revise "Update report"
+    and f1
+    task distribute "Distribute final report to executive board"
+    task archive "Archive final report"
+    and f1j
+  lane dir "Audit director"
+    task rev2 "Review audit report"
+    xor a1 "Report approved?"
+
+flow s -> notify -> p1
+flow p1 -> prep -> gather -> p1j
+flow p1 -> regs -> p1j
+flow p1j -> submit -> m1 -> review -> d1
+flow d1 -> reqclar "yes" when="discrepancies = true"
+flow d1 -> risk "no" default
+flow reqclar -> clarify -> m1
+flow risk -> r1
+flow r1 -> fin -> r1j
+flow r1 -> ops -> r1j
+flow r1 -> cmp -> r1j
+flow r1j -> h1
+flow h1 -> inv "yes" when="highRisk = true"
+flow h1 -> h1j "no" default
+flow inv -> i1
+flow i1 -> da -> i1j
+flow i1 -> iv -> i1j
+flow i1 -> sv
+flow sv -> visit "yes" when="siteVisit = true"
+flow sv -> svj "no" default
+flow visit -> svj -> i1j
+flow i1j -> h1j -> compile -> m2 -> rev2 -> a1
+flow a1 -> revise "no" when="approved = false"
+flow a1 -> f1 "yes" default
+flow revise -> m2
+flow f1 -> distribute -> f1j
+flow f1 -> archive -> f1j
+flow f1j -> e

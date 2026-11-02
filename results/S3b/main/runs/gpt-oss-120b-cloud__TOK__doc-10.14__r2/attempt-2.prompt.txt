@@ -1,0 +1,98 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+If the MPOO sends the bill for the temporary continuation of the metering point operations to the GO, the GO examines the bill. If the MSPO sends the bill for the temporary continuation of the measurement to the GO, the GO examines the bill. If the MSPO sends the bill for additional readings to the GO, the GO examines the bill. If the MPOO sends the bill for the equipment acquisition to the MPON or the GO, the MPON or the GO examines the bill. The GO or the MPON confirms the invoice with payment advice to the MPOO or the MSPO, or the GO or the MPON rejects the invoice of the MPOO or the MSPO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Invoice Processing"
+
+pool org "Organisation"
+  lane MPOO "MPOO"
+    start s "Start"
+    task send_mpoo_temp_cont "Send bill for temporary continuation of metering point operations"
+    task send_mpoo_equip "Send bill for equipment acquisition"
+  lane MSPO "MSPO"
+    task send_mspo_temp_cont "Send bill for temporary continuation of measurement"
+    task send_mspo_add_read "Send bill for additional readings"
+  lane GO "GO"
+    task examine_go "Examine bill"
+    task confirm_go "Confirm invoice with payment advice"
+    task reject_go "Reject invoice"
+  lane MPON "MPON"
+    task examine_mpon "Examine bill"
+    task confirm_mpon "Confirm invoice with payment advice"
+    task reject_mpon "Reject invoice"
+  lane end_lane
+    end end_confirm "Invoice confirmed"
+    end end_reject "Invoice rejected"
+
+# Decision on which bill is sent
+xor bill_type "Bill type?"
+# Paths for each possible bill
+flow s -> bill_type
+
+flow bill_type -> send_mpoo_temp_cont "MPOO temp continuation"
+flow send_mpoo_temp_cont -> examine_go
+
+flow bill_type -> send_mspo_temp_cont "MSPO temp continuation"
+flow send_mspo_temp_cont -> examine_go
+
+flow bill_type -> send_mspo_add_read "MSPO additional readings"
+flow send_mspo_add_read -> examine_go
+
+flow bill_type -> send_mpoo_equip "MPOO equipment acquisition"
+# decide who receives the equipment acquisition bill
+xor equip_recipient "Recipient of equipment acquisition bill?"
+flow send_mpoo_equip -> equip_recipient
+flow equip_recipient -> examine_go "to GO"
+flow equip_recipient -> examine_mpon "to MPON"
+
+# After GO examines any bill
+xor decision_go "Confirm invoice?"
+flow examine_go -> decision_go
+flow decision_go -> confirm_go "confirm"
+flow confirm_go -> end_confirm
+flow decision_go -> reject_go "reject"
+flow reject_go -> end_reject
+
+# After MPON examines equipment acquisition bill
+xor decision_mpon "Confirm invoice?"
+flow examine_mpon -> decision_mpon
+flow decision_mpon -> confirm_mpon "confirm"
+flow confirm_mpon -> end_confirm
+flow decision_mpon -> reject_mpon "reject"
+flow reject_mpon -> end_reject
+```
+
+The tok checker reports these problems in it:
+
+- line 24: error R031: 'bill_type' is declared at top level, but the document has pools; move it into a pool
+- line 26: error R021: sequence flow s -> bill_type crosses a process or sub-process boundary
+- line 28: error R021: sequence flow bill_type -> send_mpoo_temp_cont crosses a process or sub-process boundary
+- line 31: error R021: sequence flow bill_type -> send_mspo_temp_cont crosses a process or sub-process boundary
+- line 34: error R021: sequence flow bill_type -> send_mspo_add_read crosses a process or sub-process boundary
+- line 37: error R021: sequence flow bill_type -> send_mpoo_equip crosses a process or sub-process boundary
+- line 39: error R031: 'equip_recipient' is declared at top level, but the document has pools; move it into a pool
+- line 40: error R021: sequence flow send_mpoo_equip -> equip_recipient crosses a process or sub-process boundary
+- line 41: error R021: sequence flow equip_recipient -> examine_go crosses a process or sub-process boundary
+- line 42: error R021: sequence flow equip_recipient -> examine_mpon crosses a process or sub-process boundary
+- line 45: error R031: 'decision_go' is declared at top level, but the document has pools; move it into a pool
+- line 46: error R021: sequence flow examine_go -> decision_go crosses a process or sub-process boundary
+- line 47: error R021: sequence flow decision_go -> confirm_go crosses a process or sub-process boundary
+- line 49: error R021: sequence flow decision_go -> reject_go crosses a process or sub-process boundary
+- line 53: error R031: 'decision_mpon' is declared at top level, but the document has pools; move it into a pool
+- line 54: error R021: sequence flow examine_mpon -> decision_mpon crosses a process or sub-process boundary
+- line 55: error R021: sequence flow decision_mpon -> confirm_mpon crosses a process or sub-process boundary
+- line 57: error R021: sequence flow decision_mpon -> reject_mpon crosses a process or sub-process boundary
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

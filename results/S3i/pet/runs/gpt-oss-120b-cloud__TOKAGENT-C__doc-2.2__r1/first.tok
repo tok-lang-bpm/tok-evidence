@@ -1,0 +1,76 @@
+tok 1.0 "Switch-over process"
+
+pool org "Organization"
+  lane customer "Customer"
+    start s "Switch-over request"
+    task t1 "Transmit customer data"
+    end e_customer "Customer process ends"
+
+  lane customer_service "Customer Service"
+    task t2 "Receive customer data"
+    task t3 "Enter customer data into CRM"
+    task t4 "Compare customer data with internal database and check completeness"
+    xor g1 "Data errors?"
+    task t5 "Correct errors based on error list"
+    xor g2 "Customer exists?"
+    task t6 "Create new customer object"
+    task t7 "Prepare contract documents for power supplier switch"
+    end e_cis_contract "Contract preparation ends"
+
+  lane cis "CIS"
+    task t8 "Automated contract check"
+    xor g3 "Contract check positive?"
+    task t9 "Analyze and resolve contract issues"
+    task t10 "Send confirmation document to customer"
+    task t11 "Send request to Grid Operator"
+    end e_cis "CIS process ends"
+
+  lane grid_operator "Grid Operator"
+    task t12 "Check supplier concurrence"
+    xor g4 "Supplier concurrence?"
+    task t13 "Inform all involved suppliers and demand resolution of conflict"
+    task t14 "Communicate with old supplier and terminate sales agreement"
+    task t15 "Create CIS contract"
+    task t19 "Send meter data to Customer Service"
+    task t22 "Compute final billing"
+    task t23 "Send final billing to Old Supplier"
+    end e_grid "Grid Operator process ends"
+
+  lane old_supplier "Old Supplier"
+    task t20 "Receive meter data"
+    task t24 "Create final billing for customer"
+    task t25 "Send final billing to customer"
+    end e_old "Old Supplier process ends"
+
+  lane customer "Customer"
+    task t16 "Customer checks contract details"
+    xor g5 "Customer withdraws?"
+    task t17 "Withdraw from switch contract"
+    end e_withdraw "Process ends after withdrawal"
+    end e_confirm "Process ends after confirmation"
+
+  lane customer_service "Customer Service"
+    task t21 "Import meter data to systems"
+    end e_cs_import "Customer Service import ends"
+
+  flow s -> t1 -> t2 -> t3 -> t4 -> g1
+  flow g1 "yes" -> t5 -> t4
+  flow g1 "no" -> g2
+  flow g2 "yes" -> t7
+  flow g2 "no" -> t6 -> t7
+  flow t7 -> t8 -> g3
+  flow g3 "yes" -> t10 -> t11 -> t12
+  flow g3 "no" -> t9 -> t7
+  flow t10 -> t11
+  flow t11 -> t12
+  flow t12 -> g4
+  flow g4 "yes" -> t13 -> t14 -> t16
+  flow g4 "no" -> t15 -> t16
+  flow t16 -> g5
+  flow g5 "yes" -> t17 -> e_withdraw
+  flow g5 "no" -> e_confirm
+  flow e_confirm -> g6
+  flow g6 and -> t19 -> t21 -> e_cs_import
+  flow g6 and -> t22 -> t23 -> t24 -> t25 -> e_old
+  flow t21 -> e_grid
+  flow t25 -> e_grid

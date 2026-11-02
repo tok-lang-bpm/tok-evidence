@@ -1,0 +1,45 @@
+tok 1.0 "Expense Report Processing"
+
+pool org "Organization"
+  lane employee "Employee"
+    start start "Expense report received"
+    task receive "Receive expense report"
+    end end_success "Process completed"
+    end end_rejected "Process rejected"
+    end end_cancelled "Process cancelled"
+    end end_progress "Approval in progress email sent"
+  lane accounting "Accounting"
+    xor account_check "Employee has account?"
+    task create_account "Create new account"
+    task review "Review expense report for automatic approval"
+    xor amount_check "Amount under $200?"
+    task auto_approve "Automatically approve expense"
+    xor approval_decision "Expense approved?"
+    task process_reimbursement "Process reimbursement"
+    boundary timer7 "7-day timer" on=process_reimbursement timer=P7D [noninterrupting]
+    task send_progress_email "Send approval in progress email"
+    boundary timer30 "30-day timer" on=process_reimbursement timer=P30D
+    task send_cancellation_email "Send cancellation email"
+    task send_rejection_email "Send rejection notice email"
+    task reimburse "Reimburse via direct deposit"
+  lane supervisor "Supervisor"
+    task supervisor_approve "Supervisor approves expense report"
+
+flow start -> receive -> account_check
+flow account_check -> review "yes"
+flow account_check -> create_account "no"
+flow create_account -> review
+flow review -> amount_check
+flow amount_check -> auto_approve "yes"
+flow amount_check -> supervisor_approve "no"
+flow auto_approve -> approval_decision
+flow supervisor_approve -> approval_decision
+flow approval_decision -> process_reimbursement "approved"
+flow approval_decision -> send_rejection_email "rejected"
+flow send_rejection_email -> end_rejected
+flow process_reimbursement -> reimburse
+flow reimburse -> end_success
+flow timer7 -> send_progress_email
+flow send_progress_email -> end_progress
+flow timer30 -> send_cancellation_email
+flow send_cancellation_email -> end_cancelled

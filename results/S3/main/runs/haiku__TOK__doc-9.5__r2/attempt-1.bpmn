@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report reimbursement" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="company" name="Company" processRef="company-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="company-process" name="Expense report reimbursement" isExecutable="false">
+    <bpmn:laneSet id="company-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Expense system">
+        <bpmn:flowNodeRef>hasAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accountReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>autoApprove</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reportApproved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejectNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendProgress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendCancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progressSent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progressTimer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelTimer</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Expense report received" />
+    <bpmn:exclusiveGateway id="hasAccount" name="Employee has an account?" default="f-hasAccount-createAccount" />
+    <bpmn:task id="createAccount" name="Create a new account" />
+    <bpmn:exclusiveGateway id="accountReady" />
+    <bpmn:task id="review" name="Review the expense report for automatic approval" />
+    <bpmn:exclusiveGateway id="amount" name="Amount under $200?" default="f-amount-approve" />
+    <bpmn:task id="autoApprove" name="Approve the expense report automatically" />
+    <bpmn:exclusiveGateway id="reportApproved" default="f-reportApproved-rejectNotice" />
+    <bpmn:task id="rejectNotice" name="Send the rejection notice by email" />
+    <bpmn:task id="pay" name="Transfer the reimbursement to the employee's direct deposit bank account" />
+    <bpmn:task id="sendProgress" name="Send the approval in progress email" />
+    <bpmn:task id="sendCancel" name="Send the cancellation notice by email" />
+    <bpmn:endEvent id="paid" name="Reimbursement paid" />
+    <bpmn:endEvent id="rejected" name="Expense report rejected" />
+    <bpmn:endEvent id="progressSent" name="Approval in progress email sent" />
+    <bpmn:endEvent id="cancelled" name="Request cancelled, employee must re-submit" />
+    <bpmn:task id="approve" name="Approve or reject the expense report" />
+    <bpmn:boundaryEvent id="progressTimer" attachedToRef="approve" cancelActivity="false">
+      <bpmn:timerEventDefinition id="progressTimer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="cancelTimer" attachedToRef="approve">
+      <bpmn:timerEventDefinition id="cancelTimer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-received-hasAccount" sourceRef="received" targetRef="hasAccount" />
+    <bpmn:sequenceFlow id="f-hasAccount-accountReady" name="yes" sourceRef="hasAccount" targetRef="accountReady">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-hasAccount-createAccount" name="no" sourceRef="hasAccount" targetRef="createAccount" />
+    <bpmn:sequenceFlow id="f-createAccount-accountReady" sourceRef="createAccount" targetRef="accountReady" />
+    <bpmn:sequenceFlow id="f-accountReady-review" sourceRef="accountReady" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-amount" sourceRef="review" targetRef="amount" />
+    <bpmn:sequenceFlow id="f-amount-autoApprove" name="yes" sourceRef="amount" targetRef="autoApprove">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &lt; 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-amount-approve" name="no" sourceRef="amount" targetRef="approve" />
+    <bpmn:sequenceFlow id="f-autoApprove-reportApproved" sourceRef="autoApprove" targetRef="reportApproved" />
+    <bpmn:sequenceFlow id="f-approve-reportApproved" sourceRef="approve" targetRef="reportApproved" />
+    <bpmn:sequenceFlow id="f-reportApproved-pay" name="yes" sourceRef="reportApproved" targetRef="pay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">isApproved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-reportApproved-rejectNotice" name="no" sourceRef="reportApproved" targetRef="rejectNotice" />
+    <bpmn:sequenceFlow id="f-pay-paid" sourceRef="pay" targetRef="paid" />
+    <bpmn:sequenceFlow id="f-rejectNotice-rejected" sourceRef="rejectNotice" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-progressTimer-sendProgress" sourceRef="progressTimer" targetRef="sendProgress" />
+    <bpmn:sequenceFlow id="f-sendProgress-progressSent" sourceRef="sendProgress" targetRef="progressSent" />
+    <bpmn:sequenceFlow id="f-cancelTimer-sendCancel" sourceRef="cancelTimer" targetRef="sendCancel" />
+    <bpmn:sequenceFlow id="f-sendCancel-cancelled" sourceRef="sendCancel" targetRef="cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

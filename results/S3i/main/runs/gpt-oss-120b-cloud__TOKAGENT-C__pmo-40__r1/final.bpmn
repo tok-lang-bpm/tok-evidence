@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="OEE Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:signal id="Signal_MachineRestarted" name="MachineRestarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="OEE Process" isExecutable="true">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>S</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>coll</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oee</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stopM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>D</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineer" name="Engineer">
+        <bpmn:flowNodeRef>sendE</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restart</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S" name="Start" />
+    <bpmn:task id="coll" name="Collect information from machine" />
+    <bpmn:exclusiveGateway id="disc" name="Machine disconnected?" default="f-disc-calc" />
+    <bpmn:task id="calc" name="Calculate OEE" />
+    <bpmn:exclusiveGateway id="oee" name="OEE below threshold?" default="f-oee-coll" />
+    <bpmn:task id="stopM" name="Stop the machine" />
+    <bpmn:endEvent id="D" name="Process stopped (machine disconnected)" />
+    <bpmn:task id="sendE" name="Send email to engineer" />
+    <bpmn:intermediateCatchEvent id="restart" name="Machine restarted">
+      <bpmn:signalEventDefinition id="restart-def" signalRef="Signal_MachineRestarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="f-S-coll" sourceRef="S" targetRef="coll" />
+    <bpmn:sequenceFlow id="f-coll-disc" sourceRef="coll" targetRef="disc" />
+    <bpmn:sequenceFlow id="f-disc-D" name="yes" sourceRef="disc" targetRef="D">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=disconnected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-disc-calc" name="no" sourceRef="disc" targetRef="calc" />
+    <bpmn:sequenceFlow id="f-calc-oee" sourceRef="calc" targetRef="oee" />
+    <bpmn:sequenceFlow id="f-oee-stopM" name="yes" sourceRef="oee" targetRef="stopM">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=oeeBelow</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-oee-coll" name="no" sourceRef="oee" targetRef="coll" />
+    <bpmn:sequenceFlow id="f-stopM-sendE" sourceRef="stopM" targetRef="sendE" />
+    <bpmn:sequenceFlow id="f-sendE-restart" sourceRef="sendE" targetRef="restart" />
+    <bpmn:sequenceFlow id="f-restart-coll" sourceRef="restart" targetRef="coll" />
+  </bpmn:process>
+</bpmn:definitions>

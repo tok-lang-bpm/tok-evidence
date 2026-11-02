@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Equipment change process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Equipment change process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="MPON" name="MPON">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>n_int</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gd_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gd_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fr_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fr_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dm_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dm_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fr_mp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dm_mp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>read_meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_vals</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tell_go</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="MPOO" name="MPOO">
+        <bpmn:flowNodeRef>a_self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>n_no_self</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fr_mpo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dm_mpo</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="GO" name="GO">
+        <bpmn:flowNodeRef>notify_msp</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="MSP" name="MSP" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:task id="n_int" name="Notify MPOO about equipment change intentions" />
+    <bpmn:exclusiveGateway id="gd_split" name="Self dismounting decision?" />
+    <bpmn:exclusiveGateway id="gd_merge" name="Self dismounting merge" />
+    <bpmn:exclusiveGateway id="fr_split" name="Final reading performer?" />
+    <bpmn:exclusiveGateway id="fr_merge" name="Final reading merge" />
+    <bpmn:exclusiveGateway id="dm_split" name="Old equipment dismount performer?" />
+    <bpmn:exclusiveGateway id="dm_merge" name="Old equipment dismount merge" />
+    <bpmn:task id="fr_mp" name="Perform final reading" />
+    <bpmn:task id="dm_mp" name="Dismount old equipment" />
+    <bpmn:task id="mount" name="Mount new device" />
+    <bpmn:task id="read_meter" name="Read meter count from installed meter" />
+    <bpmn:task id="send_vals" name="Send final reading values to GO" />
+    <bpmn:task id="tell_go" name="Tell GO about device changes, master data and meter count at installation" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:task id="a_self" name="Announce self dismounting to MPON" />
+    <bpmn:task id="n_no_self" name="Notify MPON about no self-dismounting of MPOO" />
+    <bpmn:task id="fr_mpo" name="Perform final reading" />
+    <bpmn:task id="dm_mpo" name="Dismount old equipment" />
+    <bpmn:task id="notify_msp" name="Notify MSP about device changes, master data, meter count at dismounting and installation" />
+    <bpmn:sequenceFlow id="f-s-n_int" sourceRef="s" targetRef="n_int" />
+    <bpmn:sequenceFlow id="f-n_int-gd_split" sourceRef="n_int" targetRef="gd_split" />
+    <bpmn:sequenceFlow id="f-gd_split-a_self" name="yes" sourceRef="gd_split" targetRef="a_self" />
+    <bpmn:sequenceFlow id="f-gd_split-n_no_self" name="no" sourceRef="gd_split" targetRef="n_no_self" />
+    <bpmn:sequenceFlow id="f-a_self-gd_merge" sourceRef="a_self" targetRef="gd_merge" />
+    <bpmn:sequenceFlow id="f-n_no_self-gd_merge" sourceRef="n_no_self" targetRef="gd_merge" />
+    <bpmn:sequenceFlow id="f-gd_merge-fr_split" sourceRef="gd_merge" targetRef="fr_split" />
+    <bpmn:sequenceFlow id="f-fr_split-fr_mp" name="MPON" sourceRef="fr_split" targetRef="fr_mp" />
+    <bpmn:sequenceFlow id="f-fr_split-fr_mpo" name="MPOO" sourceRef="fr_split" targetRef="fr_mpo" />
+    <bpmn:sequenceFlow id="f-fr_mp-fr_merge" sourceRef="fr_mp" targetRef="fr_merge" />
+    <bpmn:sequenceFlow id="f-fr_mpo-fr_merge" sourceRef="fr_mpo" targetRef="fr_merge" />
+    <bpmn:sequenceFlow id="f-fr_merge-dm_split" sourceRef="fr_merge" targetRef="dm_split" />
+    <bpmn:sequenceFlow id="f-dm_split-dm_mp" name="MPON" sourceRef="dm_split" targetRef="dm_mp" />
+    <bpmn:sequenceFlow id="f-dm_split-dm_mpo" name="MPOO" sourceRef="dm_split" targetRef="dm_mpo" />
+    <bpmn:sequenceFlow id="f-dm_mp-dm_merge" sourceRef="dm_mp" targetRef="dm_merge" />
+    <bpmn:sequenceFlow id="f-dm_mpo-dm_merge" sourceRef="dm_mpo" targetRef="dm_merge" />
+    <bpmn:sequenceFlow id="f-dm_merge-mount" sourceRef="dm_merge" targetRef="mount" />
+    <bpmn:sequenceFlow id="f-mount-read_meter" sourceRef="mount" targetRef="read_meter" />
+    <bpmn:sequenceFlow id="f-read_meter-send_vals" sourceRef="read_meter" targetRef="send_vals" />
+    <bpmn:sequenceFlow id="f-send_vals-tell_go" sourceRef="send_vals" targetRef="tell_go" />
+    <bpmn:sequenceFlow id="f-tell_go-notify_msp" sourceRef="tell_go" targetRef="notify_msp" />
+    <bpmn:sequenceFlow id="f-notify_msp-e" sourceRef="notify_msp" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

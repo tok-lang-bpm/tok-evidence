@@ -1,0 +1,113 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="expense-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="expense-process" isExecutable="false">
+    <bpmn:laneSet id="expense-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>approve-supervisor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="organisation-lane" name="Organisation">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-monitoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>has-account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-account</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>account-ready</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review-report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount-threshold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approval-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-rejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-reimbursement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-7-days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer-30-days</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-cancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="received" name="Expense Report received" />
+
+    <bpmn:parallelGateway id="split-monitoring" />
+
+    <bpmn:exclusiveGateway id="has-account" name="Employee has account?" default="create-account-flow" />
+    <bpmn:task id="create-account" name="Create new account" />
+    <bpmn:exclusiveGateway id="account-ready" name="Account ready?" />
+
+    <bpmn:task id="review-report" name="Review report for automatic approval" />
+
+    <bpmn:exclusiveGateway id="amount-threshold" name="Amount under $200?" default="under-200-flow" />
+    <bpmn:task id="approve-supervisor" name="Approve expense report" />
+    <bpmn:exclusiveGateway id="approval-result" name="Report approved?" default="rejected-flow" />
+
+    <bpmn:task id="send-rejection" name="Send rejection notice by email" />
+    <bpmn:task id="send-reimbursement" name="Send reimbursement to direct deposit bank account" />
+
+    <bpmn:endEvent id="completed" name="Expense report completed">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="rejected" name="Expense report rejected">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <bpmn:intermediateCatchEvent id="timer-7-days" name="7 days">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="send-progress" name="Send approval in progress email" />
+
+    <bpmn:intermediateCatchEvent id="timer-30-days" name="30 days">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>P23D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="send-cancellation" name="Send cancellation notice by email" />
+    <bpmn:task id="resubmit" name="Re-submit expense report" />
+
+    <bpmn:endEvent id="cancelled" name="Expense report cancelled">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="received-to-split" sourceRef="received" targetRef="split-monitoring" />
+
+    <bpmn:sequenceFlow id="split-to-account" sourceRef="split-monitoring" targetRef="has-account" />
+    <bpmn:sequenceFlow id="split-to-timer" sourceRef="split-monitoring" targetRef="timer-7-days" />
+
+    <bpmn:sequenceFlow id="create-account-flow" name="no" sourceRef="has-account" targetRef="create-account" />
+    <bpmn:sequenceFlow id="account-exists-flow" name="yes" sourceRef="has-account" targetRef="account-ready">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">employeeHasAccount == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="create-to-ready" sourceRef="create-account" targetRef="account-ready" />
+    <bpmn:sequenceFlow id="ready-to-review" sourceRef="account-ready" targetRef="review-report" />
+    <bpmn:sequenceFlow id="review-to-amount" sourceRef="review-report" targetRef="amount-threshold" />
+
+    <bpmn:sequenceFlow id="under-200-flow" name="under $200" sourceRef="amount-threshold" targetRef="approval-result" />
+    <bpmn:sequenceFlow id="over-200-flow" name="$200 or more" sourceRef="amount-threshold" targetRef="approve-supervisor">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">amount >= 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="supervisor-to-result" sourceRef="approve-supervisor" targetRef="approval-result" />
+
+    <bpmn:sequenceFlow id="approved-flow" name="approved" sourceRef="approval-result" targetRef="send-reimbursement">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reportApproved == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="rejected-flow" name="rejected" sourceRef="approval-result" targetRef="send-rejection" />
+
+    <bpmn:sequenceFlow id="reimbursement-to-completed" sourceRef="send-reimbursement" targetRef="completed" />
+    <bpmn:sequenceFlow id="rejection-to-rejected" sourceRef="send-rejection" targetRef="rejected" />
+
+    <bpmn:sequenceFlow id="timer-to-progress" sourceRef="timer-7-days" targetRef="send-progress" />
+    <bpmn:sequenceFlow id="progress-to-30-day-timer" sourceRef="send-progress" targetRef="timer-30-days" />
+    <bpmn:sequenceFlow id="timer30-to-cancellation" sourceRef="timer-30-days" targetRef="send-cancellation" />
+    <bpmn:sequenceFlow id="cancellation-to-resubmit" sourceRef="send-cancellation" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="resubmit-to-cancelled" sourceRef="resubmit" targetRef="cancelled" />
+  </bpmn:process>
+</bpmn:definitions>
+```

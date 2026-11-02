@@ -1,0 +1,65 @@
+tok 1.0 "Order fulfillment"
+
+pool company "E-commerce company"
+  lane customer "Customer"
+    start needed "Order needed"
+    task placeOrder "Place an order"
+  lane system "System"
+    task recordOrder "Record the order details"
+    task processPayment "Process payment"
+    xor payment "Payment successful?"
+    task notifyFailure "Notify the customer"
+    end paymentFailed "Payment failed"
+    task sendShippingConfirmation "Send a shipping confirmation"
+    task updateInventory "Update the inventory levels"
+    task confirmDelivery "Confirm successful delivery"
+    xor issues "Issues reported?"
+    task sendFollowup "Send a follow-up email for feedback"
+    end completed "Order completed"
+    task sendReturnLabel "Send a return shipping label"
+    task processRefund "Process a refund or replacement"
+    end returned "Return completed"
+  lane inventory "Inventory System"
+    task checkStock "Check stock availability"
+    xor stock "Items in stock?"
+    task initiateBackorder "Initiate a back-order"
+    task informDelay "Inform the customer about the delay"
+    task receiveBackorder "Receive the back-order"
+    xor stockJoin "All required items available?"
+  lane warehouse "Warehouse"
+    task pick "Pick in-stock items"
+    task qc "Perform quality control checks"
+    and workSplit "Start packaging and shipping preparation"
+    task package "Package items including gift wrapping if requested"
+    task receiveReturns "Receive returned items"
+    task inspectReturns "Inspect returned items"
+  lane shipping "Shipping Department"
+    task prepareDocs "Prepare shipping documents and labels"
+    xor international "Order is international?"
+    task prepareCustoms "Prepare customs documentation"
+    xor customsJoin "Customs documentation ready?"
+    and workJoin "Packaging and shipping documents ready?"
+    task dispatch "Dispatch the order"
+
+flow needed -> placeOrder -> recordOrder -> processPayment -> payment
+flow payment -> checkStock "yes"
+flow payment -> notifyFailure "no"
+flow notifyFailure -> paymentFailed
+flow checkStock -> stock
+flow stock -> stockJoin "yes"
+flow stock -> initiateBackorder "no"
+flow initiateBackorder -> informDelay -> receiveBackorder -> stockJoin
+flow stockJoin -> pick -> qc -> workSplit
+flow workSplit -> package
+flow workSplit -> prepareDocs
+flow package -> workJoin
+flow prepareDocs -> international
+flow international -> prepareCustoms "yes"
+flow international -> customsJoin "no"
+flow prepareCustoms -> customsJoin
+flow customsJoin -> workJoin
+flow workJoin -> dispatch -> sendShippingConfirmation -> updateInventory -> confirmDelivery -> issues
+flow issues -> sendReturnLabel "yes"
+flow issues -> sendFollowup "no"
+flow sendFollowup -> completed
+flow sendReturnLabel -> receiveReturns -> inspectReturns -> processRefund -> returned

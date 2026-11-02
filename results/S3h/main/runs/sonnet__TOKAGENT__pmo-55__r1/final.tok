@@ -1,0 +1,86 @@
+tok 1.0 "Central venous catheter insertion"
+
+pool org "Hospital"
+  lane doc "Doctor"
+    start s "Start"
+    and f1
+    task t1 "Prepare implements"
+    task t2 "Wash hands"
+    task t3 "Get in sterile clothes"
+    and j1
+    task clean "Clean puncture area"
+    task drape "Drape puncture zone"
+    and f2
+    task us "Configure ultrasound"
+    task gel "Put gel in probe"
+    and j2
+    task cover "Cover probe"
+    task sgel "Put sterile gel"
+    and f3
+    task pp "Position probe"
+    task pt "Position patient"
+    and j3
+    xor f4 "Which identification?"
+    task v1 "Do anatomic identification"
+    task v2 "Do doppler identification"
+    task v3 "Do compression identification"
+    xor j4
+    task anes "Anesthetize patient"
+    xor m1
+    task punct "Puncture patient"
+    task blood "Check blood return"
+    xor g1 "Is blood return correct?"
+    task drop "Drop probe"
+    task syr "Remove syringe"
+    task gw "Install guidewire"
+    task troc "Remove trocar"
+    xor f5 "Which wire check?"
+    task w1 "Check wire in long axis"
+    task w2 "Check wire in short axis"
+    xor j5
+    task wpos "Check wire position"
+    xor g2 "Is wire in good position?"
+    task widen "Widen pathway"
+    task adv "Advance catheter"
+    task rgw "Remove guidewire"
+    task flow "Verify flow"
+    task reflow "Verify reflow"
+    task cpos "Check catheter position"
+    end e "End"
+
+flow s -> f1
+flow f1 -> t1
+flow f1 -> t2
+flow f1 -> t3
+flow t1 -> j1
+flow t2 -> j1
+flow t3 -> j1
+flow j1 -> clean -> drape -> f2
+flow f2 -> us
+flow f2 -> gel
+flow us -> j2
+flow gel -> j2
+flow j2 -> cover -> sgel -> f3
+flow f3 -> pp
+flow f3 -> pt
+flow pp -> j3
+flow pt -> j3
+flow j3 -> f4
+flow f4 -> v1 "anatomic" when="method = 1"
+flow f4 -> v2 "doppler" when="method = 2"
+flow f4 -> v3 "compression" default
+flow v1 -> j4
+flow v2 -> j4
+flow v3 -> j4
+flow j4 -> anes -> m1 -> punct -> blood -> g1
+flow g1 -> m1 "no" when="bloodOk = false"
+flow g1 -> drop "yes" default
+flow drop -> syr -> gw -> troc -> f5
+flow f5 -> w1 "long axis" when="axis = 1"
+flow f5 -> w2 "short axis" default
+flow w1 -> j5
+flow w2 -> j5
+flow j5 -> wpos -> g2
+flow g2 -> m1 "no" when="wireOk = false"
+flow g2 -> widen "yes" default
+flow widen -> adv -> rgw -> flow -> reflow -> cpos -> e

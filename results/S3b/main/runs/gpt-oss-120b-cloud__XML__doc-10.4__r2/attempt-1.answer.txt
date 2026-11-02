@@ -1,0 +1,93 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneMPON" name="MPON">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyIntention</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MPON_finalReading</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MPON_dismountOld</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mountNew</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>readMeterCount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendFinalReadingValues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tellGO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneMPOO" name="MPOO">
+        <bpmn:flowNodeRef>announceSelfDismount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notifyNoSelfDismount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MPOO_finalReading</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MPOO_dismountOld</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGO" name="GO">
+        <bpmn:flowNodeRef>notifyMSP</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneMSP" name="MSP"/>
+    </bpmn:laneSet>
+
+    <!-- Events -->
+    <bpmn:startEvent id="Start" name="Start" />
+    <bpmn:endEvent id="End" name="End" />
+
+    <!-- Tasks -->
+    <bpmn:task id="notifyIntention" name="MPON notifies the MPOO about equipment change intentions" />
+    <bpmn:task id="announceSelfDismount" name="MPOO announces self dismounting to the MPON" />
+    <bpmn:task id="notifyNoSelfDismount" name="MPOO notifies the MPON about no self-dismounting of the MPOO" />
+    <bpmn:task id="MPON_finalReading" name="MPON performs the final reading" />
+    <bpmn:task id="MPOO_finalReading" name="MPOO performs the final reading" />
+    <bpmn:task id="MPON_dismountOld" name="MPON dismounts the old equipment" />
+    <bpmn:task id="MPOO_dismountOld" name="MPOO dismounts the old equipment" />
+    <bpmn:task id="mountNew" name="MPON mounts the new device" />
+    <bpmn:task id="readMeterCount" name="MPON reads the meter count from the installed meter" />
+    <bpmn:task id="sendFinalReadingValues" name="MPON sends the values of the final reading to the GO" />
+    <bpmn:task id="tellGO" name="MPON tells the GO about the device changes, the master data and the meter count at installation" />
+    <bpmn:task id="notifyMSP" name="GO notifies the MSP about the device changes, the master data, the meter count at dismounting, and the meter count at installation" />
+
+    <!-- Gateways -->
+    <bpmn:exclusiveGateway id="gatewayMPOODecision" name="MPOO decision" />
+    <bpmn:exclusiveGateway id="mergeMPOODecision" />
+    <bpmn:exclusiveGateway id="gatewayFinalReadingDecision" name="Who performs final reading?" />
+    <bpmn:exclusiveGateway id="mergeFinalReading" />
+    <bpmn:exclusiveGateway id="gatewayDismountDecision" name="Who dismounts old equipment?" />
+    <bpmn:exclusiveGateway id="mergeDismount" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="Start" targetRef="notifyIntention" />
+    <bpmn:sequenceFlow id="f2" sourceRef="notifyIntention" targetRef="gatewayMPOODecision" />
+
+    <bpmn:sequenceFlow id="f3" name="self dismounting" sourceRef="gatewayMPOODecision" targetRef="announceSelfDismount" />
+    <bpmn:sequenceFlow id="f4" name="no self dismounting" sourceRef="gatewayMPOODecision" targetRef="notifyNoSelfDismount" />
+
+    <bpmn:sequenceFlow id="f5" sourceRef="announceSelfDismount" targetRef="mergeMPOODecision" />
+    <bpmn:sequenceFlow id="f6" sourceRef="notifyNoSelfDismount" targetRef="mergeMPOODecision" />
+
+    <bpmn:sequenceFlow id="f7" sourceRef="mergeMPOODecision" targetRef="gatewayFinalReadingDecision" />
+
+    <bpmn:sequenceFlow id="f8" name="MPON" sourceRef="gatewayFinalReadingDecision" targetRef="MPON_finalReading" />
+    <bpmn:sequenceFlow id="f9" name="MPOO" sourceRef="gatewayFinalReadingDecision" targetRef="MPOO_finalReading" />
+
+    <bpmn:sequenceFlow id="f10" sourceRef="MPON_finalReading" targetRef="mergeFinalReading" />
+    <bpmn:sequenceFlow id="f11" sourceRef="MPOO_finalReading" targetRef="mergeFinalReading" />
+
+    <bpmn:sequenceFlow id="f12" sourceRef="mergeFinalReading" targetRef="gatewayDismountDecision" />
+
+    <bpmn:sequenceFlow id="f13" name="MPON" sourceRef="gatewayDismountDecision" targetRef="MPON_dismountOld" />
+    <bpmn:sequenceFlow id="f14" name="MPOO" sourceRef="gatewayDismountDecision" targetRef="MPOO_dismountOld" />
+
+    <bpmn:sequenceFlow id="f15" sourceRef="MPON_dismountOld" targetRef="mergeDismount" />
+    <bpmn:sequenceFlow id="f16" sourceRef="MPOO_dismountOld" targetRef="mergeDismount" />
+
+    <bpmn:sequenceFlow id="f17" sourceRef="mergeDismount" targetRef="mountNew" />
+    <bpmn:sequenceFlow id="f18" sourceRef="mountNew" targetRef="readMeterCount" />
+    <bpmn:sequenceFlow id="f19" sourceRef="readMeterCount" targetRef="sendFinalReadingValues" />
+    <bpmn:sequenceFlow id="f20" sourceRef="sendFinalReadingValues" targetRef="tellGO" />
+    <bpmn:sequenceFlow id="f21" sourceRef="tellGO" targetRef="notifyMSP" />
+    <bpmn:sequenceFlow id="f22" sourceRef="notifyMSP" targetRef="End" />
+  </bpmn:process>
+</bpmn:definitions>
+```

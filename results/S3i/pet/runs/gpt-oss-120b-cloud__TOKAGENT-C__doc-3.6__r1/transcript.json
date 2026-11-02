@@ -1,0 +1,62 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3835,
+  "output_tokens": 1045,
+  "seconds": 4.110512799990829,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create tok model.\n\nIdentify actors: claim is received (maybe system), check insurance maybe by claims department, inform claimant (maybe service), severity evaluation (maybe same department), send forms (maybe system). We could simplify: one lane \"Claims Department\". Or separate lanes: \"System\", \"Claimant\". But claimant is external, maybe separate lane. Use pool \"Organization\". Lanes: \"Claims Department\", \"Claimant\". Activities:\n\n- start \"Claim received\"\n- task \"Check insurance\"\n- xor \"Insured?\" decision\n   - not insured branch: task \"Inform claimant of rejection\"\n     end \"Process ended\" perhaps.\n   - insured branch: task \"Evaluate claim severity\"\n- xor \"Claim severity?\" decision (simple vs complex)\n   - simple branch: task \"Send simple claim form\"\n   - complex branch: task \"Send complex claim form\"\n- then both go to a parallel? Actually they are exclusive, both lead to same next step: forms sent. So after the two branches we need a join: xor join? Since branches are exclusive, we can just flow to next activity, but need to merge. Use xor join or just flow from each to next activity.\n\nAfter sending forms, we need to wait for forms return (maybe a task \"Receive returned forms\"). Then task \"Check forms completeness\". Then xor \"Forms complete?\" decision.\n\n- complete branch: task \"Register claim in Claims Management system\"\n   end \"Claims Notification process ended\"\n- incomplete branch: task \"Inform claimant to update forms\"\n   then task \"Receive updated forms\"\n   then loop back to \"Check forms completeness\". Could be flow back.\n\nSimplify: after inform update, we wait for updated forms, then check again.\n\nWe need start event, end events.\n\nLet's design with lanes:\n\npool org \"Organization\"\n lane claims \"Claims Department\"\n   start claim_received \"Claim received\"\n   task check_insurance \"Check insurance\"\n   xor insured \"Insured?\"\n   task evaluate_severity \"Evaluate claim severity\"\n   xor severity \"Claim severity?\"\n   task send_simple_form \"Send simple claim form\"\n   task send_complex_form \"Send complex claim form\"\n   task receive_forms \"Receive returned forms\"\n   task check_forms \"Check forms completeness\"\n   xor forms_complete \"Forms complete?\"\n   task register_claim \"Register claim in Claims Management system\"\n   task inform_update \"Inform claimant to update forms\"\n   task receive_updated_forms \"Receive updated forms\"\n   # loop back to check_forms\n   end process_ended \"Claims Notification process ended\"\n lane claimant \"Claimant\"\n   # tasks that are inform actions maybe belong to claimant? Actually \"Inform claimant\" could be in claims department delivering message. Could keep tasks in claims lane.\nBut could have separate lane \"Claimant\" for tasks \"Receive forms\" etc. However tok allows activities in lanes. Simpler: single lane.\n\nThus one lane \"Claims Department\". Use start event. Use end events for both paths (rejection, completed). Rejection path includes inform rejection then end.\n\nMake flows.\n\nLet's write.\n\nNeed to ensure each element unique ID.\n\nAdd flows.\n\nLet's draft.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Claims Notification Process\"\n\npool org \"Organization\"\n  lane claims \"Claims Department\"\n    start claim_received \"Claim received\"\n    task check_insurance \"Check insurance\"\n    xor insured \"Insured?\"\n    task inform_rejection \"Inform claimant of rejection\"\n    end rejected \"Process ended\"\n    task evaluate_severity \"Evaluate claim severity\"\n    xor severity \"Claim severity?\"\n    task send_simple_form \"Send simple claim form\"\n    task send_complex_form \"Send complex claim form\"\n    task receive_forms \"Receive returned forms\"\n    task check_forms \"Check forms completeness\"\n    xor forms_complete \"Forms complete?\"\n    task register_claim \"Register claim in Claims Management system\"\n    end completed \"Claims Notification process ended\"\n    task inform_update \"Inform claimant to update forms\"\n    task receive_updated_forms \"Receive updated forms\"\n\n    flow claim_received -> check_insurance -> insured\n    flow insured -> inform_rejection \"no\"\n    flow inform_rejection -> rejected\n    flow insured -> evaluate_severity \"yes\"\n    flow evaluate_severity -> severity\n    flow severity -> send_simple_form \"simple\"\n    flow severity -> send_complex_form \"complex\"\n    flow send_simple_form -> receive_forms\n    flow send_complex_form -> receive_forms\n    flow receive_forms -> check_forms\n    flow check_forms -> forms_complete\n    flow forms_complete -> register_claim \"yes\"\n    flow register_claim -> completed\n    flow forms_complete -> inform_update \"no\"\n    flow inform_update -> receive_updated_forms\n    flow receive_updated_forms -> check_forms\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 4948,
+  "output_tokens": 407,
+  "seconds": 4.446005599980708,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We provided both path=\"\" and text, causing error. Should only give either. Provide text only.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Claims Notification Process\"\n\npool org \"Organization\"\n  lane claims \"Claims Department\"\n    start claim_received \"Claim received\"\n    task check_insurance \"Check insurance\"\n    xor insured \"Insured?\"\n    task inform_rejection \"Inform claimant of rejection\"\n    end rejected \"Process ended\"\n    task evaluate_severity \"Evaluate claim severity\"\n    xor severity \"Claim severity?\"\n    task send_simple_form \"Send simple claim form\"\n    task send_complex_form \"Send complex claim form\"\n    task receive_forms \"Receive returned forms\"\n    task check_forms \"Check forms completeness\"\n    xor forms_complete \"Forms complete?\"\n    task register_claim \"Register claim in Claims Management system\"\n    end completed \"Claims Notification process ended\"\n    task inform_update \"Inform claimant to update forms\"\n    task receive_updated_forms \"Receive updated forms\"\n\n    flow claim_received -> check_insurance -> insured\n    flow insured -> inform_rejection \"no\"\n    flow inform_rejection -> rejected\n    flow insured -> evaluate_severity \"yes\"\n    flow evaluate_severity -> severity\n    flow severity -> send_simple_form \"simple\"\n    flow severity -> send_complex_form \"complex\"\n    flow send_simple_form -> receive_forms\n    flow send_complex_form -> receive_forms\n    flow receive_forms -> check_forms\n    flow check_forms -> forms_complete\n    flow forms_complete -> register_claim \"yes\"\n    flow register_claim -> completed\n    flow forms_complete -> inform_update \"no\"\n    flow inform_update -> receive_updated_forms\n    flow receive_updated_forms -> check_forms\n"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5449,
+  "output_tokens": 325,
+  "seconds": 3.449660499987658,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Claims Notification Process\"\n\npool org \"Organization\"\n  lane claims \"Claims Department\"\n    start claim_received \"Claim received\"\n    task check_insurance \"Check insurance\"\n    xor insured \"Insured?\"\n    task inform_rejection \"Inform claimant of rejection\"\n    end rejected \"Process ended\"\n    task evaluate_severity \"Evaluate claim severity\"\n    xor severity \"Claim severity?\"\n    task send_simple_form \"Send simple claim form\"\n    task send_complex_form \"Send complex claim form\"\n    task receive_forms \"Receive returned forms\"\n    task check_forms \"Check forms completeness\"\n    xor forms_complete \"Forms complete?\"\n    task register_claim \"Register claim in Claims Management system\"\n    end completed \"Claims Notification process ended\"\n    task inform_update \"Inform claimant to update forms\"\n    task receive_updated_forms \"Receive updated forms\"\n\n    flow claim_received -> check_insurance -> insured\n    flow insured -> inform_rejection \"no\"\n    flow inform_rejection -> rejected\n    flow insured -> evaluate_severity \"yes\"\n    flow evaluate_severity -> severity\n    flow severity -> send_simple_form \"simple\"\n    flow severity -> send_complex_form \"complex\"\n    flow send_simple_form -> receive_forms\n    flow send_complex_form -> receive_forms\n    flow receive_forms -> check_forms\n    flow check_forms -> forms_complete\n    flow forms_complete -> register_claim \"yes\"\n    flow register_claim -> completed\n    flow forms_complete -> inform_update \"no\"\n    flow inform_update -> receive_updated_forms\n    flow receive_updated_forms -> check_forms\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

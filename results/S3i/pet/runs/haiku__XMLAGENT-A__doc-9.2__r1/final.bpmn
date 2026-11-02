@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_CustomerReply" name="Customer reply" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Pool_Organisation" name="Mortgage organisation" processRef="Process_Mortgage" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Mortgage" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_CSR" name="Customer Service Representative">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_Reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_Timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_MoveAdmin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Admin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="Mortgage case started" />
+    <bpmn:task id="Task_SendOffer" name="Send mortgage offer to customer" />
+    <bpmn:eventBasedGateway id="Gw_Wait" name="Wait for customer reply" />
+    <bpmn:intermediateCatchEvent id="Catch_Reply" name="Customer reply received">
+      <bpmn:messageEventDefinition id="MED_Reply" messageRef="Msg_CustomerReply" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Timeout" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition id="TED_Timeout">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_Reply" name="Customer reply?" />
+    <bpmn:task id="Task_MoveAdmin" name="Move case to administration for completion" />
+    <bpmn:endEvent id="End_Admin" name="Case moved to administration" />
+    <bpmn:task id="Task_RequestDocs" name="Generate message requesting outstanding documents" />
+    <bpmn:exclusiveGateway id="Gw_Merge" name="Declined or no answer?" />
+    <bpmn:task id="Task_Update" name="Update case details" />
+    <bpmn:task id="Task_Archive" name="Archive case" />
+    <bpmn:task id="Task_Cancel" name="Cancel case" />
+    <bpmn:endEvent id="End_Cancelled" name="Mortgage case cancelled" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="Task_SendOffer" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Task_SendOffer" targetRef="Gw_Wait" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Gw_Wait" targetRef="Catch_Reply" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Gw_Wait" targetRef="Catch_Timeout" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Catch_Reply" targetRef="Gw_Reply" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Catch_Timeout" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="F7" name="declined" sourceRef="Gw_Reply" targetRef="Gw_Merge" />
+    <bpmn:sequenceFlow id="F8" name="completed offer and all prerequisite documents" sourceRef="Gw_Reply" targetRef="Task_MoveAdmin" />
+    <bpmn:sequenceFlow id="F9" name="prerequisite documents missing" sourceRef="Gw_Reply" targetRef="Task_RequestDocs" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_MoveAdmin" targetRef="End_Admin" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Task_RequestDocs" targetRef="Gw_Wait" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Gw_Merge" targetRef="Task_Update" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Task_Update" targetRef="Task_Archive" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Task_Archive" targetRef="Task_Cancel" />
+    <bpmn:sequenceFlow id="F15" sourceRef="Task_Cancel" targetRef="End_Cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,37 @@
+```tok
+tok 1.0 "Mortgage Offer Process"
+
+pool org "Organization"
+  lane csr "Customer Service Representative"
+    start start "Process start"
+    task send_offer "Send Mortgage offer and wait for reply"
+    boundary timeout on=send_offer timer=P2W
+    xor reply_type "Customer reply?"
+    # Decline path
+    task update_details_decline "Update case details (decline)"
+    task archive_decline "Archive work (decline)"
+    task cancel_decline "Cancel case (decline)"
+    end end_decline "Case cancelled after decline"
+    # Accept with all documents
+    task move_admin "Move case to administration for completion"
+    end end_accept "Case moved to administration"
+    # Missing prerequisite documents
+    task request_docs "Generate message requesting outstanding documents"
+    end end_missing "Requested missing documents"
+    # No reply timeout path
+    task update_details_timeout "Update case details (no reply)"
+    task archive_timeout "Archive case (no reply)"
+    task cancel_timeout "Cancel case (no reply)"
+    end end_timeout "Case cancelled due to no reply"
+
+flow start -> send_offer
+flow send_offer -> reply_type
+flow reply_type -> update_details_decline "decline"
+flow reply_type -> move_admin "accept all docs"
+flow reply_type -> request_docs "missing docs"
+flow update_details_decline -> archive_decline -> cancel_decline -> end_decline
+flow move_admin -> end_accept
+flow request_docs -> end_missing
+flow timeout -> update_details_timeout
+flow update_details_timeout -> archive_timeout -> cancel_timeout -> end_timeout
+```

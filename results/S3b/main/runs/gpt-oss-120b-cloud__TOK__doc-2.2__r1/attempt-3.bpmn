@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Switch‑over Process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Switch‑over Process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>s1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_check_contract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>xor_withdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_withdraw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="customer_service" name="Customer Service">
+        <bpmn:flowNodeRef>cs_enter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_compare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_err</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_correct</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_exists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_send_conf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_send_req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_contract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_after_supplier</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_create_cis</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_import</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="cis" name="CIS System">
+        <bpmn:flowNodeRef>cis_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cis_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cis_resolve</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="grid_operator" name="Grid Operator">
+        <bpmn:flowNodeRef>go_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_conc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_inform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_final</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_meter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>go_bill</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="old_supplier" name="Old Supplier">
+        <bpmn:flowNodeRef>os_bill</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s1" name="Switch‑over request" />
+    <bpmn:task id="t_send" name="Transmit data to Customer Service" />
+    <bpmn:task id="t_check_contract" name="Check contract details" />
+    <bpmn:exclusiveGateway id="xor_withdraw" name="Withdraw contract?" />
+    <bpmn:endEvent id="end_withdraw" name="Process ends (withdrawal)" />
+    <bpmn:endEvent id="end_success" name="Process ends (successful)" />
+    <bpmn:task id="cs_enter" name="Enter customer data into CRM" />
+    <bpmn:task id="cs_compare" name="Compare data with internal database and check completeness" />
+    <bpmn:exclusiveGateway id="cs_err" name="Data errors?" />
+    <bpmn:task id="cs_correct" name="Correct errors based on error list" />
+    <bpmn:exclusiveGateway id="cs_exists" name="Customer exists in database?" />
+    <bpmn:task id="cs_create" name="Create new customer object" />
+    <bpmn:task id="cs_prepare" name="Prepare contract documents" />
+    <bpmn:task id="cs_send_conf" name="Send confirmation document to customer" />
+    <bpmn:task id="cs_send_req" name="Send switch request to Grid Operator" />
+    <bpmn:parallelGateway id="split_contract" name="Split after positive contract check" />
+    <bpmn:parallelGateway id="join_after_supplier" name="Join after supplier handling" />
+    <bpmn:task id="cs_create_cis" name="Create CIS contract" />
+    <bpmn:task id="cs_import" name="Import meter data to systems" />
+    <bpmn:task id="cis_check" name="Automated check of contract documents in CIS" />
+    <bpmn:exclusiveGateway id="cis_ok" name="Contract documents correct?" />
+    <bpmn:task id="cis_resolve" name="Analyze and resolve issues" />
+    <bpmn:task id="go_check" name="Check supplier concurrence" />
+    <bpmn:exclusiveGateway id="go_conc" name="Supplier concurrence?" />
+    <bpmn:task id="go_inform" name="Inform suppliers and resolve conflict" />
+    <bpmn:parallelGateway id="split_meter" name="Split meter‑data &amp; billing" />
+    <bpmn:parallelGateway id="join_final" name="Join final reports" />
+    <bpmn:task id="go_meter" name="Transmit meter data to Customer Service and Old Supplier" />
+    <bpmn:task id="go_bill" name="Send final billing to Old Supplier" />
+    <bpmn:task id="os_bill" name="Send final billing to Customer" />
+    <bpmn:sequenceFlow id="f-s1-t_send" sourceRef="s1" targetRef="t_send" />
+    <bpmn:sequenceFlow id="f-t_send-cs_enter" sourceRef="t_send" targetRef="cs_enter" />
+    <bpmn:sequenceFlow id="f-cs_enter-cs_compare" sourceRef="cs_enter" targetRef="cs_compare" />
+    <bpmn:sequenceFlow id="f-cs_compare-cs_err" sourceRef="cs_compare" targetRef="cs_err" />
+    <bpmn:sequenceFlow id="f-cs_err-cs_correct" sourceRef="cs_err" targetRef="cs_correct" />
+    <bpmn:sequenceFlow id="f-cs_correct-cs_compare" sourceRef="cs_correct" targetRef="cs_compare" />
+    <bpmn:sequenceFlow id="f-cs_err-cs_exists" sourceRef="cs_err" targetRef="cs_exists" />
+    <bpmn:sequenceFlow id="f-cs_exists-cs_create" sourceRef="cs_exists" targetRef="cs_create" />
+    <bpmn:sequenceFlow id="f-cs_create-cs_prepare" sourceRef="cs_create" targetRef="cs_prepare" />
+    <bpmn:sequenceFlow id="f-cs_exists-cs_prepare" sourceRef="cs_exists" targetRef="cs_prepare" />
+    <bpmn:sequenceFlow id="f-cs_prepare-cis_check" sourceRef="cs_prepare" targetRef="cis_check" />
+    <bpmn:sequenceFlow id="f-cis_check-cis_ok" sourceRef="cis_check" targetRef="cis_ok" />
+    <bpmn:sequenceFlow id="f-cis_ok-split_contract" sourceRef="cis_ok" targetRef="split_contract" />
+    <bpmn:sequenceFlow id="f-cis_ok-cis_resolve" sourceRef="cis_ok" targetRef="cis_resolve" />
+    <bpmn:sequenceFlow id="f-cis_resolve-cis_check" sourceRef="cis_resolve" targetRef="cis_check" />
+    <bpmn:sequenceFlow id="f-split_contract-cs_send_conf" sourceRef="split_contract" targetRef="cs_send_conf" />
+    <bpmn:sequenceFlow id="f-cs_send_conf-join_after_supplier" sourceRef="cs_send_conf" targetRef="join_after_supplier" />
+    <bpmn:sequenceFlow id="f-split_contract-cs_send_req" sourceRef="split_contract" targetRef="cs_send_req" />
+    <bpmn:sequenceFlow id="f-cs_send_req-go_check" sourceRef="cs_send_req" targetRef="go_check" />
+    <bpmn:sequenceFlow id="f-go_check-go_conc" sourceRef="go_check" targetRef="go_conc" />
+    <bpmn:sequenceFlow id="f-go_conc-go_inform" sourceRef="go_conc" targetRef="go_inform" />
+    <bpmn:sequenceFlow id="f-go_inform-join_after_supplier" sourceRef="go_inform" targetRef="join_after_supplier" />
+    <bpmn:sequenceFlow id="f-go_conc-cs_create_cis" sourceRef="go_conc" targetRef="cs_create_cis" />
+    <bpmn:sequenceFlow id="f-cs_create_cis-t_check_contract" sourceRef="cs_create_cis" targetRef="t_check_contract" />
+    <bpmn:sequenceFlow id="f-join_after_supplier-t_check_contract" sourceRef="join_after_supplier" targetRef="t_check_contract" />
+    <bpmn:sequenceFlow id="f-t_check_contract-xor_withdraw" sourceRef="t_check_contract" targetRef="xor_withdraw" />
+    <bpmn:sequenceFlow id="f-xor_withdraw-end_withdraw" sourceRef="xor_withdraw" targetRef="end_withdraw" />
+    <bpmn:sequenceFlow id="f-xor_withdraw-split_meter" sourceRef="xor_withdraw" targetRef="split_meter" />
+    <bpmn:sequenceFlow id="f-split_meter-go_meter" sourceRef="split_meter" targetRef="go_meter" />
+    <bpmn:sequenceFlow id="f-go_meter-cs_import" sourceRef="go_meter" targetRef="cs_import" />
+    <bpmn:sequenceFlow id="f-cs_import-join_final" sourceRef="cs_import" targetRef="join_final" />
+    <bpmn:sequenceFlow id="f-split_meter-go_bill" sourceRef="split_meter" targetRef="go_bill" />
+    <bpmn:sequenceFlow id="f-go_bill-os_bill" sourceRef="go_bill" targetRef="os_bill" />
+    <bpmn:sequenceFlow id="f-os_bill-join_final" sourceRef="os_bill" targetRef="join_final" />
+    <bpmn:sequenceFlow id="f-join_final-end_success" sourceRef="join_final" targetRef="end_success" />
+  </bpmn:process>
+</bpmn:definitions>

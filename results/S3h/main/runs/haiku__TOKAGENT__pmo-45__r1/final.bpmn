@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Ordering in an Online Shop" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Payment_confirmation" name="Payment confirmation" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="shop" name="Online shop" processRef="shop-process" />
+    <bpmn:participant id="bank" name="Bank" />
+    <bpmn:messageFlow id="m-bank-payment-confirmed" name="Payment confirmation" sourceRef="bank" targetRef="payment-confirmed" messageRef="Message_Payment_confirmation" />
+  </bpmn:collaboration>
+  <bpmn:process id="shop-process" name="Ordering in an Online Shop" isExecutable="false">
+    <bpmn:laneSet id="shop-lanes">
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>c-start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>log-in</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-products</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select-product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>add-to-cart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>save-product</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>all-selected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>payment-confirmed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-shipping</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>billing-differs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-billing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-prep</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="system" name="Shopping system">
+        <bpmn:flowNodeRef>check-credentials</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm-login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>login-ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop-shop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split-prep</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete-order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c-end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="c-start" name="Start" />
+    <bpmn:task id="log-in" name="Log in" />
+    <bpmn:exclusiveGateway id="merge-products" />
+    <bpmn:task id="select-product" name="Select product" />
+    <bpmn:task id="add-to-cart" name="Add product to shopping cart" />
+    <bpmn:task id="save-product" name="Save product" />
+    <bpmn:exclusiveGateway id="all-selected" name="All products selected?" />
+    <bpmn:task id="enter-payment" name="Enter payment data" />
+    <bpmn:intermediateCatchEvent id="payment-confirmed" name="Payment confirmed">
+      <bpmn:messageEventDefinition id="payment-confirmed-def" messageRef="Message_Payment_confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="enter-shipping" name="Enter shipping address" />
+    <bpmn:exclusiveGateway id="billing-differs" name="Billing address differs from shipping address?" default="f-billing-differs-merge-billing" />
+    <bpmn:task id="enter-billing" name="Enter billing address" />
+    <bpmn:exclusiveGateway id="merge-billing" />
+    <bpmn:parallelGateway id="join-prep" />
+    <bpmn:task id="check-credentials" name="Check credentials" />
+    <bpmn:task id="confirm-login" name="Confirm login" />
+    <bpmn:exclusiveGateway id="login-ok" name="Login successful?" default="f-login-ok-stop-shop" />
+    <bpmn:endEvent id="stop-shop" name="Shopping experience stopped" />
+    <bpmn:task id="finish-order" name="Finish order" />
+    <bpmn:parallelGateway id="split-prep" />
+    <bpmn:task id="complete-order" name="Complete order" />
+    <bpmn:endEvent id="c-end" name="Order finished" />
+    <bpmn:sequenceFlow id="f-c-start-log-in" sourceRef="c-start" targetRef="log-in" />
+    <bpmn:sequenceFlow id="f-log-in-check-credentials" sourceRef="log-in" targetRef="check-credentials" />
+    <bpmn:sequenceFlow id="f-check-credentials-confirm-login" sourceRef="check-credentials" targetRef="confirm-login" />
+    <bpmn:sequenceFlow id="f-confirm-login-login-ok" sourceRef="confirm-login" targetRef="login-ok" />
+    <bpmn:sequenceFlow id="f-login-ok-merge-products" name="yes" sourceRef="login-ok" targetRef="merge-products">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">login-ok = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-login-ok-stop-shop" name="no" sourceRef="login-ok" targetRef="stop-shop" />
+    <bpmn:sequenceFlow id="f-merge-products-select-product" sourceRef="merge-products" targetRef="select-product" />
+    <bpmn:sequenceFlow id="f-select-product-add-to-cart" sourceRef="select-product" targetRef="add-to-cart" />
+    <bpmn:sequenceFlow id="f-add-to-cart-save-product" sourceRef="add-to-cart" targetRef="save-product" />
+    <bpmn:sequenceFlow id="f-save-product-all-selected" sourceRef="save-product" targetRef="all-selected" />
+    <bpmn:sequenceFlow id="f-all-selected-merge-products" name="no" sourceRef="all-selected" targetRef="merge-products">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all-selected = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-all-selected-finish-order" name="yes" sourceRef="all-selected" targetRef="finish-order">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all-selected = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-finish-order-split-prep" sourceRef="finish-order" targetRef="split-prep" />
+    <bpmn:sequenceFlow id="f-split-prep-enter-payment" sourceRef="split-prep" targetRef="enter-payment" />
+    <bpmn:sequenceFlow id="f-enter-payment-payment-confirmed" sourceRef="enter-payment" targetRef="payment-confirmed" />
+    <bpmn:sequenceFlow id="f-payment-confirmed-join-prep" sourceRef="payment-confirmed" targetRef="join-prep" />
+    <bpmn:sequenceFlow id="f-split-prep-enter-shipping" sourceRef="split-prep" targetRef="enter-shipping" />
+    <bpmn:sequenceFlow id="f-enter-shipping-billing-differs" sourceRef="enter-shipping" targetRef="billing-differs" />
+    <bpmn:sequenceFlow id="f-billing-differs-enter-billing" name="yes" sourceRef="billing-differs" targetRef="enter-billing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">billing-differs = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-billing-differs-merge-billing" name="no" sourceRef="billing-differs" targetRef="merge-billing" />
+    <bpmn:sequenceFlow id="f-enter-billing-merge-billing" sourceRef="enter-billing" targetRef="merge-billing" />
+    <bpmn:sequenceFlow id="f-merge-billing-join-prep" sourceRef="merge-billing" targetRef="join-prep" />
+    <bpmn:sequenceFlow id="f-join-prep-complete-order" sourceRef="join-prep" targetRef="complete-order" />
+    <bpmn:sequenceFlow id="f-complete-order-c-end" sourceRef="complete-order" targetRef="c-end" />
+  </bpmn:process>
+</bpmn:definitions>

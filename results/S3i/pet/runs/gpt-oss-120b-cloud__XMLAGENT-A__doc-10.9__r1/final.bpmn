@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+
+  <!-- Collaboration with a single pool for the organisation -->
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="OrgPool" name="Organisation" processRef="Process_1"/>
+  </bpmn:collaboration>
+
+  <!-- Process -->
+  <bpmn:process id="Process_1" isExecutable="false">
+
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_External" name="SP / PU / GO">
+        <bpmn:flowNodeRef>Task_RequestChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportFailure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_MPO" name="MPO">
+        <bpmn:flowNodeRef>Task_MPOInitiates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ReviewDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PerformChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Outcome</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Failure</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="Start" name="Start"/>
+
+    <!-- Initiator choice -->
+    <bpmn:exclusiveGateway id="Gateway_Initiator" name="Who initiates?"/>
+
+    <!-- External request -->
+    <bpmn:task id="Task_RequestChange" name="Request change"/>
+
+    <!-- MPO self‑initiates -->
+    <bpmn:task id="Task_MPOInitiates" name="MPO causes a change"/>
+
+    <!-- Review -->
+    <bpmn:task id="Task_Review" name="MPO reviews the change request"/>
+
+    <!-- Review decision -->
+    <bpmn:exclusiveGateway id="Gateway_ReviewDecision" name="Review decision"/>
+
+    <!-- Reject path -->
+    <bpmn:task id="Task_Reject" name="MPO rejects the change of the measuring point"/>
+    <bpmn:endEvent id="End_Reject" name="Process ended – rejected"/>
+
+    <!-- Confirm path -->
+    <bpmn:task id="Task_Confirm" name="MPO confirms the request"/>
+    <bpmn:task id="Task_PerformChange" name="MPO performs the measuring point change"/>
+
+    <!-- Outcome decision -->
+    <bpmn:exclusiveGateway id="Gateway_Outcome" name="Implementation outcome"/>
+
+    <!-- Success path -->
+    <bpmn:task id="Task_ReportSuccess" name="MPO reports implementation to SP / PU / GO"/>
+    <bpmn:endEvent id="End_Success" name="Process ended – successful"/>
+
+    <!-- Failure path -->
+    <bpmn:task id="Task_ReportFailure" name="MPO notifies SP / PU / GO about the failure of the changes"/>
+    <bpmn:endEvent id="End_Failure" name="Process ended – failure"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="F_Start_Initiator" sourceRef="Start" targetRef="Gateway_Initiator"/>
+
+    <bpmn:sequenceFlow id="F_Initiator_External" sourceRef="Gateway_Initiator" targetRef="Task_RequestChange">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">initiator = 'external'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_Initiator_MPO" sourceRef="Gateway_Initiator" targetRef="Task_MPOInitiates">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">initiator = 'MPO'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_External_ToReview" sourceRef="Task_RequestChange" targetRef="Task_Review"/>
+    <bpmn:sequenceFlow id="F_MPOInitiates_ToReview" sourceRef="Task_MPOInitiates" targetRef="Task_Review"/>
+
+    <bpmn:sequenceFlow id="F_Review_ToDecision" sourceRef="Task_Review" targetRef="Gateway_ReviewDecision"/>
+
+    <!-- Review decision branches -->
+    <bpmn:sequenceFlow id="F_Decision_Reject" sourceRef="Gateway_ReviewDecision" targetRef="Task_Reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision = 'reject'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_Decision_Confirm" sourceRef="Gateway_ReviewDecision" targetRef="Task_Confirm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision = 'confirm'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_Reject_End" sourceRef="Task_Reject" targetRef="End_Reject"/>
+
+    <bpmn:sequenceFlow id="F_Confirm_ToPerform" sourceRef="Task_Confirm" targetRef="Task_PerformChange"/>
+
+    <bpmn:sequenceFlow id="F_Perform_ToOutcome" sourceRef="Task_PerformChange" targetRef="Gateway_Outcome"/>
+
+    <!-- Outcome branches -->
+    <bpmn:sequenceFlow id="F_Outcome_Success" sourceRef="Gateway_Outcome" targetRef="Task_ReportSuccess">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">outcome = 'success'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_Outcome_Failure" sourceRef="Gateway_Outcome" targetRef="Task_ReportFailure">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">outcome = 'failure'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F_Success_End" sourceRef="Task_ReportSuccess" targetRef="End_Success"/>
+    <bpmn:sequenceFlow id="F_Failure_End" sourceRef="Task_ReportFailure" targetRef="End_Failure"/>
+
+  </bpmn:process>
+</bpmn:definitions>

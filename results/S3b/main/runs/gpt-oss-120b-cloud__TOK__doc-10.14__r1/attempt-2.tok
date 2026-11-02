@@ -1,0 +1,51 @@
+tok 1.0 "Billing Process"
+
+pool org "Organization"
+  lane MPOO "MPOO"
+    task T1 "send bill for temporary continuation of metering point operations"
+    task T5 "send bill for equipment acquisition"
+  lane MSPO "MSPO"
+    task T3 "send bill for temporary continuation of measurement"
+    task T4 "send bill for additional readings"
+  lane GO "GO"
+    task T2 "examine bill"
+    xor G_CONFIRM_GO "Confirm invoice?"
+    task C_GO "confirm invoice with payment advice"
+    task R_GO "reject invoice"
+  lane MPON "MPON"
+    task T7 "examine bill"
+    xor G_CONFIRM_MPON "Confirm invoice?"
+    task C_MPON "confirm invoice with payment advice"
+    task R_MPON "reject invoice"
+
+start S "Start"
+xor X1 "Which bill is sent?"
+xor X2 "Recipient of equipment acquisition bill?"
+end E1 "Process confirmed"
+end E2 "Process rejected"
+
+flow S -> X1
+flow X1 -> T1
+flow X1 -> T3
+flow X1 -> T4
+flow X1 -> T5
+
+flow T1 -> T2
+flow T3 -> T2
+flow T4 -> T2
+flow T5 -> X2
+flow X2 -> T2
+flow X2 -> T7
+
+flow T2 -> G_CONFIRM_GO
+flow T7 -> G_CONFIRM_MPON
+
+flow G_CONFIRM_GO -> C_GO "confirm"
+flow G_CONFIRM_GO -> R_GO "reject"
+flow G_CONFIRM_MPON -> C_MPON "confirm"
+flow G_CONFIRM_MPON -> R_MPON "reject"
+
+flow C_GO -> E1
+flow C_MPON -> E1
+flow R_GO -> E2
+flow R_MPON -> E2

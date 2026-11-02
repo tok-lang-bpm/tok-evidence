@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mortgage offer handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Decline" name="Decline" />
+  <bpmn:message id="Message_Offer_documents" name="Offer documents" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mortgage offer handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>declined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>noanswer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Mortgage offer to be sent" />
+    <bpmn:task id="send" name="Send the mortgage offer to the customer" />
+    <bpmn:eventBasedGateway id="wait" name="Customer reply?" />
+    <bpmn:intermediateCatchEvent id="declined" name="Customer declines the mortgage">
+      <bpmn:messageEventDefinition id="declined-def" messageRef="Message_Decline" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="returned" name="Customer returns the offer documents">
+      <bpmn:messageEventDefinition id="returned-def" messageRef="Message_Offer_documents" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="noanswer" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition id="noanswer-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="complete" name="All prerequisite documents provided?" />
+    <bpmn:task id="request" name="Request the outstanding documents from the customer" />
+    <bpmn:task id="move" name="Move the case to administration for completion" />
+    <bpmn:exclusiveGateway id="join" />
+    <bpmn:task id="update" name="Update the case details" />
+    <bpmn:task id="archive" name="Archive the work" />
+    <bpmn:task id="cancel" name="Cancel the case" />
+    <bpmn:endEvent id="done" name="Case moved to administration" />
+    <bpmn:endEvent id="cancelled" name="Case cancelled" />
+    <bpmn:sequenceFlow id="f-begin-send" sourceRef="begin" targetRef="send" />
+    <bpmn:sequenceFlow id="f-send-wait" sourceRef="send" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-declined" sourceRef="wait" targetRef="declined" />
+    <bpmn:sequenceFlow id="f-wait-returned" sourceRef="wait" targetRef="returned" />
+    <bpmn:sequenceFlow id="f-wait-noanswer" sourceRef="wait" targetRef="noanswer" />
+    <bpmn:sequenceFlow id="f-declined-join" sourceRef="declined" targetRef="join" />
+    <bpmn:sequenceFlow id="f-noanswer-join" sourceRef="noanswer" targetRef="join" />
+    <bpmn:sequenceFlow id="f-join-update" sourceRef="join" targetRef="update" />
+    <bpmn:sequenceFlow id="f-update-archive" sourceRef="update" targetRef="archive" />
+    <bpmn:sequenceFlow id="f-archive-cancel" sourceRef="archive" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f-cancel-cancelled" sourceRef="cancel" targetRef="cancelled" />
+    <bpmn:sequenceFlow id="f-returned-complete" sourceRef="returned" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-complete-move" name="yes" sourceRef="complete" targetRef="move" />
+    <bpmn:sequenceFlow id="f-complete-request" name="no" sourceRef="complete" targetRef="request" />
+    <bpmn:sequenceFlow id="f-move-done" sourceRef="move" targetRef="done" />
+    <bpmn:sequenceFlow id="f-request-wait" sourceRef="request" targetRef="wait" />
+  </bpmn:process>
+</bpmn:definitions>

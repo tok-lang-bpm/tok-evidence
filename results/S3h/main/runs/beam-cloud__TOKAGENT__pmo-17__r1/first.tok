@@ -1,0 +1,87 @@
+tok 1.0 "Order Fulfillment"
+
+pool org "E-commerce Company"
+  lane system "System"
+    start start-order "Order placed"
+    task record-order "Record order details"
+    task process-payment "Process payment"
+    xor pay-gw "Payment successful?"
+    task notify-payment-failed "Notify customer"
+    end end-payment-failed "End"
+    task inform-delay "Inform customer about delay"
+    task receive-backorder "Receive back-order"
+    task send-shipping-confirmation "Send shipping confirmation"
+    task update-inventory "Update inventory levels"
+    task confirm-delivery "Confirm successful delivery"
+    task send-followup "Send follow-up email for feedback"
+    xor issues-gw "Customer reports issues?"
+    task send-return-label "Send return shipping label"
+    task process-refund "Process refund or replacement"
+    end end-ok "End"
+    end end-returns "End"
+  lane inventory "Inventory System"
+    task check-stock "Check stock availability"
+    task initiate-backorder "Initiate back-order"
+    xor stock-gw "Items in stock?"
+    xor stock-join "Items available?"
+  lane shipping "Shipping Department"
+    task prepare-shipping-docs "Prepare shipping documents and labels"
+    xor intl-gw "International order?"
+    task prepare-customs "Prepare customs documentation"
+    xor intl-join "Customs ready?"
+    task dispatch-order "Dispatch order"
+  lane warehouse "Warehouse"
+    task pick-items "Pick items"
+    task qc-check "Perform quality control"
+    and and-split "Packaging and shipping"
+    xor gift-gw "Gift wrapping requested?"
+    task package-gift "Package order with gift wrap"
+    task package-standard "Package order"
+    xor gift-join "Packaging ready?"
+    and and-join "Ready for dispatch"
+    task receive-returns "Receive returned items"
+    task inspect-returns "Inspect returned items"
+
+flow start-order -> record-order
+flow record-order -> process-payment
+flow process-payment -> pay-gw
+flow pay-gw -> notify-payment-failed "No" when=""
+flow notify-payment-failed -> end-payment-failed
+flow pay-gw -> check-stock "Yes" default
+
+flow check-stock -> stock-gw
+flow stock-gw -> stock-join "In stock" default
+flow stock-gw -> initiate-backorder "Out of stock" when=""
+flow initiate-backorder -> inform-delay
+flow inform-delay -> receive-backorder
+flow receive-backorder -> stock-join
+flow stock-join -> pick-items
+
+flow pick-items -> qc-check
+flow qc-check -> and-split
+flow and-split -> gift-gw
+flow gift-gw -> package-gift "Yes" default
+flow gift-gw -> package-standard "No" when=""
+flow package-gift -> gift-join
+flow package-standard -> gift-join
+flow gift-join -> and-join
+
+flow and-split -> prepare-shipping-docs
+flow prepare-shipping-docs -> intl-gw
+flow intl-gw -> prepare-customs "International" default
+flow intl-gw -> intl-join "Domestic" when=""
+flow prepare-customs -> intl-join
+flow intl-join -> and-join
+
+flow and-join -> dispatch-order
+flow dispatch-order -> send-shipping-confirmation
+flow send-shipping-confirmation -> update-inventory
+flow update-inventory -> confirm-delivery
+flow confirm-delivery -> send-followup
+flow send-followup -> issues-gw
+flow issues-gw -> send-return-label "Issues" default
+flow issues-gw -> end-ok "No issues" when=""
+flow send-return-label -> receive-returns
+flow receive-returns -> inspect-returns
+flow inspect-returns -> process-refund
+flow process-refund -> end-returns

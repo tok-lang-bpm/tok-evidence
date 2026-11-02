@@ -1,0 +1,42 @@
+tok 1.0 "Expense report reimbursement"
+
+pool company "Company"
+  lane employee "Employee"
+    start received "Expense report received"
+  lane system "Expense system"
+    xor hasAccount "Employee has an account?"
+    task createAccount "Create a new account"
+    xor accountReady
+    task review "Review the expense report for automatic approval"
+    xor amount "Amount under $200?"
+    task autoApprove "Approve the expense report automatically"
+    xor reportApproved
+    task rejectNotice "Send the rejection notice by email"
+    task pay "Transfer the reimbursement to the employee's direct deposit bank account"
+    task sendProgress "Send the approval in progress email"
+    task sendCancel "Send the cancellation notice by email"
+    end paid "Reimbursement paid"
+    end rejected "Expense report rejected"
+    end progressSent "Approval in progress email sent"
+    end cancelled "Request cancelled, employee must re-submit"
+  lane supervisor "Supervisor"
+    task approve "Approve or reject the expense report"
+    boundary progressTimer on=approve timer=P7D noninterrupting
+    boundary cancelTimer on=approve timer=P30D
+
+flow received -> hasAccount
+flow hasAccount -> accountReady "yes" when="hasAccount"
+flow hasAccount -> createAccount "no" default
+flow createAccount -> accountReady
+flow accountReady -> review
+flow review -> amount
+flow amount -> autoApprove "yes" when="amount < 200"
+flow amount -> approve "no" default
+flow autoApprove -> reportApproved
+flow approve -> reportApproved
+flow reportApproved -> pay "yes" when="isApproved"
+flow reportApproved -> rejectNotice "no" default
+flow pay -> paid
+flow rejectNotice -> rejected
+flow progressTimer -> sendProgress -> progressSent
+flow cancelTimer -> sendCancel -> cancelled

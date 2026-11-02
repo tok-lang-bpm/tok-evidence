@@ -1,0 +1,50 @@
+tok 1.0 "Find a Job"
+
+pool job "Find a Job"
+  lane seeker "Job seeker"
+    start s "Start job search"
+    task report "Report job applications"
+    and split-apps
+    and join-apps
+    xor interview "Job interview wanted?"
+    task negotiate "Negotiate job interview"
+    xor merge-interview
+    and split-rate
+    and join-rate
+    task rate-company "Rate the company"
+    catch wait-year "Wait one year" timer=P1Y
+    task view-reviews "View company reviews"
+    end reviews-seen "Company reviews visible"
+    xor permanent "Job became permanent?"
+    xor grade "Company rated C or less?"
+    end finish "Job search ends"
+  lane company "Company"
+    task confirm "Confirm receipt of job application"
+    task rate-app "Rate job application"
+    xor hire "Company wants you to work for them?"
+    task probation "Carry out probation phase"
+    task rate-seeker "Rate job seeker"
+  lane platform "Job platform"
+    task offers "Send potential job offers"
+    task offers-later "Send potential job offers"
+    end offers-continue "Job offers continue without reporting"
+
+flow s -> report -> split-apps
+flow split-apps -> confirm -> rate-app -> join-apps
+flow split-apps -> offers -> join-apps
+flow join-apps -> interview
+flow interview -> negotiate "yes" when="interview_wanted = true"
+flow interview -> merge-interview "no" default
+flow negotiate -> merge-interview -> hire
+flow hire -> probation "yes" when="company_hires = true"
+flow hire -> report "no" default
+flow probation -> split-rate
+flow split-rate -> rate-company -> join-rate
+flow split-rate -> rate-seeker -> join-rate
+flow split-rate -> wait-year -> view-reviews -> reviews-seen
+flow join-rate -> permanent
+flow permanent -> grade "yes" when="job_permanent = true"
+flow permanent -> report "no" default
+flow grade -> offers-later "yes" when="grade = \"C\" or grade = \"D\" or grade = \"E\" or grade = \"F\""
+flow grade -> finish "no" default
+flow offers-later -> offers-continue

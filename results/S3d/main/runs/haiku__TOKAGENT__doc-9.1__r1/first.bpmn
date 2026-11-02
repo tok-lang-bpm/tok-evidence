@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Daily defaulting accounts reconciliation" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Daily defaulting accounts reconciliation" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="sys" name="Reporting system">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-table</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>new-records</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-records</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-crm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>new-returns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-late</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check-crm-again</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>returns-again</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcile-late</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>message-supervisor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-no-returns</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-message</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Weekday morning" />
+    <bpmn:task id="backup" name="Back up the database" />
+    <bpmn:task id="check-table" name="Check the Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="new-records" name="New records found?" />
+    <bpmn:exclusiveGateway id="merge-records" />
+    <bpmn:task id="check-crm" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="new-returns" name="New returns filed?" />
+    <bpmn:subProcess id="report" name="Prepare defaulting accounts report">
+      <bpmn:startEvent id="report-start" name="Start" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="advised" name="Defaulting client codes previously advised?" />
+      <bpmn:task id="produce" name="Produce table of defaulting accounts" />
+      <bpmn:task id="send-table" name="Send table of defaulting accounts to account management" />
+      <bpmn:exclusiveGateway id="advised-join" />
+      <bpmn:endEvent id="report-end" name="End" />
+      <bpmn:sequenceFlow id="f-report-start-register" sourceRef="report-start" targetRef="register" />
+      <bpmn:sequenceFlow id="f-register-advised" sourceRef="register" targetRef="advised" />
+      <bpmn:sequenceFlow id="f-advised-produce" name="No" sourceRef="advised" targetRef="produce">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-advised-advised-join" name="Yes" sourceRef="advised" targetRef="advised-join">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="f-produce-send-table" sourceRef="produce" targetRef="send-table" />
+      <bpmn:sequenceFlow id="f-send-table-advised-join" sourceRef="send-table" targetRef="advised-join" />
+      <bpmn:sequenceFlow id="f-advised-join-report-end" sourceRef="advised-join" targetRef="report-end" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="report-late" attachedToRef="report">
+      <bpmn:timerEventDefinition id="report-late-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alert" name="Send alert to supervisor" />
+    <bpmn:task id="check-crm-again" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="returns-again" name="New returns filed?" />
+    <bpmn:task id="reconcile" name="Reconcile with the existing Account Defaulter table" />
+    <bpmn:boundaryEvent id="reconcile-late" attachedToRef="reconcile">
+      <bpmn:timerEventDefinition id="reconcile-late-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT8H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="message-supervisor" name="Send message to supervisor" />
+    <bpmn:endEvent id="end-no-returns" name="No new returns" />
+    <bpmn:endEvent id="end-alert" name="Supervisor alerted" />
+    <bpmn:endEvent id="end-done" name="Reconciliation completed" />
+    <bpmn:endEvent id="end-message" name="Supervisor informed" />
+    <bpmn:sequenceFlow id="f-begin-backup" sourceRef="begin" targetRef="backup" />
+    <bpmn:sequenceFlow id="f-backup-check-table" sourceRef="backup" targetRef="check-table" />
+    <bpmn:sequenceFlow id="f-check-table-new-records" sourceRef="check-table" targetRef="new-records" />
+    <bpmn:sequenceFlow id="f-new-records-merge-records" name="Yes" sourceRef="new-records" targetRef="merge-records">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-new-records-check-crm" name="No" sourceRef="new-records" targetRef="check-crm">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-merge-records-check-crm" sourceRef="merge-records" targetRef="check-crm" />
+    <bpmn:sequenceFlow id="f-check-crm-new-returns" sourceRef="check-crm" targetRef="new-returns" />
+    <bpmn:sequenceFlow id="f-new-returns-report" name="Yes" sourceRef="new-returns" targetRef="report">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-new-returns-end-no-returns" name="No" sourceRef="new-returns" targetRef="end-no-returns">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-report-check-crm-again" sourceRef="report" targetRef="check-crm-again" />
+    <bpmn:sequenceFlow id="f-check-crm-again-returns-again" sourceRef="check-crm-again" targetRef="returns-again" />
+    <bpmn:sequenceFlow id="f-returns-again-reconcile" name="Yes" sourceRef="returns-again" targetRef="reconcile">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-returns-again-message-supervisor" name="No" sourceRef="returns-again" targetRef="message-supervisor">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" />
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-reconcile-end-done" sourceRef="reconcile" targetRef="end-done" />
+    <bpmn:sequenceFlow id="f-report-late-alert" sourceRef="report-late" targetRef="alert" />
+    <bpmn:sequenceFlow id="f-alert-end-alert" sourceRef="alert" targetRef="end-alert" />
+    <bpmn:sequenceFlow id="f-reconcile-late-message-supervisor" sourceRef="reconcile-late" targetRef="message-supervisor" />
+    <bpmn:sequenceFlow id="f-message-supervisor-end-message" sourceRef="message-supervisor" targetRef="end-message" />
+  </bpmn:process>
+</bpmn:definitions>

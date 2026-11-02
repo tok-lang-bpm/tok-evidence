@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Order" name="Order" />
+  <bpmn:message id="Message_Delivery" name="Delivery" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+    <bpmn:participant id="suppliers" name="Suppliers" />
+    <bpmn:messageFlow id="m-place-order-suppliers" name="Order" sourceRef="place-order" targetRef="suppliers" messageRef="Message_Order" />
+    <bpmn:messageFlow id="m-suppliers-receive" name="Delivery" sourceRef="suppliers" targetRef="receive" messageRef="Message_Delivery" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organisation" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="wh" name="Warehouse staff">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>monitor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>signal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>place-shelves</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="sys" name="Inventory system">
+        <bpmn:flowNodeRef>update-dates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-levels</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="proc" name="Procurement team">
+        <bpmn:flowNodeRef>place-order</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:task id="monitor" name="Monitor inventory levels" />
+    <bpmn:exclusiveGateway id="g" name="Stock reaches threshold?" default="f-g-monitor" />
+    <bpmn:task id="signal" name="Signal need to reorder" />
+    <bpmn:task id="receive" name="Receive stock" />
+    <bpmn:task id="inspect" name="Inspect stock for quality" />
+    <bpmn:task id="place-shelves" name="Place stock on shelves or in storage" />
+    <bpmn:task id="update-dates" name="Update expected delivery dates" />
+    <bpmn:task id="record" name="Record stock in system" />
+    <bpmn:task id="update-levels" name="Update inventory levels" />
+    <bpmn:endEvent id="e" name="End" />
+    <bpmn:task id="place-order" name="Place order with suppliers" />
+    <bpmn:sequenceFlow id="f-s-monitor" sourceRef="s" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-monitor-g" sourceRef="monitor" targetRef="g" />
+    <bpmn:sequenceFlow id="f-g-signal" name="Yes" sourceRef="g" targetRef="signal">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reorder = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-g-monitor" name="No" sourceRef="g" targetRef="monitor" />
+    <bpmn:sequenceFlow id="f-signal-place-order" sourceRef="signal" targetRef="place-order" />
+    <bpmn:sequenceFlow id="f-place-order-update-dates" sourceRef="place-order" targetRef="update-dates" />
+    <bpmn:sequenceFlow id="f-update-dates-receive" sourceRef="update-dates" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-inspect" sourceRef="receive" targetRef="inspect" />
+    <bpmn:sequenceFlow id="f-inspect-record" sourceRef="inspect" targetRef="record" />
+    <bpmn:sequenceFlow id="f-record-place-shelves" sourceRef="record" targetRef="place-shelves" />
+    <bpmn:sequenceFlow id="f-place-shelves-update-levels" sourceRef="place-shelves" targetRef="update-levels" />
+    <bpmn:sequenceFlow id="f-update-levels-e" sourceRef="update-levels" targetRef="e" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,67 @@
+tok 1.0 "Intake procedure of the mental health care institute"
+
+pool doc "Family doctor"
+
+pool inst "Mental health care institute"
+  lane sec "Secretarial office"
+    start s0 "Telephone notice received" message="Telephone notice"
+    task inquire "Inquire name and residence of patient"
+    task put-through "Put doctor through to responsible nursing officer"
+    task store-info "Store information of registration form in information system"
+    task print-info "Print information from information system"
+    xor new-pat "New patient?"
+    task create-file "Create patient file"
+    xor m1
+    task store-file "Store registration form and print in patient file"
+    task make-cards "Produce two registration cards"
+    task add-list "Add new patient to list of new notices"
+    xor med-req "Medical file required?"
+    task letter "Prepare and send letter to family doctor requesting copy of medical file"
+    catch copy-rcv "Copy of medical file received" message="Copy of medical file"
+    task inform-second "Inform second intaker that copy is received"
+    task add-copy "Add copy to patient file"
+    xor m2
+    task store-assign "Store assignment of each patient in information system"
+    task pass-cards "Pass registration cards to first and second intaker"
+    and fork
+    task type-tapes "Type out dictaphone tapes"
+    task add-tape "Add typed information to patient file"
+    and join
+    task list-status "Put patient on list of patients that reach this status"
+    task provide-list "Provide team leader with list of these patients"
+    note nt1 "Patient files are kept at the secretarial office and may not leave the building" on=store-file
+  lane nurse "Nursing officer"
+    task inquiry "Make full inquiry into mental, health and social state of patient"
+    task record-form "Record information on registration form"
+    task hand-in "Hand in registration form at secretarial office"
+  lane team "Team leader"
+    task staff-meeting "Hold Wednesday staff meeting of the medical team"
+    task assign "Assign each new patient to a first and a second intaker"
+    task record-assign "Record assignments on assignment list"
+    task med-check "Determine whether medical file is required and add it to assignment list"
+    task treatment "Formulate treatment plan with first and second intaker, team leader and attending psychiatrist"
+    end done "Intake procedure ended"
+  lane first "Social-medical worker (first intaker)"
+    task first-plan "Plan first meeting with patient as soon as possible"
+    task first-meet "Examine patient with standard checklist and register additional observations in personal notebook"
+    task first-notes "Put copy of notes in patient file"
+    task first-check "Add standard checklist to patient file"
+  lane second "Physician (second intaker)"
+    task second-plan "Plan first meeting with patient after medical information has been received"
+    task second-meet "Hold first meeting with patient and record observations on dictaphone"
+
+flow s0 -> inquire -> put-through -> inquiry -> record-form -> hand-in -> store-info -> print-info -> new-pat
+flow new-pat -> create-file "yes" when="new_patient = true"
+flow new-pat -> m1 "no" default
+flow create-file -> m1 -> store-file -> make-cards -> add-list -> staff-meeting -> assign -> record-assign -> med-check -> store-assign -> pass-cards -> med-req
+flow med-req -> letter "yes" when="medical_file = true"
+flow med-req -> m2 "no" default
+flow letter -> copy-rcv -> inform-second -> add-copy -> m2 -> fork
+flow fork -> first-plan -> first-meet -> first-notes -> first-check -> join
+flow fork -> second-plan -> second-meet -> type-tapes -> add-tape -> join -> list-status -> provide-list -> treatment -> done
+
+message doc -> s0 "Telephone notice"
+message letter -> doc "Request for copy of medical file"
+message doc -> copy-rcv "Copy of medical file"
+
+note nt1 "Patient files are kept at the secretarial office and may not leave the building" on=store-file

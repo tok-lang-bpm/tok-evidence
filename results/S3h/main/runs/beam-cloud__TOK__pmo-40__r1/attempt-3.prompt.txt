@@ -1,0 +1,56 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: OEE
+
+Write a process, that collects relevant information from a machine, and calculated the Overall Equipment Efficiency (OEE).
+If the OEE falls below a certain value/percentage, stop the machine and send an email to an engineer.
+When the machine is restarted, continue measuring.
+When the machine is disconnected, stop the process.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "OEE"
+
+pool organization "Organization"
+  lane process "Process"
+    start started "OEE Monitoring Started"
+    task collect "Collect relevant information from the machine"
+    task calculate "Calculate the Overall Equipment Efficiency (OEE)"
+    xor below "OEE below threshold?"
+    and stop_parallel "Stop machine and send email"
+    task stop_machine "Stop the machine"
+    task send_email "Send an email to an engineer"
+    and stop_join "Machine stopped and email sent"
+    catch restarted "Machine restarted" signal="Machine restarted"
+    eventsub disconnected "Machine disconnected"
+      start disconnected_start "Machine disconnected" signal="Machine disconnected"
+      end terminated "Stop process" terminate
+      flow disconnected_start -> terminated
+    end stopped "Process stopped"
+
+flow started -> collect -> calculate -> below
+flow below -> stop_parallel "yes" when="oee < threshold"
+flow below -> collect "no" default
+flow stop_parallel -> stop_machine
+flow stop_parallel -> send_email
+flow stop_machine -> stop_join
+flow send_email -> stop_join
+flow stop_join -> restarted
+flow restarted -> collect
+```
+
+The tok checker reports these problems in it:
+
+- line 18: warning W041: element not reachable from a start event (stopped)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

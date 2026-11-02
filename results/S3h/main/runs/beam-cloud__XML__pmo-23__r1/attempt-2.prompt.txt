@@ -1,0 +1,85 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+The sales clerks in a bank can use their software frontend to receive the credit-scoring for a certain customer. 
+This starts a process in the banking system which communicates with the agency in the background. 
+This process sends a scoring request to the agency right after the beginning. 
+Then, the Agency does a first quick scoring (level 1). 
+This will often lead to an immediate result which is then returned directly to the banking system within seconds. 
+The banking process presents the result to the clerk sitting at the frontend. 
+Sometimes the scoring cannot be determined immediately and takes longer. 
+In this case the agency informs the banking process of the delay and then starts the level 2 scoring (which can take up to a couple of minutes). 
+After the scoring result is determined, the information is sent back to the banking process. 
+The banking process displays a message to the clerk when he receives information about the delay to check again later. 
+As soon as the result arrives, it can be seen at the frontend.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="bank" name="Bank" processRef="bank-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="bank-process" isExecutable="false">
+    <bpmn:laneSet id="bank-lanes">
+      <bpmn:lane id="sales-clerk" name="Sales Clerk">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="banking-system" name="Banking System">
+        <bpmn:flowNodeRef>send-request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>display-delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>present-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="credit-agency" name="Credit Agency">
+        <bpmn:flowNodeRef>level-1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return-result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform-delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>level-2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-result</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Credit scoring requested" />
+    <bpmn:task id="send-request" name="Send scoring request" />
+    <bpmn:task id="level-1" name="Perform level 1 scoring" />
+    <bpmn:exclusiveGateway id="immediate" name="Immediate result?" default="flow-delay" />
+    <bpmn:task id="return-result" name="Return scoring result" />
+    <bpmn:task id="inform-delay" name="Inform of delay" />
+    <bpmn:task id="display-delay" name="Display delay message" />
+    <bpmn:task id="level-2" name="Perform level 2 scoring" />
+    <bpmn:task id="send-result" name="Send scoring result" />
+    <bpmn:exclusiveGateway id="merge" />
+    <bpmn:task id="present-result" name="Present scoring result" />
+    <bpmn:endEvent id="end" name="Credit scoring completed" />
+    <bpmn:sequenceFlow id="flow-1" sourceRef="start" targetRef="send-request" />
+    <bpmn:sequenceFlow id="flow-2" sourceRef="send-request" targetRef="level-1" />
+    <bpmn:sequenceFlow id="flow-3" sourceRef="level-1" targetRef="immediate" />
+    <bpmn:sequenceFlow id="flow-immediate" name="yes" sourceRef="immediate" targetRef="return-result" />
+    <bpmn:sequenceFlow id="flow-delay" name="no" sourceRef="immediate" targetRef="inform-delay" />
+    <bpmn:sequenceFlow id="flow-delay-1" sourceRef="inform-delay" targetRef="display-delay" />
+    <bpmn:sequenceFlow id="flow-delay-2" sourceRef="display-delay" targetRef="level-2" />
+    <bpmn:sequenceFlow id="flow-delay-3" sourceRef="level-2" targetRef="send-result" />
+    <bpmn:sequenceFlow id="flow-merge-1" sourceRef="return-result" targetRef="merge" />
+    <bpmn:sequenceFlow id="flow-merge-2" sourceRef="send-result" targetRef="merge" />
+    <bpmn:sequenceFlow id="flow-present" sourceRef="merge" targetRef="present-result" />
+    <bpmn:sequenceFlow id="flow-end" sourceRef="present-result" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: flow-immediate: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

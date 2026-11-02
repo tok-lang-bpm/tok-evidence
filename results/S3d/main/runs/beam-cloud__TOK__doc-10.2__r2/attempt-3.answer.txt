@@ -1,0 +1,66 @@
+```tok
+tok 1.0 "MPON registration process"
+
+pool organisation "Organisation"
+  lane mpn "MPON"
+    start start_process "Start"
+    task report_meter "Report the meter operation"
+    task acquire_equipment "Perform equipment acquisition"
+    xor mpn_outcome "MPON outcome"
+    task inform_failure "Inform the GO about the failure of the entire process"
+    task inform_success "Inform the GO about the successful completion of the entire process"
+    end mpn_finished "MPON finished"
+  lane go "GO"
+    task examine_application "Examine the application"
+    xor application_decision "Application complete?"
+    task reject_application "Reject the application"
+    task confirm_application "Confirm the application"
+    task inform_mpoo_registration "Inform the MPOO about the registration confirmation of the MPON"
+    task inform_mspo_registration "Inform the MSPO about the registration confirmation of the MPON"
+    or equipment_gw "Equipment?"
+    or equipment_join "Equipment completed"
+    and parallel_split "Parallel completion"
+    eventgw wait_mp "Wait for MPON message"
+    catch failure_message "Failure message" message="failure"
+    catch success_message "Success message" message="success"
+    catch deadline_timer "Deadline expired" timer=P7D
+    task confirm_failure "Confirm the failure of the assignment to the MPON"
+    task assign_mp "Assign the MPON"
+    task confirm_assignment "Confirm the assignment to the MPON"
+    task inform_mp_failure_deadline "Inform the MPON about the failure of the overall transaction by deadline"
+    task inform_mpoo_failure "Inform the MPOO about the failure of the assignment of the MPON"
+    task inform_mpoo_assignment "Inform the MPOO about the assignment of the MPON"
+    task inform_mspo_failure "Inform the MSPO about the failure of the assignment of the MPON"
+    task inform_mspo_assignment "Inform the MSPO about the assignment of the MPON"
+    task inform_sp_assignment "Inform the SP about the assignment of the MPON"
+    end rejected "Application rejected"
+    end failure_end "Process failed"
+    end success_end "Process completed"
+  lane mpoo "MPOO"
+    task change_equipment "Perform equipment changes"
+
+flow start_process -> report_meter -> examine_application -> application_decision
+flow application_decision -> reject_application "reject"
+flow application_decision -> confirm_application "confirm"
+flow reject_application -> rejected
+flow confirm_application -> inform_mpoo_registration -> inform_mspo_registration -> equipment_gw
+flow equipment_gw -> acquire_equipment "acquisition" when="acquisitionRequired"
+flow equipment_gw -> change_equipment "changes" default
+flow acquire_equipment -> equipment_join
+flow change_equipment -> equipment_join
+flow equipment_join -> parallel_split
+flow parallel_split -> mpn_outcome
+flow parallel_split -> wait_mp
+flow mpn_outcome -> inform_failure "failure"
+flow mpn_outcome -> inform_success "success"
+flow inform_failure -> mpn_finished
+flow inform_success -> mpn_finished
+flow wait_mp -> failure_message
+flow wait_mp -> success_message
+flow wait_mp -> deadline_timer
+flow failure_message -> confirm_failure
+flow success_message -> assign_mp -> confirm_assignment
+flow deadline_timer -> inform_mp_failure_deadline -> confirm_failure
+flow confirm_failure -> inform_mpoo_failure -> inform_mspo_failure -> failure_end
+flow confirm_assignment -> inform_mpoo_assignment -> inform_mspo_assignment -> inform_sp_assignment -> success_end
+```

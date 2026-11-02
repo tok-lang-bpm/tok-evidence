@@ -1,0 +1,25 @@
+tok 1.0 "OEE"
+
+pool org "Organisation"
+  lane machine "Machine"
+    task stopm "Stop the machine"
+  lane monitor "Monitoring system"
+    start begin "Measurement started"
+    xor measure
+    task collect "Collect relevant information from the machine"
+    boundary bd "Machine disconnected" on=collect message="Machine disconnected"
+    task calc "Calculate the OEE"
+    xor below "OEE below the threshold?"
+    task email "Send an email to the engineer"
+    eventgw wait "Wait for the machine"
+    catch rst "Machine restarted" message="Machine restarted"
+    catch disc "Machine disconnected" message="Machine disconnected"
+    end stopped "Process stopped"
+
+flow begin -> measure -> collect -> calc -> below
+flow below -> stopm "yes" when="oee < threshold"
+flow below -> measure "no" default
+flow stopm -> email -> wait
+flow wait -> rst -> measure
+flow wait -> disc -> stopped
+flow bd -> stopped

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="msg-reply" name="Customer reply" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="MORTGAGE-PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="MORTGAGE-PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE-CSR" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-offer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reply-received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>no-answer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reply-type</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>merge-declined</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>update-case</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archive-case</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel-case</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move-admin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>moved-admin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request-docs</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Mortgage case opened" />
+    <bpmn:task id="send-offer" name="Send the mortgage offer to the customer" />
+    <bpmn:exclusiveGateway id="merge-wait" name="Offer sent or documents requested" />
+    <bpmn:eventBasedGateway id="wait-reply" name="Wait for the customer reply" />
+    <bpmn:intermediateCatchEvent id="reply-received" name="Customer reply received">
+      <bpmn:messageEventDefinition messageRef="msg-reply" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="no-answer" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="reply-type" name="Type of reply?" />
+    <bpmn:exclusiveGateway id="merge-declined" name="Mortgage declined or no answer" />
+    <bpmn:task id="update-case" name="Update the case details" />
+    <bpmn:task id="archive-case" name="Archive the case" />
+    <bpmn:task id="cancel-case" name="Cancel the case" />
+    <bpmn:endEvent id="cancelled" name="Case cancelled" />
+    <bpmn:task id="move-admin" name="Move the case to administration for completion" />
+    <bpmn:endEvent id="moved-admin" name="Case moved to administration" />
+    <bpmn:task id="request-docs" name="Send a message requesting the outstanding documents to the customer" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="send-offer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="send-offer" targetRef="merge-wait" />
+    <bpmn:sequenceFlow id="f3" sourceRef="merge-wait" targetRef="wait-reply" />
+    <bpmn:sequenceFlow id="f4" sourceRef="wait-reply" targetRef="reply-received" />
+    <bpmn:sequenceFlow id="f5" sourceRef="wait-reply" targetRef="no-answer" />
+    <bpmn:sequenceFlow id="f6" sourceRef="reply-received" targetRef="reply-type" />
+    <bpmn:sequenceFlow id="f7" name="Mortgage declined" sourceRef="reply-type" targetRef="merge-declined" />
+    <bpmn:sequenceFlow id="f8" name="Offer documents and all prerequisite documents received" sourceRef="reply-type" targetRef="move-admin" />
+    <bpmn:sequenceFlow id="f9" name="Prerequisite documents missing" sourceRef="reply-type" targetRef="request-docs" />
+    <bpmn:sequenceFlow id="f10" sourceRef="no-answer" targetRef="merge-declined" />
+    <bpmn:sequenceFlow id="f11" sourceRef="merge-declined" targetRef="update-case" />
+    <bpmn:sequenceFlow id="f12" sourceRef="update-case" targetRef="archive-case" />
+    <bpmn:sequenceFlow id="f13" sourceRef="archive-case" targetRef="cancel-case" />
+    <bpmn:sequenceFlow id="f14" sourceRef="cancel-case" targetRef="cancelled" />
+    <bpmn:sequenceFlow id="f15" sourceRef="move-admin" targetRef="moved-admin" />
+    <bpmn:sequenceFlow id="f16" sourceRef="request-docs" targetRef="merge-wait" />
+  </bpmn:process>
+</bpmn:definitions>

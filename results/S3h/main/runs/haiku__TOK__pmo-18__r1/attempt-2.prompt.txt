@@ -1,0 +1,140 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+A university enrollment system involves the following steps:
+Prospective students submit an application online.
+The admissions office reviews the application and supporting documents.
+If documents are missing, the applicant is notified to provide the missing items.
+Upon receiving all documents, the application is evaluated by the admissions committee.
+Concurrently, the finance department processes any application fees or waivers.
+If the application is accepted, an acceptance letter is sent.
+Otherwise, a rejection letter is sent and the process ends.
+After being accepted, the student must then confirm enrollment by a specified deadline; otherwise the application will be canceled.
+If the student confirms, they receive orientation materials and the IT department sets up student accounts for email, online portals, and library access.
+If the student is international, the international student office assists with visa processing.
+The student obtains a student ID card and starts creating their study plan, which includes:
+Meeting with an academic advisor.
+Selecting courses.
+Resolving any schedule conflicts.
+The student begins attending classes.
+Throughout each semester, the student may add or drop courses within the add/drop period.
+At the end of the semester, grades are posted, and the student can review them online.
+If the student has any grievances, they can file an appeal, which includes:
+Submitting an appeal form.
+Meeting with the appeals committee.
+Awaiting a decision.
+The process repeats each semester until the student graduates or withdraws.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "University enrollment"
+
+pool uni "University"
+  lane student "Student"
+    start apply "Prospective student applies"
+    task submit "Submit the application online"
+    task provide "Provide the missing items"
+    task confirm "Confirm enrollment by the deadline"
+    xor deadline "Enrollment confirmed by the deadline?"
+    end endcancel "Application canceled"
+    and forkB "Split"
+    task receive "Receive the orientation materials"
+    and joinB "Join"
+    xor intl "International student?"
+    xor intlmerge "Merge"
+    task idcard "Obtain the student ID card"
+    task planstart "Start creating the study plan"
+    task select "Select courses"
+    task resolve "Resolve any schedule conflicts"
+    task attend "Attend classes"
+    xor addq "Add or drop courses?"
+    task addrop "Add or drop courses within the add/drop period"
+    task reviewgrades "Review grades online"
+    xor grievance "Has a grievance?"
+    task appeal "Submit the appeal form"
+    xor semend "Semester ends"
+    xor status "Graduate, withdraw or continue?"
+    task withdraw "Withdraw from the university"
+    end endgrad "Student graduates"
+    end endwith "Student withdraws"
+  lane admissions "Admissions office"
+    task review "Review the application and supporting documents"
+    xor docs "All documents received?"
+    task notify "Notify the applicant of missing items"
+    and forkA "Split"
+    and joinA "Join"
+    task sendacc "Send the acceptance letter"
+    task sendrej "Send the rejection letter"
+    end endrej "Application rejected"
+  lane committee "Admissions committee"
+    task evaluate "Evaluate the application"
+    xor decide "Application accepted?"
+  lane finance "Finance department"
+    task fees "Process the application fees or waivers"
+  lane it "IT department"
+    task accounts "Set up student accounts for email, online portals and library access"
+  lane intl "International student office"
+    task visa "Assist with visa processing"
+  lane advisor "Academic advisor"
+    task advisor "Meet with an academic advisor"
+  lane registrar "Registrar"
+    task grades "Post grades"
+  lane appeals "Appeals committee"
+    task meetappeal "Meet with the appeals committee"
+    task await "Await the appeal decision"
+
+flow apply -> submit -> review -> docs
+flow docs -> notify "no"
+flow notify -> provide
+flow provide -> docs
+flow docs -> forkA "yes"
+flow forkA -> evaluate
+flow forkA -> fees
+flow evaluate -> joinA
+flow fees -> joinA
+flow joinA -> decide
+flow decide -> sendacc "accepted"
+flow decide -> sendrej "rejected"
+flow sendrej -> endrej
+flow sendacc -> confirm -> deadline
+flow deadline -> endcancel "no"
+flow deadline -> forkB "yes"
+flow forkB -> receive
+flow forkB -> accounts
+flow receive -> joinB
+flow accounts -> joinB
+flow joinB -> intl
+flow intl -> visa "yes"
+flow intl -> intlmerge "no"
+flow visa -> intlmerge
+flow intlmerge -> idcard -> planstart -> advisor -> select -> resolve -> attend
+flow attend -> addq
+flow addq -> addrop "yes"
+flow addrop -> attend
+flow addq -> grades "no"
+flow grades -> reviewgrades -> grievance
+flow grievance -> appeal "yes"
+flow appeal -> meetappeal -> await -> semend
+flow grievance -> semend "no"
+flow semend -> status
+flow status -> endgrad "graduates"
+flow status -> withdraw "withdraws"
+flow withdraw -> endwith
+flow status -> attend "continues"
+```
+
+The tok checker reports these problems in it:
+
+- line 47: error R001: identifier 'intl' is already used on line 14
+- line 50: error R001: identifier 'advisor' is already used on line 49
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

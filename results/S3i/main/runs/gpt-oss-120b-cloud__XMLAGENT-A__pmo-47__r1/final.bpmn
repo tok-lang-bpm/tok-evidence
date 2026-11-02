@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="Participant_SportsInstitute"
+                      name="Sports Institute"
+                      processRef="process" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_User" name="User">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectCourse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_UserSelectCourse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TweetInvitation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CompleteRegistration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Ticket</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Gateway_SlotsFree</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ShowCourses</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AccountExists</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EligibleUniversity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RegisterAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestActivation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AccountReadyMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_NoSlots</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="StartEvent_1" name="Start" />
+
+    <bpmn:task id="Task_SelectCourse" name="Select a course" />
+    <bpmn:exclusiveGateway id="Gateway_SlotsFree" name="Slots free?" />
+    <bpmn:task id="Task_ShowCourses" name="System shows available courses and dates" />
+    <bpmn:task id="Task_UserSelectCourse" name="Select one course" />
+    <bpmn:endEvent id="End_NoSlots" name="No slots available" />
+
+    <bpmn:exclusiveGateway id="Gateway_AccountExists" name="Account exists?" />
+    <bpmn:exclusiveGateway id="Gateway_EligibleUniversity" name="Eligible university?" />
+    <bpmn:task id="Task_RegisterAccount" name="Register account" />
+    <bpmn:task id="Task_RequestActivation" name="Request activation and wait for response" />
+    <bpmn:exclusiveGateway id="Gateway_AccountReadyMerge" name="Account ready" />
+
+    <bpmn:task id="Task_Login" name="Log into account" />
+    <bpmn:task id="Task_TweetInvitation" name="Tweet invitation via Twitter" />
+    <bpmn:task id="Task_CompleteRegistration" name="Complete registration and provide payment information" />
+    <bpmn:endEvent id="End_Ticket" name="Receive course ticket" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="flow_1" sourceRef="StartEvent_1" targetRef="Task_SelectCourse" />
+    <bpmn:sequenceFlow id="flow_2" sourceRef="Task_SelectCourse" targetRef="Gateway_SlotsFree" />
+
+    <bpmn:sequenceFlow id="flow_3_yes" name="yes" sourceRef="Gateway_SlotsFree" targetRef="Task_ShowCourses">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">slotsFree</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_3_no" name="no" sourceRef="Gateway_SlotsFree" targetRef="End_NoSlots">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!slotsFree</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="flow_4" sourceRef="Task_ShowCourses" targetRef="Task_UserSelectCourse" />
+    <bpmn:sequenceFlow id="flow_5" sourceRef="Task_UserSelectCourse" targetRef="Gateway_AccountExists" />
+
+    <bpmn:sequenceFlow id="flow_6_yes" name="yes" sourceRef="Gateway_AccountExists" targetRef="Task_Login">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">accountExists</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_6_no" name="no" sourceRef="Gateway_AccountExists" targetRef="Gateway_EligibleUniversity">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!accountExists</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="flow_7_yes" name="yes" sourceRef="Gateway_EligibleUniversity" targetRef="Task_RegisterAccount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">eligibleUniversity</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_7_no" name="no" sourceRef="Gateway_EligibleUniversity" targetRef="Task_RequestActivation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">!eligibleUniversity</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="flow_8_reg" sourceRef="Task_RegisterAccount" targetRef="Gateway_AccountReadyMerge" />
+    <bpmn:sequenceFlow id="flow_8_act" sourceRef="Task_RequestActivation" targetRef="Gateway_AccountReadyMerge" />
+
+    <bpmn:sequenceFlow id="flow_9" sourceRef="Gateway_AccountReadyMerge" targetRef="Task_Login" />
+
+    <bpmn:sequenceFlow id="flow_10" sourceRef="Task_Login" targetRef="Task_TweetInvitation" />
+    <bpmn:sequenceFlow id="flow_11" sourceRef="Task_TweetInvitation" targetRef="Task_CompleteRegistration" />
+    <bpmn:sequenceFlow id="flow_12" sourceRef="Task_CompleteRegistration" targetRef="End_Ticket" />
+  </bpmn:process>
+</bpmn:definitions>

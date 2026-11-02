@@ -1,0 +1,65 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The Customer Service Representative sends a Mortgage offer to the customer and waits for a reply. If the customer calls or writes back declining the mortgage, the case details are updated and the work is then archived prior to cancellation. If the customer sends back the completed offer documents and attaches all prerequisite documents then the case is moved to administration for completion. If all pre-requisite documents are not provided a message is generated to the customer requesting outstanding documents. If no answer is received after 2 weeks, the case details are updated prior to archive and cancellation.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Mortgage offer handling"
+
+pool org "Mortgage company"
+  lane customer "Customer"
+    task decline "Decline the mortgage"
+    task return "Return the completed offer documents with all prerequisite documents"
+  lane csr "Customer Service Representative"
+    start opened "Mortgage case started"
+    task send "Send the mortgage offer"
+    eventgw wait "Wait for reply"
+    catch declined "Mortgage declined" message="Mortgage declined"
+    catch returned "Offer documents returned" message="Offer documents returned"
+    catch timeout "No answer after 2 weeks" timer=P14D
+    xor merge
+    task update "Update the case details"
+    task archive "Archive the work"
+    task cancel "Cancel the case"
+    end cancelled "Case cancelled"
+    xor docs "All prerequisite documents provided?"
+    task move "Move the case to administration"
+    task request "Send a message requesting the outstanding documents"
+    end requested "Outstanding documents requested"
+  lane admin "Administration"
+    task complete "Complete the case"
+    end done "Case completed"
+
+flow opened -> send -> wait
+flow wait -> declined
+flow wait -> returned
+flow wait -> timeout
+flow declined -> merge
+flow timeout -> merge
+flow merge -> update -> archive -> cancel -> cancelled
+flow returned -> docs
+flow docs -> request "no"
+flow docs -> move "yes"
+flow move -> complete -> done
+flow request -> requested
+
+message decline -> declined "Decline"
+message return -> returned "Documents returned"
+```
+
+The tok checker reports these problems in it:
+
+- line 40: error R022: message flow decline -> declined must connect two different pools
+- line 41: error R022: message flow return -> returned must connect two different pools
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

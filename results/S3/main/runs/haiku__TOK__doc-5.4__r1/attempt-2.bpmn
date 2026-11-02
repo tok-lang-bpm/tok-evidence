@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Payment_confirmed" name="Payment confirmed" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Expense report handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>purchase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>edit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>rules</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="treasurer" name="Treasurer">
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendback</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="payment" name="Payment system">
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="needed" name="Product or service required" />
+    <bpmn:task id="purchase" name="Purchase the product or service" />
+    <bpmn:task id="submit" name="Submit the expense report with the list of items and receipts" />
+    <bpmn:task id="edit" name="Edit the expense report" />
+    <bpmn:exclusiveGateway id="rules" name="Expense rules decide on first inspection?" default="f-rules-review" />
+    <bpmn:task id="decide" name="Accept or reject the report by expense rules" />
+    <bpmn:task id="review" name="Review the expense report" />
+    <bpmn:exclusiveGateway id="approved" name="Report approved?" />
+    <bpmn:task id="check" name="Check that all receipts are submitted and match the items" />
+    <bpmn:exclusiveGateway id="complete" name="All receipts submitted and matching?" />
+    <bpmn:task id="accept" name="Accept the expenses for processing" />
+    <bpmn:task id="sendback" name="Send the report back to the employee" />
+    <bpmn:serviceTask id="pay" name="Link the report to the payment system" />
+    <bpmn:intermediateCatchEvent id="confirmed" name="Payment confirmed">
+      <bpmn:messageEventDefinition id="confirmed-def" messageRef="Message_Payment_confirmed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="done" name="Process ended" />
+    <bpmn:sequenceFlow id="f-needed-purchase" sourceRef="needed" targetRef="purchase" />
+    <bpmn:sequenceFlow id="f-purchase-submit" sourceRef="purchase" targetRef="submit" />
+    <bpmn:sequenceFlow id="f-submit-rules" sourceRef="submit" targetRef="rules" />
+    <bpmn:sequenceFlow id="f-rules-decide" name="yes" sourceRef="rules" targetRef="decide">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">rules_decide = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-rules-review" name="no" sourceRef="rules" targetRef="review" />
+    <bpmn:sequenceFlow id="f-decide-approved" sourceRef="decide" targetRef="approved" />
+    <bpmn:sequenceFlow id="f-review-approved" sourceRef="review" targetRef="approved" />
+    <bpmn:sequenceFlow id="f-approved-check" name="yes" sourceRef="approved" targetRef="check" />
+    <bpmn:sequenceFlow id="f-approved-edit" name="no" sourceRef="approved" targetRef="edit" />
+    <bpmn:sequenceFlow id="f-check-complete" sourceRef="check" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-complete-accept" name="yes" sourceRef="complete" targetRef="accept" />
+    <bpmn:sequenceFlow id="f-complete-sendback" name="no" sourceRef="complete" targetRef="sendback" />
+    <bpmn:sequenceFlow id="f-accept-pay" sourceRef="accept" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-confirmed" sourceRef="pay" targetRef="confirmed" />
+    <bpmn:sequenceFlow id="f-confirmed-done" sourceRef="confirmed" targetRef="done" />
+    <bpmn:sequenceFlow id="f-sendback-edit" sourceRef="sendback" targetRef="edit" />
+    <bpmn:sequenceFlow id="f-edit-review" sourceRef="edit" targetRef="review" />
+  </bpmn:process>
+</bpmn:definitions>

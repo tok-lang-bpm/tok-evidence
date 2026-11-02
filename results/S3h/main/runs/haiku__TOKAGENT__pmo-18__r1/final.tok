@@ -1,0 +1,80 @@
+tok 1.0 "University enrollment"
+
+pool uni "University"
+  lane student "Student"
+    start apply "Start of enrollment"
+    task submit-app "Submit application online"
+    task provide-items "Provide missing items"
+    task confirm "Confirm enrollment by the deadline"
+    boundary cancel-timer "Deadline passed" on=confirm timer=P30D doc="The deadline duration is not given in the text; P30D is a placeholder."
+    end end-canceled "Application canceled"
+    task obtain-id "Obtain student ID card"
+    sub plan "Create study plan"
+      start plan-start "Study plan starts"
+      task meet-advisor "Meet with academic advisor"
+      task select-courses "Select courses"
+      task resolve-conflicts "Resolve schedule conflicts"
+      end plan-end "Study plan done"
+    xor g-sem
+    task begin-classes "Begin attending classes"
+    task add-drop "Add or drop courses in the add/drop period"
+    task review-grades "Review grades online"
+    xor g-grv "Grievance filed?"
+    task submit-appeal "Submit appeal form"
+    xor g-grv-join
+    xor g-end "Graduates or withdraws?"
+    end end-graduated "Student graduates"
+    end end-withdrawn "Student withdraws"
+  lane admissions "Admissions office"
+    task review-docs "Review application and supporting documents"
+    xor g-docs "All documents received?"
+    task notify-missing "Notify applicant of missing items"
+    and g-fork
+    and g-join
+    xor g-accept "Application accepted?"
+    task send-accept "Send acceptance letter"
+    task send-reject "Send rejection letter"
+    end end-rejected "Application rejected"
+    and g-onb
+    task send-orient "Send orientation materials"
+    and g-onb-join
+    xor g-intl "International student?"
+    xor g-intl-join
+    task post-grades "Post grades" doc="The text does not name the actor for posting grades; placed with the admissions office."
+  lane committee "Admissions committee"
+    task evaluate-app "Evaluate application"
+  lane finance "Finance department"
+    task process-fees "Process application fees or waivers"
+  lane it "IT department"
+    task setup-accounts "Set up student accounts for email, online portals and library access"
+  lane intl "International student office"
+    task assist-visa "Assist with visa processing"
+  lane appeals "Appeals committee"
+    task meet-appeals "Meet with appeals committee"
+    task await-decision "Await decision"
+
+flow apply -> submit-app -> review-docs -> g-docs
+flow g-docs -> g-fork "Yes" when="allDocuments = true"
+flow g-docs -> notify-missing "No" default
+flow notify-missing -> provide-items -> review-docs
+flow g-fork -> evaluate-app -> g-join
+flow g-fork -> process-fees -> g-join -> g-accept
+flow g-accept -> send-accept "Yes" when="accepted = true"
+flow g-accept -> send-reject "No" default
+flow send-reject -> end-rejected
+flow send-accept -> confirm -> g-onb
+flow cancel-timer -> end-canceled
+flow g-onb -> send-orient -> g-onb-join
+flow g-onb -> setup-accounts -> g-onb-join -> g-intl
+flow g-intl -> assist-visa "Yes" when="international = true"
+flow g-intl -> g-intl-join "No" default
+flow assist-visa -> g-intl-join -> obtain-id -> plan -> g-sem
+flow plan-start -> meet-advisor -> select-courses -> resolve-conflicts -> plan-end
+flow g-sem -> begin-classes -> add-drop -> post-grades -> review-grades -> g-grv
+flow g-grv -> submit-appeal "Yes" when="grievance = true"
+flow submit-appeal -> meet-appeals -> await-decision -> g-grv-join
+flow g-grv -> g-grv-join "No" default
+flow g-grv-join -> g-end
+flow g-end -> g-sem "Continues" default
+flow g-end -> end-graduated "Graduates" when="graduated = true"
+flow g-end -> end-withdrawn "Withdraws" when="withdrawn = true"

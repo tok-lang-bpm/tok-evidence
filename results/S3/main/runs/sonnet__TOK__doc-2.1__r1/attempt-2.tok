@@ -1,0 +1,107 @@
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start perceived "Service degradation perceived"
+    task sendlist "Send list of problem parameters"
+    task receivereport "Receive report about service performance and problem resolution"
+    end customerdone "Customer process ended"
+  lane cs "Customer Service"
+    task enterreport "Enter problem report into system T"
+    task compare "Compare problem report to customer SLA"
+    task determine "Determine counter measures and priorities"
+    xor premium "Customer premium?"
+    task extrafix "Link to extra problem fix process"
+    xor premiumjoin
+    xor affects "Significance affects counter measures?"
+    task reprioritize "Re-prioritize counter measures"
+    xor affectsjoin
+    task createdetailed "Create detailed problem report"
+    task senddetailed "Send detailed problem report to Service Management"
+    and csfork
+    task createcustreport "Create report for customer"
+    task sendcustreport "Send report to customer"
+    and sentfork
+    task reportrebate "Report SLA violation rebate to Billing & Collections"
+    and csjoinall
+    end csdone "Customer Service process ended"
+  lane eservice "Electronic service"
+    task significance "Determine significance of customer"
+  lane sm "Service Management"
+    task investigate "Investigate whether problem is analyzable"
+    xor analyzable "Problem analyzable by Service Management?"
+    task sendtorp "Send detailed problem report to Resource Provisioning"
+    task smanalyze "Analyze problem"
+    task smtrouble "Create trouble report"
+    xor smjoin
+    task finalstatus "Prepare final status report"
+    task decide "Determine counter measures"
+    xor paths "Which counter measure is required?"
+    task sendperformance "Send actual service performance to Customer Service"
+    task minor "Undertake corrective actions"
+    xor resjoin
+    task createresolution "Create problem resolution report"
+    task sendresolution "Send problem resolution report to Customer Service"
+    task createrestore "Create request for automatic resource restoration"
+    task sendrestore "Send request to Resource Provisioning"
+    task receivets "Receive trouble-shooting report"
+    xor pathsjoin
+  lane rp "Resource Provisioning"
+    task checkprob "Check whether there are any possible problems"
+    xor detected "Problem detected?"
+    task normal "Create notification about normal service execution"
+    task rpanalyze "Analyze problem"
+    task rptrouble "Create trouble report"
+    xor rpjoin
+    task statusreport "Include report in status report"
+    task sendstatus "Send status report to Service Management"
+    eventgw waitrestore
+    catch restorereceived "Restoration request received" message="Restoration request"
+    catch timeout "2 days passed" timer=P2D
+    end terminated "Process terminated"
+    task trackerrors "Track all possible errors"
+    task rpcorrect "Undertake necessary corrective actions"
+    task createts "Create trouble-shooting report"
+    task sendts "Send trouble-shooting report to Service Management"
+    end rpdone "Resource Provisioning process ended"
+  lane billing "Billing & Collections"
+    task adjust "Adjust billing"
+
+flow perceived -> sendlist -> enterreport -> compare -> determine -> significance -> premium
+flow premium -> extrafix "yes"
+flow premium -> premiumjoin "no"
+flow extrafix -> premiumjoin
+flow premiumjoin -> affects
+flow affects -> reprioritize "yes"
+flow affects -> affectsjoin "no"
+flow reprioritize -> affectsjoin
+flow affectsjoin -> createdetailed -> senddetailed -> investigate -> analyzable
+flow analyzable -> sendtorp "no"
+flow analyzable -> smanalyze "yes"
+flow smanalyze -> smtrouble -> smjoin
+flow sendtorp -> checkprob -> detected
+flow detected -> normal "no"
+flow detected -> rpanalyze "yes"
+flow rpanalyze -> rptrouble -> rpjoin
+flow normal -> rpjoin
+flow rpjoin -> statusreport -> sendstatus -> smjoin
+flow smjoin -> finalstatus -> decide -> paths
+flow paths -> sendperformance "no problem detected"
+flow paths -> minor "minor corrective actions"
+flow paths -> createrestore "automatic restoration required"
+flow minor -> resjoin
+flow receivets -> resjoin
+flow resjoin -> createresolution -> sendresolution -> pathsjoin
+flow sendperformance -> pathsjoin
+flow pathsjoin -> csfork
+flow createrestore -> sendrestore -> waitrestore
+flow waitrestore -> restorereceived
+flow waitrestore -> timeout
+flow timeout -> terminated
+flow restorereceived -> trackerrors -> rpcorrect -> createts -> sendts -> rpdone
+flow sendts -> receivets
+flow csfork -> createcustreport -> sendcustreport -> sentfork
+flow csfork -> reportrebate -> adjust -> csjoinall
+flow sentfork -> receivereport -> customerdone
+flow sentfork -> csjoinall
+flow csjoinall -> csdone

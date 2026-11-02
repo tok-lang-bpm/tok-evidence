@@ -1,0 +1,62 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 3815,
+  "output_tokens": 1806,
+  "seconds": 7.573223100014729,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to produce tok model. Steps: Identify actors: HR clerk (person). Possibly Department (maybe role). Text: \"I am the HR clerk. When a vacancy is reported to me, I create a job description from the information. Sometimes there is still confusion ... I must ask the Department again. I am submitting the job description for consideration and waiting for the approval. But, it can also happen that the department does not approve it, but rejects it, and requests a correction. Then I correct the description and submit it again for consideration. If the description is finally approved, I post the job.\"\n\nActors: HR clerk, Department. Use pool organization, lanes: HR clerk, Department.\n\nSequence:\n\nStart event (vacancy reported) -> task \"Create job description from the information\". Then decision: confusion? XOR \"Confusion in the message?\" If yes -> task \"Ask the Department again\" (maybe done by HR clerk), then loop back? After asking, maybe they get clarification then continue to submission. In description, after asking, they submit job description for consideration and wait for approval. So after \"Ask the Department again\", they still submit.\n\nSo flow: after create, xor confusion? label \"yes\" leads to task \"Ask the Department again\", then continue to next step. The \"no\" path goes directly.\n\nNext task: \"Submit the job description for consideration\". Then wait for approval: decision by Department: approve? XOR \"Department approves?\" If yes -> task \"Post the job\" then end. If no -> task \"Correct the description\" then loop back to submit again (maybe after correction). That forms loop.\n\nSo we need parallel? No.\n\nThus model: start -> create JD -> xor confusion? -> (yes) ask Department again -> (no) directly. Both converge -> task \"Submit the job description for consideration\". Then xor approval? -> (yes) task \"Post the job\" -> end. (no) task \"Correct the description\" -> flow back to \"Submit the job description for consideration\". Need a loop, can use flow from correct to submit.\n\nNeed to ensure gates have matching join if multiple splits: confusion XOR has two outgoing flows merging before submit. Use an XOR join (same ID maybe). So after both branches, flow to an XOR join node then to submit.\n\nSimplify: use xor \"confusion?\" with two outgoing flows merging to same next activity, no explicit join needed because XOR can converge implicitly? In tok, need explicit join if multiple flows converge. So we can add an xor join with same ID? In BPMN, XOR split and join are separate nodes. We'll create xor \"confusion?\" and then later xor \"confusion_join\". Or use 'xor' same ID? I think explicit separate.\n\nSimilarly after approval decision, we have split; the \"no\" path loops back to submit; the \"yes\" path goes to post then end. No need for join because only one path leads to end.\n\nLet's craft tok.\n\nHeader: tok 1.0 \"Job posting process\" executable? Not required but okay.\n\npool org \"Organisation\"\n  lane hr_clerk \"HR Clerk\"\n  lane department \"Department\"\n\nPlace tasks in appropriate lanes: creation, ask, submit, correct maybe in hr_clerk lane. Approval decision maybe in department lane? The decision is made by department, so place xor in department lane, maybe after submit flows to department lane.\n\nWe need to assign tasks to lanes accordingly.\n\nSequence flows across lanes allowed.\n\nLet's write model lines.\n\nStart event: start start \"Vacancy reported\"\n\nTask1: task create_jd \"Create job description from the information\"   placed in hr_clerk lane.\n\nXOR confusion: xor confusion \"Confusion in the message?\" with two flows: yes (label \"yes\") to ask, no (label \"no\") default maybe.\n\nTask ask: task ask_dept \"Ask the Department again\" (hr_clerk lane)\n\nXOR join: xor confusion_join (maybe just merge). Could use xor as join.\n\nThen task submit: task submit_jd \"Submit the job description for consideration\" (hr_clerk lane)\n\nNow department decision: xor approval \"Department approves?\" placed in department lane. Outgoing flows: yes to post, no to correct.\n\nTask post: task post_job \"Post the job\" (hr_clerk lane) then end.\n\nTask correct: task correct_jd \"Correct the description\" (hr_clerk lane) then flow back to submit_jd (loop).\n\nEnd event: end done \"Job posted\"\n\nAlso there may be end after loop? Only final end.\n\nLet's assign IDs.\n\nstart S\ntask CJD\nxor CONF \"Confusion?\" id conf\ntask ASK\nxor CONF_JOIN (id conf_join)\ntask SUBMIT\nxor APPROV \"Department approves?\" id appr\ntask POST\nend END\n\ntask CORR\n\nNeed flow definitions.\n\nflow S -> CJD -> CONF\nflow CONF -> ASK \"yes\"\nflow CONF -> CONF_JOIN \"no\"   (maybe default)\nflow ASK -> CONF_JOIN\nflow CONF_JOIN -> SUBMIT\nflow SUBMIT -> APPROV\nflow APPROV -> POST \"yes\"\nflow APPROV -> CORR \"no\"\nflow CORR -> SUBMIT\nflow POST -> END\n\nPlace nodes within lanes.\n\nLet's produce tok code.\n\nCheck for syntax: header line: tok 1.0 \"Job posting process\" executable? maybe not needed. Must include executable? Not required but fine.\n\nDefine pool with block containing lanes and nodes.\n\nSyntax:\n\npool org \"Organisation\"\n  lane hr \"HR Clerk\"\n    start S \"Vacancy reported\"\n    task CJD \"Create job description from the information\"\n    xor CONF \"Confusion in the message?\"\n    task ASK \"Ask the Department again\"\n    xor CONF_JOIN \"Confusion join\"\n    task SUBMIT \"Submit the job description for consideration\"\n    task CORR \"Correct the description\"\n    task POST \"Post the job\"\n    end END \"Job posted\"\n  lane dept \"Department\"\n    xor APPROV \"Department approves?\"\n\nBut need to ensure tasks placed in correct lanes; flow crossing lanes allowed.\n\nMake sure each identifier unique.\n\nNow build flows after lanes ends maybe at pool level.\n\nflow S -> CJD -> CONF\nflow CONF -> ASK \"yes\"\nflow CONF -> CONF_JOIN \"no\"\nflow ASK -> CONF_JOIN\nflow CONF_JOIN -> SUBMIT\nflow SUBMIT -> APPROV\nflow APPROV -> POST \"yes\"\nflow APPROV -> CORR \"no\"\nflow CORR -> SUBMIT\nflow POST -> END\n\nCheck syntax: flow statement can chain with ->. Labels optionally after node? Example: flow G -> D \"tak\" when=\"...\". For our case, we can put label after -> target like \"yes\". Use \"yes\" label. Eg flow CONF -> ASK \"yes\". That seems ok.\n\nNeed ensure each flow line ends with newline.\n\nNow check for warnings: maybe missing 'executable' attribute? Not required.\n\nPotential issue: XOR join should be of type xor, but need to ensure it has two incoming flows (from CONF and ASK). That's fine.\n\nAlso need to ensure each end event on every path, we have only END after POST. The \"no\" path loops back, eventually may go to POST, which leads to END. That's fine.\n\nPotential warnings: decision node placed in department lane but flow from SUBMIT (hr lane) to APPROV (dept lane) across lane; okay.\n\nLet's run check.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0 \"Job posting process\"\n\npool org \"Organisation\"\n  lane hr \"HR Clerk\"\n    start S \"Vacancy reported\"\n    task CJD \"Create job description from the information\"\n    xor CONF \"Confusion in the message?\"\n    task ASK \"Ask the Department again\"\n    xor CONF_JOIN \"Confusion join\"\n    task SUBMIT \"Submit the job description for consideration\"\n    task CORR \"Correct the description\"\n    task POST \"Post the job\"\n    end END \"Job posted\"\n  lane dept \"Department\"\n    xor APPROV \"Department approves?\"\n\nflow S -> CJD -> CONF\nflow CONF -> ASK \"yes\"\nflow CONF -> CONF_JOIN \"no\"\nflow ASK -> CONF_JOIN\nflow CONF_JOIN -> SUBMIT\nflow SUBMIT -> APPROV\nflow APPROV -> POST \"yes\"\nflow APPROV -> CORR \"no\"\nflow CORR -> SUBMIT\nflow POST -> END"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 5665,
+  "output_tokens": 275,
+  "seconds": 1.226121299987426,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We passed both text and path empty. Need only text, omit path. Let's call again with only text.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "descriptive",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0 \"Job posting process\"\n\npool org \"Organisation\"\n  lane hr \"HR Clerk\"\n    start S \"Vacancy reported\"\n    task CJD \"Create job description from the information\"\n    xor CONF \"Confusion in the message?\"\n    task ASK \"Ask the Department again\"\n    xor CONF_JOIN \"Confusion join\"\n    task SUBMIT \"Submit the job description for consideration\"\n    task CORR \"Correct the description\"\n    task POST \"Post the job\"\n    end END \"Job posted\"\n  lane dept \"Department\"\n    xor APPROV \"Department approves?\"\n\nflow S -> CJD -> CONF\nflow CONF -> ASK \"yes\"\nflow CONF -> CONF_JOIN \"no\"\nflow ASK -> CONF_JOIN\nflow CONF_JOIN -> SUBMIT\nflow SUBMIT -> APPROV\nflow APPROV -> POST \"yes\"\nflow APPROV -> CORR \"no\"\nflow CORR -> SUBMIT\nflow POST -> END"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 6010,
+  "output_tokens": 200,
+  "seconds": 1.5340195000171661,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "```tok\ntok 1.0 \"Job posting process\"\n\npool org \"Organisation\"\n  lane hr \"HR Clerk\"\n    start S \"Vacancy reported\"\n    task CJD \"Create job description from the information\"\n    xor CONF \"Confusion in the message?\"\n    task ASK \"Ask the Department again\"\n    xor CONF_JOIN \"Confusion join\"\n    task SUBMIT \"Submit the job description for consideration\"\n    task CORR \"Correct the description\"\n    task POST \"Post the job\"\n    end END \"Job posted\"\n  lane dept \"Department\"\n    xor APPROV \"Department approves?\"\n\nflow S -> CJD -> CONF\nflow CONF -> ASK \"yes\"\nflow CONF -> CONF_JOIN \"no\"\nflow ASK -> CONF_JOIN\nflow CONF_JOIN -> SUBMIT\nflow SUBMIT -> APPROV\nflow APPROV -> POST \"yes\"\nflow APPROV -> CORR \"no\"\nflow CORR -> SUBMIT\nflow POST -> END\n```",
+  "thinking": "",
+  "tool_calls": []
+ }
+]

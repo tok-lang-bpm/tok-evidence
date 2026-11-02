@@ -1,0 +1,59 @@
+tok 1.0 "Invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start received "Invoice received"
+    task receive "Receive invoice"
+    task forward_sec "Forward invoice to accounting employee"
+  lane accounting "Accounting"
+    task identify "Identify charging suppliers"
+    task create "Create new invoice instance"
+    task check_items "Check invoice items"
+    task note_docket "Note cost centers and cost center managers on docket"
+    task send_ccm "Send docket and invoice copy to first cost center manager"
+    task clarify_vendor "Proceed with clarification with vendor"
+    task consult_ccm "Consult cost center managers by telephone or e-mail"
+    task resend_ccm "Send invoice copy to cost center managers again"
+    task forward_comm "Forward invoice copy to commercial manager"
+    task resolve_complaint "Resolve complaint with supplier"
+    task file_signature "File invoice copy in signature file"
+    task pay "Give payment instructions"
+    task close "Close invoice instance"
+    xor consult_needed "Need to consult cost center managers?"
+  lane ccm "Cost center manager"
+    task review "Review content for accuracy"
+    task note_ap "Note accurate position (AP) on docket"
+    task return_internal "Return invoice copy to internal mail"
+    task reject_ap "Reject AP with note and explanatory statement"
+    task return_accounting "Send invoice copy back to accounting"
+    xor order "Everything in order?"
+    xor all_correct "All items marked correct?"
+  lane comm "Commercial manager"
+    task audit "Make commercial audit"
+    task issue_approval "Issue approval for payment"
+    xor complaint "Complaint during commercial audit?"
+    xor amount "Bill amount exceeds EUR 20?"
+  lane board "Board"
+    task check_4eyes "Check invoice (4-eyes principle)"
+  end done "Invoice processed"
+
+flow received -> receive -> forward_sec -> identify -> create -> check_items -> note_docket -> send_ccm -> review -> order
+flow order -> note_ap "yes"
+flow order -> reject_ap "no" default
+flow note_ap -> return_internal -> all_correct
+flow all_correct -> forward_comm "yes"
+flow all_correct -> review "no" default
+flow reject_ap -> return_accounting -> clarify_vendor -> consult_needed
+flow consult_needed -> consult_ccm "yes"
+flow consult_needed -> resend_ccm "no" default
+flow consult_ccm -> resend_ccm
+flow resend_ccm -> review
+flow forward_comm -> audit -> complaint
+flow complaint -> resolve_complaint "yes"
+flow complaint -> issue_approval "no" default
+flow resolve_complaint -> audit
+flow issue_approval -> amount
+flow amount -> check_4eyes "yes"
+flow amount -> file_signature "no" default
+flow check_4eyes -> file_signature
+flow file_signature -> pay -> close -> done

@@ -1,0 +1,275 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+At the beginning the customer perceives that her subscribed service has degraded. A list with all the problem parameters is then sent to the Customer Service department of TELECO. At the customer service an employee enters (based on the received data) a problem report into system T.. Then the problem report is compared to the customer SLA to identify what the extent and the details of the service degradation are. Based on this, the necessary counter measures are determined including their respective priorities. An electronic service then determines the significance of the customer based on information that has been collected during the history of the contractual relationship. In case the customer is premium, the process will link to an extra problem fix process (this process will not be detailed here). In case the customer is of certain significance which would affect the counter measures previously decided upon, the process goes back to re-prioritize these measures otherwise the process continues. Taking together the information (i.e. contract commitment data + prioritized actions) a detailed problem report is created. The detailed problem report is then sent to Service Management. Service Management deals on a first level with violations of quality in services that are provided to customers. After receiving the detailed problem report, Service management investigates whether the problem is analyzable at the level of their department or whether the problem may be located at Resource Provisioning. In case Service Management assesses the problem to be not analyzable by themselves, the detailed problem report is sent out to Resource Provisioning. If Service Management is sure they can analyze it, they perform the analysis and based on the outcome they create a trouble report that indicates the type of problem. After Resource Provisioning receives the detailed problem report, it is checked whether there are any possible problems. If no problems are detected, a notification about the normal service execution is created. If a problem is detected this will be analyzed by Resource Provisioning and a trouble report is created. Either trouble report or the normal execution notification will be included in a status report and sent back to Service Management. Service Management then prepares the final status report based on the received information. Subsequently it has to be determined what counter measures should be taken depending on the information in the final status report. Three alternative process paths may be taken. For the case that no problem was detected at all, the actual service performance is sent back to the Customer Service. For the case that minor corrective actions are required, Service Management will undertake corrective actions by themselves. Subsequently, the problem resolution report is created and then sent out to Customer Service. After sending, this process path of Service Management ends. For the case that automatic resource restoration from Resource Provisioning is required, Service Management must create a request for automatic resource restoration. This message is then sent to Resource Provisioning. Resource Provisioning has been on-hold and waiting for a restoration request but this must happen within 2 days after the status report was sent out, otherwise Resource Provisioning terminates the process. After the restoration request is received, all possible errors are tracked. Based on the tracked errors, all necessary corrective actions are undertaken by Resource Provisioning. Then a trouble-shooting report is created. This report is sent out to Service Management; then the process ends. The trouble-shooting report is received by Service Management and this information goes then into the creation of the problem resolution report just as described for ii). Customer Service either receives the actual service performance (if there was no problem) or the problem resolution report. Then, two concurrent activities are triggered, i.e. i) a report is created for the customer which details the current service performance and the resolution of the problem, and ii) an SLA violation rebate is reported to Billing & Collections who will adjust the billing. The report for the customer is sent out to her. After all three activities are completed the process ends within Customer Service. After the customer then receives the report about service performance and problem resolution from Customer Service, the process flow at the customer also ends.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:signal id="restore-request-signal" name="Restoration request" />
+  <bpmn:signal id="trouble-shooting-report-signal" name="Trouble-shooting report" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="customerLane" name="Customer">
+        <bpmn:flowNodeRef>startDegraded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendParams</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCustomer</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="customerServiceLane" name="Customer Service">
+        <bpmn:flowNodeRef>enterReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compareSLA</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>determineMeasures</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgDetermineMeasures</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createDetailedReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgDetailedReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendDetailedSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveActualPerf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveResolutionReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mergeReceivedReports</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelSplitCS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createCustomerReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendCustomerReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>psSendCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reportSLARebate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>psReportSLA</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallelJoinCS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>extraFix</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="electronicServiceLane" name="Electronic Service">
+        <bpmn:flowNodeRef>determineSignificance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwSignificance</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="serviceManagementLane" name="Service Management">
+        <bpmn:flowNodeRef>investigateAnalysability</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAnalysable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendDetailedRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyzeSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createTroubleReportSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveStatusReportSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgPrepareFinal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareFinalStatus</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwCountermeasures</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendActualCS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>psSendActual</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>undertakeCorrectiveSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgCreateResolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createResolutionReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendResolutionCS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>psSendResolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createRestoreReq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRestoreReq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receiveTroubleShooting</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endSM</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="resourceProvisioningLane" name="Resource Provisioning">
+        <bpmn:flowNodeRef>receiveDetailedRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mgStatusRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createNormalExecNotify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyzeRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createTroubleReportRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createStatusReportRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendStatusSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>psStatusSM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwRestore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchRestoreReq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeoutRestore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>trackErrors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correctRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createTroubleShootingReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendTroubleShootingReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endRP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endTimeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="billingLane" name="Billing &amp; Collections">
+        <bpmn:flowNodeRef>adjustBilling</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="startDegraded" name="Service degraded perceived" />
+    <bpmn:task id="sendParams" name="Send list of problem parameters to Customer Service" />
+    <bpmn:task id="receiveReport" name="Receive report about service performance and problem resolution" />
+    <bpmn:endEvent id="endCustomer" name="Customer process ended" />
+
+    <bpmn:task id="enterReport" name="Enter problem report into system T" />
+    <bpmn:task id="compareSLA" name="Compare problem report to customer SLA" />
+    <bpmn:task id="determineMeasures" name="Determine necessary counter measures" />
+    <bpmn:exclusiveGateway id="mgDetermineMeasures" name="Merge" />
+    <bpmn:task id="createDetailedReport" name="Create detailed problem report" />
+    <bpmn:exclusiveGateway id="mgDetailedReport" name="Merge" />
+    <bpmn:task id="sendDetailedSM" name="Send detailed problem report to Service Management" />
+    <bpmn:task id="receiveActualPerf" name="Receive actual service performance" />
+    <bpmn:task id="receiveResolutionReport" name="Receive problem resolution report" />
+    <bpmn:exclusiveGateway id="mergeReceivedReports" name="Report received" />
+    <bpmn:parallelGateway id="parallelSplitCS" />
+    <bpmn:task id="createCustomerReport" name="Create report for customer" />
+    <bpmn:task id="sendCustomerReport" name="Send report to customer" />
+    <bpmn:parallelGateway id="psSendCustomer" />
+    <bpmn:task id="reportSLARebate" name="Report SLA violation rebate to Billing &amp; Collections" />
+    <bpmn:parallelGateway id="psReportSLA" />
+    <bpmn:parallelGateway id="parallelJoinCS" />
+    <bpmn:endEvent id="endCS" name="Customer Service process ended" />
+    <bpmn:task id="extraFix" name="Link to extra problem fix process" />
+
+    <bpmn:task id="determineSignificance" name="Determine significance of customer" />
+    <bpmn:exclusiveGateway id="gwSignificance" name="Customer significance?" />
+
+    <bpmn:task id="investigateAnalysability" name="Investigate problem analyzability" />
+    <bpmn:exclusiveGateway id="gwAnalysable" name="Problem analyzable by Service Management?" />
+    <bpmn:task id="sendDetailedRP" name="Send detailed problem report to Resource Provisioning" />
+    <bpmn:task id="analyzeSM" name="Perform analysis" />
+    <bpmn:task id="createTroubleReportSM" name="Create trouble report" />
+    <bpmn:task id="receiveStatusReportSM" name="Receive status report from Resource Provisioning" />
+    <bpmn:exclusiveGateway id="mgPrepareFinal" name="Merge" />
+    <bpmn:task id="prepareFinalStatus" name="Prepare final status report" />
+    <bpmn:exclusiveGateway id="gwCountermeasures" name="Counter measures required?" />
+    <bpmn:task id="sendActualCS" name="Send actual service performance to Customer Service" />
+    <bpmn:parallelGateway id="psSendActual" />
+    <bpmn:task id="undertakeCorrectiveSM" name="Undertake corrective actions" />
+    <bpmn:exclusiveGateway id="mgCreateResolution" name="Merge" />
+    <bpmn:task id="createResolutionReport" name="Create problem resolution report" />
+    <bpmn:task id="sendResolutionCS" name="Send problem resolution report to Customer Service" />
+    <bpmn:parallelGateway id="psSendResolution" />
+    <bpmn:task id="createRestoreReq" name="Create request for automatic resource restoration" />
+    <bpmn:intermediateThrowEvent id="sendRestoreReq" name="Send restoration request">
+      <bpmn:signalEventDefinition signalRef="restore-request-signal" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="receiveTroubleShooting" name="Receive trouble-shooting report">
+      <bpmn:signalEventDefinition signalRef="trouble-shooting-report-signal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="endSM" name="Service Management process ended" />
+
+    <bpmn:task id="receiveDetailedRP" name="Receive detailed problem report from Service Management" />
+    <bpmn:task id="checkProblems" name="Check for possible problems" />
+    <bpmn:exclusiveGateway id="gwProblems" name="Problems detected?" />
+    <bpmn:exclusiveGateway id="mgStatusRP" name="Merge" />
+    <bpmn:task id="createNormalExecNotify" name="Create notification about normal service execution" />
+    <bpmn:task id="analyzeRP" name="Analyze problem" />
+    <bpmn:task id="createTroubleReportRP" name="Create trouble report" />
+    <bpmn:task id="createStatusReportRP" name="Create status report" />
+    <bpmn:task id="sendStatusSM" name="Send status report to Service Management" />
+    <bpmn:parallelGateway id="psStatusSM" />
+    <bpmn:eventBasedGateway id="gwRestore" name="Wait for restoration request or timeout" />
+    <bpmn:intermediateCatchEvent id="catchRestoreReq" name="Restoration request received">
+      <bpmn:signalEventDefinition signalRef="restore-request-signal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timeoutRestore" name="2 days elapsed">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="trackErrors" name="Track all possible errors" />
+    <bpmn:task id="correctRP" name="Undertake necessary corrective actions" />
+    <bpmn:task id="createTroubleShootingReport" name="Create trouble-shooting report" />
+    <bpmn:intermediateThrowEvent id="sendTroubleShootingReport" name="Send trouble-shooting report">
+      <bpmn:signalEventDefinition signalRef="trouble-shooting-report-signal" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="endRP" name="Resource Provisioning completed" />
+    <bpmn:endEvent id="endTimeout" name="Restoration request timed out" />
+
+    <bpmn:task id="adjustBilling" name="Adjust billing" />
+    <bpmn:endEvent id="endBilling" name="Billing adjusted" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="startDegraded" targetRef="sendParams" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendParams" targetRef="enterReport" />
+    <bpmn:sequenceFlow id="f3" sourceRef="enterReport" targetRef="compareSLA" />
+    <bpmn:sequenceFlow id="f4" sourceRef="compareSLA" targetRef="mgDetermineMeasures" />
+    <bpmn:sequenceFlow id="f5" sourceRef="mgDetermineMeasures" targetRef="determineMeasures" />
+    <bpmn:sequenceFlow id="f6" sourceRef="determineMeasures" targetRef="determineSignificance" />
+    <bpmn:sequenceFlow id="f7" sourceRef="determineSignificance" targetRef="gwSignificance" />
+    <bpmn:sequenceFlow id="f8" name="premium customer" sourceRef="gwSignificance" targetRef="extraFix" />
+    <bpmn:sequenceFlow id="f9" name="affects counter measures" sourceRef="gwSignificance" targetRef="mgDetermineMeasures" />
+    <bpmn:sequenceFlow id="f10" name="otherwise" sourceRef="gwSignificance" targetRef="mgDetailedReport" />
+    <bpmn:sequenceFlow id="f11" sourceRef="extraFix" targetRef="mgDetailedReport" />
+    <bpmn:sequenceFlow id="f12" sourceRef="mgDetailedReport" targetRef="createDetailedReport" />
+    <bpmn:sequenceFlow id="f13" sourceRef="createDetailedReport" targetRef="sendDetailedSM" />
+    <bpmn:sequenceFlow id="f14" sourceRef="sendDetailedSM" targetRef="investigateAnalysability" />
+    <bpmn:sequenceFlow id="f15" sourceRef="investigateAnalysability" targetRef="gwAnalysable" />
+    <bpmn:sequenceFlow id="f16" name="not analyzable" sourceRef="gwAnalysable" targetRef="sendDetailedRP" />
+    <bpmn:sequenceFlow id="f17" name="analyzable" sourceRef="gwAnalysable" targetRef="analyzeSM" />
+    <bpmn:sequenceFlow id="f18" sourceRef="sendDetailedRP" targetRef="receiveDetailedRP" />
+    <bpmn:sequenceFlow id="f19" sourceRef="analyzeSM" targetRef="createTroubleReportSM" />
+    <bpmn:sequenceFlow id="f20" sourceRef="createTroubleReportSM" targetRef="mgPrepareFinal" />
+    <bpmn:sequenceFlow id="f21" sourceRef="receiveDetailedRP" targetRef="checkProblems" />
+    <bpmn:sequenceFlow id="f22" sourceRef="checkProblems" targetRef="gwProblems" />
+    <bpmn:sequenceFlow id="f23" name="no problems" sourceRef="gwProblems" targetRef="createNormalExecNotify" />
+    <bpmn:sequenceFlow id="f24" name="problem detected" sourceRef="gwProblems" targetRef="analyzeRP" />
+    <bpmn:sequenceFlow id="f25" sourceRef="analyzeRP" targetRef="createTroubleReportRP" />
+    <bpmn:sequenceFlow id="f26" sourceRef="createNormalExecNotify" targetRef="mgStatusRP" />
+    <bpmn:sequenceFlow id="f27" sourceRef="createTroubleReportRP" targetRef="mgStatusRP" />
+    <bpmn:sequenceFlow id="f28" sourceRef="mgStatusRP" targetRef="createStatusReportRP" />
+    <bpmn:sequenceFlow id="f29" sourceRef="createStatusReportRP" targetRef="sendStatusSM" />
+    <bpmn:sequenceFlow id="f30" sourceRef="sendStatusSM" targetRef="psStatusSM" />
+    <bpmn:sequenceFlow id="f31" sourceRef="psStatusSM" targetRef="receiveStatusReportSM" />
+    <bpmn:sequenceFlow id="f32" sourceRef="psStatusSM" targetRef="gwRestore" />
+    <bpmn:sequenceFlow id="f33" sourceRef="receiveStatusReportSM" targetRef="mgPrepareFinal" />
+    <bpmn:sequenceFlow id="f34" sourceRef="mgPrepareFinal" targetRef="prepareFinalStatus" />
+    <bpmn:sequenceFlow id="f35" sourceRef="prepareFinalStatus" targetRef="gwCountermeasures" />
+    <bpmn:sequenceFlow id="f36" name="no problem detected" sourceRef="gwCountermeasures" targetRef="psSendActual" />
+    <bpmn:sequenceFlow id="f37" sourceRef="psSendActual" targetRef="endSM" />
+    <bpmn:sequenceFlow id="f38" sourceRef="psSendActual" targetRef="receiveActualPerf" />
+    <bpmn:sequenceFlow id="f39" name="minor corrective actions" sourceRef="gwCountermeasures" targetRef="undertakeCorrectiveSM" />
+    <bpmn:sequenceFlow id="f40" name="automatic resource restoration required" sourceRef="gwCountermeasures" targetRef="createRestoreReq" />
+    <bpmn:sequenceFlow id="f41" sourceRef="undertakeCorrectiveSM" targetRef="mgCreateResolution" />
+    <bpmn:sequenceFlow id="f42" sourceRef="createRestoreReq" targetRef="sendRestoreReq" />
+    <bpmn:sequenceFlow id="f43" sourceRef="sendRestoreReq" targetRef="receiveTroubleShooting" />
+    <bpmn:sequenceFlow id="f44" sourceRef="receiveTroubleShooting" targetRef="mgCreateResolution" />
+    <bpmn:sequenceFlow id="f45" sourceRef="mgCreateResolution" targetRef="createResolutionReport" />
+    <bpmn:sequenceFlow id="f46" sourceRef="createResolutionReport" targetRef="sendResolutionCS" />
+    <bpmn:sequenceFlow id="f47" sourceRef="sendResolutionCS" targetRef="psSendResolution" />
+    <bpmn:sequenceFlow id="f48" sourceRef="psSendResolution" targetRef="endSM" />
+    <bpmn:sequenceFlow id="f49" sourceRef="psSendResolution" targetRef="receiveResolutionReport" />
+    <bpmn:sequenceFlow id="f50" sourceRef="gwRestore" targetRef="catchRestoreReq" />
+    <bpmn:sequenceFlow id="f51" sourceRef="gwRestore" targetRef="timeoutRestore" />
+    <bpmn:sequenceFlow id="f52" sourceRef="catchRestoreReq" targetRef="trackErrors" />
+    <bpmn:sequenceFlow id="f53" sourceRef="trackErrors" targetRef="correctRP" />
+    <bpmn:sequenceFlow id="f54" sourceRef="correctRP" targetRef="createTroubleShootingReport" />
+    <bpmn:sequenceFlow id="f55" sourceRef="createTroubleShootingReport" targetRef="sendTroubleShootingReport" />
+    <bpmn:sequenceFlow id="f56" sourceRef="sendTroubleShootingReport" targetRef="endRP" />
+    <bpmn:sequenceFlow id="f57" sourceRef="timeoutRestore" targetRef="endTimeout" />
+    <bpmn:sequenceFlow id="f58" sourceRef="receiveActualPerf" targetRef="mergeReceivedReports" />
+    <bpmn:sequenceFlow id="f59" sourceRef="receiveResolutionReport" targetRef="mergeReceivedReports" />
+    <bpmn:sequenceFlow id="f60" sourceRef="mergeReceivedReports" targetRef="parallelSplitCS" />
+    <bpmn:sequenceFlow id="f61" sourceRef="parallelSplitCS" targetRef="createCustomerReport" />
+    <bpmn:sequenceFlow id="f62" sourceRef="parallelSplitCS" targetRef="reportSLARebate" />
+    <bpmn:sequenceFlow id="f63" sourceRef="createCustomerReport" targetRef="sendCustomerReport" />
+    <bpmn:sequenceFlow id="f64" sourceRef="sendCustomerReport" targetRef="psSendCustomer" />
+    <bpmn:sequenceFlow id="f65" sourceRef="psSendCustomer" targetRef="parallelJoinCS" />
+    <bpmn:sequenceFlow id="f66" sourceRef="psSendCustomer" targetRef="receiveReport" />
+    <bpmn:sequenceFlow id="f67" sourceRef="reportSLARebate" targetRef="psReportSLA" />
+    <bpmn:sequenceFlow id="f68" sourceRef="psReportSLA" targetRef="parallelJoinCS" />
+    <bpmn:sequenceFlow id="f69" sourceRef="psReportSLA" targetRef="adjustBilling" />
+    <bpmn:sequenceFlow id="f70" sourceRef="parallelJoinCS" targetRef="endCS" />
+    <bpmn:sequenceFlow id="f71" sourceRef="receiveReport" targetRef="endCustomer" />
+    <bpmn:sequenceFlow id="f72" sourceRef="adjustBilling" targetRef="endBilling" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- no-disconnected: sendActualCS: Element is not connected
+- no-implicit-end: sendActualCS: Element is an implicit end
+- no-implicit-start: sendActualCS: Element is an implicit start
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

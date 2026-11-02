@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Account defaulter processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Account defaulter processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="main" name="Main process">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>backup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkDefaulter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hasNew</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>firstStage</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>firstDeadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSupervisor1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertEnd1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>checkCRM2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hasReturns2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcileStage</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reconcileDeadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertSupervisor2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>alertEnd2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>newRecordsFound</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Weekday morning" />
+    <bpmn:task id="backup" name="Backup the database" />
+    <bpmn:task id="checkDefaulter" name="Check the Account Defaulter table for new records" />
+    <bpmn:exclusiveGateway id="hasNew" name="New records found?" />
+    <bpmn:subProcess id="firstStage" name="Check CRM and register defaulting accounts">
+      <bpmn:startEvent id="firstStart" name="Start checking" />
+      <bpmn:task id="checkCRM1" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="hasReturns1" name="New returns exist?" />
+      <bpmn:task id="register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="previouslyAdvised" name="Defaulting client codes previously advised?" />
+      <bpmn:task id="produce" name="Produce table of defaulting accounts" />
+      <bpmn:task id="send" name="Send table to account management" />
+      <bpmn:endEvent id="firstEnd" name="First stage completed" />
+      <bpmn:sequenceFlow id="f-firstStart-checkCRM1" sourceRef="firstStart" targetRef="checkCRM1" />
+      <bpmn:sequenceFlow id="f-checkCRM1-hasReturns1" sourceRef="checkCRM1" targetRef="hasReturns1" />
+      <bpmn:sequenceFlow id="f-hasReturns1-register" name="yes" sourceRef="hasReturns1" targetRef="register" />
+      <bpmn:sequenceFlow id="f-hasReturns1-firstEnd" name="no" sourceRef="hasReturns1" targetRef="firstEnd" />
+      <bpmn:sequenceFlow id="f-register-previouslyAdvised" sourceRef="register" targetRef="previouslyAdvised" />
+      <bpmn:sequenceFlow id="f-previouslyAdvised-produce" name="no" sourceRef="previouslyAdvised" targetRef="produce" />
+      <bpmn:sequenceFlow id="f-previouslyAdvised-firstEnd" name="yes" sourceRef="previouslyAdvised" targetRef="firstEnd" />
+      <bpmn:sequenceFlow id="f-produce-send" sourceRef="produce" targetRef="send" />
+      <bpmn:sequenceFlow id="f-send-firstEnd" sourceRef="send" targetRef="firstEnd" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="firstDeadline" attachedToRef="firstStage" cancelActivity="false">
+      <bpmn:timerEventDefinition id="firstDeadline-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5H30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alertSupervisor1" name="Send alert to supervisor" />
+    <bpmn:endEvent id="alertEnd1" name="Alert sent" />
+    <bpmn:task id="checkCRM2" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="hasReturns2" name="New returns filed?" />
+    <bpmn:subProcess id="reconcileStage" name="Reconcile account defaulters">
+      <bpmn:startEvent id="reconcileStart" name="Start reconciliation" />
+      <bpmn:task id="reconcile" name="Reconcile with the existing account defaulters table" />
+      <bpmn:endEvent id="reconcileEnd" name="Reconciliation completed" />
+      <bpmn:sequenceFlow id="f-reconcileStart-reconcile" sourceRef="reconcileStart" targetRef="reconcile" />
+      <bpmn:sequenceFlow id="f-reconcile-reconcileEnd" sourceRef="reconcile" targetRef="reconcileEnd" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="reconcileDeadline" attachedToRef="reconcileStage" cancelActivity="false">
+      <bpmn:timerEventDefinition id="reconcileDeadline-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT7H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="alertSupervisor2" name="Send message to supervisor" />
+    <bpmn:endEvent id="alertEnd2" name="Message sent" />
+    <bpmn:endEvent id="completed" name="Process completed" />
+    <bpmn:endEvent id="newRecordsFound" name="New records found" />
+    <bpmn:sequenceFlow id="f-start-backup" sourceRef="start" targetRef="backup" />
+    <bpmn:sequenceFlow id="f-backup-checkDefaulter" sourceRef="backup" targetRef="checkDefaulter" />
+    <bpmn:sequenceFlow id="f-checkDefaulter-hasNew" sourceRef="checkDefaulter" targetRef="hasNew" />
+    <bpmn:sequenceFlow id="f-hasNew-firstStage" name="no" sourceRef="hasNew" targetRef="firstStage" />
+    <bpmn:sequenceFlow id="f-hasNew-newRecordsFound" name="yes" sourceRef="hasNew" targetRef="newRecordsFound" />
+    <bpmn:sequenceFlow id="f-firstStage-checkCRM2" sourceRef="firstStage" targetRef="checkCRM2" />
+    <bpmn:sequenceFlow id="f-checkCRM2-hasReturns2" sourceRef="checkCRM2" targetRef="hasReturns2" />
+    <bpmn:sequenceFlow id="f-hasReturns2-reconcileStage" name="yes" sourceRef="hasReturns2" targetRef="reconcileStage" />
+    <bpmn:sequenceFlow id="f-hasReturns2-completed" name="no" sourceRef="hasReturns2" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-reconcileStage-completed" sourceRef="reconcileStage" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-firstDeadline-alertSupervisor1" sourceRef="firstDeadline" targetRef="alertSupervisor1" />
+    <bpmn:sequenceFlow id="f-alertSupervisor1-alertEnd1" sourceRef="alertSupervisor1" targetRef="alertEnd1" />
+    <bpmn:sequenceFlow id="f-reconcileDeadline-alertSupervisor2" sourceRef="reconcileDeadline" targetRef="alertSupervisor2" />
+    <bpmn:sequenceFlow id="f-alertSupervisor2-alertEnd2" sourceRef="alertSupervisor2" targetRef="alertEnd2" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,50 @@
+tok 1.0 "Custom Bicycle Manufacturing"
+
+pool org "Custom Bicycle Company"
+  lane sales "Sales Department"
+    start start "Receive order"
+    xor order_decision "Order accepted?"
+    task reject "Reject order"
+    end rejected "Order rejected"
+    task accept "Accept order"
+    task inform_storehouse "Inform storehouse"
+    task inform_engineering "Inform engineering"
+    and split_gate "Parallel split"
+    and join_gate "Parallel join"
+    task ship "Ship bicycle"
+    end completed "Process completed"
+
+  lane storehouse "Storehouse"
+    sub process_parts "Process part list"
+      start sh_start "Start part processing"
+      xor part_available "Part available?"
+      task reserve "Reserve part"
+      task back_order "Back-order part"
+      end sh_end "Part list processed"
+      flow sh_start -> part_available
+      flow part_available -> reserve "yes"
+      flow part_available -> back_order "no"
+      flow reserve -> sh_start
+      flow back_order -> sh_start
+      # when no more items, flow to end (implicit default)
+      flow part_available -> sh_end default
+
+  lane engineering "Engineering Department"
+    task prepare_assembly "Prepare assembly"
+    task assemble "Assemble bicycle"
+
+# Sequence flows
+flow start -> order_decision
+flow order_decision -> reject "Reject"
+flow order_decision -> accept "Accept"
+flow reject -> rejected
+flow accept -> inform_storehouse
+flow inform_storehouse -> inform_engineering
+flow inform_engineering -> split_gate
+flow split_gate -> process_parts
+flow split_gate -> prepare_assembly
+flow process_parts -> join_gate
+flow prepare_assembly -> join_gate
+flow join_gate -> assemble
+flow assemble -> ship
+flow ship -> completed

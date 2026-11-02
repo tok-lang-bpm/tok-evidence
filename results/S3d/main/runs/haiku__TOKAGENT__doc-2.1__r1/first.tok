@@ -1,0 +1,104 @@
+tok 1.0 "Service degradation problem resolution"
+
+pool teleco "TELECO"
+  lane cs "Customer Service"
+    start cs-start "Problem parameters received" message="Problem parameters"
+    task cs-enter "Enter problem report into system T"
+    task cs-compare "Compare problem report with customer SLA"
+    task cs-measures "Determine counter measures and their priorities"
+    xor g-prem "Customer premium?"
+    call cs-fix "Extra problem fix process" process="ProblemFix"
+    xor g-sig "Significance affects counter measures?"
+    task cs-reprio "Re-prioritise counter measures"
+    xor g-after-prem
+    task cs-detail "Create detailed problem report"
+    and g-cs-merge-split
+    task cs-report "Create report for customer"
+    task cs-send-report "Send report to customer"
+    task cs-rebate "Report SLA violation rebate to Billing and Collections"
+    and g-cs-join
+    end cs-end "Customer Service process ends"
+  lane es "Electronic service"
+    task es-sig "Determine significance of customer"
+  lane sm "Service Management"
+    task sm-investigate "Investigate whether problem is analysable by Service Management"
+    xor g-analysable "Analysable by Service Management?"
+    task sm-analyse "Analyse the problem"
+    task sm-trouble "Create trouble report indicating the type of problem"
+    task sm-forward "Send detailed problem report to Resource Provisioning"
+    xor g-final
+    task sm-final "Prepare final status report"
+    task sm-determine "Determine counter measures from final status report"
+    xor g-measures "Which counter measures are required?"
+    task sm-send-perf "Send actual service performance to Customer Service"
+    task sm-correct "Undertake corrective actions"
+    xor g-res-merge
+    task sm-resolution "Create problem resolution report"
+    task sm-send-res "Send problem resolution report to Customer Service"
+    task sm-restore "Create request for automatic resource restoration"
+    throw sm-send-restore "Send restoration request" link="restoration"
+    task sm-recv-tsr "Receive trouble-shooting report"
+  lane rp "Resource Provisioning"
+    task rp-check "Check for possible problems"
+    xor g-problem "Problem detected?"
+    task rp-normal "Create notification about normal service execution"
+    task rp-analyse "Analyse the problem"
+    task rp-trouble "Create trouble report"
+    xor g-rp-merge
+    task rp-status "Create status report"
+    and g-rp-split
+    task rp-send-status "Send status report to Service Management"
+    eventgw rp-wait "Restoration request within 2 days?"
+    catch rp-restore "Restoration request received" link="restoration"
+    catch rp-timeout "Two days after status report" timer=P2D
+    end rp-terminate "Process terminated"
+    task rp-track "Track all possible errors"
+    task rp-correct "Undertake all necessary corrective actions"
+    task rp-tsr "Create trouble-shooting report"
+    task rp-send-tsr "Send trouble-shooting report to Service Management"
+  lane bc "Billing and Collections"
+    task bc-adjust "Adjust billing"
+
+pool customer "Customer"
+  lane cu "Customer"
+    start c-start "Service degradation"
+    task c-perceive "Perceive service degradation"
+    task c-send-list "Send list of problem parameters"
+    catch c-recv "Receive service performance and problem resolution report" message="Service report"
+    end c-end "Customer process ends"
+
+message c-send-list -> cs-start "Problem parameters"
+message cs-send-report -> c-recv "Service report"
+
+flow c-start -> c-perceive -> c-send-list
+flow cs-start -> cs-enter -> cs-compare -> cs-measures -> es-sig -> g-prem
+flow g-prem -> cs-fix "yes"
+flow g-prem -> g-sig "no"
+flow cs-fix -> g-after-prem
+flow g-sig -> cs-reprio "yes"
+flow g-sig -> g-after-prem "no"
+flow cs-reprio -> g-after-prem
+flow g-after-prem -> cs-detail -> sm-investigate -> g-analysable
+flow g-analysable -> sm-analyse "yes"
+flow sm-analyse -> sm-trouble -> g-final
+flow g-analysable -> sm-forward "no"
+flow sm-forward -> rp-check -> g-problem
+flow g-problem -> rp-normal "no"
+flow g-problem -> rp-analyse "yes"
+flow rp-analyse -> rp-trouble -> g-rp-merge
+flow rp-normal -> g-rp-merge
+flow g-rp-merge -> rp-status -> g-rp-split
+flow g-rp-split -> rp-send-status -> g-final
+flow g-rp-split -> rp-wait
+flow rp-wait -> rp-restore -> rp-track -> rp-correct -> rp-tsr -> rp-send-tsr -> sm-recv-tsr -> g-res-merge
+flow rp-wait -> rp-timeout -> rp-terminate
+flow g-final -> sm-final -> sm-determine -> g-measures
+flow g-measures -> sm-send-perf "no problem detected"
+flow g-measures -> sm-correct "minor corrective actions"
+flow g-measures -> sm-restore "automatic restoration"
+flow sm-send-perf -> g-cs-merge-split
+flow sm-correct -> g-res-merge -> sm-resolution -> sm-send-res -> g-cs-merge-split
+flow sm-restore -> sm-send-restore
+flow g-cs-merge-split -> cs-report -> cs-send-report -> g-cs-join
+flow g-cs-merge-split -> cs-rebate -> bc-adjust -> g-cs-join
+flow g-cs-join -> cs-end

@@ -1,0 +1,124 @@
+```tok
+tok 1.0 "Intake workflow"
+
+pool institute "Mental Health Care Institute"
+  lane family_doctor "Family Doctor"
+    start s_start "Notice by telephone"
+    task fd_notice "Give notice by telephone"
+
+  lane secretarial "Secretarial Office"
+    task sec_inquire "Inquire patient name and residence"
+    task sec_connect "Connect to nursing officer"
+    task sec_store_info "Store information in information system"
+    task sec_print "Print registration form"
+    task sec_create_file "Create patient file"
+    task sec_store_form "Store registration form and print in patient file"
+    and pg_cards_start "Start producing registration cards"
+    task sec_produce_card1 "Produce first registration card"
+    task sec_produce_card2 "Produce second registration card"
+    and pg_cards_end "Registration cards produced"
+    task sec_add_new_notice "Add patient to new notices list"
+    task sec_staff_meeting "Hold staff meeting (Wednesday)"
+    task sec_assign_patients "Assign new patients to intakers"
+    task sec_record_assignment "Record assignment list"
+    xor g_medical_required "Medical file required?"
+    task sec_prepare_letter "Prepare and send letter to family doctor"
+    task sec_receive_medical "Receive medical file copy"
+    task sec_inform_second "Inform second intaker of received medical file"
+    task sec_add_medical_copy "Add medical file copy to patient file"
+    and pg_intake_start "Start intake meetings"
+    task sec_pass_cards "Pass registration cards to intakers"
+    and join_intake "Intake meetings completed"
+    task sec_put_status "Put patient on status list"
+    task sec_provide_status "Provide status list to team leader"
+    task sec_type_dictaphone "Type dictaphone notes"
+    task sec_add_typed_notes "Add typed notes to patient file"
+
+  lane nursing_officer "Nursing Officer"
+    task nurse_inquiry "Conduct full inquiry and record on registration form"
+    task nurse_hand_over "Hand registration form to secretarial office"
+
+  lane team_leader "Team Leader"
+    xor g_new_patient "Is new patient?"
+    task team_formulate "Formulate treatment plan"
+
+  lane first_intaker "First Intaker"
+    task fi_plan "Plan meeting with patient"
+    task fi_meeting "Conduct first meeting and complete checklist"
+    task fi_observations "Register additional observations"
+    task fi_store "Store notes and checklist in patient file"
+
+  lane second_intaker "Second Intaker"
+    task si_plan "Plan meeting with patient"
+    task si_meeting "Conduct second meeting"
+    task si_record "Record observations with dictaphone"
+
+  lane psychiatrist "Psychiatrist"
+    task psy_participate "Participate in treatment plan formulation"
+
+  # Flows
+  flow s_start -> fd_notice
+  flow fd_notice -> sec_inquire
+  flow sec_inquire -> sec_connect
+  flow sec_connect -> nurse_inquiry
+  flow nurse_inquiry -> nurse_hand_over
+  flow nurse_hand_over -> sec_store_info
+  flow sec_store_info -> sec_print
+  flow sec_print -> g_new_patient
+
+  # New patient branch
+  flow g_new_patient -> sec_create_file               # yes
+  flow sec_create_file -> sec_store_form
+  flow sec_store_form -> pg_cards_start
+  flow pg_cards_start -> sec_produce_card1
+  flow pg_cards_start -> sec_produce_card2
+  flow sec_produce_card1 -> pg_cards_end
+  flow sec_produce_card2 -> pg_cards_end
+  flow pg_cards_end -> sec_add_new_notice
+
+  # Existing patient branch
+  flow g_new_patient -> sec_add_new_notice           # no
+
+  flow sec_add_new_notice -> sec_staff_meeting
+  flow sec_staff_meeting -> sec_assign_patients
+  flow sec_assign_patients -> sec_record_assignment
+  flow sec_record_assignment -> g_medical_required
+
+  # Medical file required branch
+  flow g_medical_required -> sec_prepare_letter    # yes
+  flow sec_prepare_letter -> sec_receive_medical
+  flow sec_receive_medical -> sec_inform_second
+  flow sec_receive_medical -> sec_add_medical_copy
+  flow sec_inform_second -> after_medical
+  flow sec_add_medical_copy -> after_medical
+
+  # No medical file needed branch
+  flow g_medical_required -> after_medical           # no
+
+  # Continue after medical handling
+  flow after_medical -> sec_pass_cards
+
+  # Parallel intake meetings
+  flow sec_pass_cards -> pg_intake_start
+  flow pg_intake_start -> fi_plan
+  flow pg_intake_start -> si_plan
+
+  flow fi_plan -> fi_meeting
+  flow fi_meeting -> fi_observations
+  flow fi_observations -> fi_store
+  flow fi_store -> join_intake
+
+  flow si_plan -> si_meeting
+  flow si_meeting -> si_record
+  flow si_record -> sec_type_dictaphone
+  flow sec_type_dictaphone -> sec_add_typed_notes
+  flow sec_add_typed_notes -> join_intake
+
+  # After both intakes
+  flow join_intake -> sec_put_status
+  flow sec_put_status -> sec_provide_status
+  flow sec_provide_status -> team_formulate
+  flow team_formulate -> e
+
+  end e "Intake procedure completed"
+```

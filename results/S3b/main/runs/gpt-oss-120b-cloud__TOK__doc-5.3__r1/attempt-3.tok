@@ -1,0 +1,45 @@
+tok 1.0 "Office Supply Request Process"
+
+pool organization "Organization"
+  lane employee "Employee"
+    start start_event "Office supply request submitted"
+    task submit_request "Submit office supply request"
+    task register_requirement "Register requirement"
+    flow start_event -> submit_request -> register_requirement
+
+  lane supervisor "Supervisor"
+    task receive_request "Receive request"
+    xor sup_dec "Supervisor decision?"
+    task approve_request "Approve request"
+    task ask_change "Ask for change"
+    task reject_request "Reject request"
+    flow register_requirement -> receive_request -> sup_dec
+    flow sup_dec -> approve_request
+    flow sup_dec -> ask_change
+    flow sup_dec -> reject_request
+
+  lane purchase "Purchase Department"
+    sub make_quotations "Make quotations"
+    task select_vendor "Select vendor"
+    xor vendor_valid_gw "Vendor valid?"
+    task choose_different_vendor "Choose different vendor"
+    task generate_po "Generate and send purchase order"
+    task wait_delivery "Wait for product delivery and invoice receipt"
+    flow approve_request -> make_quotations -> select_vendor -> vendor_valid_gw
+    flow vendor_valid_gw -> select_vendor "valid"
+    flow vendor_valid_gw -> choose_different_vendor "invalid"
+    flow choose_different_vendor -> select_vendor
+    flow select_vendor -> generate_po -> wait_delivery
+
+  lane system "System"
+    task send_notification "Send notification to user"
+    end rejected "Request rejected"
+    end completed "Request completed"
+    flow reject_request -> send_notification
+    flow send_notification -> rejected
+    flow ask_change -> send_notification
+    flow send_notification -> employee_review "Review change request"
+    task employee_review "Review change request"
+    flow employee_review -> sup_dec
+    flow wait_delivery -> send_notification
+    flow send_notification -> completed

@@ -1,0 +1,64 @@
+tok 1.0 "Intake workflow"
+
+pool family-doctor "Family doctor"
+
+pool institute "Mental health care institute"
+  lane secretarial "Secretarial office"
+    start notice "Notice by telephone" message="Telephone notice"
+    task inquire "Inquire name and residence of patient"
+    task transfer "Put doctor through to nursing officer"
+    task store-form "Store form information in information system"
+    task print-form "Print form information"
+    task create-file "Create patient file"
+    task store-in-file "Store registration form and print in patient file"
+    task produce-cards "Produce two registration cards"
+    task add-new-notice "Add new patient to list of new notices"
+    task store-assignment "Store assignment in information system"
+    task pass-cards "Pass registration cards to first and second intaker"
+    and par1 "Parallel"
+    xor mf-required "Medical file required?"
+    task prepare-letter "Prepare and send letter requesting medical file"
+    catch receive-copy "Receive medical file copy" message="Medical file copy"
+    task inform-second "Inform second intaker of received medical file"
+    task add-copy-file "Add medical file copy to patient file"
+    task type-out "Type out dictaphone tapes"
+    task add-transcribed "Add transcribed information to patient file"
+    task put-on-list "Put patient on list of patients that reached status"
+    task provide-list "Provide team-leader with list of patients"
+    and par2 "Join"
+  lane nursing "Nursing officer"
+    task full-inquiry "Make full inquiry into mental health and social state"
+    task hand-in-form "Hand in registration form at secretarial office"
+  lane team-leader "Team leader"
+    task hold-meeting "Hold Wednesday staff meeting"
+    task assign-intakers "Assign new patients to first and second intaker"
+    task determine-mf "Determine whether medical file is required"
+    task record-assignment "Record assignments on assignment list"
+    task hold-planning "Hold Wednesday staff meeting"
+    task formulate-plan "Formulate treatment plan"
+    end end-procedure "End intake procedure"
+  lane first-intaker "First intaker"
+    task plan-first "Plan meeting with patient"
+    task conduct-first "Conduct first meeting and fill standard checklist"
+    task register-obs "Register additional observations in personal notebook"
+    task copy-notes "Put copy of notes in patient file"
+    task add-checklist "Add standard checklist to patient file"
+  lane second-intaker "Second intaker"
+    task plan-second "Plan first meeting"
+    task conduct-second "Conduct first meeting and record observations on dictaphone"
+  lane psychiatrist "Psychiatrist"
+
+flow notice -> inquire -> transfer -> full-inquiry -> hand-in-form -> store-form -> print-form -> create-file -> store-in-file -> produce-cards -> add-new-notice -> hold-meeting -> assign-intakers -> determine-mf -> record-assignment -> store-assignment -> pass-cards -> par1
+flow par1 -> plan-first
+flow par1 -> mf-required
+flow mf-required -> prepare-letter "yes" when="medicalFileRequired"
+flow mf-required -> plan-second "no" default
+flow prepare-letter -> receive-copy -> inform-second -> add-copy-file -> plan-second
+flow plan-first -> conduct-first -> register-obs -> copy-notes -> add-checklist -> par2
+flow plan-second -> conduct-second -> type-out -> add-transcribed -> par2 -> put-on-list -> provide-list -> hold-planning -> formulate-plan -> end-procedure
+
+message family-doctor -> notice "Telephone notice"
+message prepare-letter -> family-doctor "Request medical file"
+message family-doctor -> receive-copy "Medical file copy"
+
+note n1 "Patient files are kept at secretarial office and may not leave the building" on=store-in-file

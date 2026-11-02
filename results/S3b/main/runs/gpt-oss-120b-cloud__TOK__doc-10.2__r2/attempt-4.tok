@@ -1,0 +1,99 @@
+tok 1.0 "MPON Process"
+
+pool organisation "Organisation"
+  lane MPON "MPON"
+    start s "Start"
+    task t_report "Report the meter operation to the GO"
+    task t_equipMPON "Perform equipment acquisition and/or changes"
+    task t_infFail "Inform GO about the failure of the entire process"
+    task t_infSucc "Inform GO about the successful completion of the entire process"
+
+  lane GO "GO"
+    task t_examine "Examine the application of the MPON"
+    task t_reject "Reject the application of the MPON"
+    task t_confirm "Confirm the application of the MPON"
+    task t_informMPOOReg "Inform MPOO about the registration confirmation of the MPON"
+    task t_informMSPOReg "Inform MSPO about the registration confirmation of the MPON"
+    task t_recvFailInfo "Receive failure information from MPON"
+    task t_recvSuccInfo "Receive successful completion information from MPON"
+    task t_infDeadline "Inform MPON about the failure of the overall transaction by deadline"
+    task t_confFailAssign "Confirm failure of the assignment to the MPON"
+    task t_assignMPON "Assign the MPON"
+    task t_confAssign "Confirm assignment to the MPON"
+    task t_infMPOOFail "Inform MPOO about the failure of assignment of the MPON"
+    task t_infMSPOFail "Inform MSPO about the failure of assignment of the MPON"
+    task t_infMPOOAssign "Inform MPOO about the assignment of the MPON"
+    task t_infMSPOAssign "Inform MSPO about the assignment of the MPON"
+    task t_infSPAssign "Inform SP about the assignment of the MPON"
+    start timer_deadline "Deadline timeout" timer=PT48H
+
+  lane MPOO "MPOO"
+    task t_equipMPOO "Perform equipment acquisition and/or changes"
+    task t_recvMPOOFail "Receive failure of assignment of the MPON"
+    task t_recvMPOOAssign "Receive assignment of the MPON"
+
+  lane MSPO "MSPO"
+    task t_recvMSPOFail "Receive failure of assignment of the MPON"
+    task t_recvMSPOAssign "Receive assignment of the MPON"
+
+  lane SP "SP"
+    task t_recvSPAssign "Receive assignment of the MPON"
+
+  # End events
+  end endReject "Application rejected"
+  end endFailMPOO "Failure handling completed for MPOO"
+  end endFailMSPO "Failure handling completed for MSPO"
+  end endSuccMPOO "Assignment handling completed for MPOO"
+  end endSuccMSPO "Assignment handling completed for MSPO"
+  end endSuccSP "Assignment handling completed for SP"
+
+  # Gateways
+  xor g_appDec "Reject or confirm application?"
+  and g_regSplit "Registration notification split"
+  and g_regJoin "Registration notifications join"
+  and g_equipSplit "Equipment tasks split"
+  and g_equipJoin "Equipment tasks join"
+  and g_postEquipSplit "Post‑equipment split"
+  xor g_resultDec "Failure or success of process?"
+  and g_failInfoSplit "Failure assignment notifications split"
+  and g_successInfoSplit "Assignment notifications split"
+
+  # Flows
+  flow s -> t_report
+  flow t_report -> t_examine
+  flow t_examine -> g_appDec
+  flow g_appDec -> t_reject "reject"
+  flow g_appDec -> t_confirm "confirm"
+  flow t_reject -> endReject
+  flow t_confirm -> g_regSplit
+
+  flow g_regSplit -> t_informMPOOReg
+  flow g_regSplit -> t_informMSPOReg
+  flow t_informMPOOReg -> g_regJoin
+  flow t_informMSPOReg -> g_regJoin
+  flow g_regJoin -> g_equipSplit
+
+  flow g_equipSplit -> t_equipMPON
+  flow g_equipSplit -> t_equipMPOO
+  flow t_equipMPON -> g_equipJoin
+  flow t_equipMPOO -> g_equipJoin
+  flow g_equipJoin -> g_postEquipSplit
+
+  flow g_postEquipSplit -> g_resultDec
+  flow g_postEquipSplit -> timer_deadline
+  flow timer_deadline -> t_infDeadline -> t_confFailAssign
+
+  flow g_resultDec -> t_infFail
+  flow g_resultDec -> t_infSucc
+
+  flow t_infFail -> t_recvFailInfo -> t_confFailAssign
+  flow t_infSucc -> t_recvSuccInfo -> t_assignMPON -> t_confAssign
+
+  flow t_confFailAssign -> g_failInfoSplit
+  flow g_failInfoSplit -> t_infMPOOFail -> t_recvMPOOFail -> endFailMPOO
+  flow g_failInfoSplit -> t_infMSPOFail -> t_recvMSPOFail -> endFailMSPO
+
+  flow t_confAssign -> g_successInfoSplit
+  flow g_successInfoSplit -> t_infMPOOAssign -> t_recvMPOOAssign -> endSuccMPOO
+  flow g_successInfoSplit -> t_infMSPOAssign -> t_recvMSPOAssign -> endSuccMSPO
+  flow g_successInfoSplit -> t_infSPAssign -> t_recvSPAssign -> endSuccSP

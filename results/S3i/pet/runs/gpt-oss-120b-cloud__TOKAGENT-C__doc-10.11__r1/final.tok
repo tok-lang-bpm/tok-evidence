@@ -1,0 +1,39 @@
+tok 1.0 "GO-MSP Measurement Process"
+
+pool org "Organisation"
+  lane GO "GO"
+    start s0 "Start"
+    task t_req "Request measurements"
+    # end events will be placed later
+  lane MSP "MSP"
+    task t_check "Check received request"
+    xor gx1 "Request denied?"
+    task t_inform_fail1 "Inform GO about failure of reading"
+    task t_measure "Perform measurement"
+    xor gx2 "Measurement failure?"
+    task t_inform_fail2 "Inform GO about failure of reading"
+    task t_transmit "Transmit measured values"
+  lane GO "GO"
+    task t_process "Process measured values"
+    task t_send_changed "Send changed values to MSP"
+    task t_transmit_sp "Transmit readings to SP"
+    end e_success "End"
+  lane SP "SP"
+    # No activities, only receive the transmission; end is in GO lane
+
+# Sequence flows
+flow s0 -> t_req -> t_check
+flow t_check -> gx1
+flow gx1 -> t_inform_fail1 "yes"
+flow gx1 -> t_measure "no"
+flow t_inform_fail1 -> e_success
+
+flow t_measure -> gx2
+flow gx2 -> t_inform_fail2 "yes"
+flow gx2 -> t_transmit "no"
+flow t_inform_fail2 -> e_success
+
+flow t_transmit -> t_process
+flow t_process -> t_send_changed
+flow t_send_changed -> t_transmit_sp
+flow t_transmit_sp -> e_success

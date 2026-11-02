@@ -1,0 +1,109 @@
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start degraded "Service degradation perceived"
+    task send_list "Send the list of problem parameters"
+    task receive_report "Receive the service performance and problem resolution report"
+    end cust_done "Customer process ends"
+  lane cs "Customer Service"
+    task receive_list "Receive the list of problem parameters"
+    task enter_report "Enter the problem report into system T"
+    task compare "Compare the problem report with the customer SLA"
+    task determine_cm "Determine the necessary counter measures and their priorities"
+    xor premium "Customer premium?"
+    task extra_fix "Link to the extra problem fix process"
+    end linked "Extra problem fix process linked"
+    xor significant "Customer of certain significance?"
+    task reprioritize "Re-prioritize the counter measures"
+    xor sig_merge
+    task create_detailed "Create the detailed problem report"
+    task send_detailed "Send the detailed problem report to Service Management"
+    xor cs_response
+    and cs_fork
+    task create_customer_report "Create the report for the customer on service performance and problem resolution"
+    task send_customer_report "Send the report to the customer"
+    and sent_split
+    task report_rebate "Report the SLA violation rebate to Billing & Collections"
+    and cs_join
+    end cs_done "Customer Service process ends"
+  lane es "Electronic service"
+    service determine_significance "Determine the significance of the customer"
+  lane sm "Service Management"
+    task receive_detailed "Receive the detailed problem report"
+    task investigate "Investigate whether the problem is analyzable by Service Management"
+    xor analyzable "Analyzable by Service Management?"
+    task send_to_rp "Send the detailed problem report to Resource Provisioning"
+    task analyze_sm "Analyze the problem"
+    task trouble_report_sm "Create the trouble report indicating the type of problem"
+    xor sm_status_merge
+    task receive_status "Receive the status report from Resource Provisioning"
+    task prep_final "Prepare the final status report"
+    task determine_actions "Determine the counter measures based on the final status report"
+    xor actions "Counter measures required?"
+    task send_perf "Send the actual service performance to Customer Service"
+    task minor "Undertake the corrective actions"
+    task restore_req "Create the request for automatic resource restoration"
+    task send_restore "Send the request for automatic resource restoration to Resource Provisioning"
+    task receive_ts "Receive the trouble-shooting report"
+    xor res_merge
+    task create_resolution "Create the problem resolution report"
+    task send_resolution "Send the problem resolution report to Customer Service"
+  lane rp "Resource Provisioning"
+    task receive_detailed_rp "Receive the detailed problem report"
+    xor problem_check "Problem detected?"
+    task normal_notice "Create the notification about normal service execution"
+    task analyze_rp "Analyze the problem"
+    task trouble_rp "Create the trouble report"
+    xor rp_merge
+    task status_rp "Include the trouble report or the normal execution notification in the status report"
+    task send_status "Send the status report to Service Management"
+    eventgw wait_restore "Wait for the restoration request"
+    catch rp_restore_req "Restoration request received" message="Restoration request"
+    catch rp_timeout "Two days after the status report elapsed" timer=P2D
+    end rp_terminated "Resource Provisioning terminates the process"
+    task track_errors "Track all possible errors"
+    task corrective_rp "Undertake all necessary corrective actions"
+    task ts_report "Create the trouble-shooting report"
+    task send_ts "Send the trouble-shooting report to Service Management"
+    end rp_done "Resource Provisioning process ends"
+  lane billing "Billing & Collections"
+    task adjust_billing "Adjust the billing"
+
+flow degraded -> send_list -> receive_list -> enter_report -> compare -> determine_cm -> determine_significance -> premium
+flow premium -> extra_fix "yes"
+flow extra_fix -> linked
+flow premium -> significant "no"
+flow significant -> reprioritize "yes"
+flow reprioritize -> sig_merge
+flow significant -> sig_merge "no"
+flow sig_merge -> create_detailed -> send_detailed -> receive_detailed -> investigate -> analyzable
+flow analyzable -> analyze_sm "yes"
+flow analyze_sm -> trouble_report_sm -> sm_status_merge
+flow analyzable -> send_to_rp "no"
+flow send_to_rp -> receive_status -> sm_status_merge -> prep_final -> determine_actions -> actions
+flow actions -> send_perf "no problem"
+flow send_perf -> cs_response
+flow actions -> minor "minor corrective actions"
+flow minor -> res_merge
+flow actions -> restore_req "automatic restoration"
+flow restore_req -> send_restore -> receive_ts -> res_merge
+flow res_merge -> create_resolution -> send_resolution -> cs_response
+flow cs_response -> cs_fork
+flow cs_fork -> create_customer_report -> send_customer_report -> sent_split
+flow cs_fork -> report_rebate -> adjust_billing -> cs_join
+flow sent_split -> receive_report -> cust_done
+flow sent_split -> cs_join -> cs_done
+flow receive_detailed_rp -> problem_check
+flow problem_check -> normal_notice "no"
+flow normal_notice -> rp_merge
+flow problem_check -> analyze_rp "yes"
+flow analyze_rp -> trouble_rp -> rp_merge
+flow rp_merge -> status_rp -> send_status -> wait_restore
+flow wait_restore -> rp_restore_req -> track_errors -> corrective_rp -> ts_report -> send_ts -> rp_done
+flow wait_restore -> rp_timeout -> rp_terminated
+
+message send_to_rp -> receive_detailed_rp "Detailed problem report"
+message send_status -> receive_status "Status report"
+message send_restore -> rp_restore_req "Restoration request"
+message send_ts -> receive_ts "Trouble-shooting report"

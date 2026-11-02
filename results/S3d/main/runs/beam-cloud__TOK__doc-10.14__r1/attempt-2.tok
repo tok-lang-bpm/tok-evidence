@@ -1,0 +1,50 @@
+tok 1.0 "Billing"
+
+pool organisation "Organisation"
+  lane mpoo "MPOO"
+    start start "Start"
+    task send_metering "Send the bill for the temporary continuation of the metering point operations to the GO"
+    task send_equipment "Send the bill for the equipment acquisition to the MPON or the GO"
+    xor scenario "Bill scenario?"
+    xor recipient "Examiner?"
+  lane mspo "MSPO"
+    task send_measurement "Send the bill for the temporary continuation of the measurement to the GO"
+    task send_readings "Send the bill for additional readings to the GO"
+  lane go "GO"
+    task examine_go "Examine the bill"
+    task confirm_go "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_go "Reject the invoice of the MPOO or the MSPO"
+    xor outcome_go "Confirm or reject?"
+    end completed "Process completed"
+  lane mpon "MPON"
+    task examine_mpon "Examine the bill"
+    task confirm_mpon "Confirm the invoice with payment advice to the MPOO or the MSPO"
+    task reject_mpon "Reject the invoice of the MPOO or the MSPO"
+    xor outcome_mpon "Confirm or reject?"
+
+flow start -> scenario
+flow scenario -> send_metering "Temporary continuation of the metering point operations"
+flow scenario -> send_measurement "Temporary continuation of the measurement"
+flow scenario -> send_readings "Additional readings"
+flow scenario -> send_equipment "Equipment acquisition"
+
+flow send_metering -> examine_go
+flow send_measurement -> examine_go
+flow send_readings -> examine_go
+
+flow send_equipment -> recipient
+flow recipient -> examine_mpon "MPON"
+flow recipient -> examine_go "GO"
+
+flow examine_go -> outcome_go
+flow outcome_go -> confirm_go "Confirm"
+flow outcome_go -> reject_go "Reject"
+
+flow examine_mpon -> outcome_mpon
+flow outcome_mpon -> confirm_mpon "Confirm"
+flow outcome_mpon -> reject_mpon "Reject"
+
+flow confirm_go -> completed
+flow confirm_mpon -> completed
+flow reject_go -> completed
+flow reject_mpon -> completed

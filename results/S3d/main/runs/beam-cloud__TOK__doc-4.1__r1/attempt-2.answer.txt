@@ -1,0 +1,68 @@
+```tok
+tok 1.0 "Intake workflow"
+
+pool institute "Mental health care institute"
+  lane family "Family doctor"
+    start start_intake "Intake starts"
+    task notice "Notice by telephone"
+  lane secret "Secretarial office"
+    task inquire "Inquire name and residence"
+    task put_through "Put doctor through to nursing officer"
+    task store_info "Store information in information system"
+    task print_info "Print information"
+    xor new_patient "New patient?"
+    task create_file "Create patient file"
+    task store_docs "Store registration form and print in patient file"
+    task produce_cards "Produce registration cards"
+    task add_list "Add new patient to list of new notices"
+    task store_assignments "Store assignment in information system"
+    task pass_cards "Pass registration cards to intakers"
+    xor medical_required "Medical file required?"
+    task send_letter "Prepare and send letter to family doctor"
+    task receive_copy "Receive copy of medical file"
+    task inform_second "Inform second intaker"
+    task add_copy "Add copy to patient file"
+    task type_tapes "Type out tapes"
+    task add_typed_info "Add information to patient file"
+    task put_list_status "Put patient on list of patients reached status"
+    task provide_list "Provide team-leader list of patients"
+    and meetings_done "Both intaker meetings completed"
+  lane nurse "Nursing officer"
+    task full_inquiry "Make full inquiry"
+    task record_form "Record information on registration form"
+    task hand_in_form "Hand in registration form"
+  lane team "Team-leader"
+    task hold_meeting "Hold staff meeting"
+    task assign_patients "Assign new patients to members"
+    task record_assignments "Record assignments on assignment list"
+    task determine_file "Determine whether medical file is required"
+    task add_file_info "Add medical file requirement to assignment list"
+    task hand_assignment_list "Hand assignment list to secretarial office"
+  lane social "Social-medical worker"
+    task plan_first_meeting "Plan meeting with patient"
+    task examine_patient "Examine patient using standard checklist"
+    task fill_checklist "Fill out standard checklist"
+    task register_observations "Register additional observations in notebook"
+    task copy_notes "Put copy of notes in patient file"
+    task add_checklist "Add standard checklist to patient file"
+  lane physician "Physician"
+    task plan_second_meeting "Plan first meeting with patient"
+    task record_observations "Record observations made during meetings"
+  lane psychiatrist "Psychiatrist"
+    task formulate_plan "Formulate treatment plan"
+    end end_intake "Intake ends"
+
+flow start_intake -> notice -> inquire -> put_through
+flow put_through -> full_inquiry -> record_form -> hand_in_form -> store_info -> print_info -> new_patient
+flow new_patient -> create_file "yes" when="newPatient"
+flow new_patient -> store_docs "no" default
+flow create_file -> store_docs
+flow store_docs -> produce_cards -> add_list -> hold_meeting -> assign_patients -> record_assignments -> determine_file -> add_file_info -> hand_assignment_list -> store_assignments -> pass_cards -> medical_required
+flow medical_required -> send_letter "yes" when="medicalFileRequired"
+flow medical_required -> plan_second_meeting "no" default
+flow send_letter -> receive_copy -> inform_second -> add_copy -> plan_second_meeting
+flow pass_cards -> plan_first_meeting
+flow plan_first_meeting -> examine_patient -> fill_checklist -> register_observations -> copy_notes -> add_checklist -> meetings_done
+flow plan_second_meeting -> record_observations -> type_tapes -> add_typed_info -> meetings_done
+flow meetings_done -> put_list_status -> provide_list -> formulate_plan -> end_intake
+```

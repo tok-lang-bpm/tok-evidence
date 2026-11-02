@@ -1,0 +1,167 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="process" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="laneSet">
+      <bpmn:lane id="lane_MPN" name="MPON">
+        <bpmn:flowNodeRef>t_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_equipment_MPN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informGO_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informGO_success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_GO" name="GO">
+        <bpmn:flowNodeRef>t_examine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMPOO_register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMSPO_register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timer_deadline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_deadlineInform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirmFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_confirmAssign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMPOO_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMSPO_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMPOO_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informMSPO_assign</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_informSP_assign</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_MPOO" name="MPOO">
+        <bpmn:flowNodeRef>t_equipment_MPOO</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_MSPO" name="MSPO"/>
+      <bpmn:lane id="lane_SP" name="SP"/>
+    </bpmn:laneSet>
+
+    <!-- Flow Nodes -->
+    <bpmn:startEvent id="start" name="Process start"/>
+
+    <bpmn:task id="t_report" name="Report meter operation to GO"/>
+
+    <bpmn:task id="t_examine" name="Examine MPON application"/>
+
+    <bpmn:exclusiveGateway id="g_decision" name="Application decision"/>
+
+    <bpmn:task id="t_reject" name="Reject MPON application"/>
+    <bpmn:task id="t_confirm" name="Confirm MPON application"/>
+
+    <bpmn:parallelGateway id="pg_inform_start"/>
+
+    <bpmn:task id="t_informMPOO_register" name="Inform MPOO about registration confirmation of MPON"/>
+    <bpmn:task id="t_informMSPO_register" name="Inform MSPO about registration confirmation of MPON"/>
+
+    <bpmn:parallelGateway id="pg_inform_end"/>
+
+    <bpmn:parallelGateway id="pg_equipment_start"/>
+
+    <bpmn:task id="t_equipment_MPN" name="Perform equipment acquisition and/or changes"/>
+    <bpmn:task id="t_equipment_MPOO" name="Perform equipment acquisition and/or changes"/>
+
+    <bpmn:parallelGateway id="pg_equipment_end"/>
+
+    <bpmn:exclusiveGateway id="g_outcome" name="Process outcome"/>
+
+    <bpmn:task id="t_informGO_failure" name="Inform GO about failure of entire process"/>
+    <bpmn:task id="t_informGO_success" name="Inform GO about successful completion of entire process"/>
+
+    <bpmn:intermediateCatchEvent id="timer_deadline" name="Maximum time limit reached">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:task id="t_deadlineInform" name="Inform MPON about failure of overall transaction"/>
+
+    <bpmn:task id="t_confirmFailure" name="Confirm failure of assignment to MPON"/>
+
+    <bpmn:parallelGateway id="pg_failure_notify_start"/>
+    <bpmn:task id="t_informMPOO_failure" name="Inform MPOO about failure of assignment of MPON"/>
+    <bpmn:task id="t_informMSPO_failure" name="Inform MSPO about failure of assignment of MPON"/>
+    <bpmn:parallelGateway id="pg_failure_notify_end"/>
+
+    <bpmn:task id="t_assign" name="Assign MPON"/>
+    <bpmn:task id="t_confirmAssign" name="Confirm assignment to MPON"/>
+
+    <bpmn:parallelGateway id="pg_success_notify_start"/>
+    <bpmn:task id="t_informMPOO_assign" name="Inform MPOO about assignment of MPON"/>
+    <bpmn:task id="t_informMSPO_assign" name="Inform MSPO about assignment of MPON"/>
+    <bpmn:task id="t_informSP_assign" name="Inform SP about assignment of MPON"/>
+    <bpmn:parallelGateway id="pg_success_notify_end"/>
+
+    <bpmn:endEvent id="end_failure" name="Failure path completed"/>
+    <bpmn:endEvent id="end_success" name="Success path completed"/>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f_start_report" sourceRef="start" targetRef="t_report"/>
+
+    <bpmn:sequenceFlow id="f_report_examine" sourceRef="t_report" targetRef="t_examine"/>
+
+    <bpmn:sequenceFlow id="f_examine_decision" sourceRef="t_examine" targetRef="g_decision"/>
+
+    <bpmn:sequenceFlow id="f_decision_reject" sourceRef="g_decision" targetRef="t_reject" name="reject"/>
+    <bpmn:sequenceFlow id="f_decision_confirm" sourceRef="g_decision" targetRef="t_confirm" name="confirm"/>
+
+    <bpmn:sequenceFlow id="f_reject_to_informStart" sourceRef="t_reject" targetRef="pg_inform_start"/>
+    <bpmn:sequenceFlow id="f_confirm_to_informStart" sourceRef="t_confirm" targetRef="pg_inform_start"/>
+
+    <bpmn:sequenceFlow id="f_informStart_to_MPOO" sourceRef="pg_inform_start" targetRef="t_informMPOO_register"/>
+    <bpmn:sequenceFlow id="f_informStart_to_MSPO" sourceRef="pg_inform_start" targetRef="t_informMSPO_register"/>
+
+    <bpmn:sequenceFlow id="f_MPOO_to_informEnd" sourceRef="t_informMPOO_register" targetRef="pg_inform_end"/>
+    <bpmn:sequenceFlow id="f_MSPO_to_informEnd" sourceRef="t_informMSPO_register" targetRef="pg_inform_end"/>
+
+    <bpmn:sequenceFlow id="f_informEnd_to_equipmentStart" sourceRef="pg_inform_end" targetRef="pg_equipment_start"/>
+
+    <bpmn:sequenceFlow id="f_equipmentStart_to_MPN" sourceRef="pg_equipment_start" targetRef="t_equipment_MPN"/>
+    <bpmn:sequenceFlow id="f_equipmentStart_to_MPOO" sourceRef="pg_equipment_start" targetRef="t_equipment_MPOO"/>
+
+    <bpmn:sequenceFlow id="f_MPN_to_eqEnd" sourceRef="t_equipment_MPN" targetRef="pg_equipment_end"/>
+    <bpmn:sequenceFlow id="f_MPOO_to_eqEnd" sourceRef="t_equipment_MPOO" targetRef="pg_equipment_end"/>
+
+    <bpmn:sequenceFlow id="f_eqEnd_to_outcome" sourceRef="pg_equipment_end" targetRef="g_outcome"/>
+
+    <bpmn:sequenceFlow id="f_outcome_to_failure" sourceRef="g_outcome" targetRef="t_informGO_failure" name="failure"/>
+    <bpmn:sequenceFlow id="f_outcome_to_success" sourceRef="g_outcome" targetRef="t_informGO_success" name="success"/>
+    <bpmn:sequenceFlow id="f_outcome_to_timer" sourceRef="g_outcome" targetRef="timer_deadline" name="timeout"/>
+
+    <bpmn:sequenceFlow id="f_timer_to_deadlineInform" sourceRef="timer_deadline" targetRef="t_deadlineInform"/>
+
+    <bpmn:sequenceFlow id="f_failure_to_confirmFail" sourceRef="t_informGO_failure" targetRef="t_confirmFailure"/>
+    <bpmn:sequenceFlow id="f_deadline_to_confirmFail" sourceRef="t_deadlineInform" targetRef="t_confirmFailure"/>
+
+    <bpmn:sequenceFlow id="f_confirmFail_to_failNotifyStart" sourceRef="t_confirmFailure" targetRef="pg_failure_notify_start"/>
+
+    <bpmn:sequenceFlow id="f_failNotifyStart_to_MPOO" sourceRef="pg_failure_notify_start" targetRef="t_informMPOO_failure"/>
+    <bpmn:sequenceFlow id="f_failNotifyStart_to_MSPO" sourceRef="pg_failure_notify_start" targetRef="t_informMSPO_failure"/>
+
+    <bpmn:sequenceFlow id="f_MPOOfail_to_endNotify" sourceRef="t_informMPOO_failure" targetRef="pg_failure_notify_end"/>
+    <bpmn:sequenceFlow id="f_MSPOfail_to_endNotify" sourceRef="t_informMSPO_failure" targetRef="pg_failure_notify_end"/>
+
+    <bpmn:sequenceFlow id="f_failNotifyEnd_to_end" sourceRef="pg_failure_notify_end" targetRef="end_failure"/>
+
+    <bpmn:sequenceFlow id="f_success_to_assign" sourceRef="t_informGO_success" targetRef="t_assign"/>
+
+    <bpmn:sequenceFlow id="f_assign_to_confirmAssign" sourceRef="t_assign" targetRef="t_confirmAssign"/>
+
+    <bpmn:sequenceFlow id="f_confirmAssign_to_successNotifyStart" sourceRef="t_confirmAssign" targetRef="pg_success_notify_start"/>
+
+    <bpmn:sequenceFlow id="f_successNotifyStart_to_MPOOassign" sourceRef="pg_success_notify_start" targetRef="t_informMPOO_assign"/>
+    <bpmn:sequenceFlow id="f_successNotifyStart_to_MSPOassign" sourceRef="pg_success_notify_start" targetRef="t_informMSPO_assign"/>
+    <bpmn:sequenceFlow id="f_successNotifyStart_to_SPassign" sourceRef="pg_success_notify_start" targetRef="t_informSP_assign"/>
+
+    <bpmn:sequenceFlow id="f_MPOOassign_to_successNotifyEnd" sourceRef="t_informMPOO_assign" targetRef="pg_success_notify_end"/>
+    <bpmn:sequenceFlow id="f_MSPOassign_to_successNotifyEnd" sourceRef="t_informMSPO_assign" targetRef="pg_success_notify_end"/>
+    <bpmn:sequenceFlow id="f_SPassign_to_successNotifyEnd" sourceRef="t_informSP_assign" targetRef="pg_success_notify_end"/>
+
+    <bpmn:sequenceFlow id="f_successNotifyEnd_to_end" sourceRef="pg_success_notify_end" targetRef="end_success"/>
+  </bpmn:process>
+</bpmn:definitions>
+```

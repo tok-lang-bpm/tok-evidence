@@ -1,0 +1,72 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The MPOO deregisters at the GO. The GO verifies the deregistration. The GO rejects the deregistration of the MPOO or the GO preliminarily confirms the deregistration of the MPOO. The GO prepares the readmission of the measuring point. Optionally, the GO may oblige the MPOO to continue the operations. If the GO binds the MPOO to continue the operation, the MPOO confirmes the continuation to the MPOO. The GO performs the equipment acquisition and / or equipment changes. The GO assigns the GO as MPO. The GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO. The GO informs the MSPO about the assignment of the GO. The GO informs the SP about the assignment of the GO.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "MPOO deregistration process"
+
+pool organisation "Organisation"
+  lane MPOO "MPOO"
+    start start1 "Start"
+    task dreg "MPOO deregisters at the GO"
+  lane GO "GO"
+    task verify "GO verifies the deregistration"
+    xor decision1 "Deregistration decision"
+      task reject "GO rejects the deregistration of the MPOO"
+      end reject_end "Deregistration rejected"
+      task confirm "GO preliminarily confirms the deregistration of the MPOO"
+      task readmit "GO prepares the readmission of the measuring point"
+      xor decision2 "Obligation to continue?"
+        task bind "GO binds the MPOO to continue the operation"
+        lane MPOO "MPOO"
+          task mopoconfirm "MPOO confirms the continuation to the MPOO"
+        lane GO "GO"
+        # merge after optional continuation
+        xor merge_obligation
+      # end of optional branch
+    # after obligation decision merge
+    xor merge_obligation
+    and equip_split
+      task acquire "GO performs equipment acquisition"
+      task change "GO performs equipment changes"
+    # join parallel
+    and equip_join
+    task assign "GO assigns the GO as MPO"
+    task inform_mpoo "GO informs the MPOO about the end of the assignment of the MPOO and the beginning of the assignment of the GO"
+    task inform_mspo "GO informs the MSPO about the assignment of the GO"
+    task inform_sp "GO informs the SP about the assignment of the GO"
+    end end_process "Process completed"
+
+  lane MSPO "MSPO"
+    # receiving inform_mspo (no tasks needed)
+
+  lane SP "SP"
+    # receiving inform_sp (no tasks needed)
+
+flow start1 -> dreg -> verify -> decision1
+flow decision1 -> reject -> reject_end
+flow decision1 -> confirm -> readmit -> decision2
+flow decision2 -> bind -> mopoconfirm -> equip_split
+flow decision2 -> equip_split
+flow equip_split -> acquire -> equip_join
+flow equip_split -> change -> equip_join
+flow equip_join -> assign -> inform_mpoo -> inform_mspo -> inform_sp -> end_process
+```
+
+The tok checker reports these problems in it:
+
+- line 10: error P003: 'xor' cannot have an indented block
+- line 25: error P003: 'and' cannot have an indented block
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

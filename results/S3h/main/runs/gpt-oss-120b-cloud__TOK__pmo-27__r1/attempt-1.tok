@@ -1,0 +1,61 @@
+tok 1.0 "Work Accident"
+
+pool organisation "Organisation"
+  lane employee "Employee / Employer"
+    start acc_start "Accident occurs"
+    task gather "Gather accident information"
+    xor party_type "Who is involved?"
+      -> employee_path "Employee / Self‑employed"
+      -> student_path "Student / School child"
+      -> private_path "Private insured person"
+    #--- Employee / Self‑employed path -----------------
+    task inform_emp "Inform employer immediately"
+    xor self_employed "Is reporter self‑employed?"
+      -> self_yes "Self‑employed"
+      -> self_no "Employee"
+    task report_self "Report to Accident Insurance Provider (self‑employed) within 5 days"
+    # continue for employee
+    xor fatal_serious "Fatality or serious injury?"
+      -> fatal_yes "Yes"
+      -> fatal_no "No"
+    task report_inspector "Report to Labour Inspectorate"
+    xor long_term "Injury >3 days or death?"
+      -> long_yes "Yes"
+      -> long_no "No"
+    task report_insurance "Report to Accident Insurance Provider within 5 days"
+    and join_emp_reports
+    #--- Student / School child path -----------------
+  lane school "School / Educational Institution"
+    task report_directorate "Report to competent directorate"
+    task school_report_ins "School reports to Accident Insurance Provider (triplicate, within 5 days)"
+    #--- Private insured path -----------------
+  lane private "Private Insured Party"
+    task report_private "Report in writing to private insurer immediately"
+    xor private_fatal "Fatalities?"
+      -> priv_fatal_yes "Yes"
+      -> priv_fatal_no "No"
+    task report_private_fatal "Report fatalities within 3 days"
+
+    #--- End events
+  lane end_lane "End"
+    end emp_end "Process completed"
+    end student_end "Process completed"
+    end private_end "Process completed"
+
+# Flows
+flow acc_start -> gather -> party_type
+flow party_type -> employee_path -> inform_emp
+flow party_type -> student_path -> report_directorate -> school_report_ins -> student_end
+flow party_type -> private_path -> report_private -> private_fatal
+flow private_fatal -> priv_fatal_yes -> report_private_fatal -> private_end
+flow private_fatal -> priv_fatal_no -> private_end
+
+# Employee branch flows
+flow inform_emp -> self_employed
+flow self_employed -> self_yes -> report_self -> join_emp_reports
+flow self_employed -> self_no -> fatal_serious
+flow fatal_serious -> fatal_yes -> report_inspector -> join_emp_reports
+flow fatal_serious -> fatal_no -> long_term
+flow long_term -> long_yes -> report_insurance -> join_emp_reports
+flow long_term -> long_no -> join_emp_reports
+flow join_emp_reports -> emp_end

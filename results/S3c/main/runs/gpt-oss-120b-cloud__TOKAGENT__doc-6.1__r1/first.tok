@@ -1,0 +1,54 @@
+tok 1.0 "Invoice Processing"
+pool acme "ACME AG" {
+  lane secretariat "Secretariat"
+    start start "Start"
+    task receive_invoice "Receive invoice on paper or fax"
+    task forward_invoice "Forward invoice after visual inspection"
+    flow start -> receive_invoice
+    flow receive_invoice -> forward_invoice
+
+  lane accounting "Accounting Employee"
+    task identify_supplier "Identify charging suppliers and create new invoice instance"
+    task check_items "Check invoice items and note cost center managers on docket"
+    task clarify "Clarify with vendor and possibly consult cost centre managers"
+    task forward_to_commercial "Forward copy of invoice to commercial manager"
+    task payment_instructions "Give payment instructions and close the instance"
+    flow forward_invoice -> identify_supplier
+    flow identify_supplier -> check_items
+    flow check_items -> send_to_mail
+
+  lane internalmail "Internal Mail"
+    task send_to_mail "Send docket and copy of invoice to internal mail"
+    flow check_items -> send_to_mail
+    flow send_to_mail -> manager_review
+
+  lane manager "Cost Center Manager"
+    task manager_review "Review invoice for accuracy"
+    xor ap_gateway "Is position accurate?"
+    xor all_ap_gateway "All items accurate?"
+    flow send_to_mail -> manager_review
+    flow manager_review -> ap_gateway
+    flow ap_gateway -> all_ap_gateway "AP" when="AP"
+    flow ap_gateway -> clarify "Reject" when="not AP"
+    flow all_ap_gateway -> manager_review "more managers" when="not all"
+    flow all_ap_gateway -> forward_to_commercial default
+    flow clarify -> manager_review
+
+  lane commercial "Commercial Manager"
+    task commercial_audit "Perform commercial audit and issue approval for payment"
+    xor complaint_gateway "Any complaint during commercial audit?"
+    xor amount_gateway "Invoice amount exceeds EUR 20?"
+    flow forward_to_commercial -> commercial_audit
+    flow commercial_audit -> complaint_gateway
+    flow complaint_gateway -> resolve_complaint "yes" when="complaint"
+    flow complaint_gateway -> amount_gateway default
+    flow resolve_complaint -> amount_gateway
+    flow amount_gateway -> board_check "yes" when="amount > 20"
+    flow amount_gateway -> payment_instructions default
+
+  lane board "Board"
+    task board_check "Board checks invoice (4‑eyes principle)"
+    flow board_check -> payment_instructions
+}
+end end "End"
+flow payment_instructions -> end

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process1"/>
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="laneSet1">
+      <bpmn:lane id="lane_company" name="Company">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_corrections</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_award</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_certified</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_notMet</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_internalTeams" name="Internal Teams">
+        <bpmn:flowNodeRef>task_prepare</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_auditors" name="Auditors">
+        <bpmn:flowNodeRef>task_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_finalAudit</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Compliance audit scheduled"/>
+    <bpmn:task id="task_prepare" name="Prepare documentation, gather evidence, and conduct self-assessment"/>
+    <bpmn:task id="task_review" name="Auditors review company's processes"/>
+    <bpmn:exclusiveGateway id="gateway_gaps" name="Gaps identified?"/>
+    <bpmn:task id="task_corrections" name="Make corrections or improvements"/>
+    <bpmn:task id="task_finalAudit" name="Conduct final audit"/>
+    <bpmn:exclusiveGateway id="gateway_criteria" name="All criteria met?"/>
+    <bpmn:task id="task_award" name="Award certification and issue official documents"/>
+    <bpmn:endEvent id="end_certified" name="Certification awarded"/>
+    <bpmn:endEvent id="end_notMet" name="Audit not passed"/>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="task_prepare"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="task_prepare" targetRef="task_review"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="task_review" targetRef="gateway_gaps"/>
+    <bpmn:sequenceFlow id="f4" name="yes" sourceRef="gateway_gaps" targetRef="task_corrections">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">gapsFound</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" name="no" sourceRef="gateway_gaps" targetRef="task_finalAudit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">noGaps</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" sourceRef="task_corrections" targetRef="task_finalAudit"/>
+    <bpmn:sequenceFlow id="f7" sourceRef="task_finalAudit" targetRef="gateway_criteria"/>
+    <bpmn:sequenceFlow id="f8" name="yes" sourceRef="gateway_criteria" targetRef="task_award">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">criteriaMet</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f9" name="no" sourceRef="gateway_criteria" targetRef="end_notMet">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">criteriaNotMet</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f10" sourceRef="task_award" targetRef="end_certified"/>
+    
+  </bpmn:process>
+</bpmn:definitions>

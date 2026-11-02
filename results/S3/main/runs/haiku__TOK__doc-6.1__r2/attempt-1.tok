@@ -1,0 +1,67 @@
+tok 1.0 "Invoice processing at ACME AG"
+
+pool acme "ACME AG"
+  lane sec "Secretariat"
+    start received "Invoice received on paper or fax"
+    task inbox "Receive the invoice in the central inbox"
+    task inspect "Inspect the invoice visually"
+    task forward "Forward the invoice to an accounting employee"
+  lane acc "Accounting employee"
+    task identify "Identify the charging suppliers"
+    task create "Create a new invoice instance in ACME Financial Accounting"
+    task checkitems "Check the invoice items"
+    task note "Note the cost center and cost center managers for each position on the docket"
+    task sendmail "Send the docket and invoice copy to internal mail"
+    task clarify "Clarify the inconsistencies with the vendor"
+    xor consultq "Consultation necessary?"
+    task consult "Consult the cost center managers by telephone or e-mail"
+    xor resolvedq "Inconsistencies resolved?"
+    task resend "Send the invoice copy again to the cost center managers"
+    task commercial "Forward the invoice copy to the commercial manager"
+    task complaint "Resolve the complaint with the supplier"
+    task instr "Give payment instructions"
+    task close "Close the instance in ACME Financial Accounting"
+    end closed "Invoice closed"
+  lane cc "Cost center manager"
+    task review "Review the invoice content for accuracy"
+    xor okq "Everything in order?"
+    task markap "Mark the position as accurate (AP) on the docket"
+    task retmail "Return the invoice copy to internal mail"
+    xor nextq "Further cost center manager on the docket?"
+    task passnext "Pass the invoice copy on to the next cost center manager"
+    task toacc "Send the invoice copy back to accounting"
+    task reject "Reject the position with a note and explanation on the docket"
+    task retacc "Send the invoice copy back to accounting directly"
+  lane cm "Commercial manager"
+    task audit "Perform the commercial audit"
+    xor complaintq "Complaint raised?"
+    task approve "Issue the approval for payment"
+    xor amountq "Amount above EUR 20?"
+  lane board "Board"
+    task boardcheck "Check the invoice again (four-eyes principle)"
+    task returnsig "Return the invoice copy with the docket to accounting in the signature file"
+
+flow received -> inbox -> inspect -> forward -> identify -> create -> checkitems -> note -> sendmail -> review -> okq
+flow okq -> markap "yes"
+flow okq -> reject "no"
+flow markap -> retmail -> nextq
+flow nextq -> passnext "yes"
+flow nextq -> toacc "no"
+flow passnext -> review
+flow toacc -> commercial
+flow reject -> retacc -> clarify -> consultq
+flow consultq -> consult "yes"
+flow consultq -> resolvedq "no"
+flow consult -> resolvedq
+flow resolvedq -> resend "yes"
+flow resolvedq -> clarify "no"
+flow resend -> review
+flow commercial -> audit -> complaintq
+flow complaintq -> complaint "yes"
+flow complaintq -> approve "no"
+flow complaint -> audit
+flow approve -> amountq
+flow amountq -> boardcheck "yes"
+flow amountq -> instr "no"
+flow boardcheck -> returnsig -> instr
+flow instr -> close -> closed

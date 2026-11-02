@@ -1,0 +1,82 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Every weekday morning, the database is backed up and then it is checked to see whether the Account Defaulter table has new records. If no new records are found, then the process should check the CRM system to see whether new returns have been filed. If new returns exist, then register all defaulting accounts and customers. If the defaulting client codes have not been previously advised, produce another table of defaulting accounts and send to account management. All of this must be completed by 2: 30 pm, if it is not, then an alert should be sent to the supervisor. Once the new defaulting account report has been completed, check the CRM system to see whether new returns have been filed. If new returns have been filed, reconcile with the existing account defaulters table. This must be completed by 4: 0 pm otherwise a supervisor should be sent a message.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Defaulter Processing"
+
+pool org "Organization"
+  lane db "Database"
+    start S "Start"
+    task B "Back up the database"
+    task C1 "Check for new records in Account Defaulter table"
+    xor XR1 "New records in Defaulter table?"
+    end E_success "Process completed successfully"
+    end E_no_ret1 "No new returns (first check) – process ends"
+    end E_no_ret2 "No new returns (second check) – process ends"
+    end E_alert2 "Process ended – deadline 16:00 missed"
+
+  lane crm "CRM System"
+    task C2 "Check CRM system for new returns (first check)"
+    xor XR2 "New returns exist? (first check)"
+    task C3 "Check CRM system for new returns (second check)"
+    xor XR5 "New returns exist? (second check)"
+
+  lane am "Account Management"
+    task R1 "Register defaulting accounts and customers"
+    xor XR3 "Client codes not previously advised?"
+    task P1 "Produce table of defaulting accounts"
+    task S1 "Send table to account management"
+    xor XR4 "Completed by 14:30?"
+    task RE1 "Reconcile with existing account defaulters table"
+    xor XR6 "Completed by 16:00?"
+
+  lane supervisor "Supervisor"
+    task A1 "Send alert to supervisor (deadline 14:30 missed)"
+    task A2 "Send alert to supervisor (deadline 16:00 missed)"
+
+flow S -> B -> C1 -> XR1
+flow XR1 -> R1 "yes"
+flow XR1 -> C2 "no"
+
+flow C2 -> XR2
+flow XR2 -> R1 "yes"
+flow XR2 -> E_no_ret1 "no"
+
+flow R1 -> XR3
+flow XR3 -> P1 "yes"
+flow XR3 -> XR4 "no"
+
+flow P1 -> S1 -> XR4
+
+flow XR4 "yes" -> C3
+flow XR4 "no" -> A1 -> C3
+
+flow C3 -> XR5
+flow XR5 -> RE1 "yes"
+flow XR5 -> E_no_ret2 "no"
+
+flow RE1 -> XR6
+flow XR6 "yes" -> E_success
+flow XR6 "no" -> A2 -> E_alert2
+```
+
+The tok checker reports these problems in it:
+
+- line 47: error P008: malformed flow line: expected '->'
+- line 48: error P008: malformed flow line: expected '->'
+- line 55: error P008: malformed flow line: expected '->'
+- line 56: error P008: malformed flow line: expected '->'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

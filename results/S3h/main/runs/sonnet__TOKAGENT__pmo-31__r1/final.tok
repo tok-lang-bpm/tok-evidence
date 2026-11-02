@@ -1,0 +1,47 @@
+tok 1.0 "Blizzard Online Character Generator"
+
+pool blizzard "Blizzard"
+  lane player "Player"
+    start s "Start creating character"
+    and split
+    task chk_acc "Check battle.net account"
+    xor has_acc "Has battle.net account?"
+    task enter_acc "Enter account information"
+    task click_link "Click link in confirmation mail"
+    xor m1
+    task chk_sub "Check WoW subscription"
+    xor has_sub "Active WoW subscription?"
+    task sel_pay "Select payment method"
+    xor pay "Payment method?"
+    task enter_cc "Enter credit card information"
+    task enter_iban "Enter IBAN and BIC numbers"
+    xor m2
+    xor m3
+    task login "Log into game"
+    task sel_char "Select realm, race and class"
+    task names "Come up with character names"
+    and join
+    task enter_name "Enter name"
+    xor avail "Name available?"
+    task get_conf "Receive confirmation and selfies"
+    receive get_msg "Receive message about released expansion"
+    end e "Character created"
+
+flow s -> split
+flow split -> chk_acc
+flow split -> names
+flow chk_acc -> has_acc
+flow has_acc -> enter_acc "no" when="hasAccount = false"
+flow has_acc -> m1 "yes" default
+flow enter_acc -> click_link -> m1 -> chk_sub -> has_sub
+flow has_sub -> sel_pay "no" when="subscription = false"
+flow has_sub -> m3 "yes" default
+flow sel_pay -> pay
+flow pay -> enter_cc "credit card" when="payment = \"card\""
+flow pay -> enter_iban "bank account" default
+flow enter_cc -> m2
+flow enter_iban -> m2 -> m3 -> login -> sel_char -> join
+flow names -> join -> enter_name -> avail
+flow avail -> enter_name "no" when="available = false"
+flow avail -> get_conf "yes" default
+flow get_conf -> get_msg -> e

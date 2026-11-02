@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Expense reimbursement" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="L_EMP" name="Employee">
+        <bpmn:flowNodeRef>resubmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endResubmit</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_SYS" name="Accounting system">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hasAcc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createAcc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sub</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endDone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endProgress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_SUP" name="Supervisor">
+        <bpmn:flowNodeRef>supApprove</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Expense report received" />
+    <bpmn:exclusiveGateway id="hasAcc" name="Employee has an account?" />
+    <bpmn:task id="createAcc" name="Create a new account" />
+    <bpmn:exclusiveGateway id="accMerge" />
+    <bpmn:subProcess id="sub" name="Process the expense report">
+      <bpmn:startEvent id="sStart" />
+      <bpmn:task id="review" name="Review the report for automatic approval" />
+      <bpmn:exclusiveGateway id="under" name="Amount under $200?" />
+      <bpmn:task id="approveSup" name="Approve the report by the supervisor" />
+      <bpmn:exclusiveGateway id="approved" name="Approved?" />
+      <bpmn:exclusiveGateway id="okMerge" />
+      <bpmn:task id="reimburse" name="Reimburse to the direct deposit bank account" />
+      <bpmn:task id="reject" name="Send the rejection notice by email" />
+      <bpmn:endEvent id="endPaid" name="Employee reimbursed" />
+      <bpmn:endEvent id="endRejected" name="Report rejected" />
+      <bpmn:sequenceFlow id="s1" sourceRef="sStart" targetRef="review" />
+      <bpmn:sequenceFlow id="s2" sourceRef="review" targetRef="under" />
+      <bpmn:sequenceFlow id="s3" name="yes" sourceRef="under" targetRef="okMerge" />
+      <bpmn:sequenceFlow id="s4" name="no" sourceRef="under" targetRef="approveSup" />
+      <bpmn:sequenceFlow id="s5" sourceRef="approveSup" targetRef="approved" />
+      <bpmn:sequenceFlow id="s6" name="yes" sourceRef="approved" targetRef="okMerge" />
+      <bpmn:sequenceFlow id="s7" name="no" sourceRef="approved" targetRef="reject" />
+      <bpmn:sequenceFlow id="s8" sourceRef="okMerge" targetRef="reimburse" />
+      <bpmn:sequenceFlow id="s9" sourceRef="reimburse" targetRef="endPaid" />
+      <bpmn:sequenceFlow id="s10" sourceRef="reject" targetRef="endRejected" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="t7" name="7 days" attachedToRef="sub" cancelActivity="false">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>P7D</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="t30" name="30 days" attachedToRef="sub" cancelActivity="true">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>P30D</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="progress" name="Send the approval in progress email" />
+    <bpmn:endEvent id="endProgress" name="Employee notified of progress" />
+    <bpmn:task id="cancel" name="Send the email cancellation notice" />
+    <bpmn:task id="resubmit" name="Re-submit the expense report" />
+    <bpmn:endEvent id="endResubmit" name="Report re-submitted" />
+    <bpmn:task id="supApprove" name="Approve the expense report" />
+    <bpmn:endEvent id="endDone" name="Request completed" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="hasAcc" />
+    <bpmn:sequenceFlow id="f2" name="no" sourceRef="hasAcc" targetRef="createAcc" />
+    <bpmn:sequenceFlow id="f3" name="yes" sourceRef="hasAcc" targetRef="accMerge" />
+    <bpmn:sequenceFlow id="f4" sourceRef="createAcc" targetRef="accMerge" />
+    <bpmn:sequenceFlow id="f5" sourceRef="accMerge" targetRef="sub" />
+    <bpmn:sequenceFlow id="f6" sourceRef="sub" targetRef="endDone" />
+    <bpmn:sequenceFlow id="f7" sourceRef="t7" targetRef="progress" />
+    <bpmn:sequenceFlow id="f8" sourceRef="progress" targetRef="endProgress" />
+    <bpmn:sequenceFlow id="f9" sourceRef="t30" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f10" sourceRef="cancel" targetRef="resubmit" />
+    <bpmn:sequenceFlow id="f11" sourceRef="resubmit" targetRef="endResubmit" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Defaulter Processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Defaulter Processing" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="db" name="Database">
+        <bpmn:flowNodeRef>S</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>C1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_no_ret1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_no_ret2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_alert2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="crm" name="CRM System">
+        <bpmn:flowNodeRef>C2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>C3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR5</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="am" name="Account Management">
+        <bpmn:flowNodeRef>R1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>P1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>S1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RE1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XR6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>A1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>A2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S" name="Start" />
+    <bpmn:task id="B" name="Back up the database" />
+    <bpmn:task id="C1" name="Check for new records in Account Defaulter table" />
+    <bpmn:exclusiveGateway id="XR1" name="New records in Defaulter table?" />
+    <bpmn:endEvent id="E_no_ret1" name="No new returns (first check) – process ends" />
+    <bpmn:endEvent id="E_no_ret2" name="No new returns (second check) – process ends" />
+    <bpmn:endEvent id="E_success" name="Process completed successfully" />
+    <bpmn:endEvent id="E_alert2" name="Process ended – deadline 16:00 missed" />
+    <bpmn:task id="C2" name="Check CRM system for new returns (first check)" />
+    <bpmn:exclusiveGateway id="XR2" name="New returns exist? (first check)" />
+    <bpmn:task id="C3" name="Check CRM system for new returns (second check)" />
+    <bpmn:exclusiveGateway id="XR5" name="New returns exist? (second check)" />
+    <bpmn:task id="R1" name="Register defaulting accounts and customers" />
+    <bpmn:exclusiveGateway id="XR3" name="Client codes not previously advised?" />
+    <bpmn:task id="P1" name="Produce table of defaulting accounts" />
+    <bpmn:task id="S1" name="Send table to account management" />
+    <bpmn:exclusiveGateway id="XR4" name="Completed by 14:30?" />
+    <bpmn:task id="RE1" name="Reconcile with existing account defaulters table" />
+    <bpmn:exclusiveGateway id="XR6" name="Completed by 16:00?" />
+    <bpmn:task id="A1" name="Send alert to supervisor (deadline 14:30 missed)" />
+    <bpmn:task id="A2" name="Send alert to supervisor (deadline 16:00 missed)" />
+    <bpmn:sequenceFlow id="f-S-B" sourceRef="S" targetRef="B" />
+    <bpmn:sequenceFlow id="f-B-C1" sourceRef="B" targetRef="C1" />
+    <bpmn:sequenceFlow id="f-C1-XR1" sourceRef="C1" targetRef="XR1" />
+    <bpmn:sequenceFlow id="f-XR1-R1" name="yes" sourceRef="XR1" targetRef="R1" />
+    <bpmn:sequenceFlow id="f-XR1-C2" name="no" sourceRef="XR1" targetRef="C2" />
+    <bpmn:sequenceFlow id="f-C2-XR2" sourceRef="C2" targetRef="XR2" />
+    <bpmn:sequenceFlow id="f-XR2-R1" name="yes" sourceRef="XR2" targetRef="R1" />
+    <bpmn:sequenceFlow id="f-XR2-E_no_ret1" name="no" sourceRef="XR2" targetRef="E_no_ret1" />
+    <bpmn:sequenceFlow id="f-R1-XR3" sourceRef="R1" targetRef="XR3" />
+    <bpmn:sequenceFlow id="f-XR3-P1" name="yes" sourceRef="XR3" targetRef="P1" />
+    <bpmn:sequenceFlow id="f-XR3-XR4" name="no" sourceRef="XR3" targetRef="XR4" />
+    <bpmn:sequenceFlow id="f-P1-S1" sourceRef="P1" targetRef="S1" />
+    <bpmn:sequenceFlow id="f-S1-XR4" sourceRef="S1" targetRef="XR4" />
+    <bpmn:sequenceFlow id="f-XR4-C3" name="yes" sourceRef="XR4" targetRef="C3" />
+    <bpmn:sequenceFlow id="f-XR4-A1" name="no" sourceRef="XR4" targetRef="A1" />
+    <bpmn:sequenceFlow id="f-A1-C3" sourceRef="A1" targetRef="C3" />
+    <bpmn:sequenceFlow id="f-C3-XR5" sourceRef="C3" targetRef="XR5" />
+    <bpmn:sequenceFlow id="f-XR5-RE1" name="yes" sourceRef="XR5" targetRef="RE1" />
+    <bpmn:sequenceFlow id="f-XR5-E_no_ret2" name="no" sourceRef="XR5" targetRef="E_no_ret2" />
+    <bpmn:sequenceFlow id="f-RE1-XR6" sourceRef="RE1" targetRef="XR6" />
+    <bpmn:sequenceFlow id="f-XR6-E_success" name="yes" sourceRef="XR6" targetRef="E_success" />
+    <bpmn:sequenceFlow id="f-XR6-A2" name="no" sourceRef="XR6" targetRef="A2" />
+    <bpmn:sequenceFlow id="f-A2-E_alert2" sourceRef="A2" targetRef="E_alert2" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,53 @@
+tok 1.0 "Office Supply Request"
+
+pool org "Organisation"
+  lane emp "Employee"
+    start s "Office supply request needed"
+    task submit "Submit office supply request"
+    task review-comments "Review change comments"
+    end e-rej "Request rejected"
+  lane sys "System"
+    task register "Register requirement"
+    task notify-rej "Send rejection notification"
+    task notify-chg "Send change notification"
+    task notify-app "Send approval notification"
+    task gen-po "Generate and send purchase order"
+    and split-del
+    receive recv-prod "Receive product delivery"
+    receive recv-inv "Receive invoice"
+    and join-del
+  lane sup "Supervisor"
+    task decide "Review request"
+    xor dec "Decision?"
+  lane pur "Purchase department"
+    and split-app
+    sub quot "Make quotations"
+      start qs "Quotations needed"
+      task qask "Request quotations from vendors"
+      task qcmp "Compare quotations"
+      end qe "Quotations made"
+      flow qs -> qask -> qcmp -> qe
+    task select "Select vendor"
+    xor valid "Vendor valid in system?"
+    and join-app
+    end e-done "Request completed"
+
+flow s -> submit -> register -> decide -> dec
+flow dec -> notify-rej "Rejected"
+flow dec -> notify-chg "Change requested"
+flow dec -> split-app "Approved"
+flow notify-rej -> e-rej
+flow notify-chg -> review-comments -> submit
+flow split-app -> notify-app
+flow split-app -> quot
+flow quot -> select -> valid
+flow valid -> select "No"
+flow valid -> gen-po "Yes"
+flow gen-po -> split-del
+flow split-del -> recv-prod
+flow split-del -> recv-inv
+flow recv-prod -> join-del
+flow recv-inv -> join-del
+flow join-del -> join-app
+flow notify-app -> join-app
+flow join-app -> e-done

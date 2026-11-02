@@ -1,0 +1,46 @@
+```tok
+tok 1.0 "Online shop purchase process"
+
+pool online_shop "Online Shop"
+  lane user "User"
+    start s "Start order"
+    task t_login "log in to account"
+    and split1
+    task t_select "select items to purchase"
+    task t_set_payment "set payment method"
+    and join1
+    and split2
+    xor pay_decision
+      task t_pay "pay"
+      task t_installment "complete installment agreement"
+    task t_reward "choose reward option"
+    and join2
+  lane shop "Shop"
+    task t_deliver "deliver items"
+    xor return_decision
+      end e_done "order completed"
+      task t_return "return items for exchange"
+        flow t_return -> split2   # after return, go back to delivery (new delivery)
+    # loop back from return to delivery
+    flow t_return -> t_deliver
+
+# Sequence flows
+flow s -> t_login
+flow t_login -> split1
+flow split1 -> t_select
+flow split1 -> t_set_payment
+flow t_select -> join1
+flow t_set_payment -> join1
+flow join1 -> split2
+flow split2 -> pay_decision
+flow split2 -> t_reward
+flow pay_decision -> t_pay
+flow pay_decision -> t_installment
+flow t_pay -> join2
+flow t_installment -> join2
+flow t_reward -> join2
+flow join2 -> t_deliver
+flow t_deliver -> return_decision
+flow return_decision -> e_done
+flow return_decision -> t_return
+```

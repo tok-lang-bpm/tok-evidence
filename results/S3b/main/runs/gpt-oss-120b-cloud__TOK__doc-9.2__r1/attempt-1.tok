@@ -1,0 +1,36 @@
+tok 1.0 "Mortgage Offer Process"
+
+pool organization "Mortgage Process"
+  lane csr "Customer Service Representative"
+    start start "Start"
+    task send "Send mortgage offer"
+    task receive "Receive customer reply"
+    xor response "Customer response?"
+    
+    # Decline branch
+    task update_decline "Update case details"
+    task archive_decline "Archive case"
+    end cancelled "Case cancelled"
+    
+    # Completed with all prerequisite documents branch
+    task move_admin "Move case to administration"
+    end moved "Case moved to administration"
+    
+    # Incomplete prerequisite documents branch
+    task request_docs "Generate request for outstanding documents"
+    end requested "Outstanding documents requested"
+    
+    # No reply within 2 weeks branch
+    task update_noreply "Update case details"
+    task archive_noreply "Archive case"
+    end cancelled_no "Case cancelled"
+    
+    flow start -> send -> receive -> response
+    flow response -> update_decline "decline"
+    flow response -> move_admin "all docs provided"
+    flow response -> request_docs "missing docs"
+    flow response -> update_noreply "no reply"
+    flow update_decline -> archive_decline -> cancelled
+    flow move_admin -> moved
+    flow request_docs -> requested
+    flow update_noreply -> archive_noreply -> cancelled_no

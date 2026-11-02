@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+  <bpmn:process id="process1" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneCustomer" name="Customer">
+        <bpmn:flowNodeRef>transmitData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>customerCheckContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>withdrawContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirmContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitResponse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endWithdraw</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneService" name="Customer Service">
+        <bpmn:flowNodeRef>enterCRM</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>compareData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correctErrors</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>prepareContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendConfirmation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createCISContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>autoAcceptContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>importMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endProcess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCIS" name="CIS System">
+        <bpmn:flowNodeRef>automatedCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>analyzeIssues</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>regenerateContract</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRequestGrid</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneGrid" name="Grid Operator">
+        <bpmn:flowNodeRef>gridCheckConcurrence</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>informSuppliers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>terminateAgreement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendMeterData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>computeBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneOldSupplier" name="Old Supplier">
+        <bpmn:flowNodeRef>createFinalBilling</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Switch-over request received" />
+    <bpmn:task id="transmitData" name="Transmit data to Customer Service" />
+    <bpmn:task id="enterCRM" name="Enter customer data into CRM system" />
+    <bpmn:task id="compareData" name="Compare data with internal database and check completeness" />
+    <bpmn:exclusiveGateway id="gwErrors" name="Data errors?" />
+    <bpmn:task id="correctErrors" name="Correct errors using error list" />
+    <bpmn:exclusiveGateway id="gwCustomerExists" name="Customer exists?" />
+    <bpmn:task id="createCustomer" name="Create new customer object" />
+    <bpmn:task id="prepareContract" name="Prepare contract documents" />
+    <bpmn:task id="automatedCheck" name="Automated check of contract documents" />
+    <bpmn:exclusiveGateway id="gwCheckPositive" name="Contract documents check positive?" />
+    <bpmn:task id="sendConfirmation" name="Send confirmation document to customer" />
+    <bpmn:task id="analyzeIssues" name="Analyze and resolve issues" />
+    <bpmn:task id="regenerateContract" name="Generate contract documents again" />
+    <bpmn:task id="sendRequestGrid" name="Send request to Grid Operator" />
+    <bpmn:task id="gridCheckConcurrence" name="Check supplier concurrence" />
+    <bpmn:exclusiveGateway id="gwConcurrence" name="Supplier concurrence?" />
+    <bpmn:task id="informSuppliers" name="Inform all involved suppliers and demand resolution" />
+    <bpmn:task id="terminateAgreement" name="Terminate sales agreement with old supplier" />
+    <bpmn:task id="createCISContract" name="Create CIS contract" />
+    <bpmn:parallelGateway id="gwAfterConcurrenceMerge" name="After concurrency handling" />
+    <bpmn:task id="customerCheckContract" name="Customer checks contract details" />
+    <bpmn:exclusiveGateway id="gwResponse" name="Customer response received?" />
+    <bpmn:intermediateCatchEvent id="waitResponse" name="Wait for customer response (max 7 days)">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gwCustomerDecision" name="Customer decision" />
+    <bpmn:task id="withdrawContract" name="Withdraw from switch contract" />
+    <bpmn:endEvent id="endWithdraw" name="Process ended – withdrawal" />
+    <bpmn:task id="confirmContract" name="Confirm contract" />
+    <bpmn:task id="autoAcceptContract" name="Auto‑accept contract" />
+    <bpmn:parallelGateway id="gwMergeDecision" name="Merge acceptance paths" />
+    <bpmn:task id="sendMeterData" name="Transmit meter data to Customer Service and Old Supplier" />
+    <bpmn:parallelGateway id="gwSplitAfterMeterData" name="After meter data split" />
+    <bpmn:task id="importMeterData" name="Import meter data to systems" />
+    <bpmn:task id="computeBilling" name="Compute final billing and send to Old Supplier" />
+    <bpmn:task id="createFinalBilling" name="Create and send final billing to customer" />
+    <bpmn:endEvent id="endProcess" name="Process completed" />
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="transmitData" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="transmitData" targetRef="enterCRM" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="enterCRM" targetRef="compareData" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="compareData" targetRef="gwErrors" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="gwErrors" targetRef="correctErrors" name="yes" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="gwErrors" targetRef="gwCustomerExists" name="no" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="correctErrors" targetRef="compareData" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="gwCustomerExists" targetRef="createCustomer" name="no" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="gwCustomerExists" targetRef="prepareContract" name="yes" />
+    <bpmn:sequenceFlow id="flow10" sourceRef="createCustomer" targetRef="prepareContract" />
+    <bpmn:sequenceFlow id="flow11" sourceRef="prepareContract" targetRef="automatedCheck" />
+    <bpmn:sequenceFlow id="flow12" sourceRef="automatedCheck" targetRef="gwCheckPositive" />
+    <bpmn:sequenceFlow id="flow13" sourceRef="gwCheckPositive" targetRef="sendConfirmation" name="yes" />
+    <bpmn:sequenceFlow id="flow14" sourceRef="gwCheckPositive" targetRef="analyzeIssues" name="no" />
+    <bpmn:sequenceFlow id="flow15" sourceRef="analyzeIssues" targetRef="regenerateContract" />
+    <bpmn:sequenceFlow id="flow16" sourceRef="regenerateContract" targetRef="automatedCheck" />
+    <bpmn:sequenceFlow id="flow17" sourceRef="sendConfirmation" targetRef="sendRequestGrid" />
+    <bpmn:sequenceFlow id="flow18" sourceRef="sendRequestGrid" targetRef="gridCheckConcurrence" />
+    <bpmn:sequenceFlow id="flow19" sourceRef="gridCheckConcurrence" targetRef="gwConcurrence" />
+    <bpmn:sequenceFlow id="flow20" sourceRef="gwConcurrence" targetRef="informSuppliers" name="yes" />
+    <bpmn:sequenceFlow id="flow21" sourceRef="gwConcurrence" targetRef="createCISContract" name="no" />
+    <bpmn:sequenceFlow id="flow22" sourceRef="informSuppliers" targetRef="terminateAgreement" />
+    <bpmn:sequenceFlow id="flow23" sourceRef="terminateAgreement" targetRef="gwAfterConcurrenceMerge" />
+    <bpmn:sequenceFlow id="flow24" sourceRef="createCISContract" targetRef="gwAfterConcurrenceMerge" />
+    <bpmn:sequenceFlow id="flow25" sourceRef="gwAfterConcurrenceMerge" targetRef="customerCheckContract" />
+    <bpmn:sequenceFlow id="flow26" sourceRef="customerCheckContract" targetRef="gwResponse" />
+    <bpmn:sequenceFlow id="flow27" sourceRef="gwResponse" targetRef="gwCustomerDecision" name="responded" />
+    <bpmn:sequenceFlow id="flow28" sourceRef="gwResponse" targetRef="waitResponse" />
+    <bpmn:sequenceFlow id="flow29" sourceRef="waitResponse" targetRef="autoAcceptContract" />
+    <bpmn:sequenceFlow id="flow30" sourceRef="gwCustomerDecision" targetRef="withdrawContract" name="withdraw" />
+    <bpmn:sequenceFlow id="flow31" sourceRef="gwCustomerDecision" targetRef="confirmContract" name="confirm" />
+    <bpmn:sequenceFlow id="flow32" sourceRef="withdrawContract" targetRef="endWithdraw" />
+    <bpmn:sequenceFlow id="flow33" sourceRef="confirmContract" targetRef="gwMergeDecision" />
+    <bpmn:sequenceFlow id="flow34" sourceRef="autoAcceptContract" targetRef="gwMergeDecision" />
+    <bpmn:sequenceFlow id="flow35" sourceRef="gwMergeDecision" targetRef="sendMeterData" />
+    <bpmn:sequenceFlow id="flow36" sourceRef="sendMeterData" targetRef="gwSplitAfterMeterData" />
+    <bpmn:sequenceFlow id="flow37" sourceRef="gwSplitAfterMeterData" targetRef="importMeterData" />
+    <bpmn:sequenceFlow id="flow38" sourceRef="gwSplitAfterMeterData" targetRef="computeBilling" />
+    <bpmn:sequenceFlow id="flow39" sourceRef="computeBilling" targetRef="createFinalBilling" />
+    <bpmn:sequenceFlow id="flow40" sourceRef="importMeterData" targetRef="endProcess" />
+    <bpmn:sequenceFlow id="flow41" sourceRef="createFinalBilling" targetRef="endProcess" />
+  </bpmn:process>
+</bpmn:definitions>

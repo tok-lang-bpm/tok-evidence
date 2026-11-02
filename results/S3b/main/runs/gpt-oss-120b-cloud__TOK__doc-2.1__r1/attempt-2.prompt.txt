@@ -1,0 +1,156 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+At the beginning the customer perceives that her subscribed service has degraded. A list with all the problem parameters is then sent to the Customer Service department of TELECO. At the customer service an employee enters (based on the received data) a problem report into system T.. Then the problem report is compared to the customer SLA to identify what the extent and the details of the service degradation are. Based on this, the necessary counter measures are determined including their respective priorities. An electronic service then determines the significance of the customer based on information that has been collected during the history of the contractual relationship. In case the customer is premium, the process will link to an extra problem fix process (this process will not be detailed here). In case the customer is of certain significance which would affect the counter measures previously decided upon, the process goes back to re-prioritize these measures otherwise the process continues. Taking together the information (i.e. contract commitment data + prioritized actions) a detailed problem report is created. The detailed problem report is then sent to Service Management. Service Management deals on a first level with violations of quality in services that are provided to customers. After receiving the detailed problem report, Service management investigates whether the problem is analyzable at the level of their department or whether the problem may be located at Resource Provisioning. In case Service Management assesses the problem to be not analyzable by themselves, the detailed problem report is sent out to Resource Provisioning. If Service Management is sure they can analyze it, they perform the analysis and based on the outcome they create a trouble report that indicates the type of problem. After Resource Provisioning receives the detailed problem report, it is checked whether there are any possible problems. If no problems are detected, a notification about the normal service execution is created. If a problem is detected this will be analyzed by Resource Provisioning and a trouble report is created. Either trouble report or the normal execution notification will be included in a status report and sent back to Service Management. Service Management then prepares the final status report based on the received information. Subsequently it has to be determined what counter measures should be taken depending on the information in the final status report. Three alternative process paths may be taken. For the case that no problem was detected at all, the actual service performance is sent back to the Customer Service. For the case that minor corrective actions are required, Service Management will undertake corrective actions by themselves. Subsequently, the problem resolution report is created and then sent out to Customer Service. After sending, this process path of Service Management ends. For the case that automatic resource restoration from Resource Provisioning is required, Service Management must create a request for automatic resource restoration. This message is then sent to Resource Provisioning. Resource Provisioning has been on-hold and waiting for a restoration request but this must happen within 2 days after the status report was sent out, otherwise Resource Provisioning terminates the process. After the restoration request is received, all possible errors are tracked. Based on the tracked errors, all necessary corrective actions are undertaken by Resource Provisioning. Then a trouble-shooting report is created. This report is sent out to Service Management; then the process ends. The trouble-shooting report is received by Service Management and this information goes then into the creation of the problem resolution report just as described for ii). Customer Service either receives the actual service performance (if there was no problem) or the problem resolution report. Then, two concurrent activities are triggered, i.e. i) a report is created for the customer which details the current service performance and the resolution of the problem, and ii) an SLA violation rebate is reported to Billing & Collections who will adjust the billing. The report for the customer is sent out to her. After all three activities are completed the process ends within Customer Service. After the customer then receives the report about service performance and problem resolution from Customer Service, the process flow at the customer also ends.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Service Degradation Handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start s0 "Service degradation perceived"
+    task t1 "send problem parameters list"
+    end e_customer "Customer process ends"
+
+  lane customer_service "Customer Service"
+    task t2 "enter problem report into system T"
+    task t3 "compare problem report to SLA"
+    task t4 "determine counter measures and priorities"
+    task t5 "determine customer significance"
+    xor g1 "Customer premium?"
+      task t6 "link to extra problem fix process"
+    xor g2 "Significance affects counter measures?"
+      task t7 "re‑prioritize counter measures"
+    task t8 "create detailed problem report"
+    task t9 "send detailed problem report to Service Management"
+
+  lane service_management "Service Management"
+    task t10 "receive detailed problem report"
+    xor g3 "Problem analyzable by Service Management?"
+      task t11 "analyze problem"
+      task t12 "create trouble report (SM)"
+    task t13 "send detailed problem report to Resource Provisioning"
+    task t14 "receive status report from Resource Provisioning"
+    task t15 "prepare final status report"
+    xor g4 "Determine counter‑measure path"
+      task t16 "send actual service performance to Customer Service"
+      task t17 "undertake minor corrective actions"
+      task t18 "create problem resolution report"
+      task t19 "send problem resolution report to Customer Service"
+      task t20 "create request for automatic resource restoration"
+      task t21 "send restoration request to Resource Provisioning"
+    task t22 "receive trouble‑shooting report"
+    task t23 "create problem resolution report"
+    task t24 "send problem resolution report to Customer Service"
+
+  lane resource_provisioning "Resource Provisioning"
+    task t25 "receive detailed problem report"
+    xor g5 "Any problems detected?"
+      task t26 "create normal execution notification"
+      task t27 "analyze problem"
+      task t28 "create trouble report (RP)"
+    task t29 "include report in status report and send to Service Management"
+    task t30 "receive restoration request"
+    xor g6 "Restoration request within 2 days?"
+      task t31 "track all possible errors"
+      task t32 "undertake necessary corrective actions"
+      task t33 "create trouble‑shooting report"
+      task t34 "send trouble‑shooting report to Service Management"
+      end e_termination "Process terminated (timeout)"
+    end e_rp_end "Resource Provisioning process ends"
+
+  lane billing_collections "Billing & Collections"
+    task t35 "adjust billing"
+
+  # -----------------------------------------------------------------
+  # Sequence flows
+  flow s0 -> t1 -> t2 -> t3 -> t4 -> t5 -> g1
+  flow g1 -> t6 -> e_customer               # premium path ends here (not detailed)
+  flow g1 -> g2
+  flow g2 -> t7 -> t4                         # re‑prioritise back to measures
+  flow g2 -> t8
+  flow t8 -> t9
+  flow t9 -> t10
+  flow t10 -> g3
+  flow g3 -> t11 -> t12 -> t13
+  flow g3 -> t13
+  flow t13 -> t25
+  flow t25 -> g5
+  flow g5 -> t26 -> t29
+  flow g5 -> t27 -> t28 -> t29
+  flow t29 -> t14
+  flow t14 -> t15 -> g4
+  flow g4 -> t16 -> t24
+  flow g4 -> t17 -> t18 -> t19 -> t24
+  flow g4 -> t20 -> t21 -> t30
+  flow t30 -> g6
+  flow g6 -> t31 -> t32 -> t33 -> t34 -> t22
+  flow g6 -> e_termination
+  flow t22 -> t23 -> t24
+  flow t24 -> t9   # loop back if needed (optional, not specified)
+
+  # Paths back to Customer Service
+  flow t16 -> t9
+  flow t19 -> t9
+  flow t24 -> t9
+
+  # Customer Service receives reports
+  flow t9 -> t8  # (already defined)
+  flow t16 -> t9
+  flow t19 -> t9
+  flow t24 -> t9
+
+  # After Customer Service receives either performance or resolution report
+  flow t9 -> t8   # placeholder to keep flow continuity
+  flow t9 -> t8   # (ignore duplicate)
+
+  # Parallel activities in Customer Service
+  flow t9 -> and1 "Parallel start"
+  and1 -> create_cust_report "create customer report"
+  and1 -> report_sla_rebate "report SLA violation rebate"
+  create_cust_report -> send_cust_report "send customer report to Customer"
+  report_sla_rebate -> adjust_billing
+
+  # Billing flow
+  flow adjust_billing -> end e_billing
+
+  # Customer receives final report
+  send_cust_report -> end e_customer
+
+  # Parallel gateway join
+  and_join "Parallel end" -> end e_final
+
+  # Notes:
+  # - The extra problem fix process (t6) ends the premium path (not detailed).
+  # - The loop for re‑prioritisation goes from g2 back to t4 via t7.
+  # - The restoration timeout leads to a terminating end event (e_termination).
+  # - All paths eventually converge on the parallel activities in Customer Service,
+  #   after which the process ends with the customer receiving the report.
+```
+
+The tok checker reports these problems in it:
+
+- line 15: error P003: 'xor' cannot have an indented block
+- line 17: error P003: 'xor' cannot have an indented block
+- line 24: error P003: 'xor' cannot have an indented block
+- line 30: error P003: 'xor' cannot have an indented block
+- line 43: error P003: 'xor' cannot have an indented block
+- line 49: error P003: 'xor' cannot have an indented block
+- line 103: error P001: unknown keyword 'and1'
+- line 104: error P001: unknown keyword 'and1'
+- line 105: error P001: unknown keyword 'create_cust_report'
+- line 106: error P001: unknown keyword 'report_sla_rebate'
+- line 112: error P001: unknown keyword 'send_cust_report'
+- line 115: error P001: unknown keyword 'and_join'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

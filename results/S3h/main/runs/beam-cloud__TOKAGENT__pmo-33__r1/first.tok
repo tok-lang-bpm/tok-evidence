@@ -1,0 +1,54 @@
+tok 1.0 "Instruct an artist to create a 3D model print it on a 3D printer"
+
+pool p "3D printing process" {
+  lane you "You" {
+    start s "Crave custom 3D model"
+    task instruct "Instruct artist to create a project"
+    task sendSketches "Send several sketches"
+    xor gwResult "Satisfied with result?"
+    task tellChanges "Tell what to change"
+    task chooseColor "Choose plastic color"
+    xor gwStock "Color in stock?"
+    task checkAmount "Check how much color is left"
+    xor gwAmount "Under 100 grams?"
+    task shoppingList "Put color on shopping list"
+    task orderColor "Order color"
+    xor gwHavePlastic "Plastic available"
+    and gwPrepare "Prepare 3D print"
+    task generateGcode "Generate gcode file"
+    and gwReady "Printer ready"
+    end e "Model printed"
+  }
+  lane artist "Artist" {
+    task createProject "Create 3D model project"
+    task sendStl "Send STL file"
+  }
+  lane printer "3D Printer" {
+    task turnOn "Turn printer on and heat bed and extruder"
+    task print "Print model"
+  }
+}
+
+flow s -> instruct
+flow instruct -> sendSketches
+flow sendSketches -> createProject
+flow createProject -> gwResult
+flow gwResult -> tellChanges "Not satisfied" when="satisfied = false"
+flow tellChanges -> createProject
+flow gwResult -> sendStl "Satisfied" default
+flow sendStl -> chooseColor
+flow chooseColor -> gwStock
+flow gwStock -> checkAmount "In stock" when="inStock = true"
+flow gwStock -> orderColor "Not in stock" default
+flow checkAmount -> gwAmount
+flow gwAmount -> shoppingList "Under 100 grams" when="amountLeft < 100"
+flow gwAmount -> gwHavePlastic "100 grams or more" default
+flow shoppingList -> gwHavePlastic
+flow orderColor -> gwHavePlastic
+flow gwHavePlastic -> gwPrepare
+flow gwPrepare -> turnOn
+flow gwPrepare -> generateGcode
+flow turnOn -> gwReady
+flow generateGcode -> gwReady
+flow gwReady -> print
+flow print -> e

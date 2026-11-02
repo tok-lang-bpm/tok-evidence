@@ -1,0 +1,69 @@
+tok 1.0 "Customer acquisition process"
+
+pool org "Organization"
+  lane marketing "Marketing staff"
+    task buy_details "Buy contact details"
+    task participate_exhibitions "Participate in exhibitions"
+    task identify_known_prospect "Identify known prospect"
+  lane callcenter "Call Center staff"
+    task start_calling "Start calling the customer"
+    task determine_contact_person "Determine contact person"
+    task determine_project_budget "Determine project budget"
+    task ask_general_interest "Ask if generally interested"
+    task wait_customer_response "Wait for customer response"
+    task sales_rep_call_after_wait "Sales representative calls the customer"
+  lane headdev "Head of Development"
+    task head_acquire_customer "Head of development tries to acquire the customer"
+  lane sales "Sales Representative"
+    task sales_online_presentation "Sales representative gives detailed online presentation"
+    task create_quotation "Create quotation"
+  lane presales "Pre-sales Employee"
+    task presales_online_presentation "Pre-sales employee gives technical online presentation"
+
+  xor method "Determine contact details method?"
+    # branches from method decision
+  xor interest "Is customer generally interested?"
+  xor budget_huge "Is project budget huge?"
+  xor presentation "Which presentation type?"
+  xor response "Customer responded within 2 weeks?"
+  and split_contact_info
+  and join_contact_info
+  and join_presentation
+
+end leave_alone "Customer left alone"
+end process_end "Process completed"
+
+flow start -> method
+flow method -> buy_details
+flow method -> participate_exhibitions
+flow method -> identify_known_prospect
+flow buy_details -> start_calling
+flow participate_exhibitions -> start_calling
+flow identify_known_prospect -> start_calling
+
+flow start_calling -> split_contact_info
+flow split_contact_info -> determine_contact_person
+flow split_contact_info -> determine_project_budget
+flow split_contact_info -> ask_general_interest
+flow determine_contact_person -> join_contact_info
+flow determine_project_budget -> join_contact_info
+flow ask_general_interest -> join_contact_info
+flow join_contact_info -> interest
+
+flow interest -> presentation
+flow interest -> budget_huge
+flow budget_huge -> head_acquire_customer
+flow head_acquire_customer -> presentation
+flow budget_huge -> leave_alone
+
+flow presentation -> sales_online_presentation
+flow presentation -> presales_online_presentation
+flow sales_online_presentation -> wait_customer_response
+flow presales_online_presentation -> wait_customer_response
+
+flow wait_customer_response -> response
+flow response -> create_quotation
+flow response -> sales_rep_call_after_wait
+flow sales_rep_call_after_wait -> create_quotation
+
+flow create_quotation -> process_end

@@ -1,0 +1,119 @@
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start s0 "Service degraded"
+    task perceive "Perceive service degradation"
+    task send_params "Send problem parameters"
+    task receive_report "Receive service performance and resolution report"
+    end end_customer "Customer process ended"
+
+  lane cs "Customer Service"
+    task enter_report "Enter problem report"
+    task compare_sla "Compare problem report to SLA"
+    task determine_measures "Determine counter measures"
+    task create_detailed "Create detailed problem report"
+    task send_detailed_sm "Send detailed problem report to Service Management"
+    task receive_actual "Receive actual service performance"
+    task receive_resolution "Receive problem resolution report"
+    and fork_reports "Start customer reporting"
+    task create_customer_report "Create customer report"
+    task send_customer_report "Send customer report"
+    task report_rebate "Report SLA violation rebate"
+    and join_reports "Customer reporting completed"
+    end end_cs "Customer Service process ended"
+
+  lane electronic "Electronic Service"
+    task determine_significance "Determine customer significance"
+    xor premium "Customer premium?"
+    task link_extra "Link to extra problem fix process"
+    end end_extra "Extra problem fix process started"
+    xor sig_affects "Customer significance affects counter measures?"
+
+  lane sm "Service Management"
+    task receive_detailed_sm "Receive detailed problem report"
+    task investigate "Investigate problem analyzability"
+    xor analyzable "Problem analyzable by Service Management?"
+    task send_detailed_rp "Send detailed problem report to Resource Provisioning"
+    task analyze_problem "Analyze problem"
+    task create_trouble_sm "Create trouble report"
+    task receive_status "Receive status report"
+    task prepare_final "Prepare final status report"
+    xor counter_measures "Counter measures required?"
+    task send_actual_performance "Send actual service performance to Customer Service"
+    task undertake_minor "Undertake corrective actions"
+    task create_resolution "Create problem resolution report"
+    task send_resolution "Send problem resolution report to Customer Service"
+    task create_restoration_request "Create request for automatic resource restoration"
+    task send_restoration_request "Send restoration request to Resource Provisioning"
+    task receive_troubleshooting "Receive trouble-shooting report"
+
+  lane rp "Resource Provisioning"
+    task receive_detailed_rp "Receive detailed problem report"
+    task check_problems "Check for possible problems"
+    xor problems "Possible problems detected?"
+    task create_normal "Create normal service execution notification"
+    task analyze_detected "Analyze detected problem"
+    task create_trouble_rp "Create trouble report"
+    task create_status "Create status report"
+    task send_status "Send status report to Service Management"
+    task wait_restoration "Receive restoration request"
+    boundary restore_timeout "Restoration timeout" on=wait_restoration timer=P2D
+    task track_errors "Track possible errors"
+    task undertake_rp "Undertake corrective actions"
+    task create_troubleshoot "Create trouble-shooting report"
+    task send_troubleshoot "Send trouble-shooting report to Service Management"
+    end end_terminated "Process terminated" terminate
+
+  lane billing "Billing & Collections"
+    task adjust_billing "Adjust billing"
+
+flow s0 -> perceive -> send_params
+flow send_params -> enter_report
+flow enter_report -> compare_sla -> determine_measures
+flow determine_measures -> determine_significance
+flow determine_significance -> premium
+flow premium -> link_extra "Premium" when="premium"
+flow premium -> sig_affects "Not premium" default
+flow link_extra -> end_extra
+flow sig_affects -> determine_measures "Affects counter measures" when="affectsCounterMeasures"
+flow sig_affects -> create_detailed "Does not affect" default
+flow create_detailed -> send_detailed_sm -> receive_detailed_sm
+flow receive_detailed_sm -> investigate -> analyzable
+flow analyzable -> send_detailed_rp "Not analyzable" when="notAnalyzable"
+flow analyzable -> analyze_problem "Analyzable" default
+flow analyze_problem -> create_trouble_sm
+flow create_trouble_sm -> prepare_final
+flow send_detailed_rp -> receive_detailed_rp
+flow receive_detailed_rp -> check_problems -> problems
+flow problems -> create_normal "No problems" when="noProblems"
+flow problems -> analyze_detected "Problems detected" default
+flow analyze_detected -> create_trouble_rp -> create_status
+flow create_normal -> create_status
+flow create_status -> send_status -> receive_status
+flow receive_status -> prepare_final
+flow prepare_final -> counter_measures
+flow counter_measures -> send_actual_performance "No problem" when="noProblem"
+flow counter_measures -> undertake_minor "Minor corrective actions" when="minorCorrections"
+flow counter_measures -> create_restoration_request "Automatic restoration" default
+flow send_actual_performance -> receive_actual
+flow undertake_minor -> create_resolution
+flow create_resolution -> send_resolution
+flow send_resolution -> receive_resolution
+flow create_restoration_request -> send_restoration_request
+flow send_restoration_request -> wait_restoration
+flow wait_restoration -> track_errors -> undertake_rp -> create_troubleshoot -> send_troubleshoot
+flow send_troubleshoot -> receive_troubleshooting
+flow receive_troubleshooting -> create_resolution
+flow restore_timeout -> end_terminated
+flow receive_actual -> fork_reports
+flow receive_resolution -> fork_reports
+flow fork_reports -> create_customer_report
+flow fork_reports -> report_rebate
+flow create_customer_report -> send_customer_report
+flow send_customer_report -> receive_report
+flow send_customer_report -> join_reports
+flow report_rebate -> adjust_billing
+flow adjust_billing -> join_reports
+flow join_reports -> end_cs
+flow receive_report -> end_customer

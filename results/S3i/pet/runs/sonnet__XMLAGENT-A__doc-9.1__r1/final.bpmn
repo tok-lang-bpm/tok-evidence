@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Account defaulter monitoring" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="LANE" name="Defaulter monitoring">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Sub_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Crm2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_D</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Reconcile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_NoReturns</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_1" name="Every weekday morning">
+      <bpmn:timerEventDefinition id="TimerDef_0">
+        <bpmn:timeCycle>0 0 7 ? * MON-FRI</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="Sub_1" name="Complete the defaulting account report">
+      <bpmn:startEvent id="SStart" />
+      <bpmn:task id="Task_Backup" name="Back up the database" />
+      <bpmn:task id="Task_Check" name="Check the Account Defaulter table for new records" />
+      <bpmn:exclusiveGateway id="Gw_A" name="New records found?" default="FA_no" />
+      <bpmn:task id="Task_Crm1" name="Check the CRM system for new returns" />
+      <bpmn:exclusiveGateway id="Gw_B" name="New returns exist?" default="FB_no" />
+      <bpmn:task id="Task_Register" name="Register all defaulting accounts and customers" />
+      <bpmn:exclusiveGateway id="Gw_C" name="Client codes previously advised?" default="FC_no" />
+      <bpmn:task id="Task_Produce" name="Produce another table of defaulting accounts" />
+      <bpmn:task id="Task_Send" name="Send the table to account management" />
+      <bpmn:endEvent id="SEnd_A" />
+      <bpmn:endEvent id="SEnd_B" />
+      <bpmn:endEvent id="SEnd_C" />
+      <bpmn:endEvent id="SEnd_D" />
+      <bpmn:sequenceFlow id="S1" sourceRef="SStart" targetRef="Task_Backup" />
+      <bpmn:sequenceFlow id="S2" sourceRef="Task_Backup" targetRef="Task_Check" />
+      <bpmn:sequenceFlow id="S3" sourceRef="Task_Check" targetRef="Gw_A" />
+      <bpmn:sequenceFlow id="FA_yes" name="yes" sourceRef="Gw_A" targetRef="SEnd_A" />
+      <bpmn:sequenceFlow id="FA_no" name="no" sourceRef="Gw_A" targetRef="Task_Crm1" />
+      <bpmn:sequenceFlow id="S4" sourceRef="Task_Crm1" targetRef="Gw_B" />
+      <bpmn:sequenceFlow id="FB_yes" name="yes" sourceRef="Gw_B" targetRef="Task_Register" />
+      <bpmn:sequenceFlow id="FB_no" name="no" sourceRef="Gw_B" targetRef="SEnd_B" />
+      <bpmn:sequenceFlow id="S5" sourceRef="Task_Register" targetRef="Gw_C" />
+      <bpmn:sequenceFlow id="FC_no" name="no" sourceRef="Gw_C" targetRef="Task_Produce" />
+      <bpmn:sequenceFlow id="FC_yes" name="yes" sourceRef="Gw_C" targetRef="SEnd_C" />
+      <bpmn:sequenceFlow id="S6" sourceRef="Task_Produce" targetRef="Task_Send" />
+      <bpmn:sequenceFlow id="S7" sourceRef="Task_Send" targetRef="SEnd_D" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Timer_1" name="2:30 pm" attachedToRef="Sub_1" cancelActivity="false">
+      <bpmn:timerEventDefinition id="TimerDef_1">
+        <bpmn:timeDate>2026-01-01T14:30:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Task_Alert" name="Send an alert to the supervisor" />
+    <bpmn:endEvent id="End_Alert" name="Supervisor alerted" />
+    <bpmn:task id="Task_Crm2" name="Check the CRM system for new returns" />
+    <bpmn:exclusiveGateway id="Gw_D" name="New returns filed?" default="F_D_no" />
+    <bpmn:task id="Task_Reconcile" name="Reconcile with the existing account defaulters table" />
+    <bpmn:boundaryEvent id="Timer_2" name="4:00 pm" attachedToRef="Task_Reconcile" cancelActivity="false">
+      <bpmn:timerEventDefinition id="TimerDef_2">
+        <bpmn:timeDate>2026-01-01T16:00:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Task_Msg" name="Send a message to the supervisor" />
+    <bpmn:endEvent id="End_Msg" name="Supervisor messaged" />
+    <bpmn:endEvent id="End_Done" name="Defaulters reconciled" />
+    <bpmn:endEvent id="End_NoReturns" name="No new returns" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_1" targetRef="Sub_1" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Sub_1" targetRef="Task_Crm2" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Timer_1" targetRef="Task_Alert" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Task_Alert" targetRef="End_Alert" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Task_Crm2" targetRef="Gw_D" />
+    <bpmn:sequenceFlow id="F_D_yes" name="yes" sourceRef="Gw_D" targetRef="Task_Reconcile" />
+    <bpmn:sequenceFlow id="F_D_no" name="no" sourceRef="Gw_D" targetRef="End_NoReturns" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Task_Reconcile" targetRef="End_Done" />
+    <bpmn:sequenceFlow id="F7" sourceRef="Timer_2" targetRef="Task_Msg" />
+    <bpmn:sequenceFlow id="F8" sourceRef="Task_Msg" targetRef="End_Msg" />
+  </bpmn:process>
+</bpmn:definitions>

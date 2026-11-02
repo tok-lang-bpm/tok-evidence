@@ -1,0 +1,40 @@
+```tok
+tok 1.0 "Court mail handling"
+
+pool registry "Court registry"
+  lane mpu "Mail Clerk (Mail Processing Unit)"
+    start received "Mail from the party collected"
+    task collect "Collect the mail from the party"
+    task sort_areas "Sort the unopened mail into business areas"
+    task distribute "Distribute the mail"
+  lane reg "Registry"
+    task open "Open the mail"
+    task sort_groups "Sort the mail into groups for distribution"
+    task register "Register the mail in the manual incoming Mail Register"
+  lane arm "Assistant Registry Manager"
+    task qc "Perform the quality check"
+    xor compliant "Mail compliant?"
+    task list "Compile a list of requisition explaining the rejection"
+    task return "Send the list of requisition back to the party"
+    end rejected "Mail rejected"
+    task details "Capture the matter details (types of action)"
+    task provide "Provide the matter details to the Cashier"
+    and split_work
+    task envelope "Put the receipt and copied documents into an envelope"
+    task post "Post the envelope to the party"
+    and join_work
+    end processed "Application processed"
+  lane cash "Cashier"
+    task fees "Take the applicable fees attached to the mail"
+    task party "Capture the Party Details"
+    task print "Print the Physical Court File"
+
+flow received -> collect -> sort_areas -> distribute -> open -> sort_groups -> register -> qc -> compliant
+flow compliant -> details "yes" when="compliant = true"
+flow compliant -> list "no" default
+flow list -> return -> rejected
+flow details -> provide -> fees -> split_work
+flow split_work -> envelope -> post -> join_work
+flow split_work -> party -> print -> join_work
+flow join_work -> processed
+```

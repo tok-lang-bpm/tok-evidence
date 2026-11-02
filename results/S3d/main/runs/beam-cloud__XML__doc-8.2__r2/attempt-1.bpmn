@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="hr-clerk" name="HR clerk">
+        <bpmn:flowNodeRef>vacancy-reported</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-job-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confusion-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ask-department-again</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit-job-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post-job</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>job-posted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="department" name="Department">
+        <bpmn:flowNodeRef>approval-gateway</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject-job-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request-correction</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="vacancy-reported" name="Vacancy reported" />
+    <bpmn:task id="create-job-description" name="Create job description" />
+    <bpmn:exclusiveGateway id="confusion-gateway" name="Confusion in message?" default="no-confusion" />
+    <bpmn:task id="ask-department-again" name="Ask the Department again" />
+    <bpmn:task id="submit-job-description" name="Submit job description for consideration" />
+    <bpmn:exclusiveGateway id="approval-gateway" name="Job description approved?" default="not-approved" />
+    <bpmn:task id="reject-job-description" name="Reject the job description" />
+    <bpmn:task id="request-correction" name="Request a correction" />
+    <bpmn:task id="correct-description" name="Correct the description" />
+    <bpmn:task id="post-job" name="Post the job" />
+    <bpmn:endEvent id="job-posted" name="Job posted" />
+
+    <bpmn:sequenceFlow id="flow-start-create" sourceRef="vacancy-reported" targetRef="create-job-description" />
+    <bpmn:sequenceFlow id="flow-create-confusion" sourceRef="create-job-description" targetRef="confusion-gateway" />
+    <bpmn:sequenceFlow id="confusion-yes" name="yes" sourceRef="confusion-gateway" targetRef="ask-department-again">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">confusion</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="no-confusion" name="no" sourceRef="confusion-gateway" targetRef="submit-job-description" />
+    <bpmn:sequenceFlow id="flow-ask-create" sourceRef="ask-department-again" targetRef="create-job-description" />
+    <bpmn:sequenceFlow id="flow-submit-approval" sourceRef="submit-job-description" targetRef="approval-gateway" />
+    <bpmn:sequenceFlow id="approval-yes" name="yes" sourceRef="approval-gateway" targetRef="post-job">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="not-approved" name="no" sourceRef="approval-gateway" targetRef="reject-job-description" />
+    <bpmn:sequenceFlow id="flow-reject-request" sourceRef="reject-job-description" targetRef="request-correction" />
+    <bpmn:sequenceFlow id="flow-request-correct" sourceRef="request-correction" targetRef="correct-description" />
+    <bpmn:sequenceFlow id="flow-correct-submit" sourceRef="correct-description" targetRef="submit-job-description" />
+    <bpmn:sequenceFlow id="flow-post-end" sourceRef="post-job" targetRef="job-posted" />
+  </bpmn:process>
+</bpmn:definitions>

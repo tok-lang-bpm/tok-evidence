@@ -1,0 +1,106 @@
+[
+ {
+  "call": 1,
+  "input_tokens": 4134,
+  "output_tokens": 690,
+  "seconds": 3.140488599980017,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to create a tok model. Steps:\n\n- One pool for organisation.\n- One lane per actor: functional department, maybe HR? The text only mentions functional department (trigger) and process of advertising, applications, checking, filling, contract conclusion. Actors likely functional department (triggers), HR (advertising, checking?), system? Not explicit. Could use two lanes: functional department and HR (or hiring team). Since not specified, maybe just a single lane. But requirement: \"If the text names no actor, use a single lane.\" It does name functional department, which is an actor. It also mentions \"post is advertised\" maybe HR. Could interpret functional department triggers, HR performs tasks. So we can use two lanes: functional_department and hr.\n\nWe'll model:\n\n- start event in functional_department lane? start event triggered by demand. Place start within functional_department lane.\n\n- task: \"advertise post\" (probably HR lane).\n\n- task: \"receive applications\" (maybe HR lane) but can combine.\n\n- task: \"check applications\" (HR lane)\n\n- task: \"fill post\" (maybe HR lane) leading to contract conclusion.\n\nCould use a flow where after start, go to advertise, then receive applications (maybe parallel? Not needed). Then check applications, then fill post, then \"conclude employment contract\" then end.\n\nAll linear, no gateways needed.\n\nBut we need exclusive gateways for decisions and alternatives, not required here.\n\nWe'll create pool \"org\" with lanes \"functional_department\" and \"hr\". Start event in functional_department lane, then flow to hr lane tasks.\n\nIn tok syntax:\n\ntok 1.0\n\npool org \"Organisation\" {\n  lane functional_department \"Functional Department\"\n  lane hr \"HR\"\n}\n\nstart start1 \"Demand for post\" lane=functional_department\n\ntask advertise \"Advertise post\" lane=hr\ntask receive \"Receive applications\" lane=hr\ntask check \"Check applications\" lane=hr\ntask fill \"Fill post\" lane=hr\ntask conclude \"Conclude employment contract\" lane=hr\n\nend end1 \"Post filled\" lane=hr\n\nflows:\n\nflow start1 -> advertise\nflow advertise -> receive\nflow receive -> check\nflow check -> fill\nflow fill -> conclude\nflow conclude -> end1\n\nAdd border of pool? Not needed.\n\nWe'll then check with tool.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "path": "",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane functional_department \"Functional Department\"\n  lane hr \"HR\"\n}\n\nstart start1 \"Demand for post\" lane=functional_department\n\ntask advertise \"Advertise post\" lane=hr\ntask receive \"Receive applications\" lane=hr\ntask check \"Check applications\" lane=hr\ntask fill \"Fill post\" lane=hr\ntask conclude \"Conclude employment contract\" lane=hr\n\nend end1 \"Post filled\" lane=hr\n\nflow start1 -> advertise\nflow advertise -> receive\nflow receive -> check\nflow check -> fill\nflow fill -> conclude\nflow conclude -> end1\n"
+    },
+    "is_error": true,
+    "result": "give either text or path, not both"
+   }
+  ]
+ },
+ {
+  "call": 2,
+  "input_tokens": 4850,
+  "output_tokens": 220,
+  "seconds": 1.1094113999861293,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "We need to provide only text field, not both path and text? In earlier call we gave both path and text. Need just text. Let's call again.",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organisation\" {\n  lane functional_department \"Functional Department\"\n  lane hr \"HR\"\n}\n\nstart start1 \"Demand for post\" lane=functional_department\n\ntask advertise \"Advertise post\" lane=hr\ntask receive \"Receive applications\" lane=hr\ntask check \"Check applications\" lane=hr\ntask fill \"Fill post\" lane=hr\ntask conclude \"Conclude employment contract\" lane=hr\n\nend end1 \"Post filled\" lane=hr\n\nflow start1 -> advertise\nflow advertise -> receive\nflow receive -> check\nflow check -> fill\nflow fill -> conclude\nflow conclude -> end1"
+    },
+    "is_error": false,
+    "result": "line 3: error T001: invalid token: unexpected character '{'\nline 4: error P004: 'lane' is not allowed inside top\nline 5: error P004: 'lane' is not allowed inside top\nline 6: error T001: invalid token: unexpected character '}'\nline 8: error T003: indentation does not match any open block\n5 error(s), 5 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 3,
+  "input_tokens": 5200,
+  "output_tokens": 146,
+  "seconds": 1.2155608999892138,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "Syntax: The pool block syntax: `pool ID \"Label\"` then block with statements inside? According to tok cheat sheet, inside pool you define lanes with `lane ID \"Label\"` (no braces?). Usually syntax: `pool org \"Organisation\" {` then inside newline lane ... and close `}`. But errors indicate unexpected '{' and lane not allowed inside top. Perhaps syntax is different: Should be:\n\n```\npool org \"Organisation\"\nlane functional_department \"Functional Department\" in org\nlane hr \"HR\" in org\n```\n\nBut I'm not sure. Let's consult reference cheat sheet.",
+  "tool_calls": [
+   {
+    "name": "reference",
+    "arguments": {
+     "topic": "cheatsheet"
+    },
+    "is_error": false,
+    "result": "# tok 1.0 — cheat sheet\n\nOne statement per line. Blocks by indentation (spaces). `#` starts a comment.\nEvery statement starts with a keyword. Identifiers: `[A-Za-z_][A-Za-z0-9_-]*`, unique. Labels: \"quoted text\".\nAttributes: `key=value` (value: word, number or \"text\") and bare flags. A key or flag is written once per line, the triggers of\nmultiple events aside (in 1.0 a repeated one is the deprecation warning `R090`).\n\n```\ntok 1.0 \"Title\" [executable]                       # header, first line (0.1–0.7 documents stay valid)\n    [process-name=\"Name\"] (process of a document without pools)   doc=\"Text\" on any statement: documentation\n\nstart ID \"Label\" [message=\"M\" | timer=P3D | signal=\"S\" | condition=\"feel\"] [form=F]\nend ID \"Label\" [message=\"M\" | error=\"E\" | escalation=\"X\" | signal=\"S\" | terminate]   # error/escalation: [code=\"E1\"]\ncatch ID \"Label\" message=\"M\" | timer=PT2H | signal=\"S\" | condition=\"feel\" | link=\"L\"\nthrow ID \"Label\" [message=\"M\" | escalation=\"X\" | signal=\"S\" | link=\"L\" | compensate]\nboundary ID \"Label\" on=ACTIVITY timer=P7D [noninterrupting]   # also message/error/escalation/signal\n    several triggers = multiple event: message=\"A\" message=\"B\" signal=\"C\"; + parallel = all of them (catching)\n    trigger not given yet: flags message timer signal condition error escalation (start ID \"Label\" message)\n\ntask | user | manual | service | script | rule | send | receive | call   ID \"Label\"\n    flags: loop parallel sequential compensation\n    user … form=F        rule … decision=D result=var        script … expr=\"feel\" result=var\n    service … type=\"job\"  send/receive … message=\"M\"          call … process=P | task=GLOBAL\n    loop while=\"feel\" [test-before] [loop-max=5]              receive … instantiate (starts the process)\n    service|send|receive … operation=OP                       user … by=RESOURCE (performer)\nsub ID \"Label\"           # embedded sub-process: indented block with its own start and end\nadhoc ID \"Label\"         # ad-hoc sub-process: activities in any order, no start or end events\neventsub ID \"Label\"      # event sub-process: block starts with a start event with a trigger\ntransaction ID \"Label\" [method=compensate|store|image]   # block like sub; inside: end ID cancel\nboundary ID on=TRANSACTION cancel                        # leaves the transaction after cancel\n\nxor | and | or | eventgw | complex   ID [\"Question?\"]\ncomplex ID \"?\" activation=\"_activationCount >= 2\"        eventgw ID instantiate [parallel]\n\npool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process\n  lane ID \"Label\"                           # lanes nest; nodes go inside lanes\npool ID \"Label\" [min=2] [max=5]             # no block: black-box pool; min/max: several participants (0.6)\n\nflow A -> B -> C                            # chain of sequence flows\nflow G -> D \"tak\" when=\"amount > 100\"       # one flow: label, FEEL condition\nflow G -> E \"nie\" default                   # default flow; when=\"\" = condition not written yet\nmessage A -> B \"Label\" [id=ID]              # message flow between pools (nodes or pools)\n\nconversation ID \"Label\" pools=\"P Q\" [messages=\"M1 M2\"]       # conversation between pools (message flow ids)\nsubconversation ID \"Label\" pools=\"P Q\"                       # block: conversation nodes\ncallconversation ID \"Label\" pools=\"P Q\" collaboration=ID [map=\"inner:outer; …\"]\n\nchoreography ID \"Label\"                     # block: start/end/catch/throw/boundary, xor and or eventgw complex, flows\n  choreo ID \"Label\" from=P to=Q [message=\"M\"] [reply=\"R\"] [loop|parallel|sequential]\n  subchoreo ID \"Label\" pools=\"P Q R\" from=P   # block like a choreography\n  callchoreo ID \"Label\" pools=\"P Q\" from=P choreography=ID [map=\"inner:outer; …\"]\n\ndata ID \"Label\" [state=\"złożony\"] [type=ITEM] [object=\"Data object\"] [collection]\nstore ID \"Label\" [type=ITEM]\nreads ACTIVITY DATA [input=ID]   writes ACTIVITY DATA [output=ID]   # DATA: data, store, input, output, property\n    reads END|THROW DATA   writes START|CATCH|BOUNDARY DATA          # data of events\nitem ID \"Label\" [structure=Name|xsd:string|p:Name namespace=\"URI\"] [kind=information|physical] [collection]\ninput ID \"Label\" [type=ITEM] [collection] [on=ACTIVITY|EVENT]    output ID … (same)\nproperty ID \"Label\" [type=ITEM] [on=ACTIVITY|EVENT]\n\nglobal ID \"Label\" [kind=task|user|manual|script|rule]       # called by call … task=ID\ninterface ID \"Label\"\n  operation ID \"Label\" in=\"Message\" [out=\"Message\"] [error=\"Error\" …]\nkey ID \"Label\"                               # correlation key (needs pools)\n  prop NAME message=\"Message\" path=\"expression\"\nnote ID \"Text\" [on=ID]       group ID \"Label\" members=\"A B C\"\n\ndecision ID \"Label\" hit=first               # unique | first | any | priority | collect\n  | in1: string | in2: number || out: string || annotation |\n  | \"e-book\"    | -           || \"manager\"   || licences   |\n  | -           | <= 150      || \"auto\"      ||            |\n\n# decision requirements graphs and boxed expressions (language 0.7, header tok 0.7 or tok 1.0)\ninputdata ID \"Label\" [name=\"FEEL name\"] type=number            # also date, \"date and time\", list, an item …\nsource ID \"Label\" [requires=\"D I S\"] [kind=\"regulation\"] [uri=\"https://…\"]\nbkm ID \"Label\" params=\"a: number, b: string\" [type=T] [requires=\"BKM S\"] expr=\"a * b\"\ndecision ID \"Label\" [name=\"FEEL name\"] [type=T] requires=\"D I BKM S\" [question=\"?\"] [answers=\"…\"] expr=\"feel\"\ndecision ID \"Label\" requires=\"…\" invoke=BKM with=\"a = feel; b = feel\"     # invocation\ndecision ID \"Label\" requires=\"…\" hit=rule-order|output-order|collect aggregation=sum|count|min|max default=\"0\"\n  | in: number = [0..100] || out: string = \"high\", \"low\" |              # input/output values\ndecision ID \"Label\"                         # context: entries in order, optional result last\n  entry NAME [type=T] expr=\"feel\"           # NAME a word or \"quoted name\"; each line may have its own block\n  entry f params=\"x: number\" expr=\"x * 2\"   # function definition\n  entry table                               # nested table or relation\n    | col: string | val: number |           # relation: header without ||\n    | \"a\"         | 1           |\n  result expr=\"f(2)\"\ndecision ID \"Label\"                         # list\n  element expr=\"1\"\nitem T \"Label\" [type=number] [allowed=\"[0..10]\"] [collection]      # DMN type (0.7)\n  item field type=string                    # components\n```\n\nFEEL of 0.7 and 1.0 documents is full FEEL (level 3): `for x in l return e`, `some/every x in l satisfies c`, `l[item > 1]`,\n`{a: 1}.a`, `@\"2027-01-15\"`, `date and time(…)`, durations, ranges, names with spaces resolved against the document.\n\n```\n\nform ID \"Title\"\n  text \"## Markdown with {{variable}}\"\n  field KEY \"Label\" type=textfield|textarea|number|checkbox|select|radio|datetime [required] [options=\"v:Label, v:Label\"]\n\nsimulate cases=200 seed=1 arrival=\"exp(2h)\"\nresource ID \"Label\" count=2\nvariable NAME \"unif(20, 300)\"               # fixed unif tri norm lnorm exp bern cat; units s m h d\n    activity … by=RESOURCE duration=\"tri(10m, 20m, 1h)\" assign=\"zgoda=bern(0.8)\"\n    catch … delay=\"exp(3d)\"     flow … p=0.3\n```\n\nFEEL in `when`, `expr`, `condition`, `correlation` and decision cells is written **without** a leading `=`.\n\nCompensation and catch-all events (any document):\n`service a … compensate=h` + `service h … compensation` · `throw c … compensate [activity=a]` ·\n`boundary b on=a error` (any error) · `boundary b on=a escalation` (any escalation)\n\nExecutable layer (only with `executable`; values computed at run time start with `=`):\n\n```\nuser t … assignee=\"kierownik\" candidate-groups=\"a, b\" due=\"=now() + duration(\\\"P3D\\\")\" priority=70\nuser t … candidate-users=\"ola, jan\" follow-up=\"2027-01-20T09:00:00Z\"\nuser t … parallel collection=\"items\" item=x output=results output-item=\"x.result\" until=\"numberOfCompletedInstances >= 2\"\nadhoc a … active=\"chosen\" until=\"done = true\" wait\ncall c … process=child binding=deployment|latest|version-tag version=\"v2\" child-vars=none parent-vars=none business-id=\"=numer\"\nservice s … type=\"job\" retries=5 headers=\"key: value; …\" inputs=\"target = expr; …\" outputs=\"target = expr; …\"\nservice r … connector=rest method=GET url=\"https://…\" result=response [body= query= headers-in=]\nend e … message=\"M\" type=\"job\"          catch|boundary … condition=\"x > 1\" events=\"create, update\"\nany … listeners=\"start: job-type; end: job-type (5)\"   (user tasks also: creating, assigning, updating, completing, canceling)\ntok 0.3 \"T\" executable version-tag=\"v1\"   pool p … version-tag=\"v1\"\n```\n\nLanguage 0.5 elements (transaction, cancel, complex, loop conditions, multiple events, instantiate, process data,\nglobal tasks, operations, keys) and 0.6 elements (conversations, choreographies, min/max) are BPMN only:\n`--level basic|analytic` rejects them, and in executable documents for Camunda they are reported as `C100`–`C123`.\nDecisions of 0.7 are level `full`; Camunda codes `C130` (bkm with invoke=), `C131` (non-literal function body),\n`C132` (decision without logic).\nIn 0.5 documents `resource` and `by=` also export BPMN performers.\n\nCommands: `tok check F [--class descriptive|analytic|common-executable|full]` · `tok fmt F [-w]` · `tok bpmn F` ·\n`tok svg F` · `tok export F [-o DIR]` (0.7: NAME.dmn + NAME.drd.svg per decision graph) · `tok import F.bpmn|F.dmn [-o F.tok]`\n(BPMN: writes F.tok.layout, the drawing reused by bpmn/svg/export; `--no-sidecar`) · `tok sim F` ·\n`tok eval F DECISION name=value …` (0.7: with required decisions; JSON values `x='{\"a\": 1}'`) · `--lang pl` · `--json`\n"
+   }
+  ]
+ },
+ {
+  "call": 4,
+  "input_tokens": 8053,
+  "output_tokens": 382,
+  "seconds": 1.7320110999862663,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "",
+  "thinking": "From cheat sheet: pool syntax lines:\n\n`pool ID \"Label\" [process=P] [process-name=\"Name\"] [executable]    # with a block: participant + process`\n\nThen \"lane ID \"Label\"  # lanes nest; nodes go inside lanes\". So we need pool line then indented lane lines and then tasks inside lanes possibly also indented.\n\nThus structure:\n\n```\npool org \"Organisation\"\n  lane functional_department \"Functional Department\"\n  lane hr \"HR\"\n```\n\nNo braces. Indentation defines block. So tasks must be placed under lanes with further indentation.\n\nExample:\n\n```\npool org \"Organisation\"\n  lane functional_department \"Functional Department\"\n    start start1 \"Demand for post\"\n  lane hr \"HR\"\n    task advertise \"Advertise post\"\n    task receive \"Receive applications\"\n    task check \"Check applications\"\n    task fill \"Fill post\"\n    task conclude \"Conclude employment contract\"\n    end end1 \"Post filled\"\n```\n\nNow flows defined after all statements (outside pools). Use flow referencing IDs.\n\nLet's create model accordingly.\n\n",
+  "tool_calls": [
+   {
+    "name": "check",
+    "arguments": {
+     "bpmn": true,
+     "class": "full",
+     "lang": "en",
+     "level": "basic",
+     "text": "tok 1.0\n\npool org \"Organisation\"\n  lane functional_department \"Functional Department\"\n    start start1 \"Demand for post\"\n  lane hr \"HR\"\n    task advertise \"Advertise post\"\n    task receive \"Receive applications\"\n    task check \"Check applications\"\n    task fill \"Fill post\"\n    task conclude \"Conclude employment contract\"\n    end end1 \"Post filled\"\n\nflow start1 -> advertise\nflow advertise -> receive\nflow receive -> check\nflow check -> fill\nflow fill -> conclude\nflow conclude -> end1"
+    },
+    "is_error": false,
+    "result": "0 error(s), 0 diagnostic(s); BPMN conformance class: descriptive"
+   }
+  ]
+ },
+ {
+  "call": 5,
+  "input_tokens": 8485,
+  "output_tokens": 155,
+  "seconds": 0.828914799989434,
+  "model": "gpt-oss:120b",
+  "done_reason": "stop",
+  "content": "Here is the BPMN process model in tok format:\n\n```tok\ntok 1.0\n\npool org \"Organisation\"\n  lane functional_department \"Functional Department\"\n    start start1 \"Demand for post\"\n  lane hr \"HR\"\n    task advertise \"Advertise post\"\n    task receive \"Receive applications\"\n    task check \"Check applications\"\n    task fill \"Fill post\"\n    task conclude \"Conclude employment contract\"\n    end end1 \"Post filled\"\n\nflow start1 -> advertise\nflow advertise -> receive\nflow receive -> check\nflow check -> fill\nflow fill -> conclude\nflow conclude -> end1\n```",
+  "thinking": "Great, no errors. The model is ready. Provide final answer with the code block.",
+  "tool_calls": []
+ }
+]

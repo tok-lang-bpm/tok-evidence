@@ -1,0 +1,47 @@
+tok 1.0
+
+pool bank "Bank" {
+  lane clerk "Clerk"
+  lane system "Banking System"
+  lane agency "Agency"
+}
+
+start s1 "Start"
+
+task rcv "receive credit-scoring request" lane=clerk
+
+task send "send scoring request to agency" lane=system
+
+task lvl1 "perform level 1 quick scoring" lane=agency
+
+xor gw1 "Is result immediate?"
+
+task ret1 "return immediate result" lane=agency
+
+task pres "present result to clerk" lane=system
+
+task inf "inform delay to banking process" lane=agency
+
+task disp "display delay message to clerk" lane=system
+
+task lvl2 "perform level 2 scoring" lane=agency
+
+task ret2 "return delayed result" lane=agency
+
+xor gw2 "join results"
+
+end e1 "End"
+
+flow s1 -> rcv
+flow rcv -> send
+flow send -> lvl1
+flow lvl1 -> gw1
+flow gw1 -> ret1 when="immediate"
+flow gw1 -> inf when="!immediate"
+flow ret1 -> pres
+flow inf -> disp
+flow disp -> lvl2
+flow lvl2 -> ret2
+flow ret2 -> pres
+flow pres -> gw2
+flow gw2 -> e1

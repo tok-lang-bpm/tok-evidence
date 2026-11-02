@@ -1,0 +1,44 @@
+tok 1.0 "New Application for Registering for an USI course"
+
+pool inst "Sports institute"
+  lane app "Applicant"
+    start begin "Want to register for a course"
+    task select-course "Select a course"
+    task select-course-date "Select one of the courses and dates"
+    task request-activation "Request an activation"
+    catch activation-response "Activation response received" message="Activation response"
+    task register-account "Register your account"
+    task log-in "Log into your account"
+    and split-app
+    task tweet "Tweet to friends who might want to join"
+    task complete-registration "Complete the registration for the course"
+    task provide-payment "Provide the payment information"
+    and join-app
+  lane sys "Registration system"
+    task check-slots "Check whether slots are free"
+    xor slots-free "Are slots free?"
+    task show-courses "Tell the courses and dates"
+    end no-slots "No slots free"
+    task check-account "Check whether you have an account"
+    xor has-account "Do you already have an account?"
+    task check-eligible "Check whether you are registered at an eligible university"
+    xor eligible "Are you registered at an eligible university?"
+    xor account-ready
+    task issue-ticket "Issue the course ticket"
+    end done "Course ticket received"
+
+flow begin -> select-course -> check-slots -> slots-free
+flow slots-free -> show-courses "yes"
+flow slots-free -> no-slots "no"
+flow show-courses -> select-course-date -> check-account -> has-account
+flow has-account -> account-ready "yes"
+flow has-account -> check-eligible "no"
+flow check-eligible -> eligible
+flow eligible -> register-account "yes"
+flow eligible -> request-activation "no"
+flow request-activation -> activation-response -> account-ready
+flow register-account -> account-ready
+flow account-ready -> log-in -> split-app
+flow split-app -> tweet -> join-app
+flow split-app -> complete-registration -> provide-payment -> join-app
+flow join-app -> issue-ticket -> done

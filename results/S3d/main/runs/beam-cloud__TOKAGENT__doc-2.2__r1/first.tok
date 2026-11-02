@@ -1,0 +1,76 @@
+tok 1.0 "Power supplier switch process"
+
+pool org "Power supplier switch process"
+  lane customer "Customer"
+    start s "Switch-over request"
+    task transmit-data "Transmit customer data"
+    task check-contract-details "Check contract details"
+    task withdraw "Withdraw from switch contract"
+    end end-withdraw "Process ends (withdrawal)"
+
+  lane customer-service "Customer Service"
+    task receive-data "Receive customer data"
+    task enter-crm "Enter customer data object into CRM system"
+    task compare-data "Compare customer data with internal customer database"
+    task check-data "Check data for completeness and plausibility"
+    task correct-errors "Correct data errors based on error list"
+    task prepare-contracts "Prepare contract documents for power supplier switch"
+    task send-confirmation "Send confirmation document to customer"
+    task create-cis-contract "Create CIS contract"
+    task import-meter "Import meter data into systems"
+    end end-won "Process of winning new customer ends"
+
+  lane crm "CRM System"
+    # no dedicated tasks
+
+  lane cis "Customer Information System (CIS)"
+    task check-contracts-cis "Check contract documents in CIS"
+    task analyze-issues "Analyze and resolve contract generation issues"
+    task regenerate-contracts "Regenerate contract documents"
+    task send-request-grid "Send switch-over request to grid operator"
+
+  lane grid "Grid Operator"
+    task check-supplier-concurrence "Check switch-over request for supplier concurrence"
+    task transmit-response "Transmit response comment"
+    task inform-suppliers "Inform involved suppliers and demand conflict resolution"
+    task terminate-agreement "Carry out termination of sales agreement with old supplier"
+    task transmit-meter "Transmit power meter data"
+    task compute-final "Compute final billing based on meter data"
+    task send-go-final "Send final billing to old supplier"
+    end end-concurrence "Process ends after supplier concurrence"
+    end end-grid "Grid operator process ends"
+
+  lane old-supplier "Old Supplier"
+    task create-old-final "Create final billing"
+    task send-old-final "Send final billing to customer"
+    end end-customer "Customer process ends"
+
+  xor gw-errors "Data errors found?"
+  xor gw-exists "Customer exists in database?"
+  xor gw-customer-join "Customer data merge"
+  xor gw-contract "Contract documents generated correctly?"
+  xor gw-concurrence "Supplier concurrence found?"
+  xor gw-withdraw "Withdraw from switch contract?"
+  and g-final "Final billing phase"
+  and g-grid-old "Grid-to-old-supplier split"
+
+# main flow
+flow s -> transmit-data
+flow transmit-data -> receive-data
+flow receive-data -> enter-crm
+flow enter-crm -> compare-data
+flow compare-data -> check-data
+flow check-data -> gw-errors
+flow gw-errors -> correct-errors "Errors found" when="errors = true"
+flow gw-errors -> gw-exists "No errors" default
+flow correct-errors -> compare-data
+
+flow gw-exists -> gw-customer-join "Customer exists" default
+flow gw-exists -> create-customer-placeholder "Customer does not exist" when="customerExists = false"
+```
+
+Wait I forgot create-customer task. Need add task create-customer "Create new customer object" in customer-service. And replace placeholder. Let's insert. Also crm lane empty okay? A lane with no nodes allowed? Probably yes but maybe warning? Could remove crm lane if no tasks. But text mentions CRM system; maybe assign enter-crm to CRM system lane instead of customer service to use lane. Let's put enter-crm in crm lane. And create-customer in crm? Hmm. Data object enters CRM; customer service enters? Let's keep task in crm lane named "Enter customer data object into CRM system"; then lane used. Create new customer object also CRM. But accountabilities? We'll put these tasks in crm lane. Customer service still compare/check/prepare. Fine. Let's adjust.
+
+Need also task create-customer. Add to CRM lane.
+
+Let's rewrite cleanly.

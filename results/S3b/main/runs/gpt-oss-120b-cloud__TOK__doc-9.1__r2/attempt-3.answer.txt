@@ -1,0 +1,63 @@
+```tok
+tok 1.0 "Defaulter Processing"
+
+pool org "Organization"
+  lane db "Database"
+    start S "Start"
+    task B "Back up the database"
+    task C1 "Check for new records in Account Defaulter table"
+    xor XR1 "New records in Defaulter table?"
+    end E_no_ret1 "No new returns (first check) – process ends"
+    end E_no_ret2 "No new returns (second check) – process ends"
+    end E_success "Process completed successfully"
+    end E_alert2 "Process ended – deadline 16:00 missed"
+
+  lane crm "CRM System"
+    task C2 "Check CRM system for new returns (first check)"
+    xor XR2 "New returns exist? (first check)"
+    task C3 "Check CRM system for new returns (second check)"
+    xor XR5 "New returns exist? (second check)"
+
+  lane am "Account Management"
+    task R1 "Register defaulting accounts and customers"
+    xor XR3 "Client codes not previously advised?"
+    task P1 "Produce table of defaulting accounts"
+    task S1 "Send table to account management"
+    xor XR4 "Completed by 14:30?"
+    task RE1 "Reconcile with existing account defaulters table"
+    xor XR6 "Completed by 16:00?"
+    task A1 "Send alert to supervisor (deadline 14:30 missed)"
+    task A2 "Send alert to supervisor (deadline 16:00 missed)"
+
+  lane supervisor "Supervisor"
+
+flow S -> B
+flow B -> C1
+flow C1 -> XR1
+flow XR1 -> R1 "yes"
+flow XR1 -> C2 "no"
+
+flow C2 -> XR2
+flow XR2 -> R1 "yes"
+flow XR2 -> E_no_ret1 "no"
+
+flow R1 -> XR3
+flow XR3 -> P1 "yes"
+flow XR3 -> XR4 "no"
+
+flow P1 -> S1
+flow S1 -> XR4
+
+flow XR4 -> C3 "yes"
+flow XR4 -> A1 "no"
+flow A1 -> C3
+
+flow C3 -> XR5
+flow XR5 -> RE1 "yes"
+flow XR5 -> E_no_ret2 "no"
+
+flow RE1 -> XR6
+flow XR6 -> E_success "yes"
+flow XR6 -> A2 "no"
+flow A2 -> E_alert2
+```

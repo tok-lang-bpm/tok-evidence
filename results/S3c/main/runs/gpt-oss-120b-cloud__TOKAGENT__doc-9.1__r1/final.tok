@@ -1,0 +1,51 @@
+tok 1.0
+
+pool org "Organization"
+  lane db "Database"
+    task backup "Backup Database"
+    task checkDef "Check Account Defaulter Table for New Records"
+    xor g1 "New records found?"
+  lane crm "CRM System"
+    task checkReturns "Check CRM System for New Returns"
+    task checkReturns2 "Check CRM System for New Returns (Second Check)"
+  lane am "Account Management"
+    task register "Register Defaulting Accounts and Customers"
+    task produceTable "Produce Table of Defaulting Accounts"
+    task send "Send Table to Account Management"
+    task reconcile "Reconcile with Existing Account Defaulters Table"
+  lane sup "Supervisor"
+    task alertSup "Send Alert to Supervisor (2:30 deadline)"
+    task alertSup2 "Send Alert to Supervisor (4:00 deadline)"
+  lane proc "Process Flow"
+    start s "Weekday Morning"
+    xor g2 "Defaulting client codes previously advised?"
+    xor deadline1 "Completed by 2:30 pm?"
+    xor g3 "New returns filed?"
+    xor deadline2 "Completed by 4:00 pm?"
+    task reportDone "First Report Completed"
+    task afterFirst "After First Report"
+    end finalEnd "Process End"
+
+flow s -> backup
+flow backup -> checkDef
+flow checkDef -> g1
+flow g1 -> checkReturns "no" when="records = false"
+flow g1 -> register "yes" when="records = true"
+flow checkReturns -> register
+flow register -> g2
+flow g2 -> produceTable "no" when="advised = false"
+flow g2 -> reportDone "yes" default
+flow produceTable -> send
+flow send -> reportDone
+flow reportDone -> deadline1
+flow deadline1 -> alertSup "no" when="missed2_30 = true"
+flow deadline1 -> afterFirst "yes" default
+flow alertSup -> afterFirst
+flow afterFirst -> checkReturns2
+flow checkReturns2 -> g3
+flow g3 -> reconcile "yes" when="newReturns = true"
+flow g3 -> deadline2 "no" default
+flow reconcile -> deadline2
+flow deadline2 -> alertSup2 "no" when="missed4_00 = true"
+flow deadline2 -> finalEnd "yes" default
+flow alertSup2 -> finalEnd

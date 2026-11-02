@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Loan approval process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Loan_request" name="Loan request" />
+  <bpmn:message id="Message_Decision_feedback" name="Decision feedback" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Loan approval" processRef="org-process" />
+    <bpmn:participant id="customer" name="Customer" />
+    <bpmn:messageFlow id="m-customer-receive" name="Loan request" sourceRef="customer" targetRef="receive" messageRef="Message_Loan_request" />
+    <bpmn:messageFlow id="m-feedback-customer" name="Decision feedback" sourceRef="feedback" targetRef="customer" messageRef="Message_Decision_feedback" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Loan approval process" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="loan" name="Loan department">
+        <bpmn:flowNodeRef>begin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>risk-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send-approver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decided</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>feedback</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="risk" name="Risk assessment service">
+        <bpmn:flowNodeRef>assess</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="approver" name="Approver service">
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="begin" name="Start" />
+    <bpmn:task id="receive" name="Receive customer loan request" />
+    <bpmn:exclusiveGateway id="risk-check" name="Risk assessment result?" default="f-risk-check-send-approver" />
+    <bpmn:task id="deny" name="Deny loan" />
+    <bpmn:task id="approve" name="Approve loan" />
+    <bpmn:task id="send-approver" name="Send request to approver service" />
+    <bpmn:exclusiveGateway id="decided" name="Decision made" />
+    <bpmn:task id="feedback" name="Send feedback to customer" />
+    <bpmn:endEvent id="done" name="Feedback sent" />
+    <bpmn:serviceTask id="assess" name="Assess loan request" />
+    <bpmn:serviceTask id="review" name="Review loan request" />
+    <bpmn:sequenceFlow id="f-begin-receive" sourceRef="begin" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-assess" sourceRef="receive" targetRef="assess" />
+    <bpmn:sequenceFlow id="f-assess-risk-check" sourceRef="assess" targetRef="risk-check" />
+    <bpmn:sequenceFlow id="f-risk-check-deny" name="Customer is high risk" sourceRef="risk-check" targetRef="deny">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">high_risk</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-risk-check-approve" name="Loan small and customer low risk" sourceRef="risk-check" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">small_loan and low_risk</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-risk-check-send-approver" name="Further review or amount of $10,000 or more" sourceRef="risk-check" targetRef="send-approver" />
+    <bpmn:sequenceFlow id="f-approve-decided" sourceRef="approve" targetRef="decided" />
+    <bpmn:sequenceFlow id="f-deny-decided" sourceRef="deny" targetRef="decided" />
+    <bpmn:sequenceFlow id="f-send-approver-review" sourceRef="send-approver" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-decided" sourceRef="review" targetRef="decided" />
+    <bpmn:sequenceFlow id="f-decided-feedback" sourceRef="decided" targetRef="feedback" />
+    <bpmn:sequenceFlow id="f-feedback-done" sourceRef="feedback" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

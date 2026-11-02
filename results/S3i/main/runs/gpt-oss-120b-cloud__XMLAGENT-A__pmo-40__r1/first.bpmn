@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="Process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_System" name="System">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CollectInfo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CheckDisconnect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>DisconnectEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CalcOEE</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>OEEDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ParallelJoin</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Operator" name="Operator">
+        <bpmn:flowNodeRef>StopMachine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RestartMachine</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Engineer" name="Engineer">
+        <bpmn:flowNodeRef>SendEmail</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="Start OEE monitoring" />
+    <bpmn:task id="CollectInfo" name="Collect information from machine" />
+    <bpmn:eventBasedGateway id="CheckDisconnect" name="Check for disconnect" />
+    <bpmn:intermediateCatchEvent id="DisconnectEvent" name="Machine disconnected">
+      <bpmn:signalEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndDisconnect" name="Process ended (machine disconnected)" />
+    <bpmn:task id="CalcOEE" name="Calculate OEE" />
+    <bpmn:exclusiveGateway id="OEEDecision" name="OEE below threshold?" />
+    <bpmn:parallelGateway id="ParallelSplit" name="" />
+    <bpmn:task id="StopMachine" name="Stop machine" />
+    <bpmn:task id="SendEmail" name="Send email to engineer" />
+    <bpmn:parallelGateway id="ParallelJoin" name="" />
+    <bpmn:task id="RestartMachine" name="Restart machine" />
+    <bpmn:sequenceFlow id="f_start_collect" sourceRef="Start" targetRef="CollectInfo" />
+    <bpmn:sequenceFlow id="f_collect_check" sourceRef="CollectInfo" targetRef="CheckDisconnect" />
+    <bpmn:sequenceFlow id="f_check_calc" sourceRef="CheckDisconnect" targetRef="CalcOEE" />
+    <bpmn:sequenceFlow id="f_check_disconnect" sourceRef="CheckDisconnect" targetRef="DisconnectEvent" />
+    <bpmn:sequenceFlow id="f_disconnect_end" sourceRef="DisconnectEvent" targetRef="EndDisconnect" />
+    <bpmn:sequenceFlow id="f_calc_decide" sourceRef="CalcOEE" targetRef="OEEDecision" />
+    <bpmn:sequenceFlow id="f_decision_no" name="no" sourceRef="OEEDecision" targetRef="CollectInfo">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">OEE &gt;= 0.8</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_decision_yes" name="yes" sourceRef="OEEDecision" targetRef="ParallelSplit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">OEE &lt; 0.8</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_split_stop" sourceRef="ParallelSplit" targetRef="StopMachine" />
+    <bpmn:sequenceFlow id="f_split_email" sourceRef="ParallelSplit" targetRef="SendEmail" />
+    <bpmn:sequenceFlow id="f_stop_join" sourceRef="StopMachine" targetRef="ParallelJoin" />
+    <bpmn:sequenceFlow id="f_email_join" sourceRef="SendEmail" targetRef="ParallelJoin" />
+    <bpmn:sequenceFlow id="f_join_restart" sourceRef="ParallelJoin" targetRef="RestartMachine" />
+    <bpmn:sequenceFlow id="f_restart_collect" sourceRef="RestartMachine" targetRef="CollectInfo" />
+  </bpmn:process>
+</bpmn:definitions>

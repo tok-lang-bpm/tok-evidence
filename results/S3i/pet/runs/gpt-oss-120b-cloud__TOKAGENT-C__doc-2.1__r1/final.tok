@@ -1,0 +1,99 @@
+tok 1.0 "Service Degradation Handling"
+
+pool TELECO "TELECO"
+  lane customer "Customer"
+    start start_degradation "Service degradation perceived"
+    task send_parameters "Send problem parameters to Customer Service"
+
+  lane customer_service "Customer Service"
+    task enter_report "Enter problem report into system T"
+    task compare_sla "Compare problem report to SLA"
+    task determine_measures "Determine counter measures and priorities"
+    task determine_significance "Determine customer significance"
+    xor premium_gateway "Is customer premium?"
+    xor significance_gateway "Does significance affect measures?"
+    task create_detailed_report "Create detailed problem report"
+    task send_to_service_mgmt "Send detailed problem report to Service Management"
+    task receive_report_cs "Receive report from Service Management"
+    and main_parallel "Parallel reporting"
+    task create_customer_report "Create customer report"
+    task send_customer_report "Send customer report"
+    task report_sla_rebate "Report SLA violation rebate to Billing & Collections"
+    task adjust_billing "Adjust billing for SLA violation"
+    and parallel_join "Parallel join"
+    end end_cust_service "Customer Service process end"
+
+  lane service_management "Service Management"
+    task receive_detailed_report_sm "Receive detailed problem report"
+    xor analyzable_gateway "Is problem analyzable by Service Management?"
+    task perform_analysis "Perform analysis"
+    task create_trouble_report_sm "Create trouble report (SM)"
+    task send_to_resource_prov "Send detailed report to Resource Provisioning"
+    task receive_status_report "Receive status report"
+    task prepare_final_status "Prepare final status report"
+    xor final_decision_gateway "Determine counter measures?"
+    task send_actual_performance_to_cs "Send actual service performance to Customer Service"
+    task undertake_corrections_sm "Undertake minor corrective actions"
+    task create_restoration_request "Create restoration request"
+    task send_restoration_request "Send restoration request to Resource Provisioning"
+    task receive_troubleshooting_report "Receive trouble-shooting report"
+    task create_resolution_report_sm "Create problem resolution report"
+    task send_resolution_report_to_cs "Send problem resolution report to Customer Service"
+    end end_sm "Service Management end"
+
+  lane resource_provisioning "Resource Provisioning"
+    task receive_detailed_report_rp "Receive detailed problem report"
+    xor problems_detected_gateway "Are problems detected?"
+    task create_normal_notification "Create normal execution notification"
+    task analyze_problem "Analyze problem"
+    task create_trouble_report_rp "Create trouble report"
+    task create_status_report "Create status report"
+    task send_status_report_rp "Send status report"
+    and status_report_split "Status report split"
+    task finalize_rp "Finalize Resource Provisioning"
+    task wait_for_restoration_request "Wait for restoration request (within 2 days)"
+    task receive_restoration_request "Receive restoration request"
+    task track_errors "Track all possible errors"
+    task undertake_corrections_rp "Undertake corrective actions"
+    task create_troubleshooting_report "Create trouble-shooting report"
+    task send_troubleshooting_report "Send trouble-shooting report to Service Management"
+    end end_rp "Resource Provisioning end"
+
+  lane extra_process "Extra Process"
+    end end_extra "Extra problem fix process"
+
+  # Flows
+  flow start_degradation -> send_parameters -> enter_report -> compare_sla -> determine_measures -> determine_significance -> premium_gateway
+  flow premium_gateway -> end_extra "yes"
+  flow premium_gateway -> significance_gateway "no"
+  flow significance_gateway -> determine_measures "yes"
+  flow significance_gateway -> create_detailed_report "no"
+  flow create_detailed_report -> send_to_service_mgmt -> receive_detailed_report_sm
+  flow receive_detailed_report_sm -> analyzable_gateway
+  flow analyzable_gateway -> perform_analysis "yes"
+  flow perform_analysis -> create_trouble_report_sm -> prepare_final_status
+  flow analyzable_gateway -> send_to_resource_prov "no"
+  flow send_to_resource_prov -> receive_detailed_report_rp
+  flow receive_detailed_report_rp -> problems_detected_gateway
+  flow problems_detected_gateway -> create_normal_notification "no"
+  flow problems_detected_gateway -> analyze_problem "yes"
+  flow analyze_problem -> create_trouble_report_rp
+  flow create_trouble_report_rp -> create_status_report
+  flow create_normal_notification -> create_status_report
+  flow create_status_report -> send_status_report_rp
+  flow send_status_report_rp -> status_report_split
+  flow status_report_split -> finalize_rp
+  flow finalize_rp -> end_rp
+  flow status_report_split -> receive_status_report
+  flow receive_status_report -> prepare_final_status
+  flow prepare_final_status -> final_decision_gateway
+  flow final_decision_gateway -> send_actual_performance_to_cs "no_problem"
+  flow final_decision_gateway -> undertake_corrections_sm "minor_actions"
+  flow final_decision_gateway -> create_restoration_request "auto_restoration"
+  flow send_actual_performance_to_cs -> receive_report_cs
+  flow undertake_corrections_sm -> create_resolution_report_sm -> send_resolution_report_to_cs -> end_sm
+  flow create_restoration_request -> send_restoration_request -> wait_for_restoration_request -> receive_restoration_request -> track_errors -> undertake_corrections_rp -> create_troubleshooting_report -> send_troubleshooting_report -> receive_troubleshooting_report -> create_resolution_report_sm
+  flow receive_report_cs -> main_parallel
+  flow main_parallel -> create_customer_report -> send_customer_report -> parallel_join
+  flow main_parallel -> report_sla_rebate -> adjust_billing -> parallel_join
+  flow parallel_join -> end_cust_service

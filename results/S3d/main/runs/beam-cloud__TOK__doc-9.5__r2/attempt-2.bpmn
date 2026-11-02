@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Expense report processing" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Expense report processing" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="finance" name="Finance">
+        <bpmn:flowNodeRef>received</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>hasAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>createAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>accountJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>amount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approvalJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendReimbursement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendRejection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendInProgress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendCancellation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reimbursed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inProgress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancelled</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="supervisor" name="Supervisor">
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approvalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>progress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="received" name="Expense Report received" />
+    <bpmn:exclusiveGateway id="hasAccount" name="Employee has account?" default="f-hasAccount-accountJoin" />
+    <bpmn:task id="createAccount" name="Create new account" />
+    <bpmn:exclusiveGateway id="accountJoin" name="Account ready" />
+    <bpmn:task id="review" name="Review report for automatic approval" />
+    <bpmn:exclusiveGateway id="amount" name="Amount under $200?" default="f-amount-approvalJoin" />
+    <bpmn:exclusiveGateway id="approvalJoin" name="Approval complete" />
+    <bpmn:task id="sendReimbursement" name="Send reimbursement to bank account" />
+    <bpmn:task id="sendRejection" name="Send rejection notice by email" />
+    <bpmn:task id="sendInProgress" name="Send approval in progress email" />
+    <bpmn:task id="sendCancellation" name="Send cancellation notice by email" />
+    <bpmn:endEvent id="reimbursed" name="Reimbursement completed" />
+    <bpmn:endEvent id="rejected" name="Rejection notice sent" />
+    <bpmn:endEvent id="inProgress" name="Approval in progress notice sent" />
+    <bpmn:endEvent id="cancelled" name="Re-submit expense report" />
+    <bpmn:task id="approve" name="Approve expense report" />
+    <bpmn:exclusiveGateway id="approvalResult" name="Approved?" default="f-approvalResult-sendRejection" />
+    <bpmn:boundaryEvent id="progress" name="Approval in progress" attachedToRef="approve" cancelActivity="false">
+      <bpmn:timerEventDefinition id="progress-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="timeout" name="Process timeout" attachedToRef="approve">
+      <bpmn:timerEventDefinition id="timeout-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f-received-hasAccount" sourceRef="received" targetRef="hasAccount" />
+    <bpmn:sequenceFlow id="f-hasAccount-createAccount" name="No" sourceRef="hasAccount" targetRef="createAccount">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasAccount = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-hasAccount-accountJoin" name="Yes" sourceRef="hasAccount" targetRef="accountJoin" />
+    <bpmn:sequenceFlow id="f-createAccount-accountJoin" sourceRef="createAccount" targetRef="accountJoin" />
+    <bpmn:sequenceFlow id="f-accountJoin-review" sourceRef="accountJoin" targetRef="review" />
+    <bpmn:sequenceFlow id="f-review-amount" sourceRef="review" targetRef="amount" />
+    <bpmn:sequenceFlow id="f-amount-approve" name="No" sourceRef="amount" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">amount &gt;= 200</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-amount-approvalJoin" name="Yes" sourceRef="amount" targetRef="approvalJoin" />
+    <bpmn:sequenceFlow id="f-approve-approvalResult" sourceRef="approve" targetRef="approvalResult" />
+    <bpmn:sequenceFlow id="f-approvalResult-approvalJoin" name="Approved" sourceRef="approvalResult" targetRef="approvalJoin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-approvalResult-sendRejection" name="Rejected" sourceRef="approvalResult" targetRef="sendRejection" />
+    <bpmn:sequenceFlow id="f-approvalJoin-sendReimbursement" sourceRef="approvalJoin" targetRef="sendReimbursement" />
+    <bpmn:sequenceFlow id="f-sendReimbursement-reimbursed" sourceRef="sendReimbursement" targetRef="reimbursed" />
+    <bpmn:sequenceFlow id="f-sendRejection-rejected" sourceRef="sendRejection" targetRef="rejected" />
+    <bpmn:sequenceFlow id="f-progress-sendInProgress" sourceRef="progress" targetRef="sendInProgress" />
+    <bpmn:sequenceFlow id="f-sendInProgress-inProgress" sourceRef="sendInProgress" targetRef="inProgress" />
+    <bpmn:sequenceFlow id="f-timeout-sendCancellation" sourceRef="timeout" targetRef="sendCancellation" />
+    <bpmn:sequenceFlow id="f-sendCancellation-cancelled" sourceRef="sendCancellation" targetRef="cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

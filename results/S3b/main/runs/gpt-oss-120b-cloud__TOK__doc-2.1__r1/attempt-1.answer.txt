@@ -1,0 +1,124 @@
+```tok
+tok 1.0 "Service Degradation Handling"
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start s0 "Service degradation perceived"
+    task t1 "send problem parameters list"
+    end e_customer "Customer process ends"
+
+  lane customer_service "Customer Service"
+    task t2 "enter problem report into system T"
+    task t3 "compare problem report to SLA"
+    task t4 "determine counter measures and priorities"
+    task t5 "determine customer significance"
+    xor g1 "Customer premium?"
+      task t6 "link to extra problem fix process"
+    xor g2 "Significance affects counter measures?"
+      task t7 "re‑prioritize counter measures"
+    task t8 "create detailed problem report"
+    task t9 "send detailed problem report to Service Management"
+
+  lane service_management "Service Management"
+    task t10 "receive detailed problem report"
+    xor g3 "Problem analyzable by Service Management?"
+      task t11 "analyze problem"
+      task t12 "create trouble report (SM)"
+    task t13 "send detailed problem report to Resource Provisioning"
+    task t14 "receive status report from Resource Provisioning"
+    task t15 "prepare final status report"
+    xor g4 "Determine counter‑measure path"
+      task t16 "send actual service performance to Customer Service"
+      task t17 "undertake minor corrective actions"
+      task t18 "create problem resolution report"
+      task t19 "send problem resolution report to Customer Service"
+      task t20 "create request for automatic resource restoration"
+      task t21 "send restoration request to Resource Provisioning"
+    task t22 "receive trouble‑shooting report"
+    task t23 "create problem resolution report"
+    task t24 "send problem resolution report to Customer Service"
+
+  lane resource_provisioning "Resource Provisioning"
+    task t25 "receive detailed problem report"
+    xor g5 "Any problems detected?"
+      task t26 "create normal execution notification"
+      task t27 "analyze problem"
+      task t28 "create trouble report (RP)"
+    task t29 "include report in status report and send to Service Management"
+    task t30 "receive restoration request"
+    xor g6 "Restoration request within 2 days?"
+      task t31 "track all possible errors"
+      task t32 "undertake necessary corrective actions"
+      task t33 "create trouble‑shooting report"
+      task t34 "send trouble‑shooting report to Service Management"
+      end e_termination "Process terminated (timeout)"
+    end e_rp_end "Resource Provisioning process ends"
+
+  lane billing_collections "Billing & Collections"
+    task t35 "adjust billing"
+
+  # -----------------------------------------------------------------
+  # Sequence flows
+  flow s0 -> t1 -> t2 -> t3 -> t4 -> t5 -> g1
+  flow g1 -> t6 -> e_customer               # premium path ends here (not detailed)
+  flow g1 -> g2
+  flow g2 -> t7 -> t4                         # re‑prioritise back to measures
+  flow g2 -> t8
+  flow t8 -> t9
+  flow t9 -> t10
+  flow t10 -> g3
+  flow g3 -> t11 -> t12 -> t13
+  flow g3 -> t13
+  flow t13 -> t25
+  flow t25 -> g5
+  flow g5 -> t26 -> t29
+  flow g5 -> t27 -> t28 -> t29
+  flow t29 -> t14
+  flow t14 -> t15 -> g4
+  flow g4 -> t16 -> t24
+  flow g4 -> t17 -> t18 -> t19 -> t24
+  flow g4 -> t20 -> t21 -> t30
+  flow t30 -> g6
+  flow g6 -> t31 -> t32 -> t33 -> t34 -> t22
+  flow g6 -> e_termination
+  flow t22 -> t23 -> t24
+  flow t24 -> t9   # loop back if needed (optional, not specified)
+
+  # Paths back to Customer Service
+  flow t16 -> t9
+  flow t19 -> t9
+  flow t24 -> t9
+
+  # Customer Service receives reports
+  flow t9 -> t8  # (already defined)
+  flow t16 -> t9
+  flow t19 -> t9
+  flow t24 -> t9
+
+  # After Customer Service receives either performance or resolution report
+  flow t9 -> t8   # placeholder to keep flow continuity
+  flow t9 -> t8   # (ignore duplicate)
+
+  # Parallel activities in Customer Service
+  flow t9 -> and1 "Parallel start"
+  and1 -> create_cust_report "create customer report"
+  and1 -> report_sla_rebate "report SLA violation rebate"
+  create_cust_report -> send_cust_report "send customer report to Customer"
+  report_sla_rebate -> adjust_billing
+
+  # Billing flow
+  flow adjust_billing -> end e_billing
+
+  # Customer receives final report
+  send_cust_report -> end e_customer
+
+  # Parallel gateway join
+  and_join "Parallel end" -> end e_final
+
+  # Notes:
+  # - The extra problem fix process (t6) ends the premium path (not detailed).
+  # - The loop for re‑prioritisation goes from g2 back to t4 via t7.
+  # - The restoration timeout leads to a terminating end event (e_termination).
+  # - All paths eventually converge on the parallel activities in Customer Service,
+  #   after which the process ends with the customer receiving the report.
+```

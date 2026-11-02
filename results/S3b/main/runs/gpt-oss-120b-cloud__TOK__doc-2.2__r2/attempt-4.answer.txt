@@ -1,0 +1,94 @@
+```tok
+tok 1.0 "Switch‑over Process"
+
+pool org "Company"
+  lane customer "Customer"
+    start S "Switch‑over request"
+    task T1 "Transmit customer data"
+
+  lane cs "Customer Service"
+    task T2 "Receive customer data"
+    task T3 "Enter customer data into CRM"
+    task T4 "Compare data and check completeness"
+    xor G1 "Data errors?"
+      task T5 "Correct data errors"
+    xor G2 "Customer exists?"
+      task T6 "Create new customer object"
+    task T7 "Prepare contract documents"
+    xor G3 "Contract documents valid?"
+      task T8 "Analyze and resolve contract issues"
+    task T9 "Send confirmation document to customer"
+    task T10 "Create CIS contract"
+    task T11 "Customer checks contract details"
+    xor G4 "Customer withdraws?"
+    end E_withdraw "Process withdrawn"
+    task T12 "Wait for acceptance (7 days)"
+    task T13 "Switch date reached"
+    and P2_start "Parallel after switch date"
+    task T14 "Import meter data into systems"
+    end E_complete "Process completed"
+
+  lane cis "CIS"
+    task T15 "Automated contract check"
+    task T16 "Send switch request to Grid Operator"
+
+  lane grid "Grid Operator"
+    xor G5 "Supplier concurrence?"
+      and P1 "Concurrence handling"
+        task T17 "Inform all suppliers"
+        task T18 "Terminate old supplier agreement"
+      and P1_end "Concurrence handling join"
+    task T19 "Create CIS contract (no concurrence)"
+    task T20 "Send meter data to Customer Service"
+    task T21 "Send meter data to Old Supplier"
+    task T22 "Compute final billing and send to Old Supplier"
+    and P2_end "Parallel after switch date join"
+
+  lane old "Old Supplier"
+    task T23 "Create final billing for customer"
+    task T24 "Send final billing to customer"
+
+# Sequence flows
+flow S -> T1
+flow T1 -> T2
+flow T2 -> T3
+flow T3 -> T4
+flow T4 -> G1
+flow G1 -> T5 "errors"
+flow G1 -> G2 "no errors"
+flow T5 -> T4
+flow G2 -> T6 "not existing"
+flow G2 -> T7 "existing"
+flow T6 -> T7
+flow T7 -> T15
+flow T15 -> G3
+flow G3 -> T8 "invalid"
+flow G3 -> T9 "valid"
+flow T8 -> T7
+flow T9 -> T16
+flow T16 -> G5
+flow G5 -> P1 "concurrence"
+flow G5 -> T19 "no concurrency"
+flow P1 -> T17
+flow P1 -> T18
+flow T17 -> P1_end
+flow T18 -> P1_end
+flow P1_end -> T10
+flow T19 -> T10
+flow T10 -> T11
+flow T11 -> G4
+flow G4 -> E_withdraw "withdraw"
+flow G4 -> T12 "accept"
+flow T12 -> T13
+flow T13 -> P2_start
+flow P2_start -> T20
+flow P2_start -> T21
+flow P2_start -> T22
+flow T20 -> T14
+flow T14 -> P2_end
+flow T21 -> P2_end
+flow T22 -> T23
+flow T23 -> T24
+flow T24 -> P2_end
+flow P2_end -> E_complete
+```

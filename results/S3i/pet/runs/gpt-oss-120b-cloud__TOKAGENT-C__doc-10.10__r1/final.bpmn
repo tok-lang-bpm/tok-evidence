@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Fault handling process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Fault handling process" isExecutable="true">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="fault_detector" name="Fault Detector">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report_failure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mpo" name="MPO">
+        <bpmn:flowNodeRef>report_or_suspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>suspect_fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>examine_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_failure_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_failure_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_go_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_msp_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fix_fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>share_results</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_resolution_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_resolution_join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_go_resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_msp_resolution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Failure occurrence" />
+    <bpmn:task id="report_failure" name="Report failure to MPO" />
+    <bpmn:exclusiveGateway id="report_or_suspect" name="Report or suspect?" default="f-report_or_suspect-suspect_fault" />
+    <bpmn:task id="suspect_fault" name="MPO suspects fault" />
+    <bpmn:task id="examine_failure" name="Examine failure" />
+    <bpmn:exclusiveGateway id="confirm" name="Failure confirmed?" default="f-confirm-reject" />
+    <bpmn:endEvent id="reject" name="Failure rejected" />
+    <bpmn:parallelGateway id="inform_failure_split" />
+    <bpmn:parallelGateway id="inform_failure_join" />
+    <bpmn:task id="inform_go_failure" name="Inform GO about failure" />
+    <bpmn:task id="inform_msp_failure" name="Inform MSP about failure" />
+    <bpmn:task id="fix_fault" name="Fix fault at measuring device" />
+    <bpmn:task id="share_results" name="Share repair results with fault detector" />
+    <bpmn:parallelGateway id="inform_resolution_split" />
+    <bpmn:parallelGateway id="inform_resolution_join" />
+    <bpmn:task id="inform_go_resolution" name="Inform GO about resolution" />
+    <bpmn:task id="inform_msp_resolution" name="Inform MSP about resolution" />
+    <bpmn:endEvent id="completed" name="Process completed" />
+    <bpmn:sequenceFlow id="f-start-report_or_suspect" sourceRef="start" targetRef="report_or_suspect" />
+    <bpmn:sequenceFlow id="f-report_or_suspect-report_failure" sourceRef="report_or_suspect" targetRef="report_failure">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-report_or_suspect-suspect_fault" sourceRef="report_or_suspect" targetRef="suspect_fault" />
+    <bpmn:sequenceFlow id="f-report_failure-examine_failure" sourceRef="report_failure" targetRef="examine_failure" />
+    <bpmn:sequenceFlow id="f-suspect_fault-examine_failure" sourceRef="suspect_fault" targetRef="examine_failure" />
+    <bpmn:sequenceFlow id="f-examine_failure-confirm" sourceRef="examine_failure" targetRef="confirm" />
+    <bpmn:sequenceFlow id="f-confirm-inform_failure_split" sourceRef="confirm" targetRef="inform_failure_split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-confirm-reject" sourceRef="confirm" targetRef="reject" />
+    <bpmn:sequenceFlow id="f-inform_failure_split-inform_go_failure" sourceRef="inform_failure_split" targetRef="inform_go_failure" />
+    <bpmn:sequenceFlow id="f-inform_failure_split-inform_msp_failure" sourceRef="inform_failure_split" targetRef="inform_msp_failure" />
+    <bpmn:sequenceFlow id="f-inform_go_failure-inform_failure_join" sourceRef="inform_go_failure" targetRef="inform_failure_join" />
+    <bpmn:sequenceFlow id="f-inform_msp_failure-inform_failure_join" sourceRef="inform_msp_failure" targetRef="inform_failure_join" />
+    <bpmn:sequenceFlow id="f-inform_failure_join-fix_fault" sourceRef="inform_failure_join" targetRef="fix_fault" />
+    <bpmn:sequenceFlow id="f-fix_fault-share_results" sourceRef="fix_fault" targetRef="share_results" />
+    <bpmn:sequenceFlow id="f-share_results-inform_resolution_split" sourceRef="share_results" targetRef="inform_resolution_split" />
+    <bpmn:sequenceFlow id="f-inform_resolution_split-inform_go_resolution" sourceRef="inform_resolution_split" targetRef="inform_go_resolution" />
+    <bpmn:sequenceFlow id="f-inform_resolution_split-inform_msp_resolution" sourceRef="inform_resolution_split" targetRef="inform_msp_resolution" />
+    <bpmn:sequenceFlow id="f-inform_go_resolution-inform_resolution_join" sourceRef="inform_go_resolution" targetRef="inform_resolution_join" />
+    <bpmn:sequenceFlow id="f-inform_msp_resolution-inform_resolution_join" sourceRef="inform_msp_resolution" targetRef="inform_resolution_join" />
+    <bpmn:sequenceFlow id="f-inform_resolution_join-completed" sourceRef="inform_resolution_join" targetRef="completed" />
+  </bpmn:process>
+</bpmn:definitions>

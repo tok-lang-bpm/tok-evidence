@@ -1,0 +1,85 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Farming Bot
+
+Players want to create custom farming bots, that help them gather resources.
+First you have to find out which resources you want.
+Up to 10 resources in parallel can be collected, some resources are more urgently needed than others.
+Some resources are required to create tools that are needed to gather other resources (create a custom logic of the dependencies in your game).
+After all preferences are collected, your bot starts farming.
+Sometimes,  random natural disasters strike and set your bot back.
+Whenever some milestones are reached, you are notified.
+During farming it is possible to update the list of to be farmed materials (at all times).
+After the bot is finished, you should be able to brag to selected friends and/or send them materials.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Farming Bot"
+
+pool org "Organisation"
+  lane player "Player"
+    start s "Start"
+    task t_find "Find resources to farm"
+    xor g_tool "Is a tool needed?"
+    task t_create "Create tool"
+  lane bot "Bot"
+    and g_collect_split "Start collecting"
+    task t_collect "Collect resources"
+    and g_collect_join "Collect done"
+    and g_farm_split "Start farming"
+    task t_farm "Farm resources"
+    task t_notify "Notify milestones"
+    and g_farm_join "Farming sync"
+    xor g_disaster "Natural disaster occurred?"
+    task t_handle "Handle disaster"
+    xor g_update "Update resource list?"
+    task t_update "Update list of farmed materials"
+    end e_finish "Farming finished"
+    and g_brag_split "Post‑farming split"
+    task t_brag "Brag to selected friends"
+    task t_send "Send materials to friends"
+    and g_brag_join "Post‑farming done"
+    end e_end "Process completed"
+
+# Flows
+flow s -> t_find -> g_tool
+flow g_tool -> t_create -> g_collect_split
+flow g_tool -> g_collect_split
+flow g_collect_split -> t_collect -> g_collect_join
+flow g_collect_join -> g_farm_split
+flow g_farm_split -> t_farm -> g_farm_join
+flow g_farm_split -> t_notify -> g_farm_join
+flow g_farm_join -> g_disaster
+flow g_disaster -> t_handle -> g_farm_split
+flow g_disaster -> g_update
+flow g_update -> t_update -> g_farm_split
+flow g_update -> e_finish
+flow e_finish -> g_brag_split
+flow g_brag_split -> t_brag -> g_brag_join
+flow g_brag_split -> t_send -> g_brag_join
+flow g_brag_join -> e_end
+```
+
+The tok checker reports these problems in it:
+
+- line 21: error E011: incoming flow to a start event or outgoing flow from an end event (e_finish)
+- line 10: warning W051: join of a different type than the split (e.g. AND split joined by XOR) (g_collect_split)
+- line 12: warning W020: gateway with one incoming and one outgoing flow is unnecessary (g_collect_join)
+- line 30: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_tool-t_create)
+- line 31: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_tool-g_collect_split)
+- line 37: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_disaster-t_handle)
+- line 38: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_disaster-g_update)
+- line 39: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_update-t_update)
+- line 40: warning W021: branch of an XOR/OR split without label, condition or default status (f-g_update-e_finish)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

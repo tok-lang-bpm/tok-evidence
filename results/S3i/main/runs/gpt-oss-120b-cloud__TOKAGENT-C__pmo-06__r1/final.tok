@@ -1,0 +1,45 @@
+tok 1.0 "Order process"
+
+pool company "Company"
+  lane customer "Customer"
+    start s1 "Order placed"
+    xor X1 "Order channel?"
+    task o_online "Place order online"
+    task o_phone "Place order by phone"
+    xor X2 "Order placed"
+    task receive_tracking "Receive tracking information"
+    task receive_delivery "Receive delivery"
+    xor G1 "Feedback or return?"
+    task provide_feedback "Provide feedback or return"
+    end end_success "Process completed"
+    end end_feedback "Feedback handled"
+  lane system "System"
+    task gen_conf "Generate and send order confirmation"
+    task gen_label "Generate shipping label"
+    task send_tracking "Send tracking information to customer"
+    task monitor "Monitor shipment"
+  lane warehouse "Warehouse"
+    task pick "Pick items"
+    task pack "Pack items"
+    task handover "Hand over order to logistics provider"
+  lane logistics "Logistics"
+    task deliver "Deliver shipment"
+  flow s1 -> X1
+  flow X1 -> o_online "online"
+  flow X1 -> o_phone "phone"
+  flow o_online -> X2
+  flow o_phone -> X2
+  flow X2 -> gen_conf
+  flow gen_conf -> pick
+  flow pick -> pack
+  flow pack -> gen_label
+  flow gen_label -> handover
+  flow handover -> deliver
+  flow deliver -> send_tracking
+  flow send_tracking -> receive_tracking
+  flow receive_tracking -> monitor
+  flow monitor -> receive_delivery
+  flow receive_delivery -> G1
+  flow G1 -> end_success "no feedback"
+  flow G1 -> provide_feedback "feedback"
+  flow provide_feedback -> end_feedback

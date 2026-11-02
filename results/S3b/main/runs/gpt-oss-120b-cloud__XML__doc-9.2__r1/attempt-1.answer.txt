@@ -1,0 +1,101 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions"
+                  targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="process1" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="process1" isExecutable="false">
+    <!-- Lanes -->
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="lane_csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwReply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateDetailsDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveDecline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>generateRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>waitReply2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gwAfterRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>updateDetailsTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>archiveTimeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endCancelTimeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_admin" name="Administration">
+        <bpmn:flowNodeRef>moveToAdmin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Flow nodes -->
+    <bpmn:startEvent id="start" name="Process start" />
+    <bpmn:task id="sendOffer" name="Send Mortgage offer to customer" />
+    <bpmn:task id="waitReply" name="Wait for customer reply" />
+    <bpmn:exclusiveGateway id="gwReply" name="Customer reply" />
+    
+    <!-- Decline path -->
+    <bpmn:task id="updateDetailsDecline" name="Update case details (decline)" />
+    <bpmn:task id="archiveDecline" name="Archive case (decline)" />
+    <bpmn:endEvent id="endCancel" name="Case cancelled" />
+    
+    <!-- Complete with all documents path -->
+    <bpmn:task id="moveToAdmin" name="Move case to Administration for completion" />
+    <bpmn:endEvent id="endComplete" name="Case completed" />
+    
+    <!-- Missing prerequisite documents path -->
+    <bpmn:task id="generateRequest" name="Generate request for outstanding documents" />
+    <bpmn:task id="waitReply2" name="Wait for customer reply (after request)" />
+    <bpmn:exclusiveGateway id="gwAfterRequest" name="Reply received after request?" />
+    
+    <bpmn:task id="updateDetailsTimeout" name="Update case details (no reply)" />
+    <bpmn:task id="archiveTimeout" name="Archive case (no reply)" />
+    <bpmn:endEvent id="endCancelTimeout" name="Case cancelled (no reply)" />
+    
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sendOffer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sendOffer" targetRef="waitReply" />
+    <bpmn:sequenceFlow id="f3" sourceRef="waitReply" targetRef="gwReply" />
+    
+    <!-- Decline -->
+    <bpmn:sequenceFlow id="f4" name="decline" sourceRef="gwReply" targetRef="updateDetailsDecline">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reply = 'decline'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f5" sourceRef="updateDetailsDecline" targetRef="archiveDecline" />
+    <bpmn:sequenceFlow id="f6" sourceRef="archiveDecline" targetRef="endCancel" />
+    
+    <!-- Complete with all prerequisite documents -->
+    <bpmn:sequenceFlow id="f7" name="all documents provided" sourceRef="gwReply" targetRef="moveToAdmin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reply = 'completeAll'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f8" sourceRef="moveToAdmin" targetRef="endComplete" />
+    
+    <!-- Missing prerequisite documents -->
+    <bpmn:sequenceFlow id="f9" name="missing documents" sourceRef="gwReply" targetRef="generateRequest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reply = 'missingDocs'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f10" sourceRef="generateRequest" targetRef="waitReply2" />
+    <bpmn:sequenceFlow id="f11" sourceRef="waitReply2" targetRef="gwAfterRequest" />
+    
+    <!-- Reply received after request -->
+    <bpmn:sequenceFlow id="f12" name="documents now complete" sourceRef="gwAfterRequest" targetRef="moveToAdmin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reply = 'provided'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <!-- No reply within 2 weeks -->
+    <bpmn:sequenceFlow id="f13" name="no reply" sourceRef="gwAfterRequest" targetRef="updateDetailsTimeout">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">reply = 'none'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f14" sourceRef="updateDetailsTimeout" targetRef="archiveTimeout" />
+    <bpmn:sequenceFlow id="f15" sourceRef="archiveTimeout" targetRef="endCancelTimeout" />
+  </bpmn:process>
+</bpmn:definitions>
+```

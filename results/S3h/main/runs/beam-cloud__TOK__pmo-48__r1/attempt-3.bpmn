@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="App For Participating at the Vienna Night Run" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Vienna Night Run" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="App For Participating at the Vienna Night Run" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="participant" name="Participant">
+        <bpmn:flowNodeRef>start_participation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>select_block</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>run_5km</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>train</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>get_number</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>from_home</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>from_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>travel_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>run_race</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>drink</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>parallel_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_time</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>speed_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>goal_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>travel_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>finish</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="gadget" name="Fitness Gadget">
+        <bpmn:flowNodeRef>measure_time</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_participation" name="Want to participate" />
+    <bpmn:task id="select_block" name="Select starting block" />
+    <bpmn:task id="run_5km" name="Run for 5km" />
+    <bpmn:task id="train" name="Train" />
+    <bpmn:task id="check" name="Check" />
+    <bpmn:task id="get_number" name="Get starting number" />
+    <bpmn:task id="from_home" name="Go there from home" />
+    <bpmn:task id="from_work" name="Leave directly from work" />
+    <bpmn:exclusiveGateway id="travel_merge" name="Travel route merged" />
+    <bpmn:parallelGateway id="parallel_start" name="Run and drink" />
+    <bpmn:task id="run_race" name="Run" />
+    <bpmn:task id="drink" name="Drink" />
+    <bpmn:parallelGateway id="parallel_end" name="Running and drinking done" />
+    <bpmn:task id="receive_time" name="Receive final running time" />
+    <bpmn:exclusiveGateway id="speed_check" name="Can do it in less than 25 minutes?" default="f-speed_check-train" />
+    <bpmn:exclusiveGateway id="goal_check" name="Achieved the goal?" default="f-goal_check-train" />
+    <bpmn:exclusiveGateway id="travel_check" name="More than one hour left?" default="f-travel_check-from_work" />
+    <bpmn:endEvent id="finish" name="Finished" />
+    <bpmn:task id="measure_time" name="Measure the time" />
+    <bpmn:sequenceFlow id="f-start_participation-select_block" sourceRef="start_participation" targetRef="select_block" />
+    <bpmn:sequenceFlow id="f-select_block-run_5km" sourceRef="select_block" targetRef="run_5km" />
+    <bpmn:sequenceFlow id="f-run_5km-measure_time" sourceRef="run_5km" targetRef="measure_time" />
+    <bpmn:sequenceFlow id="f-measure_time-speed_check" sourceRef="measure_time" targetRef="speed_check" />
+    <bpmn:sequenceFlow id="f-speed_check-get_number" name="yes" sourceRef="speed_check" targetRef="get_number">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">time &lt; 25</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-speed_check-train" name="no" sourceRef="speed_check" targetRef="train" />
+    <bpmn:sequenceFlow id="f-train-check" sourceRef="train" targetRef="check" />
+    <bpmn:sequenceFlow id="f-check-goal_check" sourceRef="check" targetRef="goal_check" />
+    <bpmn:sequenceFlow id="f-goal_check-get_number" name="yes" sourceRef="goal_check" targetRef="get_number">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">achieved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-goal_check-train" name="no" sourceRef="goal_check" targetRef="train" />
+    <bpmn:sequenceFlow id="f-get_number-travel_check" sourceRef="get_number" targetRef="travel_check" />
+    <bpmn:sequenceFlow id="f-travel_check-from_home" name="yes" sourceRef="travel_check" targetRef="from_home">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hoursLeft &gt; 1</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-travel_check-from_work" name="no" sourceRef="travel_check" targetRef="from_work" />
+    <bpmn:sequenceFlow id="f-from_home-travel_merge" sourceRef="from_home" targetRef="travel_merge" />
+    <bpmn:sequenceFlow id="f-from_work-travel_merge" sourceRef="from_work" targetRef="travel_merge" />
+    <bpmn:sequenceFlow id="f-travel_merge-parallel_start" sourceRef="travel_merge" targetRef="parallel_start" />
+    <bpmn:sequenceFlow id="f-parallel_start-run_race" sourceRef="parallel_start" targetRef="run_race" />
+    <bpmn:sequenceFlow id="f-parallel_start-drink" sourceRef="parallel_start" targetRef="drink" />
+    <bpmn:sequenceFlow id="f-run_race-parallel_end" sourceRef="run_race" targetRef="parallel_end" />
+    <bpmn:sequenceFlow id="f-drink-parallel_end" sourceRef="drink" targetRef="parallel_end" />
+    <bpmn:sequenceFlow id="f-parallel_end-receive_time" sourceRef="parallel_end" targetRef="receive_time" />
+    <bpmn:sequenceFlow id="f-receive_time-finish" sourceRef="receive_time" targetRef="finish" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,39 @@
+tok 1.0 "Car Service"
+
+pool police "Police car service app"
+  lane system "System"
+    start serviced "Service successfully done"
+    task check "Check if the car is still registered"
+    xor registered "Car registered?"
+    task notify "Notify the owner"
+    eventgw wait
+    catch visit "Owner comes to service" message="Owner comes to service"
+    catch late "30 days passed" timer=P30D
+    task fine "Fine the owner"
+    end fined "Owner fined"
+    end notregistered "No reminder needed"
+    and split
+    task status "Send status updates via email"
+    and joined
+  lane owner "Car owner"
+    task pay "Pay through the app"
+  lane mechanic "Mechanic"
+    task problems "Enter the problems of the car"
+    task repair "Repair the car"
+    task success "Enter that the repair was successful"
+    task next "Enter the time for the next service"
+    end done "Service completed"
+
+flow serviced -> check -> registered
+flow registered -> notify "yes" when="registered = true"
+flow registered -> notregistered "no" default
+flow notify -> wait
+flow wait -> visit
+flow wait -> late
+flow late -> fine -> fined
+flow visit -> problems -> split
+flow split -> status
+flow split -> repair
+flow status -> joined
+flow repair -> joined
+flow joined -> pay -> success -> next -> done

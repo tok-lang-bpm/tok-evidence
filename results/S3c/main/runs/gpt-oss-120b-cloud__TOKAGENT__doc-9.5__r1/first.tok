@@ -1,0 +1,51 @@
+tok 1.0
+
+pool Company "Company" {
+  lane employee "Employee" {
+    start
+    task receive-report "Receive Expense Report"
+    flow start -> receive-report
+    gateway check-account xor "Employee has account?"
+    flow receive-report -> check-account
+    task create-account "Create New Account"
+    flow check-account -> create-account "no"
+    flow check-account -> review-report "yes"
+  }
+  lane system "System" {
+    task review-report "Review Expense Report for Automatic Approval"
+    flow receive-report -> review-report
+    gateway amount-decision xor "Amount under $200?"
+    flow review-report -> amount-decision
+    task auto-approve "Automatically Approve Expense Report"
+    flow amount-decision -> auto-approve "yes"
+    task request-supervisor "Request Supervisor Approval"
+    flow amount-decision -> request-supervisor "no"
+    task supervisor-approval "Supervisor Approves Expense Report"
+    flow request-supervisor -> supervisor-approval
+    // Timers on supervisor approval
+    boundary timer7 on=supervisor-approval timer=P7D noninterrupting
+    task send-progress-email "Send Approval In Progress Email"
+    flow timer7 -> send-progress-email
+    flow send-progress-email -> supervisor-approval
+    boundary timer30 on=supervisor-approval timer=P30D
+    task send-cancellation-email "Send Cancellation Notice Email"
+    task resubmit-report "Resubmit Expense Report"
+    flow timer30 -> send-cancellation-email
+    flow send-cancellation-email -> resubmit-report
+    gateway approval-decision xor "Supervisor approves?"
+    flow supervisor-approval -> approval-decision "approve"
+    flow supervisor-approval -> approval-decision "reject"
+    task rejection-email "Send Rejection Notice Email"
+    flow approval-decision -> rejection-email "reject"
+    task reimbursement "Reimburse to Direct Deposit"
+    flow approval-decision -> reimbursement "approve"
+    // End paths
+    end end-success "End"
+    end end-reject "End"
+    end end-cancel "End"
+    flow auto-approve -> reimbursement
+    flow reimbursement -> end-success
+    flow rejection-email -> end-reject
+    flow resubmit-report -> end-cancel
+  }
+}

@@ -1,0 +1,47 @@
+```tok
+tok 1.0 "Mail processing"
+
+pool org "Organization"
+  lane mail_processing "Mail Processing Unit"
+    start start "Mail collected"
+    task collect "Collect mail from the party"
+    task sort_unopened "Sort unopened mail into business areas"
+    task distribute "Distribute mail"
+    flow start -> collect -> sort_unopened -> distribute
+
+  lane registry "Registry"
+    task receive "Receive mail"
+    task open_sort "Open and sort mail into groups"
+    task register "Register mail in manual incoming Mail Register"
+    task quality_check "Perform quality check"
+    xor compliant "Mail compliant?"
+    task compile_rejection "Compile rejection list"
+    task send_rejection "Send rejection list to party"
+    task capture_details "Capture matter details and provide to Cashier"
+    and split "Parallel split"
+    task prepare_envelope "Prepare envelope with receipt and documents and post to party"
+    and join "Parallel join"
+    end completed "Process completed"
+    end rejected "Process ended – mail rejected"
+
+  lane cashier "Cashier"
+    task take_fees "Take applicable fees"
+    task capture_party "Capture Party Details"
+    task print_file "Print Physical Court File"
+
+# Cross‑lane flows
+flow distribute -> receive
+flow receive -> open_sort -> register -> quality_check -> compliant
+
+# Decision branches
+flow compliant "yes" -> capture_details
+flow compliant "no" -> compile_rejection -> send_rejection -> rejected
+
+# Parallel processing for compliant mail
+flow capture_details -> split
+flow split -> take_fees
+flow split -> prepare_envelope
+flow take_fees -> capture_party -> print_file -> join
+flow prepare_envelope -> join
+flow join -> completed
+```

@@ -1,0 +1,55 @@
+tok 1.0 "Work Accident"
+
+pool main "Work Accident"
+  lane employee "Employee"
+    start s "Work accident or near miss occurs"
+    task inform "Inform employer immediately of work accident, near-miss incident, serious risk or defect in protection systems"
+  lane employer "Employer"
+    xor gw_type "What was reported?"
+    xor gw_group "Which protected group applies?"
+    xor gw_severity "Fatality or serious injury?"
+    xor gw_emergency "Already reported to emergency services?"
+    xor join_cap "Merge severity paths"
+    xor split_cap "Insured person killed or unable to work for three days?"
+    task report_li "Report work accident with fatality or serious injury to Labour Inspectorate"
+    task report_insurer "Report work accident with death or three-day incapacity to accident insurance provider within five days"
+    end e_other "Employer notified"
+    end e_employee "Employee accident processed"
+  lane student "Student / Schoolchild"
+    task student_report "Report accident to competent directorate"
+  lane school "Educational Institution"
+    task school_report "Report work accident with physical injury or fatality to accident insurance provider in triplicate within five days"
+    end e_student "Student accident processed"
+  lane self "Self-employed Person"
+    task self_report "Report accidents involving employed persons or yourself to accident insurance provider in good time"
+    end e_self "Self-employed accident processed"
+  lane private "Insured Party (Private Insurance)"
+    task private_report "Report accident in writing immediately to private insurance provider"
+    xor gw_private_fatality "Fatality occurred?"
+    task private_fatality "Report fatality to private insurance provider within three days"
+    end e_private "Private insurance accident processed"
+  lane other "Other"
+    end e_other2 "No further reporting required"
+
+flow s -> inform -> gw_type
+flow gw_type -> gw_group "Work accident" when="report_type = \"work_accident\""
+flow gw_type -> e_other "Other notification" default
+flow gw_group -> gw_severity "Insured employee" when="protected_group = \"insured_employee\""
+flow gw_group -> student_report "Student or schoolchild" when="protected_group = \"student\""
+flow gw_group -> self_report "Self-employed person" when="protected_group = \"self_employed\""
+flow gw_group -> private_report "Privately insured person" when="protected_group = \"private_insured\""
+flow gw_group -> e_other2 "Other group" default
+flow gw_severity -> gw_emergency "Yes" when="fatality_or_serious_injury = true"
+flow gw_severity -> join_cap "No" default
+flow gw_emergency -> report_li "No" when="reported_to_emergency_services = false"
+flow gw_emergency -> join_cap "Yes" default
+flow report_li -> join_cap -> split_cap
+flow split_cap -> report_insurer "Yes" when="killed_or_three_day_incapacity = true"
+flow split_cap -> e_employee "No" default
+flow report_insurer -> e_employee
+flow student_report -> school_report -> e_student
+flow self_report -> e_self
+flow private_report -> gw_private_fatality
+flow gw_private_fatality -> private_fatality "Yes" when="fatality = true"
+flow gw_private_fatality -> e_private "No" default
+flow private_fatality -> e_private

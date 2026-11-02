@@ -1,0 +1,99 @@
+tok 1.0
+
+pool teleco "TELECO"
+  lane customer "Customer"
+    start start "Service degradation perceived"
+    task send_params "Send problem parameters list to Customer Service"
+    task create_customer_report "Create report for the customer"
+    task report_sla_rebate "Report SLA violation rebate to Billing \u0026 Collections"
+    task send_customer_report "Send customer report to Customer"
+  lane cs "Customer Service"
+    task enter_report "Enter problem report into system T"
+    task compare_sla "Compare problem report to customer SLA"
+    task determine_measures "Determine counter measures and priorities"
+    task create_detailed_report "Create detailed problem report"
+    task send_detailed_to_sm "Send detailed problem report to Service Management"
+    task send_detailed_to_rp "Send detailed problem report to Resource Provisioning"
+    task send_problem_resolution "Send problem resolution report to Customer Service"
+    task send_actual_performance_to_cs "Send actual service performance to Customer Service"
+    xor join_before_parallel "Join before parallel activities"
+    and parallel_start "Parallel activities start"
+    and parallel_end "Parallel activities end"
+    end end "Process ends"
+  lane sm "Service Management"
+    task prepare_final_status "Prepare final status report"
+    task extra_fix "Extra problem fix process"
+    task minor_corrective "Undertake minor corrective actions"
+    task create_restoration_request "Create request for automatic resource restoration"
+    task send_restoration_request_to_rp "Send restoration request to Resource Provisioning"
+    task sm_create_problem_resolution "Create problem resolution report"
+    task sm_send_problem_resolution "Send problem resolution report to Customer Service"
+    xor premium_gw "Is customer premium?"
+    xor analyzable_gw "Is problem analyzable by Service Management?"
+    xor final_alt "What is the final status?"
+  lane rp "Resource Provisioning"
+    task rp_receive "Receive detailed problem report"
+    task check_problems "Check for possible problems"
+    xor problems_gw "Problems detected?"
+    task normal_notification "Create normal service execution notification"
+    task rp_analyze "Analyze problem and create trouble report"
+    task send_status "Include report in status report and send to Service Management"
+    task rp_receive_restoration "Receive restoration request"
+    task track_errors "Track all possible errors"
+    task rp_corrective "Undertake corrective actions"
+    task create_troubleshooting_report "Create trouble-shooting report"
+    task send_troubleshooting_to_sm "Send trouble-shooting report to Service Management"
+  lane bc "Billing \u0026 Collections"
+    # placeholder lane
+  lane es "Electronic Service"
+    task determine_significance "Determine customer significance"
+    xor significance_gw "Is significance affecting counter measures?"
+
+# Flows
+flow start -> send_params
+flow send_params -> enter_report
+flow enter_report -> compare_sla
+flow compare_sla -> determine_measures
+flow determine_measures -> determine_significance
+flow determine_significance -> premium_gw
+flow premium_gw -> extra_fix "yes"
+flow premium_gw -> significance_gw "no"
+flow extra_fix -> significance_gw
+flow significance_gw -> determine_measures "yes"
+flow significance_gw -> create_detailed_report "no"
+flow create_detailed_report -> send_detailed_to_sm
+flow send_detailed_to_sm -> analyzable_gw
+flow analyzable_gw -> rp_receive "no"
+flow analyzable_gw -> send_detailed_to_rp "yes"
+flow send_detailed_to_rp -> rp_receive
+flow rp_receive -> check_problems
+flow check_problems -> problems_gw
+flow problems_gw -> normal_notification "no"
+flow problems_gw -> rp_analyze "yes"
+flow normal_notification -> send_status
+flow rp_analyze -> send_status
+flow send_status -> prepare_final_status
+flow prepare_final_status -> final_alt
+flow final_alt -> send_actual_performance_to_cs "no problem"
+flow final_alt -> minor_corrective "minor corrective"
+flow final_alt -> create_restoration_request "auto restoration"
+flow send_actual_performance_to_cs -> join_before_parallel
+flow minor_corrective -> sm_create_problem_resolution
+flow sm_create_problem_resolution -> sm_send_problem_resolution
+flow sm_send_problem_resolution -> send_problem_resolution
+flow send_problem_resolution -> join_before_parallel
+flow create_restoration_request -> send_restoration_request_to_rp
+flow send_restoration_request_to_rp -> rp_receive_restoration
+flow rp_receive_restoration -> track_errors
+flow track_errors -> rp_corrective
+flow rp_corrective -> create_troubleshooting_report
+flow create_troubleshooting_report -> send_troubleshooting_to_sm
+flow send_troubleshooting_to_sm -> sm_create_problem_resolution
+flow join_before_parallel -> parallel_start
+flow parallel_start -> create_customer_report
+flow parallel_start -> report_sla_rebate
+flow parallel_start -> send_customer_report
+flow create_customer_report -> parallel_end
+flow report_sla_rebate -> parallel_end
+flow send_customer_report -> parallel_end
+flow parallel_end -> end

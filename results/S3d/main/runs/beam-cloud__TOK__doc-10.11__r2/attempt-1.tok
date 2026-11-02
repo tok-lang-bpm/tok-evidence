@@ -1,0 +1,31 @@
+tok 1.0 "GO, MSP and SP process"
+
+pool organisation "Organisation"
+  lane go "GO"
+    start start "Start"
+    task request_measurements "Request the measurements"
+    task process_measured_values "Process the measured values"
+    task send_changed_values "Send the changed values"
+    task transmit_readings "Transmit the readings"
+    end done "Readings transmitted"
+  lane msp "MSP"
+    task check_request "Check the received request"
+    xor decide "Deny or perform?"
+    task deny_request "Deny the request"
+    task perform_measurement "Perform the measurement"
+    task inform_failure "Inform the GO about the failure of the reading"
+    task transmit_measured_values "Transmit the measured values to the GO"
+    end failed "Request denied"
+  lane sp "SP"
+
+flow start -> request_measurements -> check_request
+flow check_request -> decide
+flow decide -> deny_request "deny" when="denied"
+flow decide -> perform_measurement "perform" default
+flow deny_request -> inform_failure
+flow inform_failure -> failed
+flow perform_measurement -> transmit_measured_values
+flow transmit_measured_values -> process_measured_values
+flow process_measured_values -> send_changed_values
+flow send_changed_values -> transmit_readings
+flow transmit_readings -> done

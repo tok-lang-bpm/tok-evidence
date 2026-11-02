@@ -1,0 +1,67 @@
+tok 1.0 "Order Fulfillment Process"
+
+pool org "E‑commerce Company"
+  lane customer "Customer"
+    start start "Order placed"
+    end end_failed "Process ends (payment failure)"
+    end end_completed "Order completed successfully"
+    end end_returns "Returns process completed"
+
+  lane system "System"
+    task rec "Record order details"
+    task send_confirmation "Send shipping confirmation to customer"
+    task send_feedback "Send follow‑up email for feedback"
+    xor split_parallel "Parallel processing"
+    xor join_parallel "Parallel join"
+    xor issue_report "Customer reports issues?"
+    task notify_payment_fail "Notify customer of payment failure"
+
+  lane payment "Payment System"
+    task pay "Begin payment processing"
+    xor pay_success "Payment successful?"
+
+  lane inventory "Inventory System"
+    task check_stock "Check stock availability"
+    xor stock_ok "Items in stock?"
+    task backorder "Initiate back‑order"
+    task inform_delay "Inform customer of delay"
+    task wait_backorder "Receive back‑order and items available"
+    task update_inventory "Update inventory levels"
+
+  lane warehouse "Warehouse"
+    task pick "Pick items from warehouse"
+
+  lane quality "Quality Control"
+    task qc "Perform quality control checks"
+
+  lane packaging "Packaging"
+    task package "Package items (gift wrap if requested)"
+
+  lane shipping "Shipping Department"
+    task prepare_shipping "Prepare shipping documents and labels"
+    xor intl "International order?"
+    task customs_doc "Prepare customs documentation"
+    task dispatch "Dispatch order"
+
+  lane returns "Returns"
+    task init_return "Initiate returns process"
+    task send_return_label "Send return shipping label"
+    task receive_return "Receive returned items"
+    task inspect_return "Inspect returned items"
+    task process_refund "Process refund or replacement"
+
+  # Flow sequence
+  flow start -> rec -> pay -> pay_success
+  flow pay_success -> notify_payment_fail -> end_failed
+  flow pay_success -> check_stock -> stock_ok
+  flow stock_ok -> pick
+  flow stock_ok -> backorder -> inform_delay -> wait_backorder -> pick
+  flow pick -> qc -> split_parallel
+  flow split_parallel -> package
+  flow split_parallel -> prepare_shipping -> intl
+  flow intl -> customs_doc -> join_parallel
+  flow intl -> join_parallel
+  flow package -> join_parallel
+  flow join_parallel -> dispatch -> send_confirmation -> update_inventory -> send_feedback -> issue_report
+  flow issue_report -> end_completed
+  flow issue_report -> init_return -> send_return_label -> receive_return -> inspect_return -> process_refund -> end_returns

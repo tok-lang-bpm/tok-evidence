@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Mortgage offer handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:message id="Message_Mortgage_offer" name="Mortgage offer" />
+  <bpmn:message id="Message_Mortgage_declined" name="Mortgage declined" />
+  <bpmn:message id="Message_Completed_offer_documents" name="Completed offer documents" />
+  <bpmn:message id="Message_Outstanding_documents_request" name="Outstanding documents request" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Mortgage organisation" processRef="org-process" />
+    <bpmn:participant id="cust" name="Customer" />
+    <bpmn:messageFlow id="m-offer-cust" name="Mortgage offer" sourceRef="offer" targetRef="cust" messageRef="Message_Mortgage_offer" />
+    <bpmn:messageFlow id="m-cust-decline" name="Mortgage declined" sourceRef="cust" targetRef="decline" messageRef="Message_Mortgage_declined" />
+    <bpmn:messageFlow id="m-cust-docs" name="Completed offer documents" sourceRef="cust" targetRef="docs" messageRef="Message_Completed_offer_documents" />
+    <bpmn:messageFlow id="m-req-cust" name="Outstanding documents request" sourceRef="req" targetRef="cust" messageRef="Message_Outstanding_documents_request" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Mortgage offer handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="csr" name="Customer Service Representative">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>offer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>decline</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>dj</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>upd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>arch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>docs-check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>move</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>req</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>missing</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="adm" name="Administration">
+        <bpmn:flowNodeRef>complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Case started" />
+    <bpmn:sendTask id="offer" name="Send mortgage offer" messageRef="Message_Mortgage_offer" />
+    <bpmn:eventBasedGateway id="wait" name="Wait for reply" />
+    <bpmn:intermediateCatchEvent id="decline" name="Customer declines mortgage">
+      <bpmn:messageEventDefinition id="decline-def" messageRef="Message_Mortgage_declined" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="docs" name="Completed offer documents received">
+      <bpmn:messageEventDefinition id="docs-def" messageRef="Message_Completed_offer_documents" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timeout" name="No answer after 2 weeks">
+      <bpmn:timerEventDefinition id="timeout-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P14D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="dj" name="Merge" />
+    <bpmn:task id="upd" name="Update case details" />
+    <bpmn:task id="arch" name="Archive case" />
+    <bpmn:endEvent id="cancel" name="Mortgage cancelled" />
+    <bpmn:exclusiveGateway id="docs-check" name="All prerequisite documents attached?" default="f-docs-check-req" />
+    <bpmn:task id="move" name="Move case to administration" />
+    <bpmn:sendTask id="req" name="Request outstanding documents" messageRef="Message_Outstanding_documents_request" />
+    <bpmn:endEvent id="missing" name="Outstanding documents requested" />
+    <bpmn:task id="complete" name="Complete case" />
+    <bpmn:endEvent id="done" name="Case completed" />
+    <bpmn:sequenceFlow id="f-s-offer" sourceRef="s" targetRef="offer" />
+    <bpmn:sequenceFlow id="f-offer-wait" sourceRef="offer" targetRef="wait" />
+    <bpmn:sequenceFlow id="f-wait-decline" sourceRef="wait" targetRef="decline" />
+    <bpmn:sequenceFlow id="f-wait-docs" sourceRef="wait" targetRef="docs" />
+    <bpmn:sequenceFlow id="f-wait-timeout" sourceRef="wait" targetRef="timeout" />
+    <bpmn:sequenceFlow id="f-decline-dj" sourceRef="decline" targetRef="dj" />
+    <bpmn:sequenceFlow id="f-timeout-dj" sourceRef="timeout" targetRef="dj" />
+    <bpmn:sequenceFlow id="f-dj-upd" sourceRef="dj" targetRef="upd" />
+    <bpmn:sequenceFlow id="f-upd-arch" sourceRef="upd" targetRef="arch" />
+    <bpmn:sequenceFlow id="f-arch-cancel" sourceRef="arch" targetRef="cancel" />
+    <bpmn:sequenceFlow id="f-docs-docs-check" sourceRef="docs" targetRef="docs-check" />
+    <bpmn:sequenceFlow id="f-docs-check-move" name="Yes" sourceRef="docs-check" targetRef="move">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">all_prerequisites_attached = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-docs-check-req" name="No" sourceRef="docs-check" targetRef="req" />
+    <bpmn:sequenceFlow id="f-req-missing" sourceRef="req" targetRef="missing" />
+    <bpmn:sequenceFlow id="f-move-complete" sourceRef="move" targetRef="complete" />
+    <bpmn:sequenceFlow id="f-complete-done" sourceRef="complete" targetRef="done" />
+  </bpmn:process>
+</bpmn:definitions>

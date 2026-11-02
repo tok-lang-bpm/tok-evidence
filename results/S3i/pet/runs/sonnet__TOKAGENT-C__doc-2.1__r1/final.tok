@@ -1,0 +1,106 @@
+tok 1.0 "Service degradation handling"
+
+pool teleco "TELECO and customer"
+  lane customer "Customer"
+    start perceived "Service degradation perceived"
+    task sendlist "Send the list of problem parameters"
+    task receivereport "Receive the report"
+    end custdone "Customer process ended"
+  lane cs "Customer Service"
+    task enter "Enter the problem report into system T"
+    task compare "Compare the problem report to the customer SLA"
+    task measures "Determine the counter measures and priorities"
+    xor premium "Customer premium?"
+    call extrafix "Run the extra problem fix process" process=extrafix
+    xor premiumjoin
+    xor affects "Significance affects counter measures?"
+    task detailed "Create the detailed problem report"
+    task sendsm "Send the detailed problem report to Service Management"
+    xor csmerge
+    and csplit
+    task custreport "Create the report for the customer"
+    task sendcust "Send the report to the customer"
+    and sentsplit
+    task rebate "Report the SLA violation rebate"
+    and cjoin
+    end csdone "Customer Service ended"
+  lane esvc "Electronic service"
+    task significance "Determine the significance of the customer"
+  lane sm "Service Management"
+    task investigate "Investigate whether the problem is analyzable"
+    xor analyzable "Analyzable by Service Management?"
+    task sendrp "Send the detailed problem report to Resource Provisioning"
+    task analysis "Perform the analysis"
+    task smtrouble "Create the trouble report"
+    xor smmerge
+    task waitstatus "Receive the status report"
+    task finalstatus "Prepare the final status report"
+    xor decide "Which counter measures?"
+    task sendperf "Send the actual service performance to Customer Service"
+    task minor "Undertake corrective actions"
+    xor resmerge
+    task resolution "Create the problem resolution report"
+    task sendres "Send the problem resolution report to Customer Service"
+    task request "Create the request for automatic resource restoration"
+    task sendreq "Send the restoration request to Resource Provisioning"
+    task recvts "Receive the trouble-shooting report"
+  lane rp "Resource Provisioning"
+    task checkprob "Check for possible problems"
+    xor problem "Problem detected?"
+    task notification "Create the normal execution notification"
+    task rpanalyze "Analyze the problem"
+    task rptrouble "Create the trouble report"
+    xor rpmerge
+    task status "Create the status report"
+    task sendstatus "Send the status report to Service Management"
+    and statussplit
+    eventgw hold
+    catch restreq "Restoration request received" message="Restoration request"
+    catch timeout "2 days passed" timer=P2D
+    end terminated "Process terminated" terminate
+    task track "Track all possible errors"
+    task rpcorrect "Undertake the necessary corrective actions"
+    task tsreport "Create the trouble-shooting report"
+    task sendts "Send the trouble-shooting report to Service Management"
+    end rpdone "Resource Provisioning ended"
+  lane bc "Billing & Collections"
+    task adjust "Adjust the billing"
+
+flow perceived -> sendlist -> enter -> compare -> measures -> significance -> premium
+flow premium -> extrafix "yes"
+flow premium -> premiumjoin "no"
+flow extrafix -> premiumjoin
+flow premiumjoin -> affects
+flow affects -> measures "yes"
+flow affects -> detailed "no"
+flow detailed -> sendsm -> investigate -> analyzable
+flow analyzable -> sendrp "no"
+flow analyzable -> analysis "yes"
+flow analysis -> smtrouble -> smmerge
+flow sendrp -> checkprob -> problem
+flow problem -> notification "no"
+flow problem -> rpanalyze "yes"
+flow rpanalyze -> rptrouble -> rpmerge
+flow notification -> rpmerge
+flow rpmerge -> status -> sendstatus -> statussplit
+flow statussplit -> hold
+flow statussplit -> waitstatus
+flow waitstatus -> smmerge
+flow smmerge -> finalstatus -> decide
+flow decide -> sendperf "no problem"
+flow decide -> minor "minor actions"
+flow decide -> request "restoration required"
+flow sendperf -> csmerge
+flow minor -> resmerge
+flow request -> sendreq -> recvts -> resmerge
+flow resmerge -> resolution -> sendres -> csmerge
+flow hold -> restreq
+flow hold -> timeout
+flow restreq -> track -> rpcorrect -> tsreport -> sendts -> rpdone
+flow timeout -> terminated
+flow csmerge -> csplit
+flow csplit -> custreport -> sendcust -> sentsplit
+flow sentsplit -> cjoin
+flow sentsplit -> receivereport -> custdone
+flow csplit -> rebate -> adjust -> cjoin
+flow cjoin -> csdone

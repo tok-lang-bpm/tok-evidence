@@ -1,0 +1,74 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="shipping-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="shipping-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="secretary-lane" name="Secretary">
+        <bpmn:flowNodeRef>se_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_clarify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_par_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_large</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_invite</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_write_label</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_ship_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_par_join</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="logistics-head-lane" name="Logistics Department Head">
+        <bpmn:flowNodeRef>g_ins</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_take_insurance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g_ins_merge</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="warehousemen-lane" name="Warehousemen">
+        <bpmn:flowNodeRef>t_package</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="se_start" name="Goods shall be shipped" />
+    <bpmn:task id="t_clarify" name="Clarify who will do the shipping" />
+    <bpmn:parallelGateway id="g_par_split" />
+    <bpmn:exclusiveGateway id="g_large" name="Large amounts?" default="f_small" />
+    <bpmn:task id="t_invite" name="Invite three logistic companies to make offers" />
+    <bpmn:task id="t_select" name="Select one of them" />
+    <bpmn:task id="t_write_label" name="Write package label" />
+    <bpmn:exclusiveGateway id="g_ins" name="Parcel insurance necessary?" default="f_no_insurance" />
+    <bpmn:task id="t_take_insurance" name="Take parcel insurance" />
+    <bpmn:exclusiveGateway id="g_ins_merge" />
+    <bpmn:exclusiveGateway id="g_ship_merge" />
+    <bpmn:task id="t_package" name="Package the goods" />
+    <bpmn:parallelGateway id="g_par_join" />
+    <bpmn:task id="t_prepare" name="Prepare packaged goods for being picked up" />
+    <bpmn:endEvent id="e_end" name="Shipment prepared" />
+
+    <bpmn:sequenceFlow id="f_clarify" sourceRef="se_start" targetRef="t_clarify" />
+    <bpmn:sequenceFlow id="f_split" sourceRef="t_clarify" targetRef="g_par_split" />
+    <bpmn:sequenceFlow id="f_to_large" sourceRef="g_par_split" targetRef="g_large" />
+    <bpmn:sequenceFlow id="f_to_package" sourceRef="g_par_split" targetRef="t_package" />
+
+    <bpmn:sequenceFlow id="f_large" name="yes" sourceRef="g_large" targetRef="t_invite">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">largeAmounts</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_small" name="no" sourceRef="g_large" targetRef="t_write_label" />
+    <bpmn:sequenceFlow id="f_invite_select" sourceRef="t_invite" targetRef="t_select" />
+    <bpmn:sequenceFlow id="f_select_merge" sourceRef="t_select" targetRef="g_ship_merge" />
+
+    <bpmn:sequenceFlow id="f_label_insurance" sourceRef="t_write_label" targetRef="g_ins" />
+    <bpmn:sequenceFlow id="f_yes_insurance" name="yes" sourceRef="g_ins" targetRef="t_take_insurance">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">insuranceNecessary</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_no_insurance" name="no" sourceRef="g_ins" targetRef="g_ins_merge" />
+    <bpmn:sequenceFlow id="f_insurance_merge" sourceRef="t_take_insurance" targetRef="g_ins_merge" />
+    <bpmn:sequenceFlow id="f_small_merge" sourceRef="g_ins_merge" targetRef="g_ship_merge" />
+
+    <bpmn:sequenceFlow id="f_shipping_ready" sourceRef="g_ship_merge" targetRef="g_par_join" />
+    <bpmn:sequenceFlow id="f_package_ready" sourceRef="t_package" targetRef="g_par_join" />
+    <bpmn:sequenceFlow id="f_prepare" sourceRef="g_par_join" targetRef="t_prepare" />
+    <bpmn:sequenceFlow id="f_end" sourceRef="t_prepare" targetRef="e_end" />
+  </bpmn:process>
+</bpmn:definitions>
+```

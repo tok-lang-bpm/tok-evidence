@@ -1,0 +1,42 @@
+tok 1.0
+
+pool org "Subscription Service" {
+  lane customer "Customer" {
+    start start "Start"
+    task sign-up "sign up for a subscription service and enter personal and payment information"
+    task receive-updates "receive regular updates, product enhancements, or renewal notifications"
+    gateway cancel-decision "customer decides to cancel?" xor
+    task submit-cancel "submit cancellation request"
+  }
+  lane system "System" {
+    task generate-account "generate account"
+    task assign-access "assign access"
+    task trigger-billing "trigger automated billing cycles"
+  }
+  lane support "Support Team" {
+    task process-cancel "process cancellation request"
+    gateway terms-decision "apply refund or charge?" xor
+    task apply-refund "apply refund"
+    task apply-charge "apply charge"
+    gateway refund-charge-join "join refunds and charges" and
+    task deactivate "deactivate subscription and settle final account balance"
+    end end "End"
+  }
+}
+
+flow start -> sign-up
+flow sign-up -> generate-account
+flow generate-account -> assign-access
+flow assign-access -> trigger-billing
+flow trigger-billing -> receive-updates
+flow receive-updates -> cancel-decision
+flow cancel-decision -> submit-cancel "yes" when="cancel = true"
+flow cancel-decision -> receive-updates "no" default
+flow submit-cancel -> process-cancel
+flow process-cancel -> terms-decision
+flow terms-decision -> apply-refund "refund" when="refund = true"
+flow terms-decision -> apply-charge "charge" when="refund = false"
+flow apply-refund -> refund-charge-join
+flow apply-charge -> refund-charge-join
+flow refund-charge-join -> deactivate
+flow deactivate -> end

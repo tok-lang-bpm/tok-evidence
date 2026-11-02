@@ -1,0 +1,87 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="ORG" name="Car Service Organisation" processRef="process" />
+  </bpmn:collaboration>
+  <bpmn:process id="process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="laneSystem" name="System">
+        <bpmn:flowNodeRef>checkReg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>statusUpdate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>issueFine</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneMechanic" name="Mechanic">
+        <bpmn:flowNodeRef>enterProblems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>repair</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enterNext</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="laneCustomer" name="Customer">
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Start -->
+    <bpmn:startEvent id="start" name="Service completed" />
+
+    <!-- Decision: Is service necessary? -->
+    <bpmn:exclusiveGateway id="gw_service_needed" name="Service necessary?" />
+    <bpmn:endEvent id="endNotNeeded" name="No service needed" />
+
+    <!-- System checks registration -->
+    <bpmn:task id="checkReg" name="Check car registration" />
+    <bpmn:exclusiveGateway id="gw_registered" name="Car registered?" />
+    <bpmn:endEvent id="endNotRegistered" name="Car not registered" />
+
+    <!-- Notification -->
+    <bpmn:task id="notify" name="Notify customer" />
+
+    <!-- Decision: Customer goes to service? -->
+    <bpmn:exclusiveGateway id="gw_customer_go" name="Customer goes to service?" />
+    <bpmn:task id="issueFine" name="Issue fine (after 30 days)" />
+    <bpmn:endEvent id="endFine" name="Fine issued" />
+
+    <!-- Mechanic enters problems -->
+    <bpmn:task id="enterProblems" name="Enter car problems" />
+
+    <!-- Parallel: status updates & repair -->
+    <bpmn:parallelGateway id="gw_parallel_start" />
+    <bpmn:task id="statusUpdate" name="Send status updates via email" />
+    <bpmn:task id="repair" name="Repair car" />
+    <bpmn:parallelGateway id="gw_parallel_end" />
+
+    <!-- Payment -->
+    <bpmn:task id="pay" name="Pay through app" />
+
+    <!-- Mechanic records success and next service -->
+    <bpmn:task id="enterSuccess" name="Enter repair successful and issue Pickerl" />
+    <bpmn:task id="enterNext" name="Enter next service time" />
+
+    <bpmn:endEvent id="endComplete" name="Process completed" />
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="gw_service_needed" />
+    <bpmn:sequenceFlow id="f2" name="yes" sourceRef="gw_service_needed" targetRef="checkReg" />
+    <bpmn:sequenceFlow id="f3" name="no" sourceRef="gw_service_needed" targetRef="endNotNeeded" />
+    <bpmn:sequenceFlow id="f4" sourceRef="checkReg" targetRef="gw_registered" />
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="gw_registered" targetRef="notify" />
+    <bpmn:sequenceFlow id="f6" name="no" sourceRef="gw_registered" targetRef="endNotRegistered" />
+    <bpmn:sequenceFlow id="f7" sourceRef="notify" targetRef="gw_customer_go" />
+    <bpmn:sequenceFlow id="f8" name="yes" sourceRef="gw_customer_go" targetRef="enterProblems" />
+    <bpmn:sequenceFlow id="f9" name="no" sourceRef="gw_customer_go" targetRef="issueFine" />
+    <bpmn:sequenceFlow id="f10" sourceRef="issueFine" targetRef="endFine" />
+    <bpmn:sequenceFlow id="f11" sourceRef="enterProblems" targetRef="gw_parallel_start" />
+    <bpmn:sequenceFlow id="f12" sourceRef="gw_parallel_start" targetRef="statusUpdate" />
+    <bpmn:sequenceFlow id="f13" sourceRef="gw_parallel_start" targetRef="repair" />
+    <bpmn:sequenceFlow id="f14" sourceRef="statusUpdate" targetRef="gw_parallel_end" />
+    <bpmn:sequenceFlow id="f15" sourceRef="repair" targetRef="gw_parallel_end" />
+    <bpmn:sequenceFlow id="f16" sourceRef="gw_parallel_end" targetRef="pay" />
+    <bpmn:sequenceFlow id="f17" sourceRef="pay" targetRef="enterSuccess" />
+    <bpmn:sequenceFlow id="f18" sourceRef="enterSuccess" targetRef="enterNext" />
+    <bpmn:sequenceFlow id="f19" sourceRef="enterNext" targetRef="endComplete" />
+  </bpmn:process>
+</bpmn:definitions>
+```

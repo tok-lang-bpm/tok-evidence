@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Car Service" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="car_service" name="Car Service" processRef="car_service-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="car_service-process" name="Car Service" isExecutable="false">
+    <bpmn:laneSet id="car_service-lanes">
+      <bpmn:lane id="system" name="System">
+        <bpmn:flowNodeRef>service_needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>check_registration</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>not_registered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>fined</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="mechanic" name="Mechanic">
+        <bpmn:flowNodeRef>enter_problems</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter_next</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="customer" name="Customer">
+        <bpmn:flowNodeRef>attend</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>get_updates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="service_needed" name="Service necessary" />
+    <bpmn:task id="check_registration" name="Check if your car is still registered" />
+    <bpmn:exclusiveGateway id="registered" name="Car still registered?" default="f-registered-not_registered" />
+    <bpmn:task id="notify" name="Notify you" />
+    <bpmn:intermediateCatchEvent id="wait30" name="30 days">
+      <bpmn:timerEventDefinition id="wait30-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="fine" name="Fine you" />
+    <bpmn:endEvent id="not_registered" name="Car not registered" />
+    <bpmn:endEvent id="fined" name="You are fined" />
+    <bpmn:task id="enter_problems" name="Enter the problems of your car for reference" />
+    <bpmn:task id="enter_success" name="Enter that the repair was successful and you got your Pickerl" />
+    <bpmn:task id="enter_next" name="Enter the time for your next service" />
+    <bpmn:exclusiveGateway id="attend" name="Go to the service?" default="f-attend-wait30" />
+    <bpmn:task id="get_updates" name="Get status updates via email" />
+    <bpmn:task id="pay" name="Pay through the app" />
+    <bpmn:endEvent id="completed" name="Service completed" />
+    <bpmn:sequenceFlow id="f-service_needed-check_registration" sourceRef="service_needed" targetRef="check_registration" />
+    <bpmn:sequenceFlow id="f-check_registration-registered" sourceRef="check_registration" targetRef="registered" />
+    <bpmn:sequenceFlow id="f-registered-notify" name="yes" sourceRef="registered" targetRef="notify">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">registered</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-registered-not_registered" name="no" sourceRef="registered" targetRef="not_registered" />
+    <bpmn:sequenceFlow id="f-notify-attend" sourceRef="notify" targetRef="attend" />
+    <bpmn:sequenceFlow id="f-attend-enter_problems" name="yes" sourceRef="attend" targetRef="enter_problems">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">go_to_service</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-attend-wait30" name="no" sourceRef="attend" targetRef="wait30" />
+    <bpmn:sequenceFlow id="f-wait30-fine" sourceRef="wait30" targetRef="fine" />
+    <bpmn:sequenceFlow id="f-fine-fined" sourceRef="fine" targetRef="fined" />
+    <bpmn:sequenceFlow id="f-enter_problems-get_updates" sourceRef="enter_problems" targetRef="get_updates" />
+    <bpmn:sequenceFlow id="f-get_updates-pay" sourceRef="get_updates" targetRef="pay" />
+    <bpmn:sequenceFlow id="f-pay-enter_success" sourceRef="pay" targetRef="enter_success" />
+    <bpmn:sequenceFlow id="f-enter_success-enter_next" sourceRef="enter_success" targetRef="enter_next" />
+    <bpmn:sequenceFlow id="f-enter_next-completed" sourceRef="enter_next" targetRef="completed" />
+  </bpmn:process>
+</bpmn:definitions>

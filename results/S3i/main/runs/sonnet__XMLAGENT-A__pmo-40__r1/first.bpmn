@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_restarted" name="Machine restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="OEE monitoring" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="Lane_sys" name="Monitoring system">
+        <bpmn:flowNodeRef>Start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_oee</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_stop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_restart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_conn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_1" name="Monitoring started" />
+    <bpmn:exclusiveGateway id="Gw_merge" />
+    <bpmn:task id="Task_collect" name="Collect information from the machine" />
+    <bpmn:task id="Task_calc" name="Calculate the OEE" />
+    <bpmn:exclusiveGateway id="Gw_oee" name="OEE below the value?" default="F_no" />
+    <bpmn:task id="Task_stop" name="Stop the machine" />
+    <bpmn:task id="Task_email" name="Send an email to the engineer" />
+    <bpmn:intermediateCatchEvent id="Catch_restart" name="Machine restarted">
+      <bpmn:messageEventDefinition messageRef="Msg_restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_conn" name="Machine disconnected?" default="F_conn_no" />
+    <bpmn:task id="Task_end" name="Stop the process" />
+    <bpmn:endEvent id="End_1" name="Process stopped" />
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_1" targetRef="Gw_merge" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Gw_merge" targetRef="Task_collect" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Task_collect" targetRef="Task_calc" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Task_calc" targetRef="Gw_oee" />
+    <bpmn:sequenceFlow id="F_yes" name="yes" sourceRef="Gw_oee" targetRef="Task_stop" />
+    <bpmn:sequenceFlow id="F_no" name="no" sourceRef="Gw_oee" targetRef="Gw_conn" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Task_stop" targetRef="Task_email" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Task_email" targetRef="Catch_restart" />
+    <bpmn:sequenceFlow id="F7" sourceRef="Catch_restart" targetRef="Gw_merge" />
+    <bpmn:sequenceFlow id="F_conn_yes" name="yes" sourceRef="Gw_conn" targetRef="Task_end" />
+    <bpmn:sequenceFlow id="F_conn_no" name="no" sourceRef="Gw_conn" targetRef="Gw_merge" />
+    <bpmn:sequenceFlow id="F8" sourceRef="Task_end" targetRef="End_1" />
+  </bpmn:process>
+</bpmn:definitions>

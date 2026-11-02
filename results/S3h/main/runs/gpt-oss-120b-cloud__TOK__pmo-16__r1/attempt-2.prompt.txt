@@ -1,0 +1,155 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+In a multinational company's annual audit process, the audit coordinator initiates the audit process by sending a notification to the regional office.
+The regional office prepares financial statements and gathers necessary documents.
+Concurrently, the compliance team checks for any regulatory updates that might affect the audit.
+Afterward, the regional office submits the documents to the central audit team.
+The central audit team reviews the submission.
+If discrepancies are found, they request clarifications from the regional office.
+The regional office provides the necessary clarifications.
+Once all documents are reviewed without issues, the audit team conducts a risk assessment.
+The risk assessment includes evaluating financial risks, operational risks, and compliance risks, which can be done in any order but must all be completed.
+If high risk is identified, then a detailed investigation is launched.
+The investigation includes data analysis, interviews, and, in certain cases, site visits.
+After all risks are addressed, the audit team compiles the audit report.
+The report is reviewed by the audit director.
+The audit director may approve the report or send it back for revisions.
+If revisions are required, the audit team updates the report accordingly and resubmits it to be reviewed again by the audit director.
+Once approved, the final report is distributed to the executive board and archived.
+The entire audit process is then closed.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Annual Audit Process" [executable]
+
+pool company "Multinational Company"
+  lane coordinator "Audit Coordinator"
+    start s "Start audit process"
+    task sendNotif "Send audit notification"
+    and splitParallel
+    and joinParallel
+
+  lane regional "Regional Office"
+    task prepareDocs "Prepare financial statements and gather documents"
+    task submitDocs "Submit documents to central audit team"
+    task provideClarifs "Provide clarifications"
+
+  lane compliance "Compliance Team"
+    task checkUpdates "Check regulatory updates"
+
+  lane central "Central Audit Team"
+    task reviewSub "Review submission"
+    xor disc "Discrepancies found?"
+    task requestClarifs "Request clarifications"
+
+  lane audit "Audit Team"
+    task conductRisk "Conduct risk assessment"
+    and riskEvalSplit
+    task evalFinRisk "Evaluate financial risks"
+    task evalOpsRisk "Evaluate operational risks"
+    task evalCompRisk "Evaluate compliance risks"
+    and riskEvalJoin
+    xor highRisk "High risk identified?"
+    task launchInvest "Launch detailed investigation"
+    and investSplit
+    task dataAnalysis "Data analysis"
+    task interviews "Interviews"
+    task siteVisits "Site visits"
+    and investJoin
+    task compileReport "Compile audit report"
+
+  lane director "Audit Director"
+    task reviewReport "Review audit report"
+    xor approve "Report approved?"
+    task updateReport "Update audit report"
+
+  lane final "Finalization"
+    and finalDistSplit
+    task distributeReport "Distribute report to executive board"
+    task archiveReport "Archive report"
+    and finalDistJoin
+    end closed "Audit process closed"
+
+# Sequence flows
+flow s -> sendNotif
+flow sendNotif -> splitParallel
+
+flow splitParallel -> prepareDocs
+flow splitParallel -> checkUpdates
+
+flow prepareDocs -> joinParallel
+flow checkUpdates -> joinParallel
+
+flow joinParallel -> submitDocs
+
+flow submitDocs -> reviewSub
+
+flow reviewSub -> disc
+
+flow disc -> requestClarifs "yes"
+flow disc -> conductRisk "no"
+
+flow requestClarifs -> provideClarifs
+flow provideClarifs -> reviewSub
+
+flow conductRisk -> riskEvalSplit
+
+flow riskEvalSplit -> evalFinRisk
+flow riskEvalSplit -> evalOpsRisk
+flow riskEvalSplit -> evalCompRisk
+
+flow evalFinRisk -> riskEvalJoin
+flow evalOpsRisk -> riskEvalJoin
+flow evalCompRisk -> riskEvalJoin
+
+flow riskEvalJoin -> highRisk
+
+flow highRisk -> launchInvest "yes"
+flow highRisk -> compileReport "no"
+
+flow launchInvest -> investSplit
+
+flow investSplit -> dataAnalysis
+flow investSplit -> interviews
+flow investSplit -> siteVisits
+
+flow dataAnalysis -> investJoin
+flow interviews -> investJoin
+flow siteVisits -> investJoin
+
+flow investJoin -> compileReport
+
+flow compileReport -> reviewReport
+
+flow reviewReport -> approve
+
+flow approve -> updateReport "no"
+flow approve -> finalDistSplit "yes"
+
+flow updateReport -> reviewReport
+
+flow finalDistSplit -> distributeReport
+flow finalDistSplit -> archiveReport
+
+flow distributeReport -> finalDistJoin
+flow archiveReport -> finalDistJoin
+
+flow finalDistJoin -> closed
+```
+
+The tok checker reports these problems in it:
+
+- line 1: error T001: invalid token: unexpected character '['
+- line 3: error P005: the document must start with a header such as 'tok 1.0'
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

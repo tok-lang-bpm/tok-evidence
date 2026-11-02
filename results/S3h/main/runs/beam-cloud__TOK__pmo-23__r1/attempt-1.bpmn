@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Credit scoring" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="organisation-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="organisation-process" name="Credit scoring" isExecutable="false">
+    <bpmn:laneSet id="organisation-lanes">
+      <bpmn:lane id="clerk" name="Sales clerk">
+        <bpmn:flowNodeRef>requested</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="banking" name="Banking system">
+        <bpmn:flowNodeRef>send_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>present_result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>display_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>display_result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_delay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="agency" name="Agency">
+        <bpmn:flowNodeRef>score_level1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>immediate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>return_result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>score_level2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_result</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="requested" name="Credit scoring requested" />
+    <bpmn:task id="receive" name="Receive the credit scoring" />
+    <bpmn:endEvent id="completed" name="Credit scoring completed" />
+    <bpmn:task id="send_request" name="Send a scoring request to the agency" />
+    <bpmn:task id="present_result" name="Present the result to the clerk" />
+    <bpmn:task id="display_delay" name="Display a message to check again later" />
+    <bpmn:task id="display_result" name="Display the scoring result at the frontend" />
+    <bpmn:parallelGateway id="split_delay" />
+    <bpmn:parallelGateway id="join_delay" />
+    <bpmn:task id="score_level1" name="Perform level 1 scoring" />
+    <bpmn:exclusiveGateway id="immediate" name="Immediate result?" default="f-immediate-inform_delay" />
+    <bpmn:task id="return_result" name="Return the result to the banking system" />
+    <bpmn:task id="inform_delay" name="Inform the banking process of the delay" />
+    <bpmn:task id="score_level2" name="Perform level 2 scoring" />
+    <bpmn:task id="send_result" name="Send the scoring result to the banking system" />
+    <bpmn:sequenceFlow id="f-requested-receive" sourceRef="requested" targetRef="receive" />
+    <bpmn:sequenceFlow id="f-receive-send_request" sourceRef="receive" targetRef="send_request" />
+    <bpmn:sequenceFlow id="f-send_request-score_level1" sourceRef="send_request" targetRef="score_level1" />
+    <bpmn:sequenceFlow id="f-score_level1-immediate" sourceRef="score_level1" targetRef="immediate" />
+    <bpmn:sequenceFlow id="f-immediate-return_result" name="yes" sourceRef="immediate" targetRef="return_result">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">immediate</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-immediate-inform_delay" name="no" sourceRef="immediate" targetRef="inform_delay" />
+    <bpmn:sequenceFlow id="f-return_result-present_result" sourceRef="return_result" targetRef="present_result" />
+    <bpmn:sequenceFlow id="f-present_result-completed" sourceRef="present_result" targetRef="completed" />
+    <bpmn:sequenceFlow id="f-inform_delay-split_delay" sourceRef="inform_delay" targetRef="split_delay" />
+    <bpmn:sequenceFlow id="f-split_delay-display_delay" sourceRef="split_delay" targetRef="display_delay" />
+    <bpmn:sequenceFlow id="f-split_delay-score_level2" sourceRef="split_delay" targetRef="score_level2" />
+    <bpmn:sequenceFlow id="f-display_delay-join_delay" sourceRef="display_delay" targetRef="join_delay" />
+    <bpmn:sequenceFlow id="f-score_level2-send_result" sourceRef="score_level2" targetRef="send_result" />
+    <bpmn:sequenceFlow id="f-send_result-display_result" sourceRef="send_result" targetRef="display_result" />
+    <bpmn:sequenceFlow id="f-display_result-join_delay" sourceRef="display_result" targetRef="join_delay" />
+    <bpmn:sequenceFlow id="f-join_delay-completed" sourceRef="join_delay" targetRef="completed" />
+  </bpmn:process>
+</bpmn:definitions>

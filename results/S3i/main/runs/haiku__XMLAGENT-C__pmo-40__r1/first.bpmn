@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:signal id="restartSignal" name="Machine restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="OEE-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="OEE-process" isExecutable="false">
+    <bpmn:laneSet id="OEE-lanes">
+      <bpmn:lane id="monitoring" name="Monitoring system">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>continueMeasuring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>disconnectedGw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>processStopped</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calculate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>oeeGw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sendEmail</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>stopMachine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restarted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start OEE measurement" />
+    <bpmn:exclusiveGateway id="continueMeasuring" name="Continue measuring" />
+    <bpmn:task id="collect" name="Collect machine data" />
+    <bpmn:exclusiveGateway id="disconnectedGw" name="Machine disconnected?" />
+    <bpmn:endEvent id="processStopped" name="Process stopped" />
+    <bpmn:task id="calculate" name="Calculate the OEE" />
+    <bpmn:exclusiveGateway id="oeeGw" name="OEE below threshold?" />
+    <bpmn:task id="stopMachine" name="Stop the machine" />
+    <bpmn:sendTask id="sendEmail" name="Send email to engineer" />
+    <bpmn:intermediateCatchEvent id="restarted" name="Machine restarted">
+      <bpmn:signalEventDefinition signalRef="restartSignal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="continueMeasuring" />
+    <bpmn:sequenceFlow id="f2" sourceRef="continueMeasuring" targetRef="collect" />
+    <bpmn:sequenceFlow id="f3" sourceRef="collect" targetRef="disconnectedGw" />
+    <bpmn:sequenceFlow id="f4" name="yes" sourceRef="disconnectedGw" targetRef="processStopped" />
+    <bpmn:sequenceFlow id="f5" name="no" sourceRef="disconnectedGw" targetRef="calculate" />
+    <bpmn:sequenceFlow id="f6" sourceRef="calculate" targetRef="oeeGw" />
+    <bpmn:sequenceFlow id="f7" name="no" sourceRef="oeeGw" targetRef="continueMeasuring" />
+    <bpmn:sequenceFlow id="f8" name="yes" sourceRef="oeeGw" targetRef="stopMachine" />
+    <bpmn:sequenceFlow id="f9" sourceRef="stopMachine" targetRef="sendEmail" />
+    <bpmn:sequenceFlow id="f10" sourceRef="sendEmail" targetRef="restarted" />
+    <bpmn:sequenceFlow id="f11" sourceRef="restarted" targetRef="continueMeasuring" />
+  </bpmn:process>
+</bpmn:definitions>

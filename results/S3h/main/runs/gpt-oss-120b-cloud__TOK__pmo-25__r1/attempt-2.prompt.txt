@@ -1,0 +1,74 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+Title: Find a Job
+
+You have to regularly report, to which companies you wrote job applications.
+Based on your job applications, new potential job offers are sent to you.
+Companies have to confirm that they received job applications and rate the application.
+A job interview can be negotiated.
+When a company wants you to work for them, you enter the probation phase.
+After probation phase, you can rate the company and the company can rate you.
+Reviews for a company can only be seen (by job applicants) after 1 year.
+If a job becomes permanent, the process ends, unless you rated the company C or less, then you continue to receive job offers, but no longer have to report.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Find a Job"
+
+pool organisation "Organisation"
+  lane applicant "Applicant"
+    start S "Start job search"
+    task R "Report job applications"
+    task O "Send job offers"
+    task N "Negotiate job interview"
+    task P "Enter probation phase"
+    task RC "Rate company"
+    task RA "Rate applicant"
+    task VR "View company reviews"
+    end END "Process ends"
+
+  lane company "Company"
+    task C "Confirm receipt and rate application"
+    xor H "Company wants to hire?"
+    and G1 "After probation start"
+    and G2 "After rating join"
+    xor PERM "Job becomes permanent?"
+    xor LR "Low rating?"
+    catch W "Wait 1 year" timer=P1Y
+
+flow S -> R -> O -> C -> N -> H
+flow H -> O          # company does not want to hire, continue offers
+flow H -> P          # company wants to hire
+flow P -> G1
+flow G1 -> RC
+flow G1 -> RA
+flow RC -> G2
+flow RA -> G2
+flow G2 -> W
+flow W -> VR -> PERM
+flow PERM -> O      # job not permanent, continue offers
+flow PERM -> LR
+flow LR -> O        # low rating (C or less), continue offers without reporting
+flow LR -> END       # rating higher than C, process ends
+```
+
+The tok checker reports these problems in it:
+
+- line 25: warning W021: branch of an XOR/OR split without label, condition or default status (f-H-O)
+- line 26: warning W021: branch of an XOR/OR split without label, condition or default status (f-H-P)
+- line 34: warning W021: branch of an XOR/OR split without label, condition or default status (f-PERM-O)
+- line 35: warning W021: branch of an XOR/OR split without label, condition or default status (f-PERM-LR)
+- line 36: warning W021: branch of an XOR/OR split without label, condition or default status (f-LR-O)
+- line 37: warning W021: branch of an XOR/OR split without label, condition or default status (f-LR-END)
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

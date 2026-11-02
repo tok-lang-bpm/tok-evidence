@@ -1,0 +1,40 @@
+tok 1.0 "Farming Bot"
+
+pool org "Farming Bot Organisation"
+  lane player "Player"
+    start start "Start"
+    task find-resources "Find out which resources you want"
+    task prioritize-resources "Prioritize resources"
+    task define-dependencies "Define resource dependencies"
+  lane bot "Farming Bot"
+    task collect-resources "Collect resources" parallel
+    sub farming "Farming"
+      start farming-start "Start farming"
+      task farm-resources "Farm resources"
+      end farming-end "Finish farming"
+      eventsub disaster "Natural disaster"
+        start disaster-start "Disaster strikes" signal="Natural disaster"
+        task recover "Set bot back"
+        end disaster-end "Recovered"
+      eventsub update-list "Update farming list"
+        start update-start "Update requested" message="Update list"
+        task update-farming-list "Update farming list"
+        end update-end "Updated"
+      eventsub milestones "Milestone reached"
+        start milestone-start "Milestone reached" signal="Milestone reached"
+        task notify-milestone "Notify player of milestone"
+        end milestone-end "Notified"
+  lane friends "Friends"
+    task brag "Brag to selected friends"? Need outgoing? no activity performed by friends? maybe omit.
+
+or share "Brag and/or send materials?"
+
+flow start -> find-resources
+flow find-resources -> prioritize-resources
+flow prioritize-resources -> define-dependencies
+flow define-dependencies -> collect-resources
+flow collect-resources -> farming
+flow farming -> share
+flow share -> brag "Brag" when="brag = true"
+flow share -> send "Send materials" when="send = true"
+flow share -> share-join? 

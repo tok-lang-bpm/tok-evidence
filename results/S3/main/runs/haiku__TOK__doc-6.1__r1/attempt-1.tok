@@ -1,0 +1,68 @@
+tok 1.0 "ACME invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start startInv "Invoice received on paper or by fax"
+    task receiveInv "Receive the invoice in the central inbox"
+    task inspect "Inspect the invoice visually"
+    task forwardAcc "Forward the invoice to an accounting employee"
+  lane accounting "Accounting employee"
+    task identify "Identify the charging suppliers"
+    task createInst "Create a new invoice instance in ACME Financial Accounting"
+    task checkItems "Check the invoice items"
+    task noteCC "Note the cost center and cost center managers for each position on the docket"
+    task sendDocket "Send the docket and copy of the invoice to the first cost center manager"
+    task clarify "Clarify the inconsistencies with the vendor"
+    xor consultQ "Consult cost center managers?"
+    task consult "Consult the cost center managers by telephone or e-mail"
+    xor resolvedAll
+    task resend "Send the copy of the invoice to the cost center managers again"
+    task forwardComm "Forward the copy of the invoice to the commercial manager"
+    task complaintRes "Resolve the complaint with the supplier"
+    task payInstr "Give payment instructions"
+    task closeInst "Close the instance in ACME Financial Accounting"
+    end endDone "Invoice processed"
+  lane ccm "Cost center manager"
+    task review "Review the content for accuracy"
+    xor okQ "Everything in order?"
+    task approveAP "Note the AP code on the docket"
+    task rejectAP "Reject the AP with note and explanation on the docket"
+    task returnMail "Return the copy of the invoice to internal mail"
+    task returnAccRej "Send the copy of the invoice back to accounting"
+  lane mail "Internal mail"
+    xor routedQ "All positions marked AP?"
+    task passNext "Pass the copy of the invoice to the next cost center manager on the docket"
+    task returnAcc "Send the copy of the invoice back to accounting"
+  lane commercial "Commercial manager"
+    task audit "Make the commercial audit"
+    xor complaintQ "Complaint raised?"
+    task approvePay "Issue the approval for payment"
+    xor amountQ "Amount above EUR 20?"
+    xor sigMerge
+    task returnSig "Return the copy of the invoice and docket to accounting in the signature file"
+  lane board "Board"
+    task fourEyes "Check the invoice again (4-eyes principle)"
+
+flow startInv -> receiveInv -> inspect -> forwardAcc -> identify -> createInst -> checkItems -> noteCC -> sendDocket -> review
+flow review -> okQ
+flow okQ -> approveAP "yes"
+flow okQ -> rejectAP "no"
+flow approveAP -> returnMail -> routedQ
+flow routedQ -> passNext "no"
+flow passNext -> review
+flow routedQ -> returnAcc "yes"
+flow returnAcc -> forwardComm
+flow rejectAP -> returnAccRej -> clarify -> consultQ
+flow consultQ -> consult "yes"
+flow consultQ -> resolvedAll "no"
+flow consult -> resolvedAll
+flow resolvedAll -> resend -> review
+flow forwardComm -> audit -> complaintQ
+flow complaintQ -> complaintRes "yes"
+flow complaintRes -> audit
+flow complaintQ -> approvePay "no"
+flow approvePay -> amountQ
+flow amountQ -> fourEyes "yes"
+flow amountQ -> sigMerge "no"
+flow fourEyes -> sigMerge
+flow sigMerge -> returnSig -> payInstr -> closeInst -> endDone

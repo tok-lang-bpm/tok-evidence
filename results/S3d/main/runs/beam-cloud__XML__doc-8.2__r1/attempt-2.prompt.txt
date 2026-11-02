@@ -1,0 +1,79 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+I am the HR clerk. When a vacancy is reported to me, I create a job description from the information. Sometimes there is still confusion in the message, then I must ask the Department again. I am submitting the job description for consideration and waiting for the approval. But, it can also happen that the department does not approve it, but rejects it, and requests a correction. Then I correct the description and submit it again for consideration. If the description is finally approved, I post the job.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="organisation" name="Organisation" processRef="hr-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="hr-process" isExecutable="false">
+    <bpmn:laneSet id="lanes">
+      <bpmn:lane id="hr-clerk" name="HR clerk">
+        <bpmn:flowNodeRef>vacancy-reported</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>create-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>confusion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ask-department</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>correct-description</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>submit-again</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>post-job</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>job-posted</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="department" name="Department">
+        <bpmn:flowNodeRef>approval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reject-and-request-correction</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="vacancy-reported" name="Vacancy reported" />
+    <bpmn:task id="create-description" name="Create a job description from the information" />
+    <bpmn:exclusiveGateway id="confusion" name="Confusion in the message?" />
+    <bpmn:task id="ask-department" name="Ask the Department again" />
+    <bpmn:task id="submit-description" name="Submit the job description for consideration" />
+    <bpmn:exclusiveGateway id="approval" name="Job description approved?" default="flow-rejected" />
+    <bpmn:task id="reject-and-request-correction" name="Reject the job description and request a correction" />
+    <bpmn:task id="correct-description" name="Correct the description" />
+    <bpmn:task id="submit-again" name="Submit the job description for consideration" />
+    <bpmn:task id="post-job" name="Post the job" />
+    <bpmn:endEvent id="job-posted" name="Job posted" />
+
+    <bpmn:sequenceFlow id="flow-start" sourceRef="vacancy-reported" targetRef="create-description" />
+    <bpmn:sequenceFlow id="flow-create-confusion" sourceRef="create-description" targetRef="confusion" />
+    <bpmn:sequenceFlow id="flow-confusion-yes" name="yes" sourceRef="confusion" targetRef="ask-department">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">confusion</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-ask-create" sourceRef="ask-department" targetRef="create-description" />
+    <bpmn:sequenceFlow id="flow-confusion-no" name="no" sourceRef="confusion" targetRef="submit-description" />
+    <bpmn:sequenceFlow id="flow-submit-approval" sourceRef="submit-description" targetRef="approval" />
+    <bpmn:sequenceFlow id="flow-approved" name="approved" sourceRef="approval" targetRef="post-job">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-rejected" name="rejected" sourceRef="approval" targetRef="reject-and-request-correction" />
+    <bpmn:sequenceFlow id="flow-reject-correct" sourceRef="reject-and-request-correction" targetRef="correct-description" />
+    <bpmn:sequenceFlow id="flow-correct-submit" sourceRef="correct-description" targetRef="submit-again" />
+    <bpmn:sequenceFlow id="flow-submit-again-approval" sourceRef="submit-again" targetRef="approval" />
+    <bpmn:sequenceFlow id="flow-post-end" sourceRef="post-job" targetRef="job-posted" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: flow-confusion-no: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

@@ -1,0 +1,40 @@
+tok 1.0 "Fault handling"
+
+pool org "Measuring organisation"
+  lane fd "Fault detector"
+    start s1 "Failure detected"
+    task report "Report failure"
+  lane mpo "MPO"
+    start s2 "Own fault suspected"
+    task suspect "Suspect own fault"
+    xor m1
+    task examine "Examine failure"
+    xor d1 "Failure confirmed?"
+    task reject "Reject failure"
+    end e1 "Failure rejected"
+    task confirm "Confirm failure"
+    and p1
+    task infoa "Inform GO about failure"
+    task infob "Inform MSP about failure"
+    and p2
+    task fix "Fix fault at measuring device"
+    task share "Share results of repairs with fault detector"
+    and p3
+    task resa "Inform GO about resolution of interference"
+    task resb "Inform MSP about resolution of interference"
+    and p4
+    end e2 "Fault resolved"
+
+flow s1 -> report -> m1
+flow s2 -> suspect -> m1
+flow m1 -> examine -> d1
+flow d1 -> reject "no" default
+flow reject -> e1
+flow d1 -> confirm "yes" when="confirmed = true"
+flow confirm -> p1
+flow p1 -> infoa -> p2
+flow p1 -> infob -> p2
+flow p2 -> fix -> share -> p3
+flow p3 -> resa -> p4
+flow p3 -> resb -> p4
+flow p4 -> e2

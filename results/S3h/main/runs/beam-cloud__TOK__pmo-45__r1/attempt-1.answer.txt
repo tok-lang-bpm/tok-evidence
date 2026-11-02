@@ -1,0 +1,67 @@
+```tok
+tok 1.0 "Ordering in an Online Shop"
+
+pool shop "Online Shop"
+  lane customer "Customer"
+    start start "Start"
+    task login "Log into E-Shop system"
+    task wait_login "Wait for login confirmation"
+    task select "Select product"
+    task add_cart "Add product to shopping cart"
+    task save "Save product"
+    task check_all "Check if every product was selected"
+    xor all_selected "All products selected?"
+    task enter_payment "Enter payment data"
+    task wait_payment "Wait for payment confirmation"
+    task enter_shipping "Enter shipping address"
+    xor shipping_equal "Shipping address equals billing address?"
+    task enter_billing "Enter billing address"
+    end stop_shopping "Shopping experience stops"
+  lane eshop "E-Shop System"
+    task check_credentials "Check credentials"
+    and login_and "Login processing"
+    and login_join "Login completed"
+    xor login_successful "Login successful?"
+  lane shopping "Shopping System"
+    task finish_order "Finish order"
+    and prepare_and "Prepare payment and shipment"
+    task prepare_payment "Prepare payment"
+    task prepare_shipment "Prepare shipment"
+    and payment_and "Payment processing"
+    and payment_join "Payment completed"
+    and final_and "Address and payment completed"
+    task finish_order_final "Finish order"
+    end order_finished "Order finished"
+  lane bank "Bank"
+    task confirm_payment "Confirm payment"
+
+flow start -> login
+flow login -> login_and
+flow login_and -> wait_login
+flow login_and -> check_credentials
+flow wait_login -> login_join
+flow check_credentials -> login_join
+flow login_join -> login_successful
+flow login_successful -> select "Yes" when="login successful"
+flow login_successful -> stop_shopping "No" default
+flow select -> add_cart -> save -> check_all -> all_selected
+flow all_selected -> finish_order "Yes" when="all products selected"
+flow all_selected -> select "No" default
+flow finish_order -> prepare_and
+flow prepare_and -> prepare_payment
+flow prepare_and -> prepare_shipment
+flow prepare_payment -> enter_payment
+flow prepare_shipment -> enter_shipping
+flow enter_payment -> payment_and
+flow payment_and -> wait_payment
+flow payment_and -> confirm_payment
+flow wait_payment -> payment_join
+flow confirm_payment -> payment_join
+flow payment_join -> final_and
+flow enter_shipping -> shipping_equal
+flow shipping_equal -> final_and "Yes" when="shipping address equals billing address"
+flow shipping_equal -> enter_billing "No" default
+flow enter_billing -> final_and
+flow final_and -> finish_order_final
+flow finish_order_final -> order_finished
+```

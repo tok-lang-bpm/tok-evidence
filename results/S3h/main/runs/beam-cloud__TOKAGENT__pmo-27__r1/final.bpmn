@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Work Accident" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="main" name="Work Accident" processRef="main-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="main-process" name="Work Accident" isExecutable="false">
+    <bpmn:laneSet id="main-lanes">
+      <bpmn:lane id="employee" name="Employee">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="employer" name="Employer">
+        <bpmn:flowNodeRef>gw_type</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_group</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_severity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_emergency</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join_cap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>split_cap</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report_li</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report_insurer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_other</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_employee</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="student" name="Student / Schoolchild">
+        <bpmn:flowNodeRef>student_report</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="school" name="Educational Institution">
+        <bpmn:flowNodeRef>school_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_student</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="self" name="Self-employed Person">
+        <bpmn:flowNodeRef>self_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_self</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="private" name="Insured Party (Private Insurance)">
+        <bpmn:flowNodeRef>private_report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_private_fatality</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>private_fatality</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_private</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="other" name="Other">
+        <bpmn:flowNodeRef>e_other2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Work accident or near miss occurs" />
+    <bpmn:task id="inform" name="Inform employer immediately of work accident, near-miss incident, serious risk or defect in protection systems" />
+    <bpmn:exclusiveGateway id="gw_type" name="What was reported?" default="f-gw_type-e_other" />
+    <bpmn:exclusiveGateway id="gw_group" name="Which protected group applies?" default="f-gw_group-e_other2" />
+    <bpmn:exclusiveGateway id="gw_severity" name="Fatality or serious injury?" default="f-gw_severity-join_cap" />
+    <bpmn:exclusiveGateway id="gw_emergency" name="Already reported to emergency services?" default="f-gw_emergency-join_cap" />
+    <bpmn:exclusiveGateway id="join_cap" name="Merge severity paths" />
+    <bpmn:exclusiveGateway id="split_cap" name="Insured person killed or unable to work for three days?" default="f-split_cap-e_employee" />
+    <bpmn:task id="report_li" name="Report work accident with fatality or serious injury to Labour Inspectorate" />
+    <bpmn:task id="report_insurer" name="Report work accident with death or three-day incapacity to accident insurance provider within five days" />
+    <bpmn:endEvent id="e_other" name="Employer notified" />
+    <bpmn:endEvent id="e_employee" name="Employee accident processed" />
+    <bpmn:task id="student_report" name="Report accident to competent directorate" />
+    <bpmn:task id="school_report" name="Report work accident with physical injury or fatality to accident insurance provider in triplicate within five days" />
+    <bpmn:endEvent id="e_student" name="Student accident processed" />
+    <bpmn:task id="self_report" name="Report accidents involving employed persons or yourself to accident insurance provider in good time" />
+    <bpmn:endEvent id="e_self" name="Self-employed accident processed" />
+    <bpmn:task id="private_report" name="Report accident in writing immediately to private insurance provider" />
+    <bpmn:exclusiveGateway id="gw_private_fatality" name="Fatality occurred?" default="f-gw_private_fatality-e_private" />
+    <bpmn:task id="private_fatality" name="Report fatality to private insurance provider within three days" />
+    <bpmn:endEvent id="e_private" name="Private insurance accident processed" />
+    <bpmn:endEvent id="e_other2" name="No further reporting required" />
+    <bpmn:sequenceFlow id="f-s-inform" sourceRef="s" targetRef="inform" />
+    <bpmn:sequenceFlow id="f-inform-gw_type" sourceRef="inform" targetRef="gw_type" />
+    <bpmn:sequenceFlow id="f-gw_type-gw_group" name="Work accident" sourceRef="gw_type" targetRef="gw_group">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">report_type = "work_accident"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_type-e_other" name="Other notification" sourceRef="gw_type" targetRef="e_other" />
+    <bpmn:sequenceFlow id="f-gw_group-gw_severity" name="Insured employee" sourceRef="gw_group" targetRef="gw_severity">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">protected_group = "insured_employee"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_group-student_report" name="Student or schoolchild" sourceRef="gw_group" targetRef="student_report">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">protected_group = "student"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_group-self_report" name="Self-employed person" sourceRef="gw_group" targetRef="self_report">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">protected_group = "self_employed"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_group-private_report" name="Privately insured person" sourceRef="gw_group" targetRef="private_report">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">protected_group = "private_insured"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_group-e_other2" name="Other group" sourceRef="gw_group" targetRef="e_other2" />
+    <bpmn:sequenceFlow id="f-gw_severity-gw_emergency" name="Yes" sourceRef="gw_severity" targetRef="gw_emergency">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">fatality_or_serious_injury = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_severity-join_cap" name="No" sourceRef="gw_severity" targetRef="join_cap" />
+    <bpmn:sequenceFlow id="f-gw_emergency-report_li" name="No" sourceRef="gw_emergency" targetRef="report_li">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">reported_to_emergency_services = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_emergency-join_cap" name="Yes" sourceRef="gw_emergency" targetRef="join_cap" />
+    <bpmn:sequenceFlow id="f-report_li-join_cap" sourceRef="report_li" targetRef="join_cap" />
+    <bpmn:sequenceFlow id="f-join_cap-split_cap" sourceRef="join_cap" targetRef="split_cap" />
+    <bpmn:sequenceFlow id="f-split_cap-report_insurer" name="Yes" sourceRef="split_cap" targetRef="report_insurer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">killed_or_three_day_incapacity = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-split_cap-e_employee" name="No" sourceRef="split_cap" targetRef="e_employee" />
+    <bpmn:sequenceFlow id="f-report_insurer-e_employee" sourceRef="report_insurer" targetRef="e_employee" />
+    <bpmn:sequenceFlow id="f-student_report-school_report" sourceRef="student_report" targetRef="school_report" />
+    <bpmn:sequenceFlow id="f-school_report-e_student" sourceRef="school_report" targetRef="e_student" />
+    <bpmn:sequenceFlow id="f-self_report-e_self" sourceRef="self_report" targetRef="e_self" />
+    <bpmn:sequenceFlow id="f-private_report-gw_private_fatality" sourceRef="private_report" targetRef="gw_private_fatality" />
+    <bpmn:sequenceFlow id="f-gw_private_fatality-private_fatality" name="Yes" sourceRef="gw_private_fatality" targetRef="private_fatality">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">fatality = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw_private_fatality-e_private" name="No" sourceRef="gw_private_fatality" targetRef="e_private" />
+    <bpmn:sequenceFlow id="f-private_fatality-e_private" sourceRef="private_fatality" targetRef="e_private" />
+  </bpmn:process>
+</bpmn:definitions>

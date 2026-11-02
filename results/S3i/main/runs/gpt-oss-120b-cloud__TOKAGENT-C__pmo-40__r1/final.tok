@@ -1,0 +1,24 @@
+tok 1.0 "OEE Process" executable
+    pool org "Organization"
+      lane machine "Machine"
+        start S "Start"
+        task coll "Collect information from machine"
+        xor disc "Machine disconnected?"
+        task calc "Calculate OEE"
+        xor oee "OEE below threshold?"
+        task stopM "Stop the machine"
+        end D "Process stopped (machine disconnected)"
+      lane engineer "Engineer"
+        task sendE "Send email to engineer"
+        catch restart "Machine restarted" signal="MachineRestarted"
+        
+        flow S -> coll
+        flow coll -> disc
+        flow disc -> D "yes" when="disconnected"
+        flow disc -> calc "no" default
+        flow calc -> oee
+        flow oee -> stopM "yes" when="oeeBelow"
+        flow oee -> coll "no" default
+        flow stopM -> sendE
+        flow sendE -> restart
+        flow restart -> coll

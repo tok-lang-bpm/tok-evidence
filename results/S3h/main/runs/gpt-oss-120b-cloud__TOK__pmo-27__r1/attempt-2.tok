@@ -1,0 +1,51 @@
+tok 1.0 "Work Accident"
+
+pool organisation "Organisation"
+  lane employee "Employee / Employer"
+    start acc_start "Accident occurs"
+    task gather "Gather accident information"
+    xor party_type "Who is involved?"
+    task inform_emp "Inform employer immediately"
+    xor self_employed "Is reporter self‑employed?"
+    task report_self "Report to Accident Insurance Provider (self‑employed) within 5 days"
+    xor fatal_serious "Fatality or serious injury?"
+    task report_inspector "Report to Labour Inspectorate"
+    xor long_term "Injury >3 days or death?"
+    task report_insurance "Report to Accident Insurance Provider within 5 days"
+    and join_emp_reports
+    end emp_end "Process completed"
+
+  lane school "School / Educational Institution"
+    task report_directorate "Report to competent directorate"
+    task school_report_ins "School reports to Accident Insurance Provider (triplicate, within 5 days)"
+    end student_end "Process completed"
+
+  lane private "Private Insured Party"
+    task report_private "Report in writing to private insurer immediately"
+    xor private_fatal "Fatalities?"
+    task report_private_fatal "Report fatalities within 3 days"
+    end private_end "Process completed"
+
+# Flows
+flow acc_start -> gather -> party_type
+flow party_type -> inform_emp
+flow party_type -> report_directorate
+flow party_type -> report_private
+
+flow inform_emp -> self_employed
+flow self_employed -> report_self "Self‑employed"
+flow self_employed -> fatal_serious "Employee"
+flow report_self -> join_emp_reports
+flow fatal_serious -> report_inspector "Yes"
+flow fatal_serious -> long_term "No"
+flow report_inspector -> join_emp_reports
+flow long_term -> report_insurance "Yes"
+flow long_term -> join_emp_reports "No"
+flow join_emp_reports -> emp_end
+
+flow report_directorate -> school_report_ins -> student_end
+
+flow report_private -> private_fatal
+flow private_fatal -> report_private_fatal "Yes"
+flow private_fatal -> private_end "No"
+flow report_private_fatal -> private_end

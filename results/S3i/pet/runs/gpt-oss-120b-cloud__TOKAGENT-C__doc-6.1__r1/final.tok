@@ -1,0 +1,50 @@
+tok 1.0 "Invoice processing"
+
+pool acme "ACME AG"
+  lane secretariat "Secretariat"
+    start s0 "Start"
+    task r1 "Receive invoice on paper or fax"
+    task i1 "Visual inspection"
+    task f1 "Forward invoice to accounting employee"
+  lane accounting "Accounting Employee"
+    task a1 "Identify charging suppliers and create invoice instance"
+    task a2 "Check invoice items and note cost centers on docket"
+    task a3 "Send docket and copy of invoice to internal mail"
+    task a4 "Clarify with vendor"
+    task a5 "Consult cost center managers"
+    task a6 "Forward copy to commercial manager"
+    task resolve "Resolve complaint with supplier"
+    task a7 "Give payment instructions and close invoice"
+    end e1 "End"
+  lane manager "Cost Center Manager"
+    xor g1 "Is position accurate?"
+    task n1 "Note AP on docket"
+    xor g2 "All items marked accurate?"
+    task snext "Send copy to next cost center manager"
+    task sback "Send copy back to accounting"
+    task r2 "Reject AP with note"
+  lane commercial "Commercial Manager"
+    task c1 "Make commercial audit"
+    xor g4 "Complaint?"
+    xor g3 "Amount > EUR 20?"
+    task b1 "Board review"
+
+  flow s0 -> r1 -> i1 -> f1 -> a1 -> a2 -> a3 -> g1
+  flow g1 -> n1 "yes"
+  flow g1 -> r2 "no"
+  flow n1 -> g2
+  flow g2 -> sback "yes"
+  flow g2 -> snext "no"
+  flow snext -> a3
+  flow r2 -> a4
+  flow a4 -> a5 -> a3
+  flow sback -> a6
+  flow a6 -> c1
+  flow c1 -> g4
+  flow g4 -> resolve "yes"
+  flow resolve -> a7
+  flow g4 -> g3 "no"
+  flow g3 -> b1 "yes"
+  flow g3 -> a7 "no"
+  flow b1 -> a7
+  flow a7 -> e1

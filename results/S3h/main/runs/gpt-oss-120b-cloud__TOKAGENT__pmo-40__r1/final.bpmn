@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organization" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Organization" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="machine" name="Machine">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>collect-info</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>calculate-ooe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-conn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-ooe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg-split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>pg-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>stop-machine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>restart-machine</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="engineer" name="Engineer">
+        <bpmn:flowNodeRef>send-email</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start" name="Start" />
+    <bpmn:endEvent id="end-event" name="End" />
+    <bpmn:task id="collect-info" name="collect information from machine" />
+    <bpmn:task id="calculate-ooe" name="calculate OEE" />
+    <bpmn:exclusiveGateway id="gw-conn" name="machine connected?" default="f-gw-conn-end-event" />
+    <bpmn:exclusiveGateway id="gw-ooe" name="OEE below threshold?" default="f-gw-ooe-collect-info" />
+    <bpmn:parallelGateway id="pg-split" name="handle OEE breach" />
+    <bpmn:parallelGateway id="pg-join" name="after OEE breach handling" />
+    <bpmn:task id="stop-machine" name="stop machine" />
+    <bpmn:task id="restart-machine" name="restart machine" />
+    <bpmn:task id="send-email" name="send email to engineer" />
+    <bpmn:sequenceFlow id="f-start-collect-info" sourceRef="start" targetRef="collect-info" />
+    <bpmn:sequenceFlow id="f-collect-info-gw-conn" sourceRef="collect-info" targetRef="gw-conn" />
+    <bpmn:sequenceFlow id="f-gw-conn-calculate-ooe" sourceRef="gw-conn" targetRef="calculate-ooe">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">connected</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-conn-end-event" sourceRef="gw-conn" targetRef="end-event" />
+    <bpmn:sequenceFlow id="f-calculate-ooe-gw-ooe" sourceRef="calculate-ooe" targetRef="gw-ooe" />
+    <bpmn:sequenceFlow id="f-gw-ooe-pg-split" sourceRef="gw-ooe" targetRef="pg-split">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">OEE &lt; threshold</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-ooe-collect-info" sourceRef="gw-ooe" targetRef="collect-info" />
+    <bpmn:sequenceFlow id="f-pg-split-stop-machine" sourceRef="pg-split" targetRef="stop-machine" />
+    <bpmn:sequenceFlow id="f-pg-split-send-email" sourceRef="pg-split" targetRef="send-email" />
+    <bpmn:sequenceFlow id="f-stop-machine-pg-join" sourceRef="stop-machine" targetRef="pg-join" />
+    <bpmn:sequenceFlow id="f-send-email-pg-join" sourceRef="send-email" targetRef="pg-join" />
+    <bpmn:sequenceFlow id="f-pg-join-restart-machine" sourceRef="pg-join" targetRef="restart-machine" />
+    <bpmn:sequenceFlow id="f-restart-machine-collect-info" sourceRef="restart-machine" targetRef="collect-info" />
+  </bpmn:process>
+</bpmn:definitions>

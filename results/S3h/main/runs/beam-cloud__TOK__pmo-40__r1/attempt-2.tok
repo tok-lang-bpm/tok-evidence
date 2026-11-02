@@ -1,0 +1,28 @@
+tok 1.0 "OEE"
+
+pool organization "Organization"
+  lane process "Process"
+    start started "OEE Monitoring Started"
+    task collect "Collect relevant information from the machine"
+    task calculate "Calculate the Overall Equipment Efficiency (OEE)"
+    xor below "OEE below threshold?"
+    and stop_parallel "Stop machine and send email"
+    task stop_machine "Stop the machine"
+    task send_email "Send an email to an engineer"
+    and stop_join "Machine stopped and email sent"
+    catch restarted "Machine restarted" signal="Machine restarted"
+    eventsub disconnected "Machine disconnected"
+      start disconnected_start "Machine disconnected" signal="Machine disconnected"
+      end terminated "Stop process" terminate
+      flow disconnected_start -> terminated
+    end stopped "Process stopped"
+
+flow started -> collect -> calculate -> below
+flow below -> stop_parallel "yes" when="oee < threshold"
+flow below -> collect "no" default
+flow stop_parallel -> stop_machine
+flow stop_parallel -> send_email
+flow stop_machine -> stop_join
+flow send_email -> stop_join
+flow stop_join -> restarted
+flow restarted -> collect

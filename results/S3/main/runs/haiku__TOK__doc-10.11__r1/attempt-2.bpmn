@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions" name="Measurement request handling" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="org" name="Organisation" processRef="org-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="org-process" name="Measurement request handling" isExecutable="false">
+    <bpmn:laneSet id="org-lanes">
+      <bpmn:lane id="go" name="GO">
+        <bpmn:flowNodeRef>request_needed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request_measurements</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>process_values</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>send_changed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit_readings</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmitted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>reading_failed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="msp" name="MSP">
+        <bpmn:flowNodeRef>check_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>deny_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>perform_measurement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>measurement_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>inform_failure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>transmit_values</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>receive_changed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="request_needed" name="Measurements needed" />
+    <bpmn:task id="request_measurements" name="Request the measurements from the MSP" />
+    <bpmn:task id="process_values" name="Process the measured values" />
+    <bpmn:task id="send_changed" name="Send the changed values to the MSP" />
+    <bpmn:task id="transmit_readings" name="Transmit the readings to the SP" />
+    <bpmn:endEvent id="transmitted" name="Readings transmitted" />
+    <bpmn:endEvent id="reading_failed" name="Reading failure handled" />
+    <bpmn:task id="check_request" name="Check the received request" />
+    <bpmn:exclusiveGateway id="request_ok" name="Request valid?" />
+    <bpmn:task id="deny_request" name="Deny the request of the GO" />
+    <bpmn:task id="perform_measurement" name="Perform the measurement" />
+    <bpmn:exclusiveGateway id="measurement_ok" name="Measurement successful?" />
+    <bpmn:task id="inform_failure" name="Inform the GO about the failure of the reading" />
+    <bpmn:task id="transmit_values" name="Transmit the measured values to the GO" />
+    <bpmn:task id="receive_changed" name="Receive the changed values" />
+    <bpmn:sequenceFlow id="f-request_needed-request_measurements" sourceRef="request_needed" targetRef="request_measurements" />
+    <bpmn:sequenceFlow id="f-request_measurements-check_request" sourceRef="request_measurements" targetRef="check_request" />
+    <bpmn:sequenceFlow id="f-check_request-request_ok" sourceRef="check_request" targetRef="request_ok" />
+    <bpmn:sequenceFlow id="f-request_ok-deny_request" name="no" sourceRef="request_ok" targetRef="deny_request" />
+    <bpmn:sequenceFlow id="f-request_ok-perform_measurement" name="yes" sourceRef="request_ok" targetRef="perform_measurement" />
+    <bpmn:sequenceFlow id="f-deny_request-reading_failed" sourceRef="deny_request" targetRef="reading_failed" />
+    <bpmn:sequenceFlow id="f-perform_measurement-measurement_ok" sourceRef="perform_measurement" targetRef="measurement_ok" />
+    <bpmn:sequenceFlow id="f-measurement_ok-inform_failure" name="no" sourceRef="measurement_ok" targetRef="inform_failure" />
+    <bpmn:sequenceFlow id="f-measurement_ok-transmit_values" name="yes" sourceRef="measurement_ok" targetRef="transmit_values" />
+    <bpmn:sequenceFlow id="f-inform_failure-reading_failed" sourceRef="inform_failure" targetRef="reading_failed" />
+    <bpmn:sequenceFlow id="f-transmit_values-process_values" sourceRef="transmit_values" targetRef="process_values" />
+    <bpmn:sequenceFlow id="f-process_values-send_changed" sourceRef="process_values" targetRef="send_changed" />
+    <bpmn:sequenceFlow id="f-send_changed-receive_changed" sourceRef="send_changed" targetRef="receive_changed" />
+    <bpmn:sequenceFlow id="f-receive_changed-transmit_readings" sourceRef="receive_changed" targetRef="transmit_readings" />
+    <bpmn:sequenceFlow id="f-transmit_readings-transmitted" sourceRef="transmit_readings" targetRef="transmitted" />
+  </bpmn:process>
+</bpmn:definitions>

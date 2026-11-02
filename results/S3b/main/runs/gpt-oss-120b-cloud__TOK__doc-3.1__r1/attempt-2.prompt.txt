@@ -1,0 +1,65 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The party sends a warrant possession request asking a warrant to be released. The Client Service Back Office as part of the Small Claims Registry Operations receives the request and retrieves the SCT file. Then, the SCT Warrant Possession is forwarded to Queensland Police. The SCT physical file is stored by the Back Office awaiting a report to be sent by the Police. When the report is received, the respective SCT file is retrieved. Then, Back Office attaches the new SCT document, and stores the expanded SCT physical file. After that, some other MC internal staff receives the physical SCT file (out of scope).
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Warrant Possession Process"
+
+pool org "Organisation"
+  lane party "Party"
+    start s1 "Warrant possession request sent"
+    task send "Send warrant possession request"
+
+  lane backoffice "Client Service Back Office"
+    task receive_retrieve "Receive request and retrieve SCT file"
+    task forward "Forward SCT Warrant Possession to Queensland Police"
+    task store_wait "Store SCT physical file awaiting report"
+    task receive_report "Receive report from Police"
+    task retrieve_file "Retrieve SCT file"
+    task attach_store "Attach new SCT document and store expanded SCT physical file"
+    end e_done "Process completed"
+
+  lane police "Queensland Police"
+    task receive_forward "Receive SCT Warrant Possession"
+    task send_report "Send report to Back Office"
+
+flow s1 -> send
+flow send -> receive_retrieve
+flow receive_retrieve -> forward
+flow forward -> and1
+and and1 "Split"
+flow and1 -> store_wait
+flow and1 -> receive_forward
+flow receive_forward -> send_report
+flow send_report -> and2
+flow store_wait -> and2
+and and2 "Join"
+flow and2 -> receive_report
+flow receive_report -> retrieve_file
+flow retrieve_file -> attach_store
+flow attach_store -> e_done
+```
+
+The tok checker reports these problems in it:
+
+- line 24: error R021: sequence flow forward -> and1 crosses a process or sub-process boundary
+- line 25: error R031: 'and1' is declared at top level, but the document has pools; move it into a pool
+- line 26: error R021: sequence flow and1 -> store_wait crosses a process or sub-process boundary
+- line 27: error R021: sequence flow and1 -> receive_forward crosses a process or sub-process boundary
+- line 29: error R021: sequence flow send_report -> and2 crosses a process or sub-process boundary
+- line 30: error R021: sequence flow store_wait -> and2 crosses a process or sub-process boundary
+- line 31: error R031: 'and2' is declared at top level, but the document has pools; move it into a pool
+- line 32: error R021: sequence flow and2 -> receive_report crosses a process or sub-process boundary
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

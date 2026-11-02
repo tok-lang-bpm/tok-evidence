@@ -1,0 +1,104 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```tok.
+
+Text:
+
+The first step is to determine contact details of potential customers. This can be achieved in several ways. Sometimes, we buy details for cold calls, sometimes, our marketing staff participates in exhibitions and sometimes, you just happen to know somebody, who is interested in the product. Then we start calling the customer. That is done by the call center staff. They are determining the contact person and the budget which would be available for the project. Of course, asking the customer whether he is generally interested is also important. If this is not the case, we leave him alone, except if the potential project budget is huge. Then the head of development personally tries to acquire the customer. If the customer is interested in the end, the next step is a detailed online presentation. It is given either by a sales representative or by a pre-sales employee in case of a more technical presentation. Afterwards we are waiting for the customer to come back to us. If we are not contacted within 2 weeks, a sales representative is calling the customer. The last phase is the creation of a quotation.
+
+
+Your previous answer:
+
+```tok
+tok 1.0 "Customer acquisition process"
+
+pool org "Organization"
+  lane marketing "Marketing staff"
+    task buy_details "Buy contact details"
+    task participate_exhibitions "Participate in exhibitions"
+    task identify_known_prospect "Identify known prospect"
+  lane callcenter "Call Center staff"
+    task start_calling "Start calling the customer"
+    task determine_contact_person "Determine contact person"
+    task determine_project_budget "Determine project budget"
+    task ask_general_interest "Ask if generally interested"
+    task wait_customer_response "Wait for customer response"
+    task sales_rep_call_after_wait "Sales representative calls the customer"
+  lane headdev "Head of Development"
+    task head_acquire_customer "Head of development tries to acquire the customer"
+  lane sales "Sales Representative"
+    task sales_online_presentation "Sales representative gives detailed online presentation"
+    task create_quotation "Create quotation"
+  lane presales "Pre-sales Employee"
+    task presales_online_presentation "Pre-sales employee gives technical online presentation"
+
+  xor method "Determine contact details method?"
+    # branches from method decision
+  xor interest "Is customer generally interested?"
+  xor budget_huge "Is project budget huge?"
+  xor presentation "Which presentation type?"
+  xor response "Customer responded within 2 weeks?"
+  and split_contact_info
+  and join_contact_info
+  and join_presentation
+
+end leave_alone "Customer left alone"
+end process_end "Process completed"
+
+flow start -> method
+flow method -> buy_details
+flow method -> participate_exhibitions
+flow method -> identify_known_prospect
+flow buy_details -> start_calling
+flow participate_exhibitions -> start_calling
+flow identify_known_prospect -> start_calling
+
+flow start_calling -> split_contact_info
+flow split_contact_info -> determine_contact_person
+flow split_contact_info -> determine_project_budget
+flow split_contact_info -> ask_general_interest
+flow determine_contact_person -> join_contact_info
+flow determine_project_budget -> join_contact_info
+flow ask_general_interest -> join_contact_info
+flow join_contact_info -> interest
+
+flow interest -> presentation
+flow interest -> budget_huge
+flow budget_huge -> head_acquire_customer
+flow head_acquire_customer -> presentation
+flow budget_huge -> leave_alone
+
+flow presentation -> sales_online_presentation
+flow presentation -> presales_online_presentation
+flow sales_online_presentation -> wait_customer_response
+flow presales_online_presentation -> wait_customer_response
+
+flow wait_customer_response -> response
+flow response -> create_quotation
+flow response -> sales_rep_call_after_wait
+flow sales_rep_call_after_wait -> create_quotation
+
+flow create_quotation -> process_end
+```
+
+The tok checker reports these problems in it:
+
+- line 23: error R030: 'method' is in a pool with lanes but outside every lane
+- line 25: error R030: 'interest' is in a pool with lanes but outside every lane
+- line 26: error R030: 'budget_huge' is in a pool with lanes but outside every lane
+- line 27: error R030: 'presentation' is in a pool with lanes but outside every lane
+- line 28: error R030: 'response' is in a pool with lanes but outside every lane
+- line 29: error R030: 'split_contact_info' is in a pool with lanes but outside every lane
+- line 30: error R030: 'join_contact_info' is in a pool with lanes but outside every lane
+- line 31: error R030: 'join_presentation' is in a pool with lanes but outside every lane
+- line 33: error R031: 'leave_alone' is declared at top level, but the document has pools; move it into a pool
+- line 34: error R031: 'process_end' is declared at top level, but the document has pools; move it into a pool
+- line 36: error R002: unknown flow node 'start'
+- line 57: error R021: sequence flow budget_huge -> leave_alone crosses a process or sub-process boundary
+- line 69: error R021: sequence flow create_quotation -> process_end crosses a process or sub-process boundary
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```tok.

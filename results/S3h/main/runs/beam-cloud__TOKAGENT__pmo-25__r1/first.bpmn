@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" name="Find a Job" targetNamespace="http://bpmn.io/schema/bpmn" exporter="tok" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="find-job" name="Find a Job" processRef="find-job-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="find-job-process" name="Find a Job" isExecutable="false">
+    <bpmn:laneSet id="find-job-lanes">
+      <bpmn:lane id="applicant" name="Job Applicant">
+        <bpmn:flowNodeRef>s</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report-applications</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-negotiate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>negotiate-interview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-negotiate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-want</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>enter-probation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>g-ratings</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-company</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>join-ratings</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>wait-year</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>publish-reviews</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-permanent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw-low-rating</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end-success</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="company" name="Company">
+        <bpmn:flowNodeRef>confirm-receipt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-application</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rate-applicant</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="platform" name="Job Portal">
+        <bpmn:flowNodeRef>send-offers</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Start" />
+    <bpmn:task id="report-applications" name="Report job applications" />
+    <bpmn:exclusiveGateway id="gw-negotiate" name="Negotiate job interview?" default="f-gw-negotiate-join-negotiate" />
+    <bpmn:task id="negotiate-interview" name="Negotiate job interview" />
+    <bpmn:exclusiveGateway id="join-negotiate" />
+    <bpmn:exclusiveGateway id="gw-want" name="Company wants applicant?" default="f-gw-want-report-applications" />
+    <bpmn:task id="enter-probation" name="Enter probation phase" />
+    <bpmn:parallelGateway id="g-ratings" name="Rate each other" />
+    <bpmn:task id="rate-company" name="Rate company" />
+    <bpmn:parallelGateway id="join-ratings" />
+    <bpmn:intermediateCatchEvent id="wait-year" name="Wait 1 year">
+      <bpmn:timerEventDefinition id="wait-year-def">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1Y</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="publish-reviews" name="Publish company reviews" />
+    <bpmn:exclusiveGateway id="gw-permanent" name="Job becomes permanent?" default="f-gw-permanent-report-applications" />
+    <bpmn:exclusiveGateway id="gw-low-rating" name="Rated C or lower?" default="f-gw-low-rating-send-offers" />
+    <bpmn:endEvent id="end-success" name="End" />
+    <bpmn:task id="confirm-receipt" name="Confirm receipt of application" />
+    <bpmn:task id="rate-application" name="Rate job application" />
+    <bpmn:task id="rate-applicant" name="Rate applicant" />
+    <bpmn:task id="send-offers" name="Send potential job offers" />
+    <bpmn:sequenceFlow id="f-s-report-applications" sourceRef="s" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-report-applications-send-offers" sourceRef="report-applications" targetRef="send-offers" />
+    <bpmn:sequenceFlow id="f-send-offers-confirm-receipt" sourceRef="send-offers" targetRef="confirm-receipt" />
+    <bpmn:sequenceFlow id="f-confirm-receipt-rate-application" sourceRef="confirm-receipt" targetRef="rate-application" />
+    <bpmn:sequenceFlow id="f-rate-application-gw-negotiate" sourceRef="rate-application" targetRef="gw-negotiate" />
+    <bpmn:sequenceFlow id="f-gw-negotiate-negotiate-interview" name="yes" sourceRef="gw-negotiate" targetRef="negotiate-interview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">interview = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-negotiate-join-negotiate" name="no" sourceRef="gw-negotiate" targetRef="join-negotiate" />
+    <bpmn:sequenceFlow id="f-negotiate-interview-join-negotiate" sourceRef="negotiate-interview" targetRef="join-negotiate" />
+    <bpmn:sequenceFlow id="f-join-negotiate-gw-want" sourceRef="join-negotiate" targetRef="gw-want" />
+    <bpmn:sequenceFlow id="f-gw-want-enter-probation" name="yes" sourceRef="gw-want" targetRef="enter-probation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">company_wants = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-want-report-applications" name="no" sourceRef="gw-want" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-enter-probation-g-ratings" sourceRef="enter-probation" targetRef="g-ratings" />
+    <bpmn:sequenceFlow id="f-g-ratings-rate-company" sourceRef="g-ratings" targetRef="rate-company" />
+    <bpmn:sequenceFlow id="f-g-ratings-rate-applicant" sourceRef="g-ratings" targetRef="rate-applicant" />
+    <bpmn:sequenceFlow id="f-rate-company-join-ratings" sourceRef="rate-company" targetRef="join-ratings" />
+    <bpmn:sequenceFlow id="f-rate-applicant-join-ratings" sourceRef="rate-applicant" targetRef="join-ratings" />
+    <bpmn:sequenceFlow id="f-join-ratings-wait-year" sourceRef="join-ratings" targetRef="wait-year" />
+    <bpmn:sequenceFlow id="f-wait-year-publish-reviews" sourceRef="wait-year" targetRef="publish-reviews" />
+    <bpmn:sequenceFlow id="f-publish-reviews-gw-permanent" sourceRef="publish-reviews" targetRef="gw-permanent" />
+    <bpmn:sequenceFlow id="f-gw-permanent-gw-low-rating" name="yes" sourceRef="gw-permanent" targetRef="gw-low-rating">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">job_permanent = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-permanent-report-applications" name="no" sourceRef="gw-permanent" targetRef="report-applications" />
+    <bpmn:sequenceFlow id="f-gw-low-rating-end-success" name="above C" sourceRef="gw-low-rating" targetRef="end-success">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">company_rating &gt; "C"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f-gw-low-rating-send-offers" name="C or lower" sourceRef="gw-low-rating" targetRef="send-offers" />
+  </bpmn:process>
+</bpmn:definitions>

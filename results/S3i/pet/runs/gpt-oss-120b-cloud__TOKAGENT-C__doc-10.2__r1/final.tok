@@ -1,0 +1,78 @@
+tok 1.0 "MPON process"
+
+pool org "Organisation"
+  lane mpon "MPON"
+    start s "Start"
+    task r "MPON reports the meter operation to the GO"
+    task mf "MPON informs the GO about the failure of the entire process"
+    task ms "MPON informs the GO about the successful completion of the entire process"
+    task m_acq "MPON performs the equipment acquisition and/or equipment changes"
+  lane go "GO"
+    task e "GO examines the application of the MPON"
+    xor d1 "Application approved?"
+    task rej "GO rejects the application of the MPON"
+    task conf "GO confirms the application of the MPON"
+    and g1 "Inform registration split"
+    task imr "GO informs the MPOO about the registration confirmation of the MPON"
+    task isr "GO informs the MSPO about the registration confirmation of the MPON"
+    and g2 "Inform registration join"
+    and a1 "Acquisition split"
+    and a2 "Acquisition join"
+    xor d2 "MPON informs GO outcome"
+    task cfa "GO confirms the failure of the assignment to the MPON"
+    and fsplit "Failure inform split"
+    task imfa "GO informs the MPOO about the failure of the assignment of the MPON"
+    task isfa "GO informs the MSPO about the failure of the assignment of the MPON"
+    and fjoin "Failure inform join"
+    task assign "GO assigns the MPON"
+    task cassign "GO confirms the assignment to the MPON"
+    and asplit "Assignment inform split"
+    task ima "GO informs the MPOO about the assignment of the MPON"
+    task isa "GO informs the MSPO about the assignment of the MPON"
+    task isp "GO informs the SP about the assignment of the MPON"
+    and ajoin "Assignment inform join"
+    end end_success "Process completed successfully"
+    end end_failure "Process failed"
+    end end_reject "Application rejected"
+    start timeout "Timeout waiting for MPON" timer=PT48H
+    task tinfo "GO informs the MPON about the failure of the overall transaction"
+    end end_timeout "Overall transaction timed out"
+  lane mpoo "MPOO"
+    task p_acq "MPOO performs the equipment acquisition and/or equipment changes"
+  lane msppo "MSPO"
+    # no dedicated tasks (receives are performed by GO)
+  lane sp "SP"
+    # no dedicated tasks (receives are performed by GO)
+
+flow s -> r -> e -> d1
+flow d1 -> rej
+flow d1 -> conf
+flow rej -> end_reject
+flow conf -> g1
+flow g1 -> imr
+flow g1 -> isr
+flow imr -> g2
+flow isr -> g2
+flow g2 -> a1
+flow a1 -> m_acq
+flow a1 -> p_acq
+flow m_acq -> a2
+flow p_acq -> a2
+flow a2 -> d2
+flow d2 -> mf
+flow d2 -> ms
+flow mf -> cfa -> fsplit
+flow fsplit -> imfa
+flow fsplit -> isfa
+flow imfa -> fjoin
+flow isfa -> fjoin
+flow fjoin -> end_failure
+flow ms -> assign -> cassign -> asplit
+flow asplit -> ima
+flow asplit -> isa
+flow asplit -> isp
+flow ima -> ajoin
+flow isa -> ajoin
+flow isp -> ajoin
+flow ajoin -> end_success
+flow timeout -> tinfo -> end_timeout

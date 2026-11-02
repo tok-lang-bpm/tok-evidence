@@ -1,0 +1,90 @@
+tok 1.0 "Intake workflow"
+
+pool institute "Mental health care institute"
+  lane fam "Family doctor"
+    start notice "Patient needs mental treatment"
+    task telephone "Give notice by telephone"
+    task send_copy "Send copy of medical file"
+  lane sec "Secretarial office"
+    task inquire "Inquire after name and residence of patient"
+    task connect "Put doctor through to responsible nursing officer"
+    task store_info "Store information in information system"
+    task print_info "Print information from information system"
+    xor newpat "New patient?"
+    task create_file "Create patient file"
+    xor merge_file
+    task file_forms "Store registration form and print in patient file"
+    task cards "Produce two registration cards"
+    task add_list "Add new patient to list of new notices"
+    task store_assign "Store assignments in information system"
+    task pass_cards "Pass registration cards to first and second intaker"
+    and s1
+    xor medreq "Medical file required?"
+    task letter "Prepare and send letter requesting copy of medical file"
+    task receive_copy "Receive copy of medical file"
+    task inform_second "Inform second intaker"
+    task add_copy "Add copy to patient file"
+    xor merge_med
+    and s_dict
+    task type_tapes "Type out dictaphone tapes"
+    task add_typed "Add typed information to patient file"
+    end end_dict "Dictaphone record filed"
+    and join_meet
+    task list_meet "Put patient on list of patients reaching this status"
+    task give_list "Give list of these patients to team leader"
+    and s2
+    and join_plan
+    end ended "Intake procedure ended"
+  lane nurse "Nursing officer"
+    task inquiry "Make full inquiry into mental, health and social state of patient"
+    task record "Record information on registration form"
+    task hand_form "Hand in registration form at secretarial office"
+  lane lead "Team leader"
+    task staff "Hold staff meeting of medical team on Wednesday"
+    task assign_first "Assign social-medical worker as first intaker"
+    task assign_second "Assign physician as second intaker"
+    task determine "Determine whether medical file is required"
+    task record_assign "Record assignments on assignment list"
+    task hand_list "Hand assignment list to secretarial office"
+    task plan_tp_team "Formulate treatment plan"
+  lane first "First intaker (social-medical worker)"
+    task plan_first "Plan first meeting with patient as soon as possible"
+    task examine "Examine patient using standard checklist"
+    task fill "Fill out standard checklist"
+    task notebook "Register additional observations in personal notebook"
+    task put_notes "Put copy of notes in patient file"
+    task add_checklist "Add standard checklist to patient file"
+    task plan_tp_first "Formulate treatment plan"
+  lane second "Second intaker (physician)"
+    task plan_second "Plan first meeting with patient"
+    task meet_second "Hold first meeting with patient"
+    task dictaphone "Record observations on dictaphone"
+    task plan_tp_second "Formulate treatment plan"
+  lane psych "Psychiatrist"
+    task plan_tp_psych "Formulate treatment plan"
+
+flow notice -> telephone -> inquire -> connect -> inquiry -> record -> hand_form -> store_info -> print_info -> newpat
+flow newpat -> create_file "yes"
+flow newpat -> merge_file "no"
+flow create_file -> merge_file
+flow merge_file -> file_forms -> cards -> add_list -> staff -> assign_first -> assign_second -> determine -> record_assign -> hand_list -> store_assign -> pass_cards -> s1
+
+flow s1 -> plan_first -> examine -> fill -> notebook -> put_notes -> add_checklist -> join_meet
+flow s1 -> medreq
+flow medreq -> letter "yes"
+flow letter -> send_copy -> receive_copy -> inform_second -> add_copy -> merge_med
+flow medreq -> merge_med "no"
+flow merge_med -> plan_second -> meet_second -> dictaphone -> s_dict
+flow s_dict -> join_meet
+flow s_dict -> type_tapes -> add_typed -> end_dict
+
+flow join_meet -> list_meet -> give_list -> s2
+flow s2 -> plan_tp_first
+flow s2 -> plan_tp_second
+flow s2 -> plan_tp_team
+flow s2 -> plan_tp_psych
+flow plan_tp_first -> join_plan
+flow plan_tp_second -> join_plan
+flow plan_tp_team -> join_plan
+flow plan_tp_psych -> join_plan
+flow join_plan -> ended

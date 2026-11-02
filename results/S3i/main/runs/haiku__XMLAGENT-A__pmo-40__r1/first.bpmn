@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:message id="Msg_Disconnected" name="Machine disconnected" />
+  <bpmn:message id="Msg_Restarted" name="Machine restarted" />
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="OEE-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="OEE-process" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="Lane_Monitoring" name="OEE monitoring system">
+        <bpmn:flowNodeRef>Start_Process</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Merge_Measuring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Collect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Bnd_Disconnected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Calc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Threshold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Stopped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Machine" name="Machine">
+        <bpmn:flowNodeRef>Task_Stop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_Restarted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catch_Disconnected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Process" name="Process started" />
+    <bpmn:exclusiveGateway id="Merge_Measuring" />
+    <bpmn:task id="Task_Collect" name="Collect information from the machine" />
+    <bpmn:boundaryEvent id="Bnd_Disconnected" name="Machine disconnected" attachedToRef="Task_Collect" cancelActivity="true">
+      <bpmn:messageEventDefinition id="MED_Bnd" messageRef="Msg_Disconnected" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Task_Calc" name="Calculate the Overall Equipment Efficiency (OEE)" />
+    <bpmn:exclusiveGateway id="Gw_Threshold" name="OEE below the threshold?" />
+    <bpmn:task id="Task_Stop" name="Stop the machine" />
+    <bpmn:parallelGateway id="Gw_Split" />
+    <bpmn:task id="Task_Email" name="Send an email to the engineer" />
+    <bpmn:eventBasedGateway id="Gw_Event" name="Wait for restart or disconnection" />
+    <bpmn:intermediateCatchEvent id="Catch_Restarted" name="Machine restarted">
+      <bpmn:messageEventDefinition id="MED_Restarted" messageRef="Msg_Restarted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Disconnected" name="Machine disconnected">
+      <bpmn:messageEventDefinition id="MED_Disconnected" messageRef="Msg_Disconnected" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="Gw_Join" />
+    <bpmn:endEvent id="End_Stopped" name="Process stopped">
+      <bpmn:terminateEventDefinition id="TED_Stopped" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F01" sourceRef="Start_Process" targetRef="Merge_Measuring" />
+    <bpmn:sequenceFlow id="F02" sourceRef="Merge_Measuring" targetRef="Task_Collect" />
+    <bpmn:sequenceFlow id="F03" sourceRef="Task_Collect" targetRef="Task_Calc" />
+    <bpmn:sequenceFlow id="F04" sourceRef="Task_Calc" targetRef="Gw_Threshold" />
+    <bpmn:sequenceFlow id="F05" name="no" sourceRef="Gw_Threshold" targetRef="Merge_Measuring" />
+    <bpmn:sequenceFlow id="F06" name="yes" sourceRef="Gw_Threshold" targetRef="Task_Stop" />
+    <bpmn:sequenceFlow id="F07" sourceRef="Task_Stop" targetRef="Gw_Split" />
+    <bpmn:sequenceFlow id="F08" sourceRef="Gw_Split" targetRef="Task_Email" />
+    <bpmn:sequenceFlow id="F09" sourceRef="Gw_Split" targetRef="Gw_Event" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Gw_Event" targetRef="Catch_Restarted" />
+    <bpmn:sequenceFlow id="F11" sourceRef="Gw_Event" targetRef="Catch_Disconnected" />
+    <bpmn:sequenceFlow id="F12" sourceRef="Catch_Restarted" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F13" sourceRef="Task_Email" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="F14" sourceRef="Gw_Join" targetRef="Merge_Measuring" />
+    <bpmn:sequenceFlow id="F15" sourceRef="Catch_Disconnected" targetRef="End_Stopped" />
+    <bpmn:sequenceFlow id="F16" sourceRef="Bnd_Disconnected" targetRef="End_Stopped" />
+  </bpmn:process>
+</bpmn:definitions>

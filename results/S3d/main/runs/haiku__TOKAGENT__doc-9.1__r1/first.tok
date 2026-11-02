@@ -1,0 +1,52 @@
+tok 1.0 "Daily defaulting accounts reconciliation"
+
+pool org "Organisation"
+  lane sys "Reporting system"
+    # Assumptions: the text gives no start time, so the process is taken to start at 08:00;
+    # the 2:30 pm deadline is PT6H30M and the 4:00 pm deadline PT8H after the start.
+    # The text does not say what happens when new records or returns are not found in the first
+    # check of the Account Defaulter table: the "yes" branch merges into the CRM check.
+    start begin "Weekday morning"
+    task backup "Back up the database"
+    task check-table "Check the Account Defaulter table for new records"
+    xor new-records "New records found?"
+    xor merge-records
+    task check-crm "Check the CRM system for new returns"
+    xor new-returns "New returns filed?"
+    sub report "Prepare defaulting accounts report"
+      start report-start "Start"
+      task register "Register all defaulting accounts and customers"
+      xor advised "Defaulting client codes previously advised?"
+      task produce "Produce table of defaulting accounts"
+      task send-table "Send table of defaulting accounts to account management"
+      xor advised-join
+      end report-end "End"
+    boundary report-late on=report timer=PT6H30M
+    task alert "Send alert to supervisor"
+    task check-crm-again "Check the CRM system for new returns"
+    xor returns-again "New returns filed?"
+    task reconcile "Reconcile with the existing Account Defaulter table"
+    boundary reconcile-late on=reconcile timer=PT8H
+    task message-supervisor "Send message to supervisor"
+    end end-no-returns "No new returns"
+    end end-alert "Supervisor alerted"
+    end end-done "Reconciliation completed"
+    end end-message "Supervisor informed"
+
+flow begin -> backup -> check-table -> new-records
+flow new-records -> merge-records "Yes" when=""
+flow new-records -> check-crm "No" when=""
+flow merge-records -> check-crm
+flow check-crm -> new-returns
+flow new-returns -> report "Yes" when=""
+flow new-returns -> end-no-returns "No" when=""
+flow report-start -> register -> advised
+flow advised -> produce "No" when=""
+flow advised -> advised-join "Yes" when=""
+flow produce -> send-table -> advised-join -> report-end
+flow report -> check-crm-again -> returns-again
+flow returns-again -> reconcile "Yes" when=""
+flow returns-again -> message-supervisor "No" when=""
+flow reconcile -> end-done
+flow report-late -> alert -> end-alert
+flow reconcile-late -> message-supervisor -> end-message

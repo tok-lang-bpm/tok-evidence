@@ -1,0 +1,99 @@
+Model the business process described in the text below as one BPMN process.
+
+- Use one pool for the organisation and one lane for each actor (a person, role, department or system) that performs activities. If the text names no actor, use a single lane.
+- Every activity of the text becomes a task, named with the words of the text (a verb and its object).
+- Use exclusive gateways for decisions and alternatives and parallel gateways for activities that happen at the same time, with a gateway of the same kind where the branches meet.
+- Begin with a start event and finish every path with an end event.
+- Answer with the complete model only, in one fenced code block marked ```xml.
+
+Text:
+
+I am the Head of the functional department. When I have detected a number of personnel requirements, I report the vacancy to the Personnel Department. Then I wait to get the job description for review before it is advertized. Under certain circumstances, I must ask for corrections again, otherwise I approve the job description. Sometimes it also happens that the colleague from the HR department still has questions about the tasks and requirements before he can describe the job. Then I am available for clarifications, of course.
+
+
+Your previous answer:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions" targetNamespace="http://example.org/bpmn">
+  <bpmn:collaboration id="collaboration">
+    <bpmn:participant id="POOL" name="Organisation" processRef="PROCESS" />
+  </bpmn:collaboration>
+  <bpmn:process id="PROCESS" isExecutable="false">
+    <bpmn:laneSet id="LANES">
+      <bpmn:lane id="head" name="Head of functional department">
+        <bpmn:flowNodeRef>start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>detect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>report</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>answer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_rev_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>rcv_job</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_corr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>approve</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="hr" name="Personnel Department">
+        <bpmn:flowNodeRef>gw_q_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_q_split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>describe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>revise</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>advertise</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="start" name="Personnel requirements detected" />
+    <bpmn:task id="detect" name="Detect personnel requirements" />
+    <bpmn:task id="report" name="Report the vacancy to the Personnel Department" />
+    <bpmn:exclusiveGateway id="gw_q_merge" name="Merge" />
+    <bpmn:exclusiveGateway id="gw_q_split" name="Questions about tasks and requirements?" default="f6" />
+    <bpmn:task id="ask" name="Ask questions about the tasks and requirements" />
+    <bpmn:task id="answer" name="Answer the questions and give clarifications" />
+    <bpmn:task id="describe" name="Describe the job" />
+    <bpmn:exclusiveGateway id="gw_rev_merge" name="Merge" />
+    <bpmn:intermediateCatchEvent id="rcv_job" name="Job description received">
+      <bpmn:messageEventDefinition id="rcv_job_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="review" name="Review the job description" />
+    <bpmn:exclusiveGateway id="gw_corr" name="Corrections needed?" />
+    <bpmn:task id="request" name="Request corrections" />
+    <bpmn:task id="revise" name="Revise the job description" />
+    <bpmn:task id="approve" name="Approve the job description" />
+    <bpmn:task id="advertise" name="Advertise the job" />
+    <bpmn:endEvent id="end" name="Vacancy advertised" />
+
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="detect" />
+    <bpmn:sequenceFlow id="f2" sourceRef="detect" targetRef="report" />
+    <bpmn:sequenceFlow id="f3" sourceRef="report" targetRef="gw_q_merge" />
+    <bpmn:sequenceFlow id="f4" sourceRef="gw_q_merge" targetRef="gw_q_split" />
+    <bpmn:sequenceFlow id="f5" name="yes" sourceRef="gw_q_split" targetRef="ask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">questions open</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f6" name="no" sourceRef="gw_q_split" targetRef="describe" />
+    <bpmn:sequenceFlow id="f7" sourceRef="ask" targetRef="answer" />
+    <bpmn:sequenceFlow id="f8" sourceRef="answer" targetRef="gw_q_merge" />
+    <bpmn:sequenceFlow id="f9" sourceRef="describe" targetRef="gw_rev_merge" />
+    <bpmn:sequenceFlow id="f10" sourceRef="gw_rev_merge" targetRef="rcv_job" />
+    <bpmn:sequenceFlow id="f11" sourceRef="rcv_job" targetRef="review" />
+    <bpmn:sequenceFlow id="f12" sourceRef="review" targetRef="gw_corr" />
+    <bpmn:sequenceFlow id="f13" name="yes" sourceRef="gw_corr" targetRef="request">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">corrections needed</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f14" name="no" sourceRef="gw_corr" targetRef="approve" />
+    <bpmn:sequenceFlow id="f15" sourceRef="request" targetRef="revise" />
+    <bpmn:sequenceFlow id="f16" sourceRef="revise" targetRef="gw_rev_merge" />
+    <bpmn:sequenceFlow id="f17" sourceRef="approve" targetRef="advertise" />
+    <bpmn:sequenceFlow id="f18" sourceRef="advertise" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+```
+
+The BPMN validator (XML Schema and model rules) reports these problems in it:
+
+- conditional-flows: f14: Sequence flow is missing condition
+
+Correct the model. Answer with the complete corrected model only, in one fenced code block marked ```xml.

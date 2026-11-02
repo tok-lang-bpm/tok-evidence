@@ -1,0 +1,70 @@
+```tok
+tok 1.0 "Order fulfillment"
+
+pool shop "E-commerce company"
+  lane system "System"
+    start placed "Order placed"
+    task record "Record the order details"
+    task pay "Process the payment"
+    xor paid "Payment successful?"
+    task notifyfail "Notify the customer about the failed payment"
+    end failed "Order cancelled"
+    task check "Check stock availability"
+    xor instock "Items in stock?"
+    task backorder "Initiate a back-order"
+    task delay "Inform the customer about the delay"
+    task receivebo "Receive the back-order"
+    xor stockok
+    task confirm "Send the shipping confirmation"
+    task update "Update the inventory levels"
+    task delivered "Confirm the successful delivery"
+    task followup "Send the follow-up feedback email"
+    xor issues "Customer reported issues?"
+    task label "Send the return shipping label"
+    task refund "Process the refund or replacement"
+    end completed "Order completed"
+    end returned "Return processed"
+  lane warehouse "Warehouse"
+    task pick "Pick the in-stock items"
+    task qc "Perform the quality control checks"
+    and fork
+    task package "Package the order"
+    xor giftq "Gift wrapping requested?"
+    task wrap "Wrap the gift"
+    xor giftm
+    task receiveret "Receive the returned items"
+    task inspect "Inspect the returned items"
+  lane shipping "Shipping department"
+    task docs "Prepare the shipping documents and labels"
+    xor intl "International order?"
+    task customs "Prepare the customs documentation"
+    xor intlm
+    and join
+    task dispatch "Dispatch the order"
+
+flow placed -> record -> pay -> paid
+flow paid -> notifyfail "no"
+flow notifyfail -> failed
+flow paid -> check "yes"
+flow check -> instock
+flow instock -> backorder "no"
+flow backorder -> delay -> receivebo -> stockok
+flow instock -> stockok "yes"
+flow stockok -> pick -> qc -> fork
+flow fork -> package
+flow package -> giftq
+flow giftq -> wrap "yes"
+flow wrap -> giftm
+flow giftq -> giftm "no"
+flow giftm -> join
+flow fork -> docs
+flow docs -> intl
+flow intl -> customs "yes"
+flow customs -> intlm
+flow intl -> intlm "no"
+flow intlm -> join
+flow join -> dispatch -> confirm -> update -> delivered -> followup -> issues
+flow issues -> completed "no"
+flow issues -> label "yes"
+flow label -> receiveret -> inspect -> refund -> returned
+```

@@ -1,0 +1,65 @@
+tok 1.0
+
+pool org "Organization" {
+  lane db "Database"
+  lane crm "CRM System"
+  lane am "Account Management"
+  lane sup "Supervisor"
+}
+
+start s "Weekday Morning"
+
+task backup db "Backup Database"
+task checkDef db "Check Account Defaulter Table for New Records"
+xor g1 "New records found?"
+flow s -> backup
+flow backup -> checkDef
+flow checkDef -> g1
+flow g1 -> checkReturns "no" when="records = false"
+flow g1 -> register "yes" when="records = true"
+
+task checkReturns crm "Check CRM System for New Returns"
+task register am "Register Defaulting Accounts and Customers"
+flow checkReturns -> register
+
+xor g2 "Defaulting client codes previously advised?"
+flow register -> g2
+flow g2 -> produceTable "no" when="advised = false"
+flow g2 -> end1 "yes" default
+
+task produceTable am "Produce Table of Defaulting Accounts"
+task send am "Send Table to Account Management"
+flow produceTable -> send
+flow send -> end1
+
+xor deadline1 "Completed by 2:30 pm?"
+flow end1 -> deadline1
+flow deadline1 -> alertSup "no" when="now > time('14:30')"
+flow deadline1 -> continue2 "yes" default
+
+task alertSup sup "Send Alert to Supervisor (2:30 deadline)"
+flow alertSup -> continue2
+
+end continue2 "After First Report"
+
+# Second part
+flow continue2 -> checkReturns2
+
+task checkReturns2 crm "Check CRM System for New Returns (Second Check)"
+xor g3 "New returns filed?"
+flow checkReturns2 -> g3
+flow g3 -> reconcile "yes" when="newReturns = true"
+flow g3 -> end2 "no" default
+
+task reconcile am "Reconcile with Existing Account Defaulters Table"
+flow reconcile -> end2
+
+xor deadline2 "Completed by 4:00 pm?"
+flow end2 -> deadline2
+flow deadline2 -> alertSup2 "no" when="now > time('16:00')"
+flow deadline2 -> finalEnd "yes" default
+
+task alertSup2 sup "Send Alert to Supervisor (4:00 deadline)"
+flow alertSup2 -> finalEnd
+
+end finalEnd "Process End"

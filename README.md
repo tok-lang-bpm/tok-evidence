@@ -2,7 +2,7 @@
 
 Data, scripts and results of the study reported in *tok: a textual concrete syntax of BPMN and DMN for humans and AI agents* (Marek Deja, 2026), preprint [hal-05848142](https://hal.science/hal-05848142) and [arXiv:2611.07945](https://doi.org/10.48550/arXiv.2611.07945), and of the measurements added for *Process models as text: a plain-text notation of BPMN for screen readers, terminals and AI agents* (Marek Deja, 2026), in `results/uais/`. tok is a plain-text notation for BPMN 2.0.2 process models and DMN 1.5 decisions: https://github.com/tok-lang-bpm/tok.
 
-Archived at Zenodo: https://doi.org/10.5281/zenodo.23881048 (all versions; version 1.0.0: 10.5281/zenodo.23881049).
+Archived at Zenodo: https://doi.org/10.5281/zenodo.23881048 (all versions; version 1.0.0: 10.5281/zenodo.23881049; version 1.1.0: 10.5281/zenodo.24058705).
 
 ## Measurements
 

@@ -1,6 +1,6 @@
 # tok evidence
 
-Data, scripts and results of the study reported in *tok: a textual concrete syntax of BPMN and DMN for humans and AI agents* (Marek Deja, 2026), preprint [hal-05848142](https://hal.science/hal-05848142). tok is a plain-text notation for BPMN 2.0.2 process models and DMN 1.5 decisions: https://github.com/tok-lang-bpm/tok.
+Data, scripts and results of the study reported in *tok: a textual concrete syntax of BPMN and DMN for humans and AI agents* (Marek Deja, 2026), preprint [hal-05848142](https://hal.science/hal-05848142) and [arXiv:2611.07945](https://doi.org/10.48550/arXiv.2611.07945), and of the measurements added for *Process models as text: a plain-text notation of BPMN for screen readers, terminals and AI agents* (Marek Deja, 2026), in `results/uais/`. tok is a plain-text notation for BPMN 2.0.2 process models and DMN 1.5 decisions: https://github.com/tok-lang-bpm/tok.
 
 Archived at Zenodo: https://doi.org/10.5281/zenodo.23881048 (all versions; version 1.0.0: 10.5281/zenodo.23881049).
 
@@ -15,6 +15,18 @@ Archived at Zenodo: https://doi.org/10.5281/zenodo.23881048 (all versions; versi
 | `results/S5/` | conformance suites of the tagged sources (DMN TCK, MIWG reference models, Camunda Modeler files, tok conformance corpus) | tok 1.0.3 |
 | `results/S6/` | simulation, replay, discovery with PM4Py and import of the 48 models of the PMo dataset | tok 1.0.3, PM4Py 2.7.15 |
 | `results/combined/` | the tables of the language-model study across folders, as reported in the paper (`scripts/build_tables.py`) | |
+
+## Measurements for screen readers, braille displays and magnification
+
+The folder `results/uais/` holds three measurements without a language model, on the files of `S1` and on the final models of `S3i`.
+
+| Folder | Measurement | Software |
+|---|---|---|
+| `results/uais/S7/` | reading properties of 1 167 models (corpora N, V, R, C, D): lines, characters, block depth, line length, statements with an arrow, keywords, against the XML of the same models (`scripts/s7_reading.py`) | tok 1.0.3 (`tok fmt --check`) |
+| `results/uais/S8/` | the same models as three assistive technologies deliver them: spoken words and symbol words under the English symbol table of the screen reader NVDA at the punctuation levels none, some, most and all, lines at which the indentation changes, rows of 40- and 80-cell braille displays, screens and horizontal scrolling of the diagram and screens of the reflowed text at 200 % and 400 % magnification (`scripts/s8_assistive.py`, `scripts/analyse_s8.py`) | NVDA symbol table, release 2026.3 (`data/raw/nvda/`) |
+| `results/uais/S8b/` | the same speech and braille measures for the final models of the lean-skill agents of `S3i` (`TOKAGENT-C` against `XMLAGENT-C`, same language model and text, both valid; 258 pairs), and the count of agent-written BPMN XML files with a diagram (`scripts/s8b_agent_outputs.py`, `scripts/analyse_s8b.py`) | NVDA symbol table, release 2026.3 |
+
+The scripts write to `results/S7/`, `results/S8/` and `results/S8b/`; the release keeps their output under `results/uais/`. `S7` and `S8` read the variants of the models that `scripts/s1_prepare.py` writes to `results/S1/variants/`.
 
 ## Language-model study
 
@@ -54,4 +66,4 @@ The release archives of tok go to `tools/bin/` under the names in `environment/c
 
 ## Licence
 
-Scripts: GPL-3.0-or-later. Results and derived data: CC BY 4.0. The PET dataset (Bellan et al., MIT licence) and the PMo dataset (Brissard et al., CC BY 4.0) keep their licences; the XML Schemas in `data/raw/xsd/` are those published by the OMG.
+Scripts: GPL-3.0-or-later. Results and derived data: CC BY 4.0. The English symbol table of NVDA in `data/raw/nvda/` (NV Access, https://github.com/nvaccess/nvda, release 2026.3) keeps its licence, the GNU General Public License. The PET dataset (Bellan et al., MIT licence) and the PMo dataset (Brissard et al., CC BY 4.0) keep their licences; the XML Schemas in `data/raw/xsd/` are those published by the OMG.
